@@ -12,6 +12,7 @@ from typing import Any, Literal
 
 from services.oj.cpp_runner import _build_cpp_source, _find_gpp, _toolchain_roots, ensure_toolchain_on_path
 from services.oj.trace_runner import TraceStepOut, TraceSummary
+from utils.security import CPP_SECURITY_MESSAGE, CppSecurityViolation, check_cpp_security
 from services.oj.trace_steps_filter import filter_meaningful_steps
 from services.oj.trace_line_refine import refine_trace_step_lines
 
@@ -765,6 +766,16 @@ def run_trace_cpp(
     user_lines = len(user_code.strip().splitlines()) or 1
 
     try:
+        check_cpp_security(user_code)
+    except CppSecurityViolation:
+        return TraceSummary(
+            verdict="CE",
+            message=CPP_SECURITY_MESSAGE,
+            user_line_count=user_lines,
+            steps=[],
+        )
+
+    try:
         src = _build_cpp_source(
             user_code,
             class_name=class_name,
@@ -853,6 +864,16 @@ def run_trace_cpp_stdio(
     stdin = case_input_text(case)
     user_lines = len(user_code.strip().splitlines()) or 1
     timeout_s = max(2, min(time_limit_ms / 1000, 15))
+
+    try:
+        check_cpp_security(user_code)
+    except CppSecurityViolation:
+        return TraceSummary(
+            verdict="CE",
+            message=CPP_SECURITY_MESSAGE,
+            user_line_count=user_lines,
+            steps=[],
+        )
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)

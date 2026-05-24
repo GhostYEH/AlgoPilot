@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from api.deps import get_current_user
@@ -401,24 +403,27 @@ async def api_ai_diagnose(slug: str, body: AiDiagnoseRequest):
         for s in trace_resp.steps
     ]
     step_lines = generate_step_narration(steps_raw) if steps_raw else []
-    diagnosis = await generate_trace_diagnosis(
-        user_code=body.code,
-        steps=steps_raw,
-        problem_title=problem.get("title") or slug,
-        edge_reason=str(edge.get("reason") or ""),
+
+    diagnosis, complexity_raw = await asyncio.gather(
+        generate_trace_diagnosis(
+            user_code=body.code,
+            steps=steps_raw,
+            problem_title=problem.get("title") or slug,
+            edge_reason=str(edge.get("reason") or ""),
+        ),
+        analyze_complexity(
+            steps=steps_raw,
+            case=edge_case,
+            user_code=body.code,
+            problem_title=problem.get("title") or slug,
+        ),
     )
+
     merged = merge_diagnosis_narrations(step_lines, diagnosis)
     trace_resp.narrations = [
         TraceNarrationLine(step_index=n["step_index"], text=n["text"], critical=n.get("critical", False))
         for n in merged
     ]
-
-    complexity_raw = await analyze_complexity(
-        steps=steps_raw,
-        case=edge_case,
-        user_code=body.code,
-        problem_title=problem.get("title") or slug,
-    )
 
     inp_preview = case_input_text(edge_case)[:200] if judge_mode == "stdio" else str(edge_case.get("args", ""))[:200]
     exp_preview = case_output_text(edge_case)[:200] if judge_mode == "stdio" else str(edge_case.get("expected", ""))[:200]

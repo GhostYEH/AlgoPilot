@@ -11,6 +11,7 @@ from typing import Any
 
 from services.oj.compare import values_equal
 from services.oj.runner import CaseResult, RunSummary, _preview_args, _preview_value
+from utils.security import CPP_SECURITY_MESSAGE, CppSecurityViolation, check_cpp_security
 
 CPP_HELPERS = textwrap.dedent(
     """
@@ -404,6 +405,17 @@ def run_cases_cpp(
     results: list[CaseResult] = []
     passed = 0
     timeout_s = max(1, time_limit_ms / 1000)
+
+    try:
+        check_cpp_security(user_code)
+    except CppSecurityViolation as e:
+        return RunSummary(
+            verdict="CE",
+            passed=0,
+            total=len(cases),
+            cases=[],
+            compile_error=str(e),
+        )
 
     for idx, case in enumerate(cases):
         args = case.get("args", [])

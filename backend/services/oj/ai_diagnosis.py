@@ -344,33 +344,55 @@ async def diagnose_trace_bug(
     return out
 
 
+def _format_condensed_step(step_index: int, s: dict[str, Any]) -> dict[str, Any]:
+    changed = s.get("changed") or []
+    vars_brief: dict[str, str] = {}
+    for k in changed[:8]:
+        snap = (s.get("vars") or {}).get(k) or {}
+        t = snap.get("type", "?")
+        v = snap.get("value")
+        if t == "int":
+            vars_brief[k] = str(v)
+        elif t == "list" and isinstance(v, list):
+            vars_brief[k] = f"list[{len(v)}]"
+        elif t == "node_ref" and isinstance(v, dict):
+            vars_brief[k] = str(v.get("node"))
+        else:
+            vars_brief[k] = t
+    return {
+        "step_index": step_index,
+        "line": s.get("line"),
+        "changed": changed,
+        "vars_brief": vars_brief,
+    }
+
+
 def _condense_steps_for_diagnosis(steps: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    out: list[dict[str, Any]] = []
-    for i, s in enumerate(steps[:MAX_STEPS_IN_PROMPT]):
+    valid_steps: list[tuple[int, dict[str, Any]]] = []
+    for i, s in enumerate(steps):
         changed = s.get("changed") or []
-        if not changed and i > 0:
-            continue
-        vars_brief: dict[str, str] = {}
-        for k in changed[:8]:
-            snap = (s.get("vars") or {}).get(k) or {}
-            t = snap.get("type", "?")
-            v = snap.get("value")
-            if t == "int":
-                vars_brief[k] = str(v)
-            elif t == "list" and isinstance(v, list):
-                vars_brief[k] = f"list[{len(v)}]"
-            elif t == "node_ref" and isinstance(v, dict):
-                vars_brief[k] = str(v.get("node"))
-            else:
-                vars_brief[k] = t
-        out.append(
-            {
-                "step_index": i,
-                "line": s.get("line"),
-                "changed": changed,
-                "vars_brief": vars_brief,
-            }
-        )
+        if changed or i == 0:
+            valid_steps.append((i, s))
+
+    if len(valid_steps) <= MAX_STEPS_IN_PROMPT:
+        return [_format_condensed_step(i, s) for i, s in valid_steps]
+
+    head_count = 30
+    tail_count = 50
+    head = valid_steps[:head_count]
+    tail = valid_steps[-tail_count:]
+    omitted = len(valid_steps) - head_count - tail_count
+
+    gap_marker = {
+        "step_index": -1,
+        "line": None,
+        "changed": ["..."],
+        "vars_brief": {"...": f"由于长度限制，中间 {omitted} 步已省略"},
+    }
+
+    out = [_format_condensed_step(i, s) for i, s in head]
+    out.append(gap_marker)
+    out.extend(_format_condensed_step(i, s) for i, s in tail)
     return out
 
 
