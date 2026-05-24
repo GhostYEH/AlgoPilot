@@ -1,0 +1,66 @@
+/**
+ * 全局设计变量 — 暗色「终端 / IDE」风格，与 Element Plus html.dark 配套
+ */
+:root {
+  --alp-color-primary: #38bdf8;
+  --alp-color-primary-soft: rgba(56, 189, 248, 0.16);
+  --alp-color-accent: #818cf8;
+  --alp-color-text: #e8eef7;
+  --alp-color-muted: #94a3b8;
+  --alp-color-border: rgba(148, 163, 184, 0.22);
+  --alp-radius-card: 12px;
+  --alp-shadow-card: 0 12px 40px rgba(0, 0, 0, 0.45);
+  --alp-shadow-card-hover: 0 18px 52px rgba(56, 189, 248, 0.14);
+  --alp-header-height: 60px;
+  --alp-layout-padding-x: clamp(16px, 2.5vw, 40px);
+  --alp-layout-padding-y: 20px;
+  --alp-content-prose-max: 78ch;
+  --alp-aside-width: 248px;
+  --alp-transition-fast: 0.2s ease;
+
+  --alp-bg-page: #070b14;
+  --alp-bg-shell: radial-gradient(1200px 600px at 10% -10%, rgba(56, 189, 248, 0.12), transparent 55%),
+    radial-gradient(900px 480px at 90% 0%, rgba(129, 140, 248, 0.1), transparent 50%),
+    linear-gradient(180deg, #070b14 0%, #0b1220 38%, #0f172a 100%);
+  --alp-bg-header: rgba(11, 17, 28, 0.78);
+  --alp-bg-toolbar: rgba(15, 23, 42, 0.65);
+  --alp-bg-surface: rgba(30, 41, 59, 0.72);
+  --alp-bg-surface-solid: #151d2e;
+  --alp-bg-surface-muted: rgba(15, 23, 42, 0.75);
+  --alp-bg-soft-block: rgba(30, 41, 59, 0.55);
+  --alp-bg-main-panel: rgba(8, 12, 22, 0.35);
+  --alp-bg-aside-gradient: linear-gradient(180deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.92) 100%);
+  --alp-bg-nav: rgba(51, 65, 85, 0.35);
+  --alp-bg-nav-hover: rgba(56, 189, 248, 0.12);
+  --alp-bg-nav-active: rgba(56, 189, 248, 0.2);
+  --alp-bg-code-ish: rgba(15, 23, 42, 0.92);
+  --alp-bg-persona: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 55%, rgba(30, 27, 75, 0.35) 100%);
+  --alp-border-persona: rgba(129, 140, 248, 0.35);
+  --alp-nav-index-bg: #334155;
+  --alp-nav-index-fg: #cbd5e1;
+
+  /* 滚动条 — 科技风（原生 + Element Plus 共用） */
+  --alp-scrollbar-size: 6px;
+  --alp-scrollbar-size-hover: 8px;
+  --alp-scrollbar-track: rgba(7, 11, 20, 0.35);
+  --alp-scrollbar-thumb: rgba(56, 189, 248, 0.32);
+  --alp-scrollbar-thumb-hover: rgba(56, 189, 248, 0.72);
+  --alp-scrollbar-thumb-active: #38bdf8;
+  --alp-scrollbar-glow: 0 0 8px rgba(56, 189, 248, 0.35);
+  --alp-scrollbar-glow-hover: 0 0 12px rgba(56, 189, 248, 0.55), 0 0 4px rgba(129, 140, 248, 0.3);
+  --alp-scrollbar-gradient: linear-gradient(
+    180deg,
+    rgba(56, 189, 248, 0.65) 0%,
+    rgba(129, 140, 248, 0.5) 100%
+  );
+  --alp-scrollbar-gradient-hover: linear-gradient(
+    180deg,
+    rgba(56, 189, 248, 0.95) 0%,
+    rgba(129, 140, 248, 0.75) 100%
+  );
+
+  --el-scrollbar-opacity: 0.55;
+  --el-scrollbar-bg-color: rgba(56, 189, 248, 0.38);
+  --el-scrollbar-hover-opacity: 0.95;
+  --el-scrollbar-hover-bg-color: rgba(56, 189, 248, 0.82);
+}

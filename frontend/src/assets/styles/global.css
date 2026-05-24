@@ -1,0 +1,13 @@
+@import './reset.css';
+@import './variables.css';
+@import './scrollbar.css';
+@import './module-learn-shell.css';
+@import './anim-viz-reserve.css';
+@import './learn-viz.css';
+@import './learn-viz-motion.css';
+@import './auth-page.css';
+@import './page-transitions.css';
+@import './games.css';
+html {
+  color-scheme: dark;
+}

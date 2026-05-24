@@ -1,0 +1,62 @@
+=thread-group-added,id="i1"
+~"Reading symbols from C:\\Users\\32883\\AppData\\Local\\Temp\\tmp_ynwg7qp\\main.exe...\n"
+(gdb) 
+^done
+(gdb) 
+^done,bkpt={number="1",type="breakpoint",disp="keep",enabled="y",addr="0x00000001400014a6",func="main()",file="C:\\Users\\32883\\AppData\\Local\\Temp\\tmp_ynwg7qp\\main.cpp",fullname="C:\\Users\\32883\\AppData\\Local\\Temp\\tmp_ynwg7qp\\main.cpp",line="8",thread-groups=["i1"],times="0",original-location="main"}
+(gdb) 
+~"Starting program: C:\\Users\\32883\\AppData\\Local\\Temp\\tmp_ynwg7qp\\main.exe < C:/Users/32883/AppData/Local/Temp/tmp_ynwg7qp/input.txt\n"
+=thread-group-started,id="i1",pid="53412"
+=thread-created,id="1",group-id="i1"
+=thread-created,id="2",group-id="i1"
+~"[New Thread 53412.0xd210]\n"
+=thread-created,id="3",group-id="i1"
+~"[New Thread 53412.0xd204]\n"
+=thread-created,id="4",group-id="i1"
+~"[New Thread 53412.0xd214]\n"
+=breakpoint-modified,bkpt={number="1",type="breakpoint",disp="keep",enabled="y",addr="0x00007ff633ca14a6",func="main()",file="C:\\Users\\32883\\AppData\\Local\\Temp\\tmp_ynwg7qp\\main.cpp",fullname="C:\\Users\\32883\\AppData\\Local\\Temp\\tmp_ynwg7qp\\main.cpp",line="8",thread-groups=["i1"],times="0",original-location="main"}
+=library-loaded,id="C:\\Windows\\SYSTEM32\\ntdll.dll",target-name="C:\\Windows\\SYSTEM32\\ntdll.dll",host-name="C:\\Windows\\SYSTEM32\\ntdll.dll",symbols-loaded="0",thread-group="i1",ranges=[{from="0x00007ffed46e1000",to="0x00007ffed494680c"}]
+=library-loaded,id="C:\\Windows\\System32\\kernel32.dll",target-name="C:\\Windows\\System32\\kernel32.dll",host-name="C:\\Windows\\System32\\kernel32.dll",symbols-loaded="0",thread-group="i1",ranges=[{from="0x00007ffed2611000",to="0x00007ffed26d8610"}]
+=library-loaded,id="C:\\Windows\\System32\\KernelBase.dll",target-name="C:\\Windows\\System32\\KernelBase.dll",host-name="C:\\Windows\\System32\\KernelBase.dll",symbols-loaded="0",thread-group="i1",ranges=[{from="0x00007ffed1e81000",to="0x00007ffed2276da0"}]
+=library-loaded,id="C:\\Windows\\System32\\ucrtbase.dll",target-name="C:\\Windows\\System32\\ucrtbase.dll",host-name="C:\\Windows\\System32\\ucrtbase.dll",symbols-loaded="0",thread-group="i1",ranges=[{from="0x00007ffed1d31000",to="0x00007ffed1e7aec0"}]
+=library-loaded,id="H:\\Dev\\msys2\\ucrt64\\bin\\libstdc++-6.dll",target-name="H:\\Dev\\msys2\\ucrt64\\bin\\libstdc++-6.dll",host-name="H:\\Dev\\msys2\\ucrt64\\bin\\libstdc++-6.dll",symbols-loaded="0",thread-group="i1",ranges=[{from="0x00007ffd91a71000",to="0x00007ffd91ccc934"}]
+=library-loaded,id="H:\\Dev\\msys2\\ucrt64\\bin\\libgcc_s_seh-1.dll",target-name="H:\\Dev\\msys2\\ucrt64\\bin\\libgcc_s_seh-1.dll",host-name="H:\\Dev\\msys2\\ucrt64\\bin\\libgcc_s_seh-1.dll",symbols-loaded="0",thread-group="i1",ranges=[{from="0x00007ffe52bd1000",to="0x00007ffe52bfa04c"}]
+=library-loaded,id="H:\\Dev\\msys2\\ucrt64\\bin\\libwinpthread-1.dll",target-name="H:\\Dev\\msys2\\ucrt64\\bin\\libwinpthread-1.dll",host-name="H:\\Dev\\msys2\\ucrt64\\bin\\libwinpthread-1.dll",symbols-loaded="0",thread-group="i1",ranges=[{from="0x00007ffeb9361000",to="0x00007ffeb9374058"}]
+^running
+*running,thread-id="all"
+(gdb) 
+=library-loaded,id="C:\\Windows\\System32\\advapi32.dll",target-name="C:\\Windows\\System32\\advapi32.dll",host-name="C:\\Windows\\System32\\advapi32.dll",symbols-loaded="0",thread-group="i1",ranges=[{from="0x00007ffed43f1000",to="0x00007ffed44a5a8c"}]
+=library-loaded,id="C:\\Windows\\System32\\msvcrt.dll",target-name="C:\\Windows\\System32\\msvcrt.dll",host-name="C:\\Windows\\System32\\msvcrt.dll",symbols-loaded="0",thread-group="i1",ranges=[{from="0x00007ffed33d1000",to="0x00007ffed34785f4"}]
+=library-loaded,id="C:\\Windows\\System32\\sechost.dll",target-name="C:\\Windows\\System32\\sechost.dll",host-name="C:\\Windows\\System32\\sechost.dll",symbols-loaded="0",thread-group="i1",ranges=[{from="0x00007ffed3731000",to="0x00007ffed37d65b0"}]
+=library-loaded,id="C:\\Windows\\System32\\rpcrt4.dll",target-name="C:\\Windows\\System32\\rpcrt4.dll",host-name="C:\\Windows\\System32\\rpcrt4.dll",symbols-loaded="0",thread-group="i1",ranges=[{from="0x00007ffed3011000",to="0x00007ffed3127844"}]
+=library-loaded,id="C:\\Windows\\SYSTEM32\\cryptbase.dll",target-name="C:\\Windows\\SYSTEM32\\cryptbase.dll",host-name="C:\\Windows\\SYSTEM32\\cryptbase.dll",symbols-loaded="0",thread-group="i1",ranges=[{from="0x00007ffed0771000",to="0x00007ffed077b044"}]
+=library-loaded,id="C:\\Windows\\System32\\bcryptprimitives.dll",target-name="C:\\Windows\\System32\\bcryptprimitives.dll",host-name="C:\\Windows\\System32\\bcryptprimitives.dll",symbols-loaded="0",thread-group="i1",ranges=[{from="0x00007ffed2281000",to="0x00007ffed23277e4"}]
+=breakpoint-modified,bkpt={number="1",type="breakpoint",disp="keep",enabled="y",addr="0x00007ff633ca14a6",func="main()",file="C:\\Users\\32883\\AppData\\Local\\Temp\\tmp_ynwg7qp\\main.cpp",fullname="C:\\Users\\32883\\AppData\\Local\\Temp\\tmp_ynwg7qp\\main.cpp",line="8",thread-groups=["i1"],times="1",original-location="main"}
+~"\n"
+~"Thread 1 hit Breakpoint 1, main () at C:\\Users\\32883\\AppData\\Local\\Temp\\tmp_ynwg7qp\\main.cpp:8\n"
+~"8\t    ios::sync_with_stdio(false);\n"
+*stopped,reason="breakpoint-hit",disp="keep",bkptno="1",frame={addr="0x00007ff633ca14a6",func="main",args=[],file="C:\\Users\\32883\\AppData\\Local\\Temp\\tmp_ynwg7qp\\main.cpp",fullname="C:\\Users\\32883\\AppData\\Local\\Temp\\tmp_ynwg7qp\\main.cpp",line="8",arch="i386:x86-64"},thread-id="1",stopped-threads="all"
+(gdb) 
+^done,variables=[{name="n",value="-774207833"},{name="nums",value="std::vector of length 1268669812, capacity 1267097054 = {-1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, 1871461358, 61495, 0, 0, -773324800, 32766, 0, 0, 0, 0, 0, 0, -773324800, 32766, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -734068736, 32766, 0, 0, 0, 0, 0, 0, -765394944, 32766, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0...}"},{name="target",value="0"},{name="num_map",value="std::unordered_map with 140732419967168 elements"}]
+(gdb) 
+^running
+*running,thread-id="all"
+(gdb) 
+*stopped,reason="end-stepping-range",frame={addr="0x00007ff633ca14b0",func="main",args=[],file="C:\\Users\\32883\\AppData\\Local\\Temp\\tmp_ynwg7qp\\main.cpp",fullname="C:\\Users\\32883\\AppData\\Local\\Temp\\tmp_ynwg7qp\\main.cpp",line="9",arch="i386:x86-64"},thread-id="1",stopped-threads="all"
+(gdb) 
+^done,variables=[{name="n",value="-774207833"},{name="nums",value="std::vector of length 1268669812, capacity 1267097054 = {-1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, 1871461358, 61495, 0, 0, -773324800, 32766, 0, 0, 0, 0, 0, 0, -773324800, 32766, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -734068736, 32766, 0, 0, 0, 0, 0, 0, -765394944, 32766, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0...}"},{name="target",value="0"},{name="num_map",value="std::unordered_map with 140732419967168 elements"}]
+(gdb) 
+^running
+*running,thread-id="all"
+(gdb) 
+*stopped,reason="end-stepping-range",frame={addr="0x00007ff633ca14c8",func="main",args=[],file="C:\\Users\\32883\\AppData\\Local\\Temp\\tmp_ynwg7qp\\main.cpp",fullname="C:\\Users\\32883\\AppData\\Local\\Temp\\tmp_ynwg7qp\\main.cpp",line="12",arch="i386:x86-64"},thread-id="1",stopped-threads="all"
+(gdb) 
+^done,variables=[{name="n",value="-774207833"},{name="nums",value="std::vector of length 1268669812, capacity 1267097054 = {-1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, -1, -1, -1, 0, 0, 0, 0, 0, 4000, 0, 1871461358, 61495, 0, 0, -773324800, 32766, 0, 0, 0, 0, 0, 0, -773324800, 32766, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -734068736, 32766, 0, 0, 0, 0, 0, 0, -765394944, 32766, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0...}"},{name="target",value="0"},{name="num_map",value="std::unordered_map with 140732419967168 elements"}]
+(gdb) 
+^exit
+=thread-exited,id="1",group-id="i1"
+=thread-exited,id="2",group-id="i1"
+=thread-exited,id="3",group-id="i1"
+=thread-exited,id="4",group-id="i1"
+=thread-group-exited,id="i1"
+

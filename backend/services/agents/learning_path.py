@@ -1,0 +1,264 @@
+"""学习路径 Agent：启发式 DAG 规划为主，LLM 润色为辅。"""
+
+from __future__ import annotations
+
+import json
+import re
+
+from schemas.learning_path import LearningPathReplanRequest, ModuleProgressInput, PathStepItem
+from services.agents.base import BaseAgent
+from services.agents.learning_path_catalog import (
+    DEFAULT_ORDER,
+    MODULE_CATALOG,
+    MODULE_DEPENDENCIES,
+    PHASE_LABELS,
+    PHASE_RANK,
+    VALID_MODULE_KEYS,
+)
+from services.llm import chat_completion
+
+PATH_SYSTEM = """你是「学习路径 Agent」，为大一计科「数据结构与算法」课程**润色**个性化学习路径说明。
+
+## 规则
+1. 不得改变用户消息中 ordered_keys 的顺序（已由系统按依赖与进度排好）。
+2. 仅输出 summary、rationale、next_module_key 及各 step 的 reason（15字内）。
+3. 输出**唯一** JSON，不要 markdown 代码块：
+{
+  "summary": "一句话路径策略",
+  "rationale": "80～150字说明为何这样排序",
+  "next_module_key": "建议下一步 module_key",
+  "steps": [{"module_key": "array", "rank": 1, "reason": "…", "phase": "foundation"}]
+}"""
+
+
+class LearningPathAgent(BaseAgent):
+    name = "LearningPathAgent"
+    role = "学习路径规划"
+
+    def build_messages(
+        self,
+        *,
+        profile_block: str,
+        request: LearningPathReplanRequest,
+        ordered_keys: list[str],
+    ) -> list[dict[str, str]]:
+        progress_lines = []
+        for m in request.modules:
+            status = f"{m.percent}%"
+            if m.total_count:
+                status += f"，{m.done_count}/{m.total_count} 小节"
+            progress_lines.append(
+                f"- {m.key} ({m.label}): {status}，阶段={m.phase}，available={m.available}"
+            )
+        user = "\n".join(
+            [
+                f"学生画像：\n{profile_block}",
+                f"整体进度：{request.overall_percent}%",
+                "模块进度：\n" + ("\n".join(progress_lines) if progress_lines else "（无）"),
+                f"已排好顺序（勿改动）：{ordered_keys}",
+                "请仅润色 summary/rationale/next_module_key 与各 step.reason。",
+            ]
+        )
+        return [{"role": "system", "content": PATH_SYSTEM}, {"role": "user", "content": user}]
+
+    def temperature(self) -> float:
+        return 0.35
+
+    def max_tokens(self) -> int:
+        return 1200
+
+    async def plan(
+        self,
+        *,
+        profile_block: str,
+        request: LearningPathReplanRequest,
+    ) -> dict:
+        base = _heuristic_plan(profile_block, request)
+        ordered = _topo_sort_keys(base["ordered_keys"])
+        base["ordered_keys"] = ordered
+        base["steps"] = _rebuild_steps(ordered, base["steps"], request)
+        base["next_module_key"] = _pick_next(ordered, {m.key: m for m in request.modules})
+
+        try:
+            messages = self.build_messages(
+                profile_block=profile_block, request=request, ordered_keys=ordered
+            )
+            raw = await chat_completion(
+                messages, temperature=self.temperature(), max_tokens=self.max_tokens()
+            )
+            llm = _parse_plan_json(raw)
+            base["summary"] = str(llm.get("summary") or base["summary"]).strip()
+            base["rationale"] = str(llm.get("rationale") or base["rationale"]).strip()
+            nk = llm.get("next_module_key")
+            if nk in VALID_MODULE_KEYS:
+                base["next_module_key"] = nk
+            for step in base["steps"]:
+                item = next(
+                    (s for s in llm.get("steps") or [] if s.get("module_key") == step["module_key"]),
+                    None,
+                )
+                if item and item.get("reason"):
+                    step["reason"] = str(item["reason"]).strip()[:40]
+        except Exception:
+            pass
+        return base
+
+
+def _parse_plan_json(raw: str) -> dict:
+    text = raw.strip()
+    fence = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
+    if fence:
+        text = fence.group(1).strip()
+    start, end = text.find("{"), text.rfind("}")
+    if start < 0 or end <= start:
+        raise ValueError("no json")
+    return json.loads(text[start : end + 1])
+
+
+def _topo_sort_keys(keys: list[str]) -> list[str]:
+    """拓扑排序，保证依赖模块在前。"""
+    keys_set = set(keys)
+    indeg = {k: 0 for k in keys}
+    adj: dict[str, list[str]] = {k: [] for k in keys}
+    for k in keys:
+        for dep in MODULE_DEPENDENCIES.get(k, []):
+            if dep in keys_set:
+                indeg[k] += 1
+                adj[dep].append(k)
+    queue = [k for k in keys if indeg[k] == 0]
+    queue.sort(key=lambda x: DEFAULT_ORDER.index(x) if x in DEFAULT_ORDER else 99)
+    out: list[str] = []
+    while queue:
+        n = queue.pop(0)
+        out.append(n)
+        for nxt in adj.get(n, []):
+            indeg[nxt] -= 1
+            if indeg[nxt] == 0:
+                queue.append(nxt)
+        queue.sort(key=lambda x: DEFAULT_ORDER.index(x) if x in DEFAULT_ORDER else 99)
+    for k in keys:
+        if k not in out:
+            out.append(k)
+    return out
+
+
+def _is_topo_valid(ordered: list[str]) -> bool:
+    seen: set[str] = set()
+    for k in ordered:
+        for dep in MODULE_DEPENDENCIES.get(k, []):
+            if dep in VALID_MODULE_KEYS and dep not in seen and dep in ordered:
+                return False
+        seen.add(k)
+    return True
+
+
+def _rebuild_steps(
+    ordered: list[str], old_steps: list[dict], request: LearningPathReplanRequest
+) -> list[dict]:
+    progress_map = {m.key: m for m in request.modules}
+    old_map = {s["module_key"]: s for s in old_steps}
+    steps = []
+    for i, key in enumerate(ordered, start=1):
+        prev = old_map.get(key, {})
+        m = progress_map.get(key)
+        phase = prev.get("phase") or (m.phase if m else "")
+        for c in MODULE_CATALOG:
+            if c["key"] == key:
+                phase = phase or c["phase"]
+                break
+        steps.append(
+            {
+                "module_key": key,
+                "rank": i,
+                "reason": prev.get("reason") or _default_reason(key, m),
+                "phase": phase,
+            }
+        )
+    return steps
+
+
+def _extract_weak_keys(profile_block: str) -> set[str]:
+    keys: set[str] = set()
+    for c in MODULE_CATALOG:
+        if c["key"] in profile_block or c["label"] in profile_block:
+            keys.add(c["key"])
+    return keys
+
+
+def _heuristic_plan(profile_block: str, request: LearningPathReplanRequest) -> dict:
+    progress_map = {m.key: m for m in request.modules}
+    weak_keys = _extract_weak_keys(profile_block)
+
+    def score(key: str) -> tuple[int, int, int, int]:
+        m = progress_map.get(key)
+        pct = m.percent if m else 0
+        phase_rank = PHASE_RANK.get(
+            next((c["phase"] for c in MODULE_CATALOG if c["key"] == key), ""), 9
+        )
+        avail_penalty = 1 if (m and not m.available) or key == "graph" else 0
+        weak_bonus = 0 if key in weak_keys else 1
+        if pct >= 100:
+            return (3, 100, phase_rank, DEFAULT_ORDER.index(key))
+        if pct > 0:
+            return (0, pct, phase_rank * 10 + weak_bonus, DEFAULT_ORDER.index(key))
+        return (1, 50 + (0 if key in weak_keys else 20), phase_rank, DEFAULT_ORDER.index(key))
+
+    ordered = sorted(
+        [k for k in DEFAULT_ORDER if k in VALID_MODULE_KEYS],
+        key=score,
+    )
+    ordered = _topo_sort_keys(ordered)
+    steps = []
+    for i, key in enumerate(ordered, start=1):
+        m = progress_map.get(key)
+        steps.append(
+            {
+                "module_key": key,
+                "rank": i,
+                "reason": _default_reason(key, m),
+                "phase": next((c["phase"] for c in MODULE_CATALOG if c["key"] == key), ""),
+            }
+        )
+    return {
+        "summary": "基于模块依赖 DAG 与画像薄弱点的启发式路径",
+        "rationale": "已用拓扑排序保证先修关系；优先未完成且与薄弱点匹配的模块，已完成模块后置。",
+        "next_module_key": _pick_next(ordered, progress_map),
+        "ordered_keys": ordered,
+        "steps": steps,
+    }
+
+
+def _default_reason(key: str, m: ModuleProgressInput | None) -> str:
+    if m and m.percent >= 100:
+        return "已完成，可复习巩固"
+    if m and m.percent > 0:
+        return "进行中，建议优先推进"
+    if key == "graph":
+        return "课程规划中"
+    return "匹配学习目标与薄弱点"
+
+
+def _pick_next(ordered: list[str], progress_map: dict[str, ModuleProgressInput]) -> str | None:
+    """难度平滑：同阶段优先，避免跨阶段跃迁。"""
+    last_phase: str | None = None
+    for key in ordered:
+        m = progress_map.get(key)
+        if not m or not m.available:
+            continue
+        if m.percent >= 100:
+            last_phase = m.phase or last_phase
+            continue
+        phase = m.phase or next((c["phase"] for c in MODULE_CATALOG if c["key"] == key), "")
+        if last_phase and PHASE_RANK.get(phase, 0) - PHASE_RANK.get(last_phase, 0) > 1:
+            continue
+        return key
+    for key in ordered:
+        m = progress_map.get(key)
+        if m and m.available and m.percent < 100:
+            return key
+    for key in ordered:
+        m = progress_map.get(key)
+        if m and m.available:
+            return key
+    return ordered[0] if ordered else None
+

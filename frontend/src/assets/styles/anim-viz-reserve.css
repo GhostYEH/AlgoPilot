@@ -1,0 +1,290 @@
+/**
+ * 学习页动画区：为竖向（或会增高的）演示预留固定槽位，避免步进时整页跳动。
+ * 用法：在容器上加 alp-vslots-N（N=最大格数），竖向栈体可加 alp-vstack-body。
+ */
+
+.module-learn-shell {
+  --alp-vcell-lg: 46px;
+  --alp-vcell-md: 32px;
+  --alp-vgap-lg: 8px;
+  --alp-vgap-md: 4px;
+  --alp-voverlay: 44px;
+  --alp-hcell: 40px;
+  --alp-hgap: 10px;
+  --alp-hpad: 20px;
+}
+
+/* ---------- 槽位规模（设置 --alp-vs / --alp-vc / --alp-vg） ---------- */
+.module-learn-shell .alp-vslots-2 {
+  --alp-vs: 2;
+  --alp-vc: var(--alp-vcell-md);
+  --alp-vg: var(--alp-vgap-md);
+}
+
+.module-learn-shell .alp-vslots-3 {
+  --alp-vs: 3;
+  --alp-vc: var(--alp-vcell-lg);
+  --alp-vg: var(--alp-vgap-lg);
+}
+
+.module-learn-shell .alp-vslots-4 {
+  --alp-vs: 4;
+  --alp-vc: var(--alp-vcell-md);
+  --alp-vg: var(--alp-vgap-md);
+}
+
+.module-learn-shell .alp-vslots-5 {
+  --alp-vs: 5;
+  --alp-vc: var(--alp-vcell-md);
+  --alp-vg: var(--alp-vgap-md);
+}
+
+/* 横向栈体：固定宽度，元素自左向右（栈底→栈顶） */
+.module-learn-shell .alp-hslots-3 {
+  --alp-hs: 3;
+  --alp-hc: var(--alp-hcell);
+  --alp-hg: var(--alp-hgap);
+}
+
+.module-learn-shell .alp-hslots-4 {
+  --alp-hs: 4;
+  --alp-hc: var(--alp-hcell);
+  --alp-hg: var(--alp-hgap);
+}
+
+.module-learn-shell .alp-hstack-body {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: var(--alp-hg, var(--alp-hgap));
+  box-sizing: border-box;
+  width: calc(
+    var(--alp-hs, 3) * var(--alp-hc, var(--alp-hcell)) +
+      (var(--alp-hs, 3) - 1) * var(--alp-hg, var(--alp-hgap)) +
+      var(--alp-hpad, 20px)
+  );
+  min-width: calc(
+    var(--alp-hs, 3) * var(--alp-hc, var(--alp-hcell)) +
+      (var(--alp-hs, 3) - 1) * var(--alp-hg, var(--alp-hgap)) +
+      var(--alp-hpad, 20px)
+  );
+  max-width: calc(
+    var(--alp-hs, 3) * var(--alp-hc, var(--alp-hcell)) +
+      (var(--alp-hs, 3) - 1) * var(--alp-hg, var(--alp-hgap)) +
+      var(--alp-hpad, 20px)
+  );
+  min-height: calc(var(--alp-hc, var(--alp-hcell)) + 12px);
+  height: calc(var(--alp-hc, var(--alp-hcell)) + 12px);
+  max-height: calc(var(--alp-hc, var(--alp-hcell)) + 12px);
+}
+
+/* 竖向栈体：固定高度，元素自底向上叠放 */
+.module-learn-shell .alp-vstack-body {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--alp-vg, var(--alp-vgap-lg));
+  box-sizing: border-box;
+  height: calc(
+    var(--alp-vs, 3) * var(--alp-vc, var(--alp-vcell-lg)) +
+      (var(--alp-vs, 3) - 1) * var(--alp-vg, var(--alp-vgap-lg)) +
+      var(--alp-vpad, 20px)
+  );
+  min-height: calc(
+    var(--alp-vs, 3) * var(--alp-vc, var(--alp-vcell-lg)) +
+      (var(--alp-vs, 3) - 1) * var(--alp-vg, var(--alp-vgap-lg)) +
+      var(--alp-vpad, 20px)
+  );
+  max-height: calc(
+    var(--alp-vs, 3) * var(--alp-vc, var(--alp-vcell-lg)) +
+      (var(--alp-vs, 3) - 1) * var(--alp-vg, var(--alp-vgap-lg)) +
+      var(--alp-vpad, 20px)
+  );
+}
+
+/* 演示舞台：固定高度 + 浮层（pop 等）不占文档流 */
+.module-learn-shell .alp-vstage {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.module-learn-shell .alp-vstage.alp-vslots-3 {
+  --alp-vpad-extra: 88px;
+  height: calc(
+    var(--alp-voverlay, 44px) + var(--alp-vpad-extra) +
+      var(--alp-vs) * var(--alp-vc) + (var(--alp-vs) - 1) * var(--alp-vg)
+  );
+  min-height: calc(
+    var(--alp-voverlay, 44px) + var(--alp-vpad-extra) +
+      var(--alp-vs) * var(--alp-vc) + (var(--alp-vs) - 1) * var(--alp-vg)
+  );
+  max-height: calc(
+    var(--alp-voverlay, 44px) + var(--alp-vpad-extra) +
+      var(--alp-vs) * var(--alp-vc) + (var(--alp-vs) - 1) * var(--alp-vg)
+  );
+}
+
+.module-learn-shell .alp-vstage.alp-vslots-4,
+.module-learn-shell .alp-vstage.alp-vslots-5 {
+  --alp-vpad-extra: 48px;
+  height: calc(
+    var(--alp-voverlay, 0px) + var(--alp-vpad-extra) +
+      var(--alp-vs) * var(--alp-vc) + (var(--alp-vs) - 1) * var(--alp-vg)
+  );
+  min-height: calc(
+    var(--alp-voverlay, 0px) + var(--alp-vpad-extra) +
+      var(--alp-vs) * var(--alp-vc) + (var(--alp-vs) - 1) * var(--alp-vg)
+  );
+  max-height: calc(
+    var(--alp-voverlay, 0px) + var(--alp-vpad-extra) +
+      var(--alp-vs) * var(--alp-vc) + (var(--alp-vs) - 1) * var(--alp-vg)
+  );
+}
+
+.module-learn-shell .alp-voverlay {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  z-index: 3;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* 横向队列/双端：固定宽度槽位（可选） */
+.module-learn-shell .alp-hstage {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.module-learn-shell .alp-hstage.alp-hslots-4 {
+  --alp-hs: 4;
+  --alp-hc: 46px;
+  --alp-hg: 14px;
+  --alp-hpad: 48px;
+  min-height: calc(var(--alp-hc) + var(--alp-hpad));
+  height: calc(var(--alp-hc) + var(--alp-hpad));
+}
+
+.module-learn-shell .alp-hlane {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  min-width: calc(
+    var(--alp-hs, 4) * var(--alp-hc, 46px) + (var(--alp-hs, 4) - 1) * var(--alp-hg, 14px)
+  );
+  min-height: var(--alp-hc, 46px);
+}
+
+/* ---------- 全局：常见竖向栈结构（未单独标注时） ---------- */
+.module-learn-shell .stack-well-body {
+  --alp-vs: 3;
+  --alp-vc: var(--alp-vcell-lg);
+  --alp-vg: var(--alp-vgap-lg);
+  --alp-vpad: 20px;
+}
+
+.module-learn-shell .step-anim .stack-box,
+.module-learn-shell .step-anim .stack-col {
+  --alp-vs: 4;
+  --alp-vc: var(--alp-vcell-md);
+  --alp-vg: var(--alp-vgap-md);
+  --alp-vpad: 16px;
+}
+
+.module-learn-shell .stack-well-body,
+.module-learn-shell .step-anim .stack-box,
+.module-learn-shell .step-anim .stack-col {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--alp-vg);
+  height: calc(
+    var(--alp-vs) * var(--alp-vc) + (var(--alp-vs) - 1) * var(--alp-vg) + var(--alp-vpad)
+  );
+  min-height: calc(
+    var(--alp-vs) * var(--alp-vc) + (var(--alp-vs) - 1) * var(--alp-vg) + var(--alp-vpad)
+  );
+  max-height: calc(
+    var(--alp-vs) * var(--alp-vc) + (var(--alp-vs) - 1) * var(--alp-vg) + var(--alp-vpad)
+  );
+}
+
+.module-learn-shell .step-anim .stack-panel .stack-box {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  min-height: 52px;
+  height: auto;
+  max-height: none;
+}
+
+/* 决策树等纵向 v-if 展开 */
+.module-learn-shell .step-anim .tree-panel {
+  align-items: flex-start;
+  min-height: 200px;
+}
+
+.module-learn-shell .step-anim .tree-col:not(.side) {
+  min-height: 188px;
+  justify-content: flex-start;
+}
+
+/* SteppedAnimShell 内舞台 */
+.module-learn-shell .step-anim .anim-viz-stage {
+  position: relative;
+  width: 100%;
+}
+
+.module-learn-shell .step-anim .anim-viz-stage > .panel {
+  flex: 0 0 auto;
+}
+
+.module-learn-shell .step-anim .panel {
+  min-height: 96px;
+}
+
+/* 理论基础三列：高度由组件内 .sq-viz-stage 统一控制 */
+.module-learn-shell .sq-theory-card .sq-viz-stage {
+  flex: 1 1 auto;
+}
+
+.module-learn-shell .sq-theory-card .viz-stage--queue,
+.module-learn-shell .sq-theory-card .viz-stage--deque {
+  min-height: unset;
+  height: auto;
+  max-height: none;
+}
+
+.module-learn-shell .sq-theory-card .sq-viz-float {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  z-index: 3;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .module-learn-shell .viz-stage--stack .viz-cell--float,
+  .module-learn-shell .viz-stage--stack .stack-float-pop {
+    animation: none;
+  }
+}

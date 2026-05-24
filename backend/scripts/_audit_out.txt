@@ -1,0 +1,107 @@
+﻿=== OJ 审计摘要 ===
+catalog: 120
+有测例 (tests_bundle): 57
+public bundle: 57 (stdio: 57)
+dist bundle: 57 (leetcode: 0)
+public/dist keys 一致: True
+课程 practice slug: 131
+课程中可提交 OJ: 57
+课程中仅离线预览: 74
+
+各模块「有课程链接但无测例」:
+  array: 4 题
+  backtracking: 3 题
+  binaryTree: 31 题
+  dp: 2 题
+  greedy: 3 题
+  hashTable: 5 题
+  linkedList: 7 题
+  monotonicStack: 1 题
+  string: 15 题
+  twoPointers: 3 题
+
+=== 可提交 OJ 题目（按模块）===
+array (11)
+  LC   26  remove-duplicates-from-sorted-array
+  LC   27  remove-element
+  LC   35  search-insert-position
+  LC   59  spiral-matrix-ii
+  LC   69  sqrtx
+  LC  209  minimum-size-subarray-sum
+  LC  283  move-zeroes
+  LC  704  binary-search
+  LC  844  backspace-string-compare
+  LC  904  fruit-into-baskets
+  LC  977  squares-of-a-sorted-array
+backtracking (4)
+  LC   46  permutations
+  LC   77  combinations
+  LC   78  subsets
+  LC  131  palindrome-partitioning
+binaryTree (7)
+  LC   98  validate-binary-search-tree
+  LC  100  same-tree
+  LC  101  symmetric-tree
+  LC  102  binary-tree-level-order-traversal
+  LC  104  maximum-depth-of-binary-tree
+  LC  112  path-sum
+  LC  226  invert-binary-tree
+dp (5)
+  LC   70  climbing-stairs
+  LC  300  longest-increasing-subsequence
+  LC  322  coin-change
+  LC  322  coin-change
+  LC  509  fibonacci-number
+greedy (5)
+  LC   55  jump-game
+  LC  121  best-time-to-buy-and-sell-stock
+  LC  134  gas-station
+  LC  435  non-overlapping-intervals
+  LC  455  assign-cookies
+hashTable (8)
+  LC    1  two-sum
+  LC   15  3sum
+  LC  202  happy-number
+  LC  242  valid-anagram
+  LC  349  intersection-of-two-arrays
+  LC  383  ransom-note
+  LC  383  ransom-note
+  LC  454  4sum-ii
+linkedList (6)
+  LC  141  linked-list-cycle
+  LC  142  linked-list-cycle-ii
+  LC  160  intersection-of-two-linked-lists
+  LC  203  remove-linked-list-elements
+  LC  206  reverse-linked-list
+  LC  876  middle-of-the-linked-list
+monotonicStack (4)
+  LC   42  trapping-rain-water
+  LC   84  largest-rectangle-in-histogram
+  LC  496  next-greater-element-i
+  LC  739  daily-temperatures
+stackQueue (8)
+  LC   20  valid-parentheses
+  LC  150  evaluate-reverse-polish-notation
+  LC  225  implement-stack-using-queues
+  LC  232  implement-queue-using-stacks
+  LC  239  sliding-window-maximum
+  LC  347  top-k-frequent-elements
+  LC 1047  remove-all-adjacent-duplicates-in-string
+  LC 1047  remove-all-adjacent-duplicates-in-string
+string (3)
+  LC   27  remove-element
+  LC  344  reverse-string
+  LC  844  backspace-string-compare
+twoPointers (12)
+  LC    5  replace-space-lcof
+  LC   15  3sum
+  LC   26  remove-duplicates-from-sorted-array
+  LC   27  remove-element
+  LC  141  linked-list-cycle
+  LC  142  linked-list-cycle-ii
+  LC  160  intersection-of-two-linked-lists
+  LC  206  reverse-linked-list
+  LC  283  move-zeroes
+  LC  344  reverse-string
+  LC  844  backspace-string-compare
+  LC  977  squares-of-a-sorted-array

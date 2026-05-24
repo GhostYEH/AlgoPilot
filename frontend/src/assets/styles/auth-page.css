@@ -1,0 +1,159 @@
+/**
+ * 登录 / 注册页公共样式（AuthPageFrame + 表单卡片）
+ */
+
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 28px 28px 26px;
+  border-radius: 16px;
+  border: 1px solid var(--alp-color-border);
+  background: linear-gradient(
+    165deg,
+    rgba(30, 41, 59, 0.92) 0%,
+    rgba(15, 23, 42, 0.96) 100%
+  );
+  box-shadow:
+    var(--alp-shadow-card),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px);
+}
+
+.auth-card-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--alp-color-primary);
+  background: var(--alp-color-primary-soft);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  border-radius: 999px;
+}
+
+.auth-card-title {
+  margin: 0 0 8px;
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--alp-color-text);
+}
+
+.auth-card-sub {
+  margin: 0 0 22px;
+  font-size: 14px;
+  color: var(--alp-color-muted);
+  line-height: 1.6;
+}
+
+.auth-form {
+  margin-top: 0;
+}
+
+.auth-form .el-form-item {
+  margin-bottom: 18px;
+}
+
+.auth-form .btn-row {
+  margin-bottom: 0;
+  margin-top: 6px;
+}
+
+.auth-form .submit {
+  width: 100%;
+  height: 44px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: none;
+  background: linear-gradient(135deg, var(--alp-color-primary), #0ea5e9);
+  box-shadow: 0 4px 20px rgba(56, 189, 248, 0.35);
+  transition:
+    transform var(--alp-transition-fast),
+    box-shadow var(--alp-transition-fast),
+    filter var(--alp-transition-fast);
+}
+
+.auth-form .submit:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 6px 28px rgba(56, 189, 248, 0.45);
+  transform: translateY(-1px);
+}
+
+.auth-form .submit:active {
+  transform: translateY(0);
+}
+
+.auth-card-footer {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--alp-color-border);
+  font-size: 13px;
+  text-align: center;
+  line-height: 1.6;
+}
+
+.auth-card-footer .muted {
+  color: var(--alp-color-muted);
+}
+
+.auth-card-footer .link {
+  color: var(--alp-color-primary);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color var(--alp-transition-fast);
+}
+
+.auth-card-footer .link:hover {
+  color: #7dd3fc;
+  text-decoration: underline;
+}
+
+.auth-card-footer .sep {
+  margin: 0 10px;
+  color: var(--alp-color-muted);
+  opacity: 0.45;
+}
+
+.auth-form .el-form-item__label {
+  color: var(--alp-color-muted) !important;
+  font-weight: 600;
+  font-size: 13px;
+  padding-bottom: 6px;
+}
+
+.auth-form .el-input__wrapper {
+  border-radius: 10px;
+  background: var(--alp-bg-code-ish) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition:
+    border-color var(--alp-transition-fast),
+    box-shadow var(--alp-transition-fast);
+}
+
+.auth-form .el-input__wrapper:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(56, 189, 248, 0.2);
+}
+
+.auth-form .el-input__wrapper.is-focus {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 2px rgba(56, 189, 248, 0.35);
+}
+
+.auth-form .el-input__prefix {
+  color: var(--alp-color-muted);
+}
+
+.auth-form .el-form-item__error {
+  color: #f87171;
+  font-size: 12px;
+  line-height: 1.4;
+  padding-top: 4px;
+}

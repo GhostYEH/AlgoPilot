@@ -1,0 +1,271 @@
+/**
+ * 学习示意动画：流畅 + 稳定（仅 transform/opacity，预留槽位不变）
+ */
+
+.module-learn-shell {
+  --lv-dur-fast: 0.22s;
+  --lv-dur-m: 0.38s;
+  --lv-dur-slow: 0.55s;
+  --lv-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --lv-ease-spring: cubic-bezier(0.34, 1.25, 0.64, 1);
+}
+
+/* 布局隔离，减少子元素动画触发外层重排 */
+.module-learn-shell .learn-viz-stage,
+.module-learn-shell .sq-viz-stage,
+.module-learn-shell .alp-vstack-body,
+.module-learn-shell .learn-stack-body,
+.module-learn-shell .step-anim .anim-viz-stage,
+.module-learn-shell .queue-lane-wrap {
+  contain: layout style;
+}
+
+/* ---------- 格子状态过渡（GPU） ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .module-learn-shell .learn-viz-cell,
+  .module-learn-shell .step-anim .cell,
+  .module-learn-shell .anim-root .cell,
+  .module-learn-shell .ll-anim .node,
+  .module-learn-shell .tp-anim .cell,
+  .module-learn-shell .str-anim .cell,
+  .module-learn-shell .str-anim .chip,
+  .module-learn-shell .ht-anim .ht-cell,
+  .module-learn-shell .sq-theory-card .viz-cell {
+    transition:
+      transform var(--lv-dur-m) var(--lv-ease-out),
+      opacity var(--lv-dur-m) var(--lv-ease-out),
+      border-color var(--lv-dur-m) ease,
+      box-shadow var(--lv-dur-m) ease,
+      background-color var(--lv-dur-m) ease;
+  }
+
+  .module-learn-shell .learn-viz-cell--hot,
+  .module-learn-shell .step-anim .cell.hot,
+  .module-learn-shell .anim-root .cell.hot,
+  .module-learn-shell .ll-anim .node.hot,
+  .module-learn-shell .tp-anim .cell.hot,
+  .module-learn-shell .str-anim .cell.hot,
+  .module-learn-shell .ht-anim .ht-cell--hot,
+  .module-learn-shell .sq-theory-card .viz-cell--hot {
+    animation: lv-hot-glow 1.85s ease-in-out infinite;
+  }
+
+  .module-learn-shell .learn-viz-transfer,
+  .module-learn-shell .step-anim .arrow,
+  .module-learn-shell .learn-viz-arrow {
+    animation: lv-arrow-flow 1.35s ease-in-out infinite;
+  }
+
+  .module-learn-shell .learn-viz-op--push {
+    animation: lv-op-nudge-up 1.6s ease-in-out infinite;
+  }
+
+  .module-learn-shell .learn-viz-op--pop {
+    animation: lv-op-nudge-down 1.6s ease-in-out infinite;
+  }
+
+  .module-learn-shell .learn-viz-op--push-h {
+    animation: lv-op-nudge-right 1.6s ease-in-out infinite;
+  }
+
+  .module-learn-shell .learn-viz-op--pop-h {
+    animation: lv-op-nudge-left 1.6s ease-in-out infinite;
+  }
+
+  .module-learn-shell .viz-cell--float,
+  .module-learn-shell .viz-cell--ghost.queue-ghost,
+  .module-learn-shell .learn-viz-cell--ghost {
+    animation: lv-float-rise var(--lv-dur-slow) var(--lv-ease-out) forwards;
+  }
+
+  .module-learn-shell .viz-stage--stack .stack-float-pop {
+    animation: lv-float-shift-right var(--lv-dur-slow) var(--lv-ease-out) forwards;
+  }
+
+  .module-learn-shell .step-anim .step-desc.step-desc--pulse {
+    animation: lv-hint-pulse 0.55s var(--lv-ease-out);
+  }
+
+  .module-learn-shell .learn-stack-well,
+  .module-learn-shell .stack-well,
+  .module-learn-shell .queue-well,
+  .module-learn-shell .deque-well {
+    transition:
+      border-color var(--lv-dur-m) ease,
+      box-shadow var(--lv-dur-m) ease;
+  }
+
+  .module-learn-shell .deque-well--active {
+    animation: lv-deque-active 1.2s ease-in-out infinite;
+  }
+}
+
+@keyframes lv-hot-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 4px 14px rgba(0, 0, 0, 0.28),
+      0 0 0 4px color-mix(in srgb, var(--alp-color-primary, #38bdf8) 20%, transparent);
+  }
+
+  50% {
+    box-shadow:
+      0 6px 18px rgba(0, 0, 0, 0.32),
+      0 0 0 7px color-mix(in srgb, var(--alp-color-primary, #38bdf8) 32%, transparent);
+  }
+}
+
+@keyframes lv-arrow-flow {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: translateX(0);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateX(3px);
+  }
+}
+
+@keyframes lv-op-nudge-up {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes lv-op-nudge-down {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(3px);
+  }
+}
+
+@keyframes lv-float-rise {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1.05);
+  }
+
+  to {
+    opacity: 0.35;
+    transform: translateY(-28px) scale(0.96);
+  }
+}
+
+@keyframes lv-float-shift-right {
+  from {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0) scale(1.05);
+  }
+
+  to {
+    opacity: 0.35;
+    transform: translateY(-50%) translateX(28px) scale(0.96);
+  }
+}
+
+@keyframes lv-op-nudge-right {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  50% {
+    transform: translateX(3px);
+  }
+}
+
+@keyframes lv-op-nudge-left {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  50% {
+    transform: translateX(-3px);
+  }
+}
+
+@keyframes lv-hint-pulse {
+  0% {
+    opacity: 0.55;
+    transform: translateX(-4px);
+  }
+
+  40% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes lv-deque-active {
+  0%,
+  100% {
+    box-shadow: 0 0 0 4px color-mix(in srgb, #a78bfa 12%, transparent);
+  }
+
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, #a78bfa 22%, transparent);
+  }
+}
+
+/* ---------- 减少动态：保稳定、保可读 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .module-learn-shell .learn-viz-cell,
+  .module-learn-shell .step-anim .cell,
+  .module-learn-shell .sq-theory-card .viz-cell,
+  .module-learn-shell .ll-anim .node,
+  .module-learn-shell .tp-anim .cell,
+  .module-learn-shell .str-anim .cell,
+  .module-learn-shell .ht-anim .ht-cell {
+    transition:
+      border-color 0.01s ease,
+      background-color 0.01s ease,
+      opacity 0.01s ease !important;
+    transform: none !important;
+    animation: none !important;
+    will-change: auto !important;
+  }
+
+  .module-learn-shell .learn-viz-cell--hot,
+  .module-learn-shell .step-anim .cell.hot,
+  .module-learn-shell .sq-theory-card .viz-cell--hot {
+    transform: none !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--alp-color-primary) 25%, transparent) !important;
+  }
+
+  .module-learn-shell .learn-viz-cell--dim,
+  .module-learn-shell .step-anim .cell.dim {
+    transform: none !important;
+  }
+
+  .module-learn-shell .viz-cell--float,
+  .module-learn-shell .viz-stage--stack .stack-float-pop,
+  .module-learn-shell .viz-cell--ghost,
+  .module-learn-shell .learn-viz-transfer,
+  .module-learn-shell .step-anim .arrow,
+  .module-learn-shell .deque-well--active,
+  .module-learn-shell .learn-viz-op,
+  .module-learn-shell .step-anim .step-desc.step-desc--pulse,
+  .module-learn-shell .ll-anim *,
+  .module-learn-shell .tp-anim *,
+  .module-learn-shell .str-anim *,
+  .module-learn-shell .anim-root * {
+    animation: none !important;
+  }
+}

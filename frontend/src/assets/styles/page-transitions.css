@@ -1,0 +1,148 @@
+/**
+ * 全站路由页面切换动效
+ * 用于 App.vue（顶层）与 MainLayout（主内容区）
+ */
+
+:root {
+  --alp-transition-page-enter: 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  --alp-transition-page-leave: 0.16s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* —— 高频页（OJ 等）：几乎无动画，减少 out-in 等待感 —— */
+.page-instant-enter-active,
+.page-instant-leave-active {
+  transition: none;
+}
+
+.page-instant-enter-from,
+.page-instant-leave-to {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+/* —— 默认：主站内容（首页、学习路径、资源库等） —— */
+.page-fade-slide-enter-active {
+  transition:
+    opacity var(--alp-transition-page-enter),
+    transform var(--alp-transition-page-enter),
+    filter var(--alp-transition-page-enter);
+}
+
+.page-fade-slide-leave-active {
+  transition:
+    opacity var(--alp-transition-page-leave),
+    transform var(--alp-transition-page-leave),
+    filter var(--alp-transition-page-leave);
+}
+
+.page-fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(14px) scale(0.988);
+  filter: blur(4px);
+}
+
+.page-fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.992);
+  filter: blur(2px);
+}
+
+/* —— 学习模块：略强调横向滑入，区分「进入深度学习页」 —— */
+.page-learn-enter-active {
+  transition:
+    opacity var(--alp-transition-page-enter),
+    transform var(--alp-transition-page-enter);
+}
+
+.page-learn-leave-active {
+  transition:
+    opacity var(--alp-transition-page-leave),
+    transform var(--alp-transition-page-leave);
+}
+
+.page-learn-enter-from {
+  opacity: 0;
+  transform: translateX(18px) translateY(6px);
+}
+
+.page-learn-leave-to {
+  opacity: 0;
+  transform: translateX(-12px);
+}
+
+/* —— 登录 / 注册 —— */
+.page-auth-enter-active {
+  transition:
+    opacity 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.page-auth-leave-active {
+  transition:
+    opacity 0.26s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page-auth-enter-from {
+  opacity: 0;
+  transform: scale(0.96) translateY(12px);
+}
+
+.page-auth-leave-to {
+  opacity: 0;
+  transform: scale(1.02) translateY(-8px);
+}
+
+/* 兼容旧类名（MainLayout 历史引用，映射到同一套曲线） */
+.fade-slide-enter-active {
+  transition:
+    opacity var(--alp-transition-page-enter),
+    transform var(--alp-transition-page-enter),
+    filter var(--alp-transition-page-enter);
+}
+
+.fade-slide-leave-active {
+  transition:
+    opacity var(--alp-transition-page-leave),
+    transform var(--alp-transition-page-leave),
+    filter var(--alp-transition-page-leave);
+}
+
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(14px) scale(0.988);
+  filter: blur(4px);
+}
+
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.992);
+  filter: blur(2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-fade-slide-enter-active,
+  .page-fade-slide-leave-active,
+  .page-learn-enter-active,
+  .page-learn-leave-active,
+  .page-auth-enter-active,
+  .page-auth-leave-active,
+  .fade-slide-enter-active,
+  .fade-slide-leave-active {
+    transition-duration: 0.01ms !important;
+  }
+
+  .page-fade-slide-enter-from,
+  .page-fade-slide-leave-to,
+  .page-learn-enter-from,
+  .page-learn-leave-to,
+  .page-auth-enter-from,
+  .page-auth-leave-to,
+  .fade-slide-enter-from,
+  .fade-slide-leave-to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
