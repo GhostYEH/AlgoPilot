@@ -11,11 +11,19 @@ from sqlalchemy.orm import Session
 from models.db_models import GeneratedResource, LearningPathPlan, StudentProfile, User
 from schemas.ai_tutor import AiTutorChatRequest
 from schemas.oj_assistant import OjAssistantRequest
-from schemas.evaluation import LearningEvaluationResponse, PersonaLearningPatchRequest
+from schemas.evaluation import (
+    AgentLogItem,
+    LearningEvaluationResponse,
+    OjStruggleEvaluationRequest,
+    OjStruggleEvaluationResponse,
+    PersonaLearningPatchRequest,
+)
 from schemas.learning_path import LearningPathPlanResponse, LearningPathReplanRequest, PathStepItem
 from schemas.persona import ChatHistoryItem, PersonaDimensions, PersonaProfileResponse
 from schemas.resources import (
+    CORE_RESOURCE_PIPELINE,
     RESOURCE_AGENT_META,
+    AgentLogEntry,
     GeneratedResourceItem,
     ResourceGenerateRequest,
     ResourceType,
@@ -29,12 +37,24 @@ from services.agents.registry import agent_for_resource, list_agents
 from services.agents.tutor import TutorAgent
 from services.orchestrator.pipeline_context import PipelineContext
 from services.orchestrator.workflow import resource_workflow
-from services.safety.content_filter import content_filter
+from services.safety.content_filter import content_filter, safety_agent
 
 _persona = PersonaAgent()
 _tutor = TutorAgent()
 _oj = OjAssistantAgent()
 _path = LearningPathAgent()
+
+
+def _dimension_scores_from_storage(raw: dict) -> dict[str, int]:
+    scores = raw.pop("_scores", None) or {}
+    out: dict[str, int] = {}
+    for k in PersonaDimensions.model_fields:
+        if k in scores:
+            try:
+                out[k] = max(1, min(10, int(scores[k])))
+            except (TypeError, ValueError):
+                pass
+    return out
 
 
 def _profile_to_response(row: StudentProfile | None) -> PersonaProfileResponse:
@@ -47,14 +67,14 @@ def _profile_to_response(row: StudentProfile | None) -> PersonaProfileResponse:
     raw = dict(row.dimensions or {})
     confidence = {k: str(v) for k, v in (raw.pop("_confidence", None) or {}).items()}
     missing = list(raw.pop("_coverage_missing", None) or [])
-    dims = PersonaDimensions.model_validate(
-        {k: str(raw.get(k, "") or "") for k in PersonaDimensions.model_fields}
-    )
+    dimension_scores = _dimension_scores_from_storage(raw)
+    dims = PersonaDimensions.from_storage(raw)
     updated = row.updated_at.isoformat() if row.updated_at else None
     return PersonaProfileResponse(
         summary=row.summary or "",
         dimensions=dims,
         updated_at=updated,
+        dimension_scores=dimension_scores,
         dimension_confidence=confidence,
         coverage_missing=missing,
     )
@@ -67,12 +87,11 @@ def _format_profile_block(row: StudentProfile | None) -> str:
     lines = [f"摘要：{row.summary or '无'}"]
     labels = {
         "knowledge_base": "知识基础",
-        "learning_goal": "学习目标",
         "cognitive_style": "认知风格",
-        "weak_points": "薄弱点",
-        "pace_preference": "学习节奏",
-        "interest_focus": "兴趣方向",
-        "preferred_modalities": "偏好模态",
+        "coding_ability": "代码实操能力",
+        "learning_goals": "学习目标",
+        "error_preference": "易错点偏好",
+        "grit_level": "抗挫折心理能力",
     }
     for key, label in labels.items():
         val = dims.get(key, "")
@@ -102,12 +121,7 @@ class Orchestrator:
         summary = row.summary if row else ""
         existing_dims = None
         if row and row.dimensions:
-            existing_dims = PersonaDimensions.model_validate(
-                {
-                    k: str((row.dimensions or {}).get(k, ""))
-                    for k in PersonaDimensions.model_fields
-                }
-            )
+            existing_dims = PersonaDimensions.from_storage(row.dimensions)
         async for chunk in _persona.run_stream(
             message=message,
             history=history,
@@ -127,7 +141,7 @@ class Orchestrator:
         if row is None:
             row = StudentProfile(user_id=user.id, dimensions={}, summary="")
             db.add(row)
-        dims = PersonaDimensions.model_validate(row.dimensions or {})
+        dims = PersonaDimensions.from_storage(row.dimensions or {})
         summary, new_dims = apply_learning_patch(row.summary or "", dims, body)
         row.summary = summary
         row.dimensions = new_dims.model_dump()
@@ -147,14 +161,9 @@ class Orchestrator:
         existing = None
         existing_conf: dict[str, str] = {}
         if row and row.dimensions:
-            existing = PersonaDimensions.model_validate(
-                {
-                    k: str((row.dimensions or {}).get(k, ""))
-                    for k in PersonaDimensions.model_fields
-                }
-            )
+            existing = PersonaDimensions.from_storage(row.dimensions)
             existing_conf = dict((row.dimensions or {}).get("_confidence") or {})
-        summary, dims, confidence, missing = await _persona.extract_dimensions(
+        summary, dims, confidence, missing, scores = await _persona.extract_dimensions(
             history, existing=existing, existing_confidence=existing_conf
         )
         if row is None:
@@ -163,6 +172,7 @@ class Orchestrator:
         row.summary = summary
         payload = dims.model_dump()
         payload["_confidence"] = confidence
+        payload["_scores"] = scores
         if missing:
             payload["_coverage_missing"] = missing
         row.dimensions = payload
@@ -221,15 +231,21 @@ class Orchestrator:
     def describe_resource_dag_mermaid() -> str:
         return (
             "flowchart TD\n"
-            "  RAG[KnowledgeRetriever<br/>BM25检索] --> GEN[Role Agent<br/>生成内容]\n"
-            "  GEN --> VERIFY{ContentVerifier<br/>校验}\n"
-            "  VERIFY -->|passed| SAFETY[ContentSafety]\n"
-            "  VERIFY -->|failed 最多2次| GEN\n"
-            "  SAFETY --> STORE{落库}\n"
-            "  STORE -->|verified| PUB[已校验发布]\n"
-            "  STORE -->|draft| DRAFT[草稿待校验]\n"
-            "  DOC[DocAgent] -.摘要.-> QUIZ[QuizAgent]\n"
-            "  DOC -.摘要.-> MAP[MindMapAgent]\n"
+            "  PROFILE[ProfilingAgent<br/>六维画像] --> ORCH[Orchestrator]\n"
+            "  ORCH --> RAG[KnowledgeRetriever]\n"
+            "  RAG --> CONCEPT[ConceptAgent<br/>讲解文档]\n"
+            "  CONCEPT -.摘要.-> GRAPH[GraphAgent<br/>Mermaid图谱]\n"
+            "  CONCEPT -.摘要.-> QUIZ[QuizAgent<br/>3道练习题]\n"
+            "  QUIZ -.易错点.-> SCENARIO[ScenarioAgent<br/>剧本沙盒]\n"
+            "  SCENARIO -.TODO框架.-> TRACE[TraceAgent<br/>轨迹动画JSON]\n"
+            "  CONCEPT --> VERIFY{ContentVerifier}\n"
+            "  GRAPH --> VERIFY\n"
+            "  QUIZ --> VERIFY\n"
+            "  SCENARIO --> VERIFY\n"
+            "  TRACE --> SAFETY[SafetyAgent]\n"
+            "  VERIFY -->|passed| SAFETY\n"
+            "  VERIFY -->|failed| CONCEPT\n"
+            "  SAFETY --> STORE[落库 + agent_logs]\n"
         )
 
     async def evaluate_learning(
@@ -275,6 +291,45 @@ class Orchestrator:
 
         return result
 
+    async def evaluate_oj_struggle_and_replan(
+        self,
+        db: Session,
+        user: User,
+        body: OjStruggleEvaluationRequest,
+    ) -> OjStruggleEvaluationResponse:
+        """OJ 连续受挫 → EvaluatorAgent 评估 → PlannerAgent 插入降级节点。"""
+        struggle, rem_key, rem_label, logs = await evaluation_agent.evaluate_oj_struggle(
+            knowledge_point=body.knowledge_point,
+            module_key=body.module_key,
+            verdict=body.verdict,
+            consecutive_failures=body.consecutive_failures,
+            error_pattern=body.error_pattern,
+        )
+
+        path_updated = False
+        plan_summary = ""
+        if struggle and rem_key:
+            replan_body = LearningPathReplanRequest(
+                modules=body.modules,
+                overall_percent=body.overall_percent,
+            )
+            plan = await self.replan_learning_path(
+                db, user, replan_body, remediation_before=rem_key
+            )
+            path_updated = plan.remediation_inserted
+            plan_summary = plan.summary
+
+        return OjStruggleEvaluationResponse(
+            struggle_detected=struggle,
+            consecutive_failures=body.consecutive_failures,
+            remediation_module_key=rem_key or None,
+            remediation_label=rem_label,
+            planner_notified=struggle,
+            path_updated=path_updated,
+            agent_logs=[AgentLogItem.model_validate(x) for x in logs],
+            plan_summary=plan_summary,
+        )
+
     # --- 学习路径 ---
 
     def get_learning_path_plan(self, db: Session, user: User) -> LearningPathPlanResponse | None:
@@ -288,10 +343,20 @@ class Orchestrator:
         db: Session,
         user: User,
         body: LearningPathReplanRequest,
+        *,
+        remediation_before: str | None = None,
     ) -> LearningPathPlanResponse:
         profile_row = db.get(StudentProfile, user.id)
         profile_block = _format_profile_block(profile_row)
-        plan_data = await _path.plan(profile_block=profile_block, request=body)
+        scores: dict[str, int] = {}
+        if profile_row and profile_row.dimensions:
+            scores = dict((profile_row.dimensions or {}).get("_scores") or {})
+        plan_data = await _path.plan(
+            profile_block=profile_block,
+            request=body,
+            dimension_scores=scores,
+            remediation_before=remediation_before,
+        )
 
         row = db.get(LearningPathPlan, user.id)
         if row is None:
@@ -334,7 +399,12 @@ class Orchestrator:
             pipeline_ctx=pipeline_ctx,
         )
         agent_name = agent_for_resource(body.resource_type)
-        meta = {"topic": body.topic, "module_key": body.module_key, **gen_meta}
+        meta = {
+            "topic": body.topic,
+            "module_key": body.module_key,
+            "agent_logs": gen_meta.get("agent_logs", []),
+            **gen_meta,
+        }
         record = GeneratedResource(
             user_id=user.id,
             resource_type=body.resource_type,
@@ -371,7 +441,10 @@ class Orchestrator:
         path_row = db.get(LearningPathPlan, user.id)
         weak_hint = ""
         if profile_row and profile_row.dimensions:
-            weak_hint = str(profile_row.dimensions.get("weak_points", ""))
+            weak_hint = str(
+                profile_row.dimensions.get("error_preference")
+                or profile_row.dimensions.get("weak_points", "")
+            )
         target_key = module_key
         if not target_key and path_row and path_row.next_module_key:
             target_key = path_row.next_module_key
@@ -386,7 +459,15 @@ class Orchestrator:
         if not rows:
             return []
 
-        priority_types = ["exercises", "document", "mindmap", "code_case", "reading", "video_script"]
+        priority_types = [
+            "exercises",
+            "document",
+            "mindmap",
+            "code_case",
+            "trace_animation",
+            "reading",
+            "video_script",
+        ]
 
         def score(row: GeneratedResource) -> float:
             meta = row.meta or {}
@@ -431,7 +512,12 @@ class Orchestrator:
         item = await self.generate_resource(db, user, body, emit=capture)
         for ev in events:
             yield _sse(ev)
-        yield _sse({"type": "resource", "resource": item.model_dump(), "percent": 100})
+        yield _sse({
+            "type": "resource",
+            "resource": item.model_dump(),
+            "agent_logs": (item.meta or {}).get("agent_logs", []),
+            "percent": 100,
+        })
         yield _sse({"type": "done", "percent": 100})
 
     def delete_resource(self, db: Session, user: User, resource_id: int) -> bool:
@@ -478,15 +564,8 @@ class Orchestrator:
         module_key: str = "",
         focus_hint: str = "",
     ) -> AsyncIterator[str]:
-        """SSE：依次生成六类资源，Agent 间传递协作上下文。"""
-        types: list[ResourceType] = [
-            "document",
-            "mindmap",
-            "exercises",
-            "reading",
-            "code_case",
-            "video_script",
-        ]
+        """SSE：依次生成五类核心资源，Agent 间传递协作上下文。"""
+        types: list[ResourceType] = list(CORE_RESOURCE_PIPELINE)
         total = len(types)
         pipe_ctx = PipelineContext()
         for idx, rtype in enumerate(types, start=1):
@@ -526,22 +605,25 @@ class Orchestrator:
                 {
                     "type": "collaboration",
                     "log": pipe_ctx.collaboration_log[-5:],
+                    "agent_logs": pipe_ctx.agent_logs,
                 }
             )
-            yield _sse({"type": "resource", "resource": item.model_dump(), "percent": int(idx / total * 100)})
-        yield _sse({"type": "done", "percent": 100})
+            yield _sse({"type": "resource", "resource": item.model_dump(), "percent": int(idx / total * 100), "agent_logs": (item.meta or {}).get("agent_logs", [])})
+        yield _sse({"type": "done", "percent": 100, "agent_logs": pipe_ctx.agent_logs})
 
 
 def _path_plan_response(row: LearningPathPlan) -> LearningPathPlanResponse:
     steps = [PathStepItem.model_validate(s) for s in (row.steps or [])]
+    remediation = any(s.is_remediation for s in steps)
     return LearningPathPlanResponse(
-        agent_name="学习路径 Agent",
+        agent_name="PlannerAgent",
         summary=row.summary or "",
         rationale=row.rationale or "",
         next_module_key=row.next_module_key,
         ordered_keys=list(row.ordered_keys or []),
         steps=steps,
         updated_at=row.updated_at.isoformat() if row.updated_at else None,
+        remediation_inserted=remediation,
     )
 
 

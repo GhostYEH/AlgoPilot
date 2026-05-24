@@ -13,10 +13,16 @@ from core.database import get_db
 from models.db_models import User
 from schemas.ai_tutor import AiTutorChatRequest, AiTutorChatResponse
 from schemas.oj_assistant import OjAssistantRequest, OjAssistantResponse
-from schemas.evaluation import LearningEvaluationResponse, PersonaLearningPatchRequest
+from schemas.evaluation import (
+    LearningEvaluationResponse,
+    OjStruggleEvaluationRequest,
+    OjStruggleEvaluationResponse,
+    PersonaLearningPatchRequest,
+)
 from schemas.persona import ChatHistoryItem, PersonaChatRequest, PersonaProfileResponse, PersonaSyncResponse
 from schemas.learning_path import LearningPathPlanResponse, LearningPathReplanRequest
 from schemas.resources import (
+    AgentLogEntry,
     ResourceGenerateRequest,
     ResourceGenerateResponse,
     ResourceListResponse,
@@ -24,6 +30,18 @@ from schemas.resources import (
 from services.orchestrator import orchestrator
 
 router = APIRouter()
+
+
+def _agent_logs_from_item(item) -> list[AgentLogEntry]:
+    raw = (item.meta or {}).get("agent_logs") or []
+    logs: list[AgentLogEntry] = []
+    for entry in raw:
+        try:
+            logs.append(AgentLogEntry.model_validate(entry))
+        except Exception:
+            continue
+    return logs
+
 
 
 def _sse(payload: dict) -> str:
@@ -223,6 +241,16 @@ async def evaluate_learning(
     return await orchestrator.evaluate_learning(db, user, body)
 
 
+@router.post("/evaluation/oj-struggle", response_model=OjStruggleEvaluationResponse)
+async def evaluate_oj_struggle(
+    body: OjStruggleEvaluationRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> OjStruggleEvaluationResponse:
+    """OJ 连续 WA/RE/TLE → EvaluatorAgent 通知 PlannerAgent 插入降级巩固节点。"""
+    return await orchestrator.evaluate_oj_struggle_and_replan(db, user, body)
+
+
 @router.get("/resources", response_model=ResourceListResponse)
 def list_resources(
     user: User = Depends(get_current_user),
@@ -257,7 +285,7 @@ async def generate_resource(
         item = await orchestrator.generate_resource(db, user, body)
     except ValueError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
-    return ResourceGenerateResponse(resource=item)
+    return ResourceGenerateResponse(resource=item, agent_logs=_agent_logs_from_item(item))
 
 
 @router.delete("/resources/{resource_id}")
@@ -281,7 +309,7 @@ def favorite_resource(
     item = orchestrator.set_resource_favorite(db, user, resource_id, favorited)
     if item is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "资源不存在")
-    return ResourceGenerateResponse(resource=item)
+    return ResourceGenerateResponse(resource=item, agent_logs=_agent_logs_from_item(item))
 
 
 @router.post("/resources/generate-all")
@@ -290,7 +318,7 @@ async def generate_all_resources_stream(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """流式批量生成六类资源。"""
+    """流式批量生成五类核心个性化资源（Concept/Graph/Quiz/Scenario/Trace）。"""
 
     async def event_gen():
         try:

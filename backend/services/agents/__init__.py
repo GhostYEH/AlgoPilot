@@ -5,6 +5,13 @@ from services.agents.persona import PersonaAgent
 from services.agents.tutor import TutorAgent
 from services.agents.oj_assistant import OjAssistantAgent
 from services.agents.resources import ResourceAgents
+from services.agents.resource_roles import (
+    ConceptAgent,
+    GraphAgent,
+    QuizAgent,
+    ScenarioAgent,
+    TraceAgent,
+)
 
 __all__ = [
     "PersonaAgent",
@@ -12,4 +19,9 @@ __all__ = [
     "OjAssistantAgent",
     "ResourceAgents",
     "LearningPathAgent",
+    "ConceptAgent",
+    "GraphAgent",
+    "QuizAgent",
+    "ScenarioAgent",
+    "TraceAgent",
 ]

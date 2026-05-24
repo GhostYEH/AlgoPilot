@@ -53,3 +53,36 @@ MODULE_DEPENDENCIES: dict[str, list[str]] = {
 }
 
 PHASE_RANK = {"foundation": 0, "technique": 1, "tree": 2, "advanced": 3}
+
+# 学情降级：受挫知识点 → 临时插播的基础巩固模块（须为 catalog 中已有 key）
+REMEDIATION_BY_TOPIC: dict[str, dict[str, str]] = {
+    "动态规划": {"module_key": "array", "label": "数组基础巩固", "reason": "降级：先掌握一维数组与前缀和思想"},
+    "dp": {"module_key": "array", "label": "数组基础巩固", "reason": "降级：动态规划受挫，回退数组与前缀和"},
+    "二叉树": {"module_key": "linked-list", "label": "链表巩固", "reason": "降级：树结构受挫，巩固指针与链表"},
+    "binary-tree": {"module_key": "linked-list", "label": "链表巩固", "reason": "降级：树模块受挫，回退链表"},
+    "图论": {"module_key": "binary-tree", "label": "二叉树巩固", "reason": "降级：图论受挫，巩固树遍历"},
+    "graph": {"module_key": "binary-tree", "label": "二叉树巩固", "reason": "降级：图论受挫，巩固树遍历"},
+    "贪心": {"module_key": "stack-queue", "label": "栈队列巩固", "reason": "降级：贪心受挫，巩固基础结构"},
+    "greedy": {"module_key": "stack-queue", "label": "栈队列巩固", "reason": "降级：贪心受挫，巩固基础结构"},
+    "回溯": {"module_key": "binary-tree", "label": "二叉树巩固", "reason": "降级：回溯受挫，巩固递归与树"},
+    "backtracking": {"module_key": "binary-tree", "label": "二叉树巩固", "reason": "降级：回溯受挫，巩固递归与树"},
+}
+
+DEFAULT_REMEDIATION = {
+    "module_key": "array",
+    "label": "数组基础巩固",
+    "reason": "降级：检测到连续作答失败，插入基础巩固关卡",
+}
+
+
+def lookup_remediation(knowledge_point: str, module_key: str = "") -> dict[str, str]:
+    """根据知识点或模块 key 查找降级巩固节点。"""
+    for key in (knowledge_point, module_key):
+        if not key:
+            continue
+        if key in REMEDIATION_BY_TOPIC:
+            return REMEDIATION_BY_TOPIC[key]
+        for topic, spec in REMEDIATION_BY_TOPIC.items():
+            if topic in key or key in topic:
+                return spec
+    return DEFAULT_REMEDIATION

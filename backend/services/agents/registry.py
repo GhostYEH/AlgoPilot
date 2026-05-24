@@ -1,4 +1,4 @@
-"""多智能体注册表（赛题角色对齐，供编排层与文档引用）。"""
+"""多智能体注册表（赛题角色对齐）。"""
 
 from __future__ import annotations
 
@@ -14,29 +14,67 @@ class AgentMeta(TypedDict):
 
 # layer: profiling | resource | path | tutor | safety | eval
 AGENT_REGISTRY: list[AgentMeta] = [
-    {"id": "ProfilingAgent", "display_name": "ProfilingAgent", "role": "对话式画像构建", "layer": "profiling"},
-    {"id": "DocAgent", "display_name": "DocAgent", "role": "课程讲解文档", "layer": "resource"},
-    {"id": "MindMapAgent", "display_name": "MindMapAgent", "role": "思维导图", "layer": "resource"},
-    {"id": "QuizAgent", "display_name": "QuizAgent", "role": "个性化题库", "layer": "resource"},
-    {"id": "ReadingAgent", "display_name": "ReadingAgent", "role": "拓展阅读", "layer": "resource"},
-    {"id": "CodeAgent", "display_name": "CodeAgent", "role": "代码实操案例", "layer": "resource"},
-    {"id": "VideoAgent", "display_name": "VideoAgent", "role": "教学视频/动画脚本", "layer": "resource"},
-    {"id": "LearningPathAgent", "display_name": "LearningPathAgent", "role": "学习路径规划", "layer": "path"},
+    {
+        "id": "ProfilingAgent",
+        "display_name": "ProfilingAgent",
+        "role": "六维动态学生画像构建",
+        "layer": "profiling",
+    },
+    {
+        "id": "ConceptAgent",
+        "display_name": "ConceptAgent",
+        "role": "概念导师 · 定制化课程讲解",
+        "layer": "resource",
+    },
+    {
+        "id": "GraphAgent",
+        "display_name": "GraphAgent",
+        "role": "拓扑专家 · Mermaid 知识图谱",
+        "layer": "resource",
+    },
+    {
+        "id": "QuizAgent",
+        "display_name": "QuizAgent",
+        "role": "考题官 · 个性化题单",
+        "layer": "resource",
+    },
+    {
+        "id": "ScenarioAgent",
+        "display_name": "ScenarioAgent",
+        "role": "互动编剧 · 剧本沙盒",
+        "layer": "resource",
+    },
+    {
+        "id": "TraceAgent",
+        "display_name": "TraceAgent",
+        "role": "动画总导演 · 执行轨迹动画",
+        "layer": "resource",
+    },
+    {
+        "id": "LearningPathAgent",
+        "display_name": "LearningPathAgent",
+        "role": "学习路径规划",
+        "layer": "path",
+    },
     {"id": "TutorAgent", "display_name": "TutorAgent", "role": "智能辅导答疑", "layer": "tutor"},
     {"id": "OjAssistantAgent", "display_name": "OjAssistantAgent", "role": "OJ 刷题辅导", "layer": "tutor"},
     {"id": "OjDiagnosisAgent", "display_name": "OjDiagnosisAgent", "role": "OJ AI 深度诊断", "layer": "tutor"},
     {"id": "ContentVerifierAgent", "display_name": "ContentVerifierAgent", "role": "防幻觉校验", "layer": "safety"},
-    {"id": "EvaluationAgent", "display_name": "EvaluationAgent", "role": "学习效果评估", "layer": "eval"},
+    {"id": "SafetyAgent", "display_name": "SafetyAgent", "role": "内容安全审查与防幻觉把关", "layer": "safety"},
+    {"id": "EvaluationAgent", "display_name": "EvaluationAgent", "role": "学习效果评估与受挫降级", "layer": "eval"},
+    {"id": "PlannerAgent", "display_name": "PlannerAgent", "role": "学习路径规划与动态降级", "layer": "path"},
     {"id": "KnowledgeRetriever", "display_name": "KnowledgeRetriever", "role": "知识库检索", "layer": "safety"},
 ]
 
 RESOURCE_TYPE_TO_AGENT: dict[str, str] = {
-    "document": "DocAgent",
-    "mindmap": "MindMapAgent",
+    "document": "ConceptAgent",
+    "mindmap": "GraphAgent",
     "exercises": "QuizAgent",
-    "reading": "ReadingAgent",
-    "code_case": "CodeAgent",
-    "video_script": "VideoAgent",
+    "code_case": "ScenarioAgent",
+    "trace_animation": "TraceAgent",
+    # 兼容旧类型
+    "reading": "ConceptAgent",
+    "video_script": "TraceAgent",
 }
 
 
@@ -45,4 +83,4 @@ def list_agents() -> list[AgentMeta]:
 
 
 def agent_for_resource(resource_type: str) -> str:
-    return RESOURCE_TYPE_TO_AGENT.get(resource_type, "DocAgent")
+    return RESOURCE_TYPE_TO_AGENT.get(resource_type, "ConceptAgent")

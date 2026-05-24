@@ -21,6 +21,9 @@ class PathStepItem(BaseModel):
     rank: int
     reason: str = ""
     phase: str = ""
+    prerequisites: list[str] = Field(default_factory=list, description="前置 module_key 列表")
+    difficulty: str = Field(default="标准", description="入门 | 标准 | 进阶")
+    is_remediation: bool = Field(default=False, description="是否为学情降级临时插播节点")
 
 
 class LearningPathPlanResponse(BaseModel):
@@ -31,3 +34,7 @@ class LearningPathPlanResponse(BaseModel):
     ordered_keys: list[str] = Field(default_factory=list)
     steps: list[PathStepItem] = Field(default_factory=list)
     updated_at: str | None = None
+    remediation_inserted: bool = Field(
+        default=False,
+        description="本次规划是否插入了降级巩固节点",
+    )
