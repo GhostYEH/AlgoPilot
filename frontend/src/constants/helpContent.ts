@@ -62,7 +62,7 @@ export const HELP_QUICK_LINKS: HelpQuickLink[] = [
   {
     key: 'persona',
     title: '学习画像',
-    desc: '对话式构建 7 维画像，驱动个性化资源与路径推荐。',
+    desc: '对话式构建 6 维画像，驱动个性化资源与路径推荐。',
     icon: ChatDotRound,
     route: { name: 'my-learning', query: { tab: 'persona' } },
   },
@@ -100,7 +100,7 @@ export const HELP_GUIDE_STEPS: HelpGuideStep[] = [
   {
     step: 2,
     title: '构建学习画像',
-    desc: '进入「我的学习 → 学习画像」，与学习画像 Agent 对话，描述你的专业背景、目标岗位与薄弱知识点。系统会自动提取 7 维画像并用于后续推荐。',
+    desc: '进入「我的学习 → 学习画像」，与学习画像 Agent 对话，描述你的专业背景、目标岗位与薄弱知识点。系统会自动提取 6 维画像并用于后续推荐。',
     route: { name: 'my-learning', query: { tab: 'persona' } },
     routeLabel: '打开学习画像',
   },
@@ -219,7 +219,7 @@ export const HELP_COMPETITION: HelpCompetitionSection[] = [
     title: '核心能力亮点',
     items: [
       '多智能体协同：DocAgent、MindMapAgent、QuizAgent、CodeAgent 等角色 Agent 分工协作，编排层统一调度。',
-      '个性化学习路径：基于 7 维画像与模块进度动态重排推荐顺序，而非固定课表。',
+      '个性化学习路径：基于 6 维画像与模块进度动态重排推荐顺序，而非固定课表。',
       'RAG + 校验闭环：BM25 检索知识库切片，ContentVerifierAgent 校验生成内容后再落库发布。',
       '可视化学习体验：算法动画、代码执行追踪、模块闯关小游戏与交互式知识地图。',
       '在线 OJ 判题：Python / C++ 双语言支持，题目与学习路径深度联动。',

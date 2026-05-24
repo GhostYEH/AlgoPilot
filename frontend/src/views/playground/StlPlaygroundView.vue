@@ -181,23 +181,32 @@ function runSequenceOp(op: OpDef) {
       { type: 'sequence', view_hint: hint, value: asSequenceValue(next) },
       `${pseudoPrefix()}.${opLabel(op)}(${formatCppLiteral(v)});`,
     )
+    inputValue.value = ''
     return
   }
 
   if (op.id === 'pop' || op.id === 'dequeue' || op.id === 'pop_back') {
     if (!curr.length) throw new Error('容器为空，无法弹出')
-    const removed = curr[curr.length - 1]
     if (op.id === 'dequeue') {
+      const removed = curr[0]
       const next = curr.slice(1)
       commitSnapshot(
         { type: 'sequence', view_hint: hint, value: asSequenceValue(next) },
-        `${pseudoPrefix()}.pop();  // 出队 ${formatCppLiteral(removed)}`,
+        `auto val = ${pseudoPrefix()}.front();  // 拿到队头值 ${formatCppLiteral(removed)}\n${pseudoPrefix()}.pop();`,
       )
-    } else {
+    } else if (op.id === 'pop') {
+      const removed = curr[curr.length - 1]
       const next = curr.slice(0, -1)
       commitSnapshot(
         { type: 'sequence', view_hint: hint, value: asSequenceValue(next) },
-        `${pseudoPrefix()}.pop();  // ${formatCppLiteral(removed)}`,
+        `auto val = ${pseudoPrefix()}.top();  // 拿到栈顶值 ${formatCppLiteral(removed)}\n${pseudoPrefix()}.pop();`,
+      )
+    } else {
+      const removed = curr[curr.length - 1]
+      const next = curr.slice(0, -1)
+      commitSnapshot(
+        { type: 'sequence', view_hint: hint, value: asSequenceValue(next) },
+        `${pseudoPrefix()}.pop_back();  // ${formatCppLiteral(removed)}`,
       )
     }
     return
@@ -228,6 +237,7 @@ function runAssociativeOp(op: OpDef) {
       { type: 'associative', view_hint: hint, value: asAssociativeValue(next) },
       `${pseudoPrefix()}[${formatCppLiteral(key)}] = ${formatCppLiteral(val)};`,
     )
+    inputValue.value = ''
     return
   }
 
@@ -238,6 +248,7 @@ function runAssociativeOp(op: OpDef) {
       { type: 'associative', view_hint: hint, value: asAssociativeValue(next) },
       `${pseudoPrefix()}.erase(${formatCppLiteral(key)});`,
     )
+    inputValue.value = ''
     return
   }
 

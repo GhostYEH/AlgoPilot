@@ -11,6 +11,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AgentThinkingConsole: typeof import('./../components/agents/AgentThinkingConsole.vue')['default']
     AiTutorPanel: typeof import('./../components/learning/AiTutorPanel.vue')['default']
     AlgorithmLearningMap: typeof import('./../components/learning/AlgorithmLearningMap.vue')['default']
     AuthPageFrame: typeof import('./../components/auth/AuthPageFrame.vue')['default']
@@ -49,6 +50,7 @@ declare module 'vue' {
     ElPageHeader: typeof import('element-plus/es')['ElPageHeader']
     ElPagination: typeof import('element-plus/es')['ElPagination']
     ElProgress: typeof import('element-plus/es')['ElProgress']
+    ElRadio: typeof import('element-plus/es')['ElRadio']
     ElRadioButton: typeof import('element-plus/es')['ElRadioButton']
     ElRadioGroup: typeof import('element-plus/es')['ElRadioGroup']
     ElRow: typeof import('element-plus/es')['ElRow']
@@ -56,6 +58,7 @@ declare module 'vue' {
     ElSegmented: typeof import('element-plus/es')['ElSegmented']
     ElSelect: typeof import('element-plus/es')['ElSelect']
     ElSkeleton: typeof import('element-plus/es')['ElSkeleton']
+    ElSlider: typeof import('element-plus/es')['ElSlider']
     ElStep: typeof import('element-plus/es')['ElStep']
     ElSteps: typeof import('element-plus/es')['ElSteps']
     ElSwitch: typeof import('element-plus/es')['ElSwitch']
@@ -84,6 +87,7 @@ declare module 'vue' {
     OjWorkbench: typeof import('./../components/oj/OjWorkbench.vue')['default']
     PageTransition: typeof import('./../components/layout/PageTransition.vue')['default']
     PersonaChatPanel: typeof import('./../components/persona/PersonaChatPanel.vue')['default']
+    PersonalizedResourceDashboard: typeof import('./../components/agents/PersonalizedResourceDashboard.vue')['default']
     PersonaRadarChart: typeof import('./../components/persona/PersonaRadarChart.vue')['default']
     PracticeOjLinks: typeof import('./../components/learning/PracticeOjLinks.vue')['default']
     RecommendedResourcesPanel: typeof import('./../components/learning/RecommendedResourcesPanel.vue')['default']

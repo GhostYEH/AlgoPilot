@@ -148,6 +148,42 @@ const orderedStepsPreview = computed(() => {
 
 
 
+const dagEdges = computed(() => {
+
+  const edges: Array<{ from: string; to: string; label: string }> = []
+
+  for (const s of plan.value?.steps ?? []) {
+
+    for (const dep of s.prerequisites ?? []) {
+
+      const fromLabel =
+
+        overview.value.rows.find((r) => r.key === dep)?.label ?? dep
+
+      const toLabel =
+
+        overview.value.rows.find((r) => r.key === s.module_key)?.label ?? s.module_key
+
+      edges.push({ from: fromLabel, to: toLabel, label: `${fromLabel} → ${toLabel}` })
+
+    }
+
+  }
+
+  return edges.slice(0, 10)
+
+})
+
+
+
+const remediationStep = computed(
+
+  () => plan.value?.steps?.find((s) => s.is_remediation) ?? null,
+
+)
+
+
+
 const nextLabel = computed(() => {
 
   const key = plan.value?.next_module_key ?? recommendedNext.value?.key
@@ -264,6 +300,28 @@ async function onReplan() {
 
     <el-alert
 
+      v-if="plan?.remediation_inserted && remediationStep"
+
+      type="warning"
+
+      :closable="false"
+
+      show-icon
+
+      class="agent-banner remediation-banner"
+
+    >
+
+      <template #title>🚑 EvaluatorAgent → PlannerAgent 学情降级</template>
+
+      检测到连续作答受挫，已临时插播巩固关卡「{{ overview.rows.find((r) => r.key === remediationStep?.module_key)?.label ?? remediationStep?.module_key }}」：{{ remediationStep?.reason }}
+
+    </el-alert>
+
+
+
+    <el-alert
+
       v-else-if="isLoggedIn"
 
       type="info"
@@ -312,7 +370,25 @@ async function onReplan() {
 
         {{ s.rank }}. {{ overview.rows.find((r) => r.key === s.module_key)?.label ?? s.module_key }}
 
+        <span v-if="s.difficulty" class="step-diff">· {{ s.difficulty }}</span>
+
+        <span v-if="s.is_remediation" class="step-rem">巩固</span>
+
       </el-tag>
+
+    </div>
+
+
+
+    <div v-if="dagEdges.length" class="dag-preview">
+
+      <span class="steps-label">DAG 先修依赖（千人千面拓扑）</span>
+
+      <ul class="dag-edge-list">
+
+        <li v-for="(e, i) in dagEdges" :key="'edge-' + i">{{ e.label }}</li>
+
+      </ul>
 
     </div>
 
@@ -751,6 +827,66 @@ async function onReplan() {
   background: var(--alp-bg-soft-block);
 
   border: 1px solid var(--alp-color-border);
+
+}
+
+.dag-preview {
+
+  margin-top: 10px;
+
+  padding: 10px 12px;
+
+  border-radius: var(--alp-radius-card);
+
+  background: var(--alp-bg-surface);
+
+  border: 1px dashed var(--alp-color-border);
+
+}
+
+.dag-edge-list {
+
+  list-style: none;
+
+  margin: 6px 0 0;
+
+  padding: 0;
+
+  font-size: 12px;
+
+  color: var(--alp-color-muted);
+
+}
+
+.dag-edge-list li {
+
+  margin-bottom: 4px;
+
+}
+
+.step-diff {
+
+  opacity: 0.75;
+
+  font-size: 10px;
+
+}
+
+.step-rem {
+
+  margin-left: 4px;
+
+  font-size: 10px;
+
+  color: #d97706;
+
+  font-weight: 600;
+
+}
+
+.remediation-banner {
+
+  margin-top: 8px;
 
 }
 

@@ -22,6 +22,12 @@ interface UiMsg {
   content: string
 }
 
+const ICEBREAKER_PROMPTS = [
+  '你好！欢迎加入算法智能学习平台 🎓 我是你的**学习画像 Agent**。先聊聊：你目前是大几、什么专业？对数据结构（数组、链表等）熟悉到什么程度？',
+  '很棒！第二个问题：你平时写代码报错时，**最怕遇到哪种情况**？比如边界越界、递归写不对、还是看不懂题意？',
+  '最后一个问题：你的**学习目标**是什么（课内及格 / 蓝桥杯 / 考研 / 就业面试）？遇到 WA 或 TLE 时，你一般会坚持多久？',
+]
+
 const input = ref('')
 const loading = ref(false)
 const syncing = ref(false)
@@ -31,13 +37,20 @@ const profile = ref<PersonaProfile | null>(null)
 const { replan: replanPath } = useLearningPathPlan()
 let msgId = 0
 const profileUpdateHintShown = ref(false)
+const showRadar = ref(false)
+const icebreakerDone = ref(false)
+const autoFlowRunning = ref(false)
+
+const emit = defineEmits<{
+  profileReady: [profile: PersonaProfile]
+}>()
 
 const userTurnCount = computed(
   () => messages.value.filter((m) => m.role === 'user').length,
 )
 
 const showProfileNudge = computed(
-  () => userTurnCount.value >= 5 && !profileUpdateHintShown.value,
+  () => userTurnCount.value >= 3 && !profile.value?.updated_at && !autoFlowRunning.value,
 )
 
 function scrollBottom() {
@@ -50,6 +63,10 @@ function scrollBottom() {
 async function loadProfile() {
   try {
     profile.value = await fetchPersonaProfile()
+    if (profile.value?.updated_at && profile.value.dimensions) {
+      showRadar.value = true
+      icebreakerDone.value = true
+    }
   } catch {
     profile.value = null
   }
@@ -63,14 +80,31 @@ async function loadHistory() {
       role: h.role,
       content: h.content,
     }))
+    if (hist.length > 0) icebreakerDone.value = true
   } catch {
     /* ignore */
+  }
+}
+
+function pushAssistant(text: string) {
+  messages.value.push({ id: ++msgId, role: 'assistant', content: text })
+  scrollBottom()
+}
+
+async function startIcebreaker() {
+  if (messages.value.length > 0 || icebreakerDone.value) return
+  for (const prompt of ICEBREAKER_PROMPTS) {
+    pushAssistant(prompt)
+    await new Promise((r) => setTimeout(r, 400))
   }
 }
 
 onMounted(async () => {
   await loadProfile()
   await loadHistory()
+  if (messages.value.length === 0 && !profile.value?.updated_at) {
+    await startIcebreaker()
+  }
 })
 
 function toHistory(): ChatHistoryItem[] {
@@ -102,10 +136,38 @@ async function send() {
     )
   } finally {
     loading.value = false
-    if (userTurnCount.value >= 5 && !profileUpdateHintShown.value) {
+    if (userTurnCount.value >= 3 && !profile.value?.updated_at) {
+      void autoCompleteProfileFlow()
+    } else if (userTurnCount.value >= 5 && !profileUpdateHintShown.value) {
       profileUpdateHintShown.value = true
-      ElMessage.info('对话已超 5 轮，建议点击「从对话更新画像」同步七维画像')
+      ElMessage.info('对话已较充分，可点击「从对话更新画像」同步六维画像')
     }
+  }
+}
+
+async function autoCompleteProfileFlow() {
+  if (autoFlowRunning.value || profile.value?.updated_at) return
+  autoFlowRunning.value = true
+  icebreakerDone.value = true
+  try {
+    pushAssistant(
+      '感谢你的分享！正在根据对话抽取 **六维学习画像** 并生成专属学习路径，请稍候…',
+    )
+    const { profile: p } = await syncPersonaFromStored()
+    profile.value = p
+    showRadar.value = true
+    emit('profileReady', p)
+    ElMessage.success('六维画像已生成，雷达图已更新')
+    try {
+      await replanPath()
+      ElMessage.success('PlannerAgent 已根据画像生成千人千面学习路径')
+    } catch {
+      ElMessage.warning('路径规划稍后可在「学习路径」页重试')
+    }
+  } catch {
+    ElMessage.warning('画像同步失败，请手动点击「从对话更新画像」')
+  } finally {
+    autoFlowRunning.value = false
   }
 }
 
@@ -113,7 +175,7 @@ async function onSyncProfile() {
   if (syncing.value) return
   try {
     await ElMessageBox.confirm(
-      '将根据当前对话抽取七维画像并写入数据库。是否继续？',
+      '将根据当前对话抽取六维画像并写入数据库。是否继续？',
       '更新学习画像',
       { type: 'info' },
     )
@@ -124,15 +186,17 @@ async function onSyncProfile() {
   try {
     const { profile: p, message } = await syncPersonaFromStored()
     profile.value = p
+    showRadar.value = true
+    emit('profileReady', p)
     ElMessage.success(message)
     try {
       await ElMessageBox.confirm(
-        '画像已更新。是否立即调用学习路径 Agent 重排模块顺序？',
+        '画像已更新。是否立即调用 PlannerAgent 重排模块顺序？',
         '重排学习路径',
         { confirmButtonText: '重排', cancelButtonText: '稍后' },
       )
       await replanPath()
-      ElMessage.success('学习路径 Agent 已根据新画像重排路线')
+      ElMessage.success('学习路径已根据新画像重排')
     } catch {
       /* 用户取消或路径规划失败 */
     }
@@ -149,6 +213,7 @@ const dimensionEntries = (dims: PersonaDimensions) =>
     label: PROFILE_DIMENSION_LABELS[key],
     value: dims[key] || '待补充',
     confidence: profile.value?.dimension_confidence?.[key] ?? '',
+    score: profile.value?.dimension_scores?.[key],
   }))
 </script>
 
@@ -180,17 +245,25 @@ const dimensionEntries = (dims: PersonaDimensions) =>
           type="textarea"
           :rows="2"
           placeholder="例如：我是大一计科，想准备蓝桥杯，数组和链表比较薄弱…"
-          :disabled="loading"
+          :disabled="loading || autoFlowRunning"
           @keydown.enter.exact.prevent="send"
         />
-        <el-button type="primary" :icon="Promotion" :loading="loading" @click="send">发送</el-button>
+        <el-button
+          type="primary"
+          :icon="Promotion"
+          :loading="loading"
+          :disabled="autoFlowRunning"
+          @click="send"
+        >
+          发送
+        </el-button>
       </div>
       <el-alert
         v-if="showProfileNudge"
         type="info"
         :closable="false"
         show-icon
-        title="对话已较充分，建议更新画像以便资源推荐与路径规划"
+        title="已完成 3 轮破冰对话，回复后将自动抽取画像并生成路径"
         class="nudge-alert"
       />
       <div class="chat-actions">
@@ -203,22 +276,39 @@ const dimensionEntries = (dims: PersonaDimensions) =>
     <aside class="persona-dims">
       <div class="dims-head">
         <el-icon><ChatDotRound /></el-icon>
-        <span>学习画像 · 7 维</span>
+        <span>学习画像 · 6 维</span>
       </div>
       <p v-if="profile?.summary" class="dims-summary">{{ profile.summary }}</p>
-      <p v-else class="dims-summary muted">对话后点击「从对话更新画像」写入数据库</p>
-      <PersonaRadarChart v-if="profile?.dimensions" :dimensions="profile.dimensions" />
+      <p v-else class="dims-summary muted">完成 3 轮破冰对话后将自动生成画像</p>
+      <PersonaRadarChart
+        v-if="profile?.dimensions && showRadar"
+        :dimensions="profile.dimensions"
+        :scores="profile.dimension_scores"
+        animated
+      />
+      <p v-else-if="autoFlowRunning" class="dims-summary muted">画像抽取中…</p>
 
-      <ul v-if="profile?.dimensions" class="dims-list">
+      <ul v-if="profile?.dimensions && profile.updated_at" class="dims-list">
         <li v-for="d in dimensionEntries(profile.dimensions)" :key="d.key">
-          <span class="dims-label">{{ d.label }}</span>
-          <el-tag v-if="d.confidence === 'explicit'" size="small" type="success" effect="plain">明确</el-tag>
-          <el-tag v-else-if="d.confidence === 'inferred'" size="small" type="info" effect="plain">推断</el-tag>
+          <span class="dims-label">
+            {{ d.label }}
+            <em v-if="d.score" class="dims-score">{{ d.score }}/10</em>
+          </span>
+          <el-tag v-if="d.confidence === 'explicit'" size="small" type="success" effect="plain">
+            明确
+          </el-tag>
+          <el-tag v-else-if="d.confidence === 'inferred'" size="small" type="info" effect="plain">
+            推断
+          </el-tag>
           <span class="dims-value">{{ d.value }}</span>
         </li>
       </ul>
       <p v-if="profile?.coverage_missing?.length" class="dims-missing muted">
-        待补全：{{ profile.coverage_missing.map((k) => PROFILE_DIMENSION_LABELS[k as keyof PersonaDimensions] ?? k).join('、') }}
+        待补全：{{
+          profile.coverage_missing
+            .map((k) => PROFILE_DIMENSION_LABELS[k as keyof PersonaDimensions] ?? k)
+            .join('、')
+        }}
       </p>
       <p v-if="profile?.updated_at" class="dims-time">更新于 {{ profile.updated_at }}</p>
     </aside>
@@ -343,6 +433,13 @@ const dimensionEntries = (dims: PersonaDimensions) =>
   font-size: 11px;
   color: var(--alp-color-primary);
   font-weight: 600;
+}
+
+.dims-score {
+  font-style: normal;
+  font-weight: 500;
+  color: var(--alp-color-muted);
+  margin-left: 4px;
 }
 
 .dims-value {

@@ -22,6 +22,7 @@ defineProps<{
   apiOnline: boolean
   traceCpp?: boolean
   hintsOutside?: boolean
+  agentConsoleLines?: import('@/utils/agentConsole').AgentConsoleLine[]
 }>()
 
 const code = defineModel<string>({ required: true })
@@ -69,6 +70,7 @@ const emit = defineEmits<{
         :diagnosis="diagnosis"
         :api-online="apiOnline"
         :trace-cpp="traceCpp"
+        :agent-console-lines="agentConsoleLines"
         @run="emit('run')"
         @submit="emit('submit')"
         @reset="emit('reset')"

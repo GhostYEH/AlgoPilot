@@ -39,6 +39,7 @@ const {
   onNarrate,
   onAiDiagnose,
   onVisualTraceDiagnose,
+  agentConsoleLines,
 } = useOjWorkbenchActions({
   slug,
   code,
@@ -118,6 +119,7 @@ function resetCode() {
       :trace-bug-diagnosis="traceBugDiagnosis"
       :api-online="apiOnline"
       :trace-cpp="traceCpp"
+      :agent-console-lines="agentConsoleLines"
       @run="onRun"
       @submit="onSubmit"
       @trace="onTrace"

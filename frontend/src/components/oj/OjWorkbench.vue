@@ -3,6 +3,8 @@ import { computed, ref, watch } from 'vue'
 import { Refresh, VideoPlay, Upload, View, MagicStick } from '@element-plus/icons-vue'
 import CodeEditor from '@/components/oj/CodeEditor.vue'
 import OjAiDiagnosisPanel from '@/components/oj/OjAiDiagnosisPanel.vue'
+import AgentThinkingConsole from '@/components/agents/AgentThinkingConsole.vue'
+import type { AgentConsoleLine } from '@/utils/agentConsole'
 import type { JudgeResponse, ProblemDetail, Verdict } from '@/api/oj'
 import type { AiDiagnoseResponse } from '@/types/codeTrace'
 import {
@@ -29,6 +31,7 @@ const props = defineProps<{
   traceCpp?: boolean
   /** 可视化分屏：仅保留代码编辑区 */
   traceLayout?: boolean
+  agentConsoleLines?: AgentConsoleLine[]
 }>()
 
 const emit = defineEmits<{
@@ -311,6 +314,15 @@ function onReset() {
       </div>
     </section>
 
+    <AgentThinkingConsole
+      v-if="!traceLayout && (diagnosing || (agentConsoleLines?.length ?? 0) > 0)"
+      class="oj-workbench-agent-console"
+      :lines="agentConsoleLines ?? []"
+      :active="diagnosing"
+      mode="diagnosis"
+      title="Agent Synergy Terminal"
+      subtitle="OJ 诊断 · 学情评估 · 路径降级"
+    />
     <OjAiDiagnosisPanel
       v-if="!traceLayout"
       class="oj-workbench-diagnosis"
@@ -352,9 +364,16 @@ function onReset() {
   background: #1e1e1e;
 }
 
-.oj-workbench-diagnosis {
+.oj-workbench-agent-console {
   grid-column: 1 / -1;
   grid-row: 2;
+  min-width: 0;
+  max-height: 220px;
+}
+
+.oj-workbench-diagnosis {
+  grid-column: 1 / -1;
+  grid-row: 3;
   min-width: 0;
 }
 

@@ -11,18 +11,28 @@ export interface ChatHistoryItem {
 
 export interface PersonaDimensions {
   knowledge_base: string
-  learning_goal: string
   cognitive_style: string
-  weak_points: string
-  pace_preference: string
-  interest_focus: string
-  preferred_modalities: string
+  coding_ability: string
+  learning_goals: string
+  error_preference: string
+  grit_level: string
+}
+
+export const PROFILE_DIMENSION_LABELS: Record<keyof PersonaDimensions, string> = {
+  knowledge_base: '知识基础',
+  cognitive_style: '认知风格',
+  coding_ability: '代码实操能力',
+  learning_goals: '学习目标',
+  error_preference: '易错点偏好',
+  grit_level: '抗挫折心理',
 }
 
 export interface PersonaProfile {
   summary: string
   dimensions: PersonaDimensions
   updated_at: string | null
+  /** 六维量化分值 1-10 */
+  dimension_scores?: Record<string, number>
   dimension_confidence?: Record<string, string>
   coverage_missing?: string[]
 }
@@ -32,6 +42,9 @@ export interface PathStepItem {
   rank: number
   reason: string
   phase: string
+  prerequisites?: string[]
+  difficulty?: string
+  is_remediation?: boolean
 }
 
 export interface LearningPathPlan {
@@ -42,6 +55,26 @@ export interface LearningPathPlan {
   ordered_keys: string[]
   steps: PathStepItem[]
   updated_at: string | null
+  remediation_inserted?: boolean
+}
+
+export interface AgentLogItem {
+  agent: string
+  action: string
+  detail?: string
+  status?: string
+}
+
+export interface OjStruggleEvaluation {
+  agent_name: string
+  struggle_detected: boolean
+  consecutive_failures: number
+  remediation_module_key: string | null
+  remediation_label: string
+  planner_notified: boolean
+  path_updated: boolean
+  agent_logs: AgentLogItem[]
+  plan_summary: string
 }
 
 export interface GeneratedResource {
@@ -54,26 +87,18 @@ export interface GeneratedResource {
   created_at: string
 }
 
-export const PROFILE_DIMENSION_LABELS: Record<keyof PersonaDimensions, string> = {
-  knowledge_base: '知识基础',
-  learning_goal: '学习目标',
-  cognitive_style: '认知风格',
-  weak_points: '薄弱点偏好',
-  pace_preference: '学习节奏',
-  interest_focus: '兴趣方向',
-  preferred_modalities: '偏好模态',
-}
 
 export const RESOURCE_TYPE_META: Record<
   string,
   { label: string; agentName: string; color: string }
 > = {
-  document: { label: '讲解文档', agentName: 'DocAgent', color: '#3b82f6' },
-  mindmap: { label: '思维导图', agentName: 'MindMapAgent', color: '#8b5cf6' },
-  exercises: { label: '练习题单', agentName: 'QuizAgent', color: '#f59e0b' },
-  reading: { label: '拓展阅读', agentName: 'ReadingAgent', color: '#10b981' },
-  code_case: { label: '代码案例', agentName: 'CodeAgent', color: '#ef4444' },
-  video_script: { label: '视频脚本', agentName: 'VideoAgent', color: '#ec4899' },
+  document: { label: '概念讲解', agentName: 'ConceptAgent', color: '#3b82f6' },
+  mindmap: { label: '知识图谱', agentName: 'GraphAgent', color: '#8b5cf6' },
+  exercises: { label: '个性化题单', agentName: 'QuizAgent', color: '#f59e0b' },
+  code_case: { label: '剧本沙盒', agentName: 'ScenarioAgent', color: '#ef4444' },
+  trace_animation: { label: '轨迹动画', agentName: 'TraceAgent', color: '#ec4899' },
+  reading: { label: '拓展阅读', agentName: 'ConceptAgent', color: '#10b981' },
+  video_script: { label: '教学动画', agentName: 'TraceAgent', color: '#ec4899' },
 }
 
 export interface AgentInfo {
@@ -115,8 +140,8 @@ const STAGE_IO: Record<string, WorkflowStageDetail> = {
   },
   safety_filter: {
     stage: 'safety_filter',
-    agent: 'ContentSafety',
-    label: '安全过滤',
+    agent: 'SafetyAgent',
+    label: '内容安全审查',
     input: '校验后正文',
     output: '脱敏后正文',
   },
@@ -319,6 +344,29 @@ export async function syncPersonaFromStored(): Promise<{ profile: PersonaProfile
   }>
 }
 
+export async function evaluateOjStruggle(body: {
+  module_key?: string
+  problem_slug?: string
+  knowledge_point?: string
+  verdict: string
+  consecutive_failures: number
+  error_pattern?: string
+  overall_percent: number
+  modules: Array<{
+    key: string
+    label: string
+    phase: string
+    available: boolean
+    percent: number
+    done_count: number
+    total_count: number
+  }>
+}): Promise<OjStruggleEvaluation> {
+  return request.post('/api/orchestrator/evaluation/oj-struggle', body, {
+    timeout: 90000,
+  }) as Promise<OjStruggleEvaluation>
+}
+
 export function resourceVerifyTag(meta: Record<string, unknown>): {
   label: string
   type: 'success' | 'warning' | 'info'
@@ -437,7 +485,12 @@ export async function streamGenerateAllResources(
       detail: string
       percent?: number
     }) => void
-    onCollaboration?: (log: Array<{ agent: string; action: string; detail: string }>) => void
+    onCollaboration?: (
+      log: Array<{ agent: string; action: string; detail: string; role?: string; status?: string }>,
+    ) => void
+    onAgentLogs?: (
+      logs: Array<{ agent: string; action: string; detail?: string; role?: string; status?: string }>,
+    ) => void
     onResource?: (r: GeneratedResource) => void
     onDone?: () => void
     onError?: (msg: string) => void
@@ -457,15 +510,52 @@ export async function streamGenerateAllResources(
           percent: typeof ev.percent === 'number' ? ev.percent : undefined,
         })
       }
-      if (ev.type === 'collaboration' && Array.isArray(ev.log)) {
-        handlers.onCollaboration?.(
-          ev.log as Array<{ agent: string; action: string; detail: string }>,
-        )
+      if (ev.type === 'collaboration') {
+        if (Array.isArray(ev.log)) {
+          handlers.onCollaboration?.(
+            ev.log as Array<{ agent: string; action: string; detail: string }>,
+          )
+        }
+        if (Array.isArray(ev.agent_logs)) {
+          handlers.onAgentLogs?.(
+            ev.agent_logs as Array<{
+              agent: string
+              action: string
+              detail?: string
+              role?: string
+              status?: string
+            }>,
+          )
+        }
       }
       if (ev.type === 'resource' && ev.resource) {
         handlers.onResource?.(ev.resource as GeneratedResource)
+        if (Array.isArray(ev.agent_logs)) {
+          handlers.onAgentLogs?.(
+            ev.agent_logs as Array<{
+              agent: string
+              action: string
+              detail?: string
+              role?: string
+              status?: string
+            }>,
+          )
+        }
       }
-      if (ev.type === 'done') handlers.onDone?.()
+      if (ev.type === 'done') {
+        handlers.onDone?.()
+        if (Array.isArray(ev.agent_logs)) {
+          handlers.onAgentLogs?.(
+            ev.agent_logs as Array<{
+              agent: string
+              action: string
+              detail?: string
+              role?: string
+              status?: string
+            }>,
+          )
+        }
+      }
       if (ev.type === 'error') {
         const msg = String(ev.message)
         ElMessage.error(msg)

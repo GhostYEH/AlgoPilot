@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import {
   PROFILE_DIMENSION_LABELS,
   type PersonaDimensions,
@@ -7,12 +7,27 @@ import {
 
 const props = defineProps<{
   dimensions: PersonaDimensions
+  /** 后端量化分值 1-10，优先用于雷达图 */
+  scores?: Record<string, number>
+  animated?: boolean
 }>()
 
 const keys = Object.keys(PROFILE_DIMENSION_LABELS) as (keyof PersonaDimensions)[]
+const reveal = ref(!props.animated)
 
-function scoreFor(val: string): number {
-  const t = (val || '').trim()
+onMounted(() => {
+  if (!props.animated) return
+  requestAnimationFrame(() => {
+    reveal.value = true
+  })
+})
+
+function scoreFor(key: keyof PersonaDimensions): number {
+  const s = props.scores?.[key]
+  if (typeof s === 'number' && s >= 1) {
+    return Math.min(100, Math.round(s * 10))
+  }
+  const t = (props.dimensions[key] || '').trim()
   if (!t || t === '待补充') return 28
   return Math.min(95, 40 + Math.min(t.length, 80))
 }
@@ -22,9 +37,11 @@ const points = computed(() => {
   const cx = 120
   const cy = 120
   const maxR = 72
+  const scale = reveal.value ? 1 : 0.08
   return keys.map((key, i) => {
     const angle = (Math.PI * 2 * i) / n - Math.PI / 2
-    const r = (scoreFor(props.dimensions[key]) / 100) * maxR
+    const pct = scoreFor(key)
+    const r = (pct / 100) * maxR * scale
     return {
       key,
       label: PROFILE_DIMENSION_LABELS[key],
@@ -32,7 +49,7 @@ const points = computed(() => {
       y: cy + r * Math.sin(angle),
       lx: cx + (maxR + 22) * Math.cos(angle),
       ly: cy + (maxR + 22) * Math.sin(angle),
-      score: scoreFor(props.dimensions[key]),
+      score: pct,
     }
   })
 })
@@ -45,8 +62,8 @@ const gridLevels = [0.25, 0.5, 0.75, 1]
 </script>
 
 <template>
-  <div class="radar-wrap">
-    <svg viewBox="0 0 240 240" class="radar-svg" aria-label="学习画像雷达图">
+  <div class="radar-wrap" :class="{ 'radar-wrap--animated': animated && reveal }">
+    <svg viewBox="0 0 240 240" class="radar-svg" aria-label="学习画像六维雷达图">
       <g v-for="lv in gridLevels" :key="lv">
         <polygon
           :points="
@@ -72,7 +89,13 @@ const gridLevels = [0.25, 0.5, 0.75, 1]
         :y2="p.ly"
         stroke="rgba(148,163,184,0.2)"
       />
-      <polygon :points="polygon" fill="rgba(56,189,248,0.25)" stroke="#38bdf8" stroke-width="2" />
+      <polygon
+        :points="polygon"
+        class="radar-fill"
+        fill="rgba(56,189,248,0.25)"
+        stroke="#38bdf8"
+        stroke-width="2"
+      />
       <circle
         v-for="p in points"
         :key="p.key"
@@ -109,6 +132,10 @@ const gridLevels = [0.25, 0.5, 0.75, 1]
   gap: 12px;
   align-items: center;
   justify-content: center;
+}
+
+.radar-wrap--animated .radar-fill {
+  transition: all 0.9s cubic-bezier(0.34, 1.2, 0.64, 1);
 }
 
 .radar-svg {

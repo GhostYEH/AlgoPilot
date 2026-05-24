@@ -1,23 +1,43 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { MagicStick } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import {
   fetchAgentsCatalog,
   getStageDetail,
+  streamGenerateAllResources,
   type AgentInfo,
+  type GeneratedResource,
 } from '@/api/orchestrator'
+import { isLoggedIn } from '@/stores/auth'
+import AgentThinkingConsole from '@/components/agents/AgentThinkingConsole.vue'
+import PersonalizedResourceDashboard from '@/components/agents/PersonalizedResourceDashboard.vue'
+import type { AgentConsoleLine } from '@/utils/agentConsole'
+import {
+  lineFromCollaboration,
+  lineFromProgress,
+  lineFromWorkflow,
+  lineFromAgentLog,
+  resourceBootstrapLines,
+  systemLine,
+} from '@/utils/agentConsole'
 
 const router = useRouter()
+
 const agents = ref<AgentInfo[]>([])
 const pipeline = ref<Array<{ stage: string; agent: string; label: string }>>([])
 const note = ref('')
 const dagMermaid = ref('')
 const activeStage = ref(0)
-const demoRunning = ref(false)
-const demoAgent = ref('')
-const collabLogs = ref<Array<{ agent: string; action: string; detail: string }>>([])
-const logExpanded = ref(false)
+
+const topic = ref('动态规划入门')
+const focusHint = ref('主攻状态转移方程与边界')
+const generating = ref(false)
+const progress = ref(0)
+const consoleLines = ref<AgentConsoleLine[]>([])
+const generatedResources = ref<GeneratedResource[]>([])
+const activeResourceTab = ref('document')
 
 const stageDetail = computed(() => {
   const s = pipeline.value[activeStage.value]
@@ -36,140 +56,235 @@ onMounted(async () => {
   }
 })
 
-function agentStatus(id: string): 'running' | 'idle' {
-  if (!demoRunning.value) return 'idle'
-  if (demoAgent.value && id.includes(demoAgent.value.replace('Agent', ''))) return 'running'
-  if (demoAgent.value === id) return 'running'
-  return 'idle'
+function pushLine(line: AgentConsoleLine) {
+  consoleLines.value = [...consoleLines.value, line]
 }
 
-async function runPipelineDemo() {
-  if (demoRunning.value || !pipeline.value.length) return
-  demoRunning.value = true
-  collabLogs.value = []
-  for (let i = 0; i < pipeline.value.length; i++) {
-    activeStage.value = i
-    const s = pipeline.value[i]
-    demoAgent.value = s.agent === 'role_agent' ? 'DocAgent' : s.agent
-    collabLogs.value.push({
-      agent: demoAgent.value,
-      action: s.stage,
-      detail: `${s.label} · running`,
-    })
-    await new Promise((r) => setTimeout(r, 700))
-    collabLogs.value[collabLogs.value.length - 1] = {
-      agent: demoAgent.value,
-      action: s.stage,
-      detail: `${s.label} · done`,
-    }
+function markRunningDone(agent: string) {
+  consoleLines.value = consoleLines.value.map((l) =>
+    l.agent === agent && l.status === 'running' ? { ...l, status: 'done' as const } : l,
+  )
+}
+
+async function runResourceGeneration() {
+  if (!isLoggedIn.value) {
+    ElMessage.warning('请先登录后生成个性化资源')
+    void router.push({ name: 'login', query: { redirect: '/agent-workbench' } })
+    return
   }
-  demoRunning.value = false
-  demoAgent.value = ''
-  ElMessage.success('DAG 演示完成（示意各阶段输入/输出）')
+  if (generating.value) return
+
+  generating.value = true
+  progress.value = 0
+  consoleLines.value = [...resourceBootstrapLines(topic.value)]
+  generatedResources.value = []
+
+  try {
+    await streamGenerateAllResources(
+      { topic: topic.value, focus_hint: focusHint.value },
+      {
+        onProgress(p) {
+          pushLine(lineFromProgress(p))
+          if (typeof p.percent === 'number') progress.value = p.percent
+          activeResourceTab.value = p.resource_type === 'video_script' ? 'trace_animation' : p.resource_type
+        },
+        onWorkflow(w) {
+          if (w.status === 'done') markRunningDone(w.agent)
+          pushLine(lineFromWorkflow(w))
+          if (typeof w.percent === 'number') progress.value = w.percent
+        },
+        onCollaboration(log) {
+          for (const row of log) pushLine(lineFromCollaboration(row))
+        },
+        onAgentLogs(logs) {
+          for (const entry of logs) pushLine(lineFromAgentLog(entry))
+        },
+        onResource(r) {
+          generatedResources.value = [
+            r,
+            ...generatedResources.value.filter((x) => x.id !== r.id),
+          ]
+          const key = r.resource_type === 'video_script' ? 'trace_animation' : r.resource_type
+          activeResourceTab.value = key
+          pushLine(
+            systemLine(
+              `${r.agent_name} 已落库 · ${r.title.slice(0, 40)}`,
+              'done',
+            ),
+          )
+        },
+        onDone() {
+          progress.value = 100
+          pushLine(systemLine('个性化自适应资源装配完毕！', 'success'))
+          ElMessage.success('五类个性化资源已全部生成')
+        },
+        onError() {
+          pushLine(systemLine('生成管线异常终止', 'error'))
+        },
+      },
+    )
+  } finally {
+    generating.value = false
+  }
 }
 
 function selectStage(idx: number) {
   activeStage.value = idx
 }
+
+function agentStatus(id: string): 'running' | 'idle' {
+  if (!generating.value) return 'idle'
+  const running = consoleLines.value.some((l) => l.agent === id && l.status === 'running')
+  return running ? 'running' : 'idle'
+}
 </script>
 
 <template>
-  <el-card shadow="never" class="page-card">
-    <el-page-header title="多智能体工作台" @back="router.push({ name: 'home' })" />
-    <el-divider />
-    <p class="muted">{{ note }}</p>
-
-    <div class="toolbar">
-      <el-button type="primary" :loading="demoRunning" @click="runPipelineDemo">
-        运行动态 Pipeline 演示
-      </el-button>
-      <el-button @click="logExpanded = !logExpanded">
-        {{ logExpanded ? '收起' : '展开' }}协作日志
-      </el-button>
+  <div class="workbench-page">
+    <div class="wb-hero">
+      <el-page-header title="多智能体协同工作台" @back="router.push({ name: 'home' })" />
+      <p class="wb-desc">{{ note || 'ProfilingAgent 驱动五类资源 Agent 协同生成 · 赛题答辩演示入口' }}</p>
     </div>
 
-    <h3 class="section-title">DAG 架构（条件路由 + 校验闭环）</h3>
-    <el-row :gutter="12">
-      <el-col :xs="24" :md="14">
+    <section class="wb-generate">
+      <el-row :gutter="12" align="middle">
+        <el-col :xs="24" :md="9">
+          <label class="field-label">课程主题</label>
+          <el-input v-model="topic" size="large" placeholder="如：动态规划入门" />
+        </el-col>
+        <el-col :xs="24" :md="9">
+          <label class="field-label">生成侧重</label>
+          <el-input v-model="focusHint" size="large" placeholder="如：状态转移方程" />
+        </el-col>
+        <el-col :xs="24" :md="6">
+          <el-button
+            type="primary"
+            size="large"
+            class="gen-btn"
+            :icon="MagicStick"
+            :loading="generating"
+            @click="runResourceGeneration"
+          >
+            启动个性化资源生成
+          </el-button>
+        </el-col>
+      </el-row>
+    </section>
+
+    <AgentThinkingConsole
+      :lines="consoleLines"
+      :active="generating"
+      :progress="progress"
+      mode="resource"
+      title="Agent Synergy Terminal"
+      subtitle="Concept → Graph → Quiz → Scenario → Trace"
+      class="wb-console"
+    />
+
+    <PersonalizedResourceDashboard
+      v-if="generatedResources.length || generating"
+      :resources="generatedResources"
+      v-model:active-tab="activeResourceTab"
+      class="wb-dashboard"
+    />
+
+    <el-collapse v-else class="wb-collapse">
+      <el-collapse-item title="架构说明 · DAG Pipeline（答辩备用）" name="arch">
         <div class="dag-visual">
           <div class="dag-node">KnowledgeRetriever</div>
           <span class="dag-arrow">→</span>
-          <div class="dag-node accent">Role Agents</div>
+          <div class="dag-node accent">五类 Role Agents</div>
           <span class="dag-arrow">→</span>
-          <div class="dag-node warn">Verifier?</div>
+          <div class="dag-node warn">Verifier</div>
           <span class="dag-arrow">→</span>
           <div class="dag-node">Safety → 落库</div>
         </div>
         <pre v-if="dagMermaid" class="mermaid-src">{{ dagMermaid }}</pre>
-      </el-col>
-      <el-col :xs="24" :md="10">
+
+        <h3 class="section-title">Pipeline 阶段</h3>
+        <el-steps :active="activeStage" finish-status="success" align-center class="pipeline-steps">
+          <el-step
+            v-for="(s, idx) in pipeline"
+            :key="s.stage"
+            :title="s.agent"
+            :description="s.label"
+            class="clickable-step"
+            @click="selectStage(idx)"
+          />
+        </el-steps>
         <el-card v-if="stageDetail" shadow="never" class="io-card">
           <template #header>阶段 I/O · {{ stageDetail.label }}</template>
           <p><strong>Agent：</strong>{{ stageDetail.agent }}</p>
           <p><strong>输入：</strong>{{ stageDetail.input ?? '—' }}</p>
           <p><strong>输出：</strong>{{ stageDetail.output ?? '—' }}</p>
         </el-card>
-      </el-col>
-    </el-row>
 
-    <h3 class="section-title">资源生成 Pipeline（可点击阶段）</h3>
-    <el-steps
-      :active="activeStage"
-      finish-status="success"
-      align-center
-      class="pipeline-steps"
-    >
-      <el-step
-        v-for="(s, idx) in pipeline"
-        :key="s.stage"
-        :title="s.agent === 'role_agent' ? '角色 Agent' : s.agent"
-        :description="s.label"
-        class="clickable-step"
-        @click="selectStage(idx)"
-      />
-    </el-steps>
-
-    <h3 class="section-title">角色智能体</h3>
-    <el-row :gutter="12">
-      <el-col v-for="a in agents" :key="a.id" :xs="24" :sm="12" :md="8">
-        <el-card shadow="hover" class="agent-card" :class="{ running: agentStatus(a.id) === 'running' }">
-          <div class="agent-head">
-            <span class="agent-id">{{ a.display_name }}</span>
-            <span class="status-dot" :class="agentStatus(a.id)" />
-          </div>
-          <el-tag size="small" effect="plain">{{ a.layer }}</el-tag>
-          <p>{{ a.role }}</p>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <el-drawer v-model="logExpanded" title="Agent 协作日志" size="90%" direction="btt">
-      <el-empty v-if="!collabLogs.length" description="点击「运行动态 Pipeline 演示」或去资源库批量生成查看真实日志" />
-      <ul v-else class="log-list">
-        <li v-for="(row, i) in collabLogs" :key="i">
-          <strong>{{ row.agent }}</strong> · {{ row.action }} — {{ row.detail }}
-        </li>
-      </ul>
-    </el-drawer>
-  </el-card>
+        <h3 class="section-title">注册 Agent</h3>
+        <el-row :gutter="12">
+          <el-col v-for="a in agents" :key="a.id" :xs="24" :sm="12" :md="8">
+            <el-card shadow="hover" class="agent-card" :class="{ running: agentStatus(a.id) === 'running' }">
+              <div class="agent-head">
+                <span class="agent-id">{{ a.display_name }}</span>
+                <span class="status-dot" :class="agentStatus(a.id)" />
+              </div>
+              <el-tag size="small" effect="plain">{{ a.layer }}</el-tag>
+              <p>{{ a.role }}</p>
+            </el-card>
+          </el-col>
+        </el-row>
+      </el-collapse-item>
+    </el-collapse>
+  </div>
 </template>
 
 <style scoped>
-.page-card {
-  border-radius: var(--alp-radius-card);
+.workbench-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 8px 4px 48px;
 }
 
-.muted {
+.wb-hero {
+  margin-bottom: 20px;
+}
+
+.wb-desc {
+  margin: 12px 0 0;
   color: var(--alp-color-muted);
   line-height: 1.6;
-  margin-bottom: 16px;
+  font-size: 14px;
 }
 
-.toolbar {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
+.wb-generate {
+  margin-bottom: 20px;
+  padding: 18px 20px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--alp-color-primary) 25%, var(--alp-color-border));
+  background: color-mix(in srgb, var(--alp-color-primary) 4%, var(--alp-bg-surface));
+}
+
+.field-label {
+  display: block;
+  font-size: 12px;
+  color: var(--alp-color-muted);
+  margin-bottom: 6px;
+}
+
+.gen-btn {
+  width: 100%;
+  margin-top: 22px;
+}
+
+.wb-console {
+  margin-bottom: 24px;
+}
+
+.wb-dashboard {
+  margin-bottom: 24px;
+}
+
+.wb-collapse {
+  margin-top: 8px;
 }
 
 .section-title {
@@ -228,7 +343,6 @@ function selectStage(idx: number) {
 .agent-card {
   margin-bottom: 12px;
   min-height: 100px;
-  transition: box-shadow 0.3s;
 }
 
 .agent-card.running {
@@ -269,12 +383,5 @@ function selectStage(idx: number) {
   margin: 8px 0 0;
   font-size: 12px;
   color: var(--alp-color-muted);
-}
-
-.log-list {
-  font-family: ui-monospace, monospace;
-  font-size: 12px;
-  line-height: 1.7;
-  padding-left: 18px;
 }
 </style>

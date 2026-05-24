@@ -381,7 +381,7 @@ onMounted(async () => {
                 <div class="card-kicker">个性化起点</div>
                 <h2 class="card-title">开启个性化学习</h2>
                 <p class="card-desc">
-                  通过对话构建 7 维学习画像，并由多智能体生成个性化资源与学习路径。
+                  通过对话构建 6 维学习画像，并由多智能体生成个性化资源与学习路径。
                 </p>
                 <el-button
                   type="primary"
