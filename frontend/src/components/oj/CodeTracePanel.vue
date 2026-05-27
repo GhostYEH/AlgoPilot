@@ -507,6 +507,8 @@ const showNarrateBtn = computed(
       :step="frame"
       :max-step="maxFrame"
       :playing="playing"
+      :hide-toolbar="splitMode"
+      :compact-hint="splitMode"
       @toggle-play="togglePlay"
       @next="next"
       @reset="reset"
@@ -549,23 +551,173 @@ const showNarrateBtn = computed(
           </div>
         </div>
 
-        <div
-          v-else-if="highlightLine > 0"
-          class="trace-line-bar"
-          :class="{ 'trace-line-bar--bug': isOnBugFrame }"
-          role="status"
-          aria-live="polite"
-        >
-          <span class="trace-line-bar__label">当前执行</span>
-          <span class="trace-line-bar__line">第 {{ highlightLine }} 行</span>
-          <code v-if="codeLines[highlightLine - 1]" class="trace-line-bar__snippet">{{
-            codeLines[highlightLine - 1].trim() || ' '
-          }}</code>
-        </div>
+        <template v-else>
+          <header
+            v-if="highlightLine > 0"
+            class="trace-split-header"
+            :class="{ 'trace-split-header--bug': isOnBugFrame }"
+            role="status"
+            aria-live="polite"
+          >
+            <div class="trace-split-header__line">
+              <span class="trace-line-bar__label">第 {{ highlightLine }} 行</span>
+              <code v-if="codeLines[highlightLine - 1]" class="trace-split-header__code">{{
+                codeLines[highlightLine - 1].trim() || ' '
+              }}</code>
+            </div>
+            <p v-if="stepHint" class="trace-split-header__hint">{{ stepHint }}</p>
+          </header>
+
+          <div
+            class="trace-split-body"
+            :class="{ 'trace-split-body--solo': !showMemoryLayout }"
+          >
+            <aside v-if="showMemoryLayout" class="trace-split-memory">
+              <TraceMemoryLayout
+                compact
+                :slots="memorySlots"
+                :hot-ids="hotMemoryIds"
+                :var-changed="memoryLayoutChanged"
+              />
+            </aside>
+
+            <div class="trace-split-viz">
+              <TraceStackScene
+                v-if="stackScene"
+                :scene="stackScene"
+                :changed="changedSet"
+              />
+              <TraceQueueScene
+                v-else-if="queueScene"
+                :scene="queueScene"
+                :changed="changedSet"
+              />
+              <TraceSlidingWindowScene
+                v-else-if="slidingWindowScene"
+                :scene="slidingWindowScene"
+                :changed="changedSet"
+              />
+              <TraceHashLookupScene
+                v-else-if="hashLookupScene"
+                :scene="hashLookupScene"
+                :changed="changedSet"
+              />
+
+              <TraceSequenceViz
+                v-for="seq in genericSequences"
+                :key="'seq-' + seq.name"
+                :name="seq.name"
+                :view-hint="seq.viewHint"
+                :items="seq.items"
+                :prev-items="prevSequences.find((p) => p.name === seq.name)?.items"
+                :var-changed="changedSet.has(seq.name)"
+              />
+
+              <TraceAssociativeViz
+                v-for="assoc in genericAssociatives"
+                :key="'assoc-' + assoc.name"
+                :name="assoc.name"
+                :view-hint="assoc.viewHint"
+                :entries="assoc.entries"
+                :prev-entries="prevAssociatives.find((p) => p.name === assoc.name)?.entries"
+                :var-changed="changedSet.has(assoc.name)"
+              />
+
+              <template v-for="m in matrixVars" :key="m.name">
+                <el-alert
+                  v-if="m.overflow"
+                  type="warning"
+                  :title="m.message"
+                  show-icon
+                  :closable="false"
+                  class="matrix-overflow-alert"
+                />
+                <TraceMatrixGrid
+                  v-else
+                  :name="m.name"
+                  :matrix="m.matrix"
+                  :hot-cells="m.hotCells"
+                  :active-row="m.activeRow"
+                  :active-col="m.activeCol"
+                  :var-changed="changedSet.has(m.name)"
+                />
+              </template>
+
+              <TraceLinkedList
+                v-if="listScene"
+                name="链表"
+                :graph="listScene.graph"
+                :pointer-labels="listScene.pointerLabels"
+                :hot-nodes="listDiff.hotNodes"
+                :hot-edges="listDiff.hotEdges"
+                :hot-pointers="listDiff.hotPointers"
+                :var-changed="listSceneChanged"
+              />
+
+              <TraceSequenceViz
+                v-if="usingTreeInference"
+                name="q"
+                view-hint="tree_build_queue"
+                :items="inferredQueueItems"
+                :var-changed="changedSet.has('q') || changedSet.has('idx')"
+              />
+
+              <p v-if="usingTreeInference" class="trace-infer-hint">
+                根据 <code>nodes</code> 与 <code>idx</code> 推断（层序建树）；若指针未展开则以推断为准。
+              </p>
+
+              <TraceTreePanel
+                v-for="t in treeVars"
+                :key="t.name"
+                :name="t.name"
+                :graph="t.graph"
+                :hot-node-ids="t.hotNodeIds"
+                :var-changed="changedSet.has(t.name) || changedSet.has('idx')"
+              />
+
+              <TraceDictPanel
+                v-for="m in mapVars"
+                :key="m.name"
+                :name="m.name"
+                :entries="m.entries"
+                :var-changed="changedSet.has(m.name)"
+              />
+
+              <div
+                v-for="arr in listVars"
+                v-show="!hashLookupScene && !queueScene && !stackScene"
+                :key="arr.name"
+                class="var-block"
+              >
+                <div class="var-label" :class="{ 'var-label--hot': changedSet.has(arr.name) }">
+                  {{ arr.name }}
+                </div>
+                <GameArrayBoard :values="arr.values" :pointers="arr.pointers" :clickable="false" />
+              </div>
+
+              <div
+                v-if="visibleScalars.length && !hashLookupScene && !slidingWindowScene && !queueScene && !stackScene"
+                class="scalar-row"
+              >
+                <div
+                  v-for="s in visibleScalars"
+                  :key="s.name"
+                  class="scalar-chip"
+                  :class="{ 'scalar-chip--hot': changedSet.has(s.name) }"
+                >
+                  <span class="scalar-name">{{ s.name }}</span>
+                  <span class="scalar-val">{{ String(s.snap.value ?? 'None') }}</span>
+                </div>
+              </div>
+
+              <p v-if="!hasViz" class="trace-empty">本步暂无可视化变量</p>
+            </div>
+          </div>
+        </template>
 
         <div
+          v-if="!splitMode"
           class="trace-viz trace-viz--primary"
-          :class="{ 'trace-viz--split': splitMode }"
         >
           <TraceMemoryLayout
             v-if="showMemoryLayout"
@@ -706,7 +858,12 @@ const showNarrateBtn = computed(
         </div>
       </div>
 
-      <div class="trace-playback-bar" role="group" aria-label="回放控制">
+      <div
+        class="trace-playback-bar"
+        :class="{ 'trace-playback-bar--split': splitMode }"
+        role="group"
+        aria-label="回放控制"
+      >
         <el-button-group size="small">
           <el-button :icon="playing ? VideoPause : VideoPlay" @click="togglePlay">
             {{ playing ? '暂停' : prefersReducedMotion ? '步进' : '播放' }}
@@ -866,6 +1023,112 @@ const showNarrateBtn = computed(
   flex: 1;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+
+.trace-split-header {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--el-color-primary) 10%, var(--alp-bg-soft-block));
+  border: 1px solid var(--alp-color-border);
+}
+
+.trace-split-header--bug {
+  background: color-mix(in srgb, var(--el-color-danger) 12%, var(--alp-bg-soft-block));
+  border-color: color-mix(in srgb, var(--el-color-danger) 35%, var(--alp-color-border));
+}
+
+.trace-split-header__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+  font-size: 12px;
+}
+
+.trace-split-header__code {
+  flex: 1 1 100%;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 11px;
+  color: var(--alp-color-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trace-split-header__hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--alp-color-text);
+}
+
+.trace-split-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(168px, 220px) minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
+.trace-split-body--solo {
+  grid-template-columns: 1fr;
+}
+
+.trace-split-memory {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.trace-split-viz {
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 2px;
+  border-radius: 8px;
+  background: var(--alp-bg-soft-block);
+  border: 1px solid var(--alp-color-border);
+}
+
+.trace-split-viz :deep(.trace-tree) {
+  flex: 1 1 auto;
+  min-height: 160px;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.trace-split-viz :deep(.trace-tree-stage) {
+  flex: 1;
+  min-height: 140px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.trace-playback-bar--split {
+  flex-shrink: 0;
+  margin-top: 8px;
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background: var(--alp-bg-surface-solid);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.12);
+}
+
+@media (max-width: 720px) {
+  .trace-split-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .trace-split-memory {
+    max-height: 130px;
+  }
 }
 
 .trace-line-bar {

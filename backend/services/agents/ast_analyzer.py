@@ -238,7 +238,7 @@ def _run_async(coro):
 
 
 async def _llm_cpp_static_guard(code: str) -> AstFinding | None:
-    if not settings.siliconflow_api_key:
+    if not settings.llm_configured:
         return None
     snippet = code[:4500]
     try:
@@ -278,7 +278,7 @@ def _analyze_cpp(code: str) -> tuple[list[AstFinding], str]:
     if llm_finding:
         return [llm_finding], "llm"
 
-    return findings, "llm" if settings.siliconflow_api_key else "regex"
+    return findings, "llm" if settings.llm_configured else "regex"
 
 
 # --- Python：仅 python 使用 ast 模块 ---

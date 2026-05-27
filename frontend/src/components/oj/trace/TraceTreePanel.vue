@@ -109,6 +109,8 @@ function nodeState(id: string) {
   border-radius: 8px;
   background: var(--alp-bg-soft-block);
   border: 1px solid var(--alp-color-border);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .trace-tree-empty {

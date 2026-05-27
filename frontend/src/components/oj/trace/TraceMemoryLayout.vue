@@ -3,11 +3,16 @@ import { computed } from 'vue'
 import TraceVizLegend from '@/components/oj/trace/TraceVizLegend.vue'
 import type { MemoryRegion, MemorySlot } from '@/utils/traceMemory'
 
-const props = defineProps<{
-  slots: MemorySlot[]
-  hotIds?: string[]
-  varChanged?: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    slots: MemorySlot[]
+    hotIds?: string[]
+    varChanged?: boolean
+    /** 分屏右侧：紧凑侧栏，限制高度 */
+    compact?: boolean
+  }>(),
+  { compact: false },
+)
 
 const hotSet = computed(() => new Set(props.hotIds ?? []))
 
@@ -33,14 +38,22 @@ function isHot(id: string) {
 </script>
 
 <template>
-  <div class="trace-memory" :class="{ 'trace-memory--var-hot': varChanged }">
+  <div
+    class="trace-memory"
+    :class="{
+      'trace-memory--var-hot': varChanged,
+      'trace-memory--compact': compact,
+    }"
+  >
     <div class="trace-memory-label">
-      C++ 内存布局
+      <span v-if="compact">内存</span>
+      <template v-else>C++ 内存布局</template>
       <span class="tag">GDB</span>
+      <span v-if="compact" class="slot-count">{{ slots.length }}</span>
     </div>
-    <TraceVizLegend variant="memory" />
+    <TraceVizLegend v-if="!compact" variant="memory" />
 
-    <div class="trace-memory-regions">
+    <div class="trace-memory-regions" :class="{ 'trace-memory-regions--compact': compact }">
       <section v-for="group in grouped" :key="group.region" class="memory-region">
         <header class="region-head">{{ group.label }}</header>
         <div class="memory-stack">
@@ -180,5 +193,50 @@ function isHot(id: string) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.trace-memory--compact {
+  margin-bottom: 0;
+  padding: 6px 8px;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.trace-memory--compact .trace-memory-label {
+  margin-bottom: 4px;
+  font-size: 11px;
+}
+
+.slot-count {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--alp-color-muted);
+}
+
+.trace-memory-regions--compact {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  gap: 6px;
+}
+
+.trace-memory--compact .region-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: color-mix(in srgb, #0f172a 92%, var(--alp-bg-soft-block));
+  margin-bottom: 4px;
+  padding: 2px 0;
+}
+
+.trace-memory--compact .memory-slot {
+  grid-template-columns: minmax(56px, 0.9fr) minmax(72px, 1fr) minmax(52px, 0.85fr);
+  gap: 4px;
+  padding: 4px 6px;
+  font-size: 10px;
 }
 </style>

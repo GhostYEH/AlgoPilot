@@ -234,7 +234,8 @@ onUnmounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding-bottom: 8px;
+  padding: 8px 0 4px;
+  box-sizing: border-box;
 }
 
 .oj-trace-split__viz :deep(.step-anim) {
@@ -249,6 +250,22 @@ onUnmounted(() => {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+
+.oj-trace-split__viz :deep(.trace-narration) {
+  flex-shrink: 0;
+  margin-bottom: 6px;
+}
+
+.oj-trace-split__viz :deep(.trace-layout--split) {
+  flex: 1;
+  min-height: 0;
+}
+
+.oj-trace-split__viz :deep(.trace-ai-diagnosis-card) {
+  flex-shrink: 0;
+  margin-top: 8px;
 }
 
 .oj-trace-backdrop-enter-active,

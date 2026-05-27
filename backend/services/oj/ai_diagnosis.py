@@ -324,7 +324,7 @@ async def diagnose_trace_bug(
             "source": "empty",
         }
 
-    if settings.siliconflow_api_key:
+    if settings.llm_configured:
         user_body = (
             f"## 题目描述\n{(problem_description or '（无描述）')[:2000]}\n\n"
             f"## 学生代码\n```\n{user_code[:3500]}\n```\n\n"
@@ -468,7 +468,7 @@ async def generate_edge_case(
             for c in failed_cases[:3]
         )
 
-    if settings.siliconflow_api_key:
+    if settings.llm_configured:
         user_body = json.dumps(
             {
                 "title": problem_title,
@@ -529,7 +529,7 @@ async def generate_trace_diagnosis(
 
     condensed = _condense_steps_for_diagnosis(steps)
 
-    if settings.siliconflow_api_key:
+    if settings.llm_configured:
         user_body = json.dumps(
             {
                 "problem": problem_title,
@@ -624,7 +624,7 @@ async def analyze_complexity(
     meaningful = _meaningful_step_count(steps)
     total = len(steps)
 
-    if settings.siliconflow_api_key:
+    if settings.llm_configured:
         code_lower = user_code.lower()
         nested_hint = "双层循环" if code_lower.count("for") >= 2 else "单层或递归"
         user_body = json.dumps(

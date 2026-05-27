@@ -39,7 +39,10 @@ export default defineConfig(({ mode }) => {
     ],
   },
   server: {
-    port: 5173,
+    // Windows 常保留 5086–5185（Hyper-V 等），5173 会 EACCES；改用 5273
+    host: '127.0.0.1',
+    port: 5273,
+    strictPort: false,
     proxy: {
       // 可选：开发时代理到后端，避免浏览器 CORS；当前后端已开启 CORS，直连亦可
       '/api': {

@@ -16,31 +16,19 @@ def _ensure_configured() -> None:
     if not settings.llm_configured:
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,
-            "AI 未配置：请在 backend/.env 中设置 SPARK_API_PASSWORD（讯飞星火）"
-            "或 SILICONFLOW_API_KEY（硅基流动）",
+            "AI 未配置：请在 backend/.env 中设置 SPARK_API_PASSWORD（讯飞星火）",
         )
-
-
-def _provider_label() -> str:
-    return "硅基流动" if settings.llm_provider == "siliconflow" else "星火"
-
-
-def _headers() -> dict[str, str]:
-    return {
-        "Authorization": f"Bearer {settings.spark_api_password}",
-        "Content-Type": "application/json",
-    }
 
 
 def _raise_spark_error(data: dict[str, Any], http_status: int = 502) -> None:
     err = data.get("error")
     if isinstance(err, dict):
         msg = err.get("message") or err.get("type") or "AI 服务错误"
-        raise HTTPException(http_status, f"{_provider_label()} API：{msg}")
+        raise HTTPException(http_status, f"星火 API：{msg}")
     code = data.get("code")
     if code is not None and code != 0:
         msg = data.get("message") or f"错误码 {code}"
-        raise HTTPException(http_status, f"{_provider_label()} API：{msg}")
+        raise HTTPException(http_status, f"星火 API：{msg}")
 
 
 def _extract_reply(data: dict[str, Any]) -> str:
@@ -49,11 +37,11 @@ def _extract_reply(data: dict[str, Any]) -> str:
         reply = data["choices"][0]["message"]["content"]
     except (KeyError, IndexError, TypeError) as exc:
         raise HTTPException(
-            status.HTTP_502_BAD_GATEWAY, f"{_provider_label()} 返回格式异常"
+            status.HTTP_502_BAD_GATEWAY, "星火返回格式异常"
         ) from exc
     if not reply or not str(reply).strip():
         raise HTTPException(
-            status.HTTP_502_BAD_GATEWAY, f"{_provider_label()} 返回内容为空"
+            status.HTTP_502_BAD_GATEWAY, "星火返回内容为空"
         )
     return str(reply).strip()
 
@@ -87,21 +75,21 @@ async def chat_completion(
         raise HTTPException(status.HTTP_504_GATEWAY_TIMEOUT, "AI 响应超时，请稍后重试") from None
     except httpx.HTTPError as exc:
         raise HTTPException(
-            status.HTTP_502_BAD_GATEWAY, f"无法连接 {_provider_label()} 服务：{exc}"
+            status.HTTP_502_BAD_GATEWAY, f"无法连接星火服务：{exc}"
         ) from exc
 
     if resp.status_code != 200:
         detail = resp.text[:500] if resp.text else resp.reason_phrase
         raise HTTPException(
             status.HTTP_502_BAD_GATEWAY,
-            f"{_provider_label()} 服务返回错误（{resp.status_code}）：{detail}",
+            f"星火服务返回错误（{resp.status_code}）：{detail}",
         )
 
     try:
         data = resp.json()
     except json.JSONDecodeError as exc:
         raise HTTPException(
-            status.HTTP_502_BAD_GATEWAY, f"{_provider_label()} 返回非 JSON 响应"
+            status.HTTP_502_BAD_GATEWAY, "星火返回非 JSON 响应"
         ) from exc
 
     return _extract_reply(data)
@@ -134,7 +122,7 @@ async def chat_completion_stream(
                     body = (await resp.aread()).decode("utf-8", errors="replace")[:500]
                     raise HTTPException(
                         status.HTTP_502_BAD_GATEWAY,
-                        f"{_provider_label()} 服务返回错误（{resp.status_code}）：{body}",
+                        f"星火服务返回错误（{resp.status_code}）：{body}",
                     )
                 async for line in resp.aiter_lines():
                     if not line or not line.startswith("data:"):
@@ -153,5 +141,12 @@ async def chat_completion_stream(
         raise HTTPException(status.HTTP_504_GATEWAY_TIMEOUT, "AI 响应超时，请稍后重试") from None
     except httpx.HTTPError as exc:
         raise HTTPException(
-            status.HTTP_502_BAD_GATEWAY, f"无法连接 {_provider_label()} 服务：{exc}"
+            status.HTTP_502_BAD_GATEWAY, f"无法连接星火服务：{exc}"
         ) from exc
+
+
+def _headers() -> dict[str, str]:
+    return {
+        "Authorization": f"Bearer {settings.spark_api_password}",
+        "Content-Type": "application/json",
+    }
