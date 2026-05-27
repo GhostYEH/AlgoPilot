@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Grid, Reading, FolderOpened, User, QuestionFilled, Cpu } from '@element-plus/icons-vue'
+import { Grid, Reading, FolderOpened, User, QuestionFilled, Cpu, Moon, Sunny } from '@element-plus/icons-vue'
+import { useTheme } from '@/composables/useTheme'
+import { providePersonaUi } from '@/composables/usePersonaUiProvider'
 import { ALGORITHM_MODULES, MODULE_ROUTE_NAMES } from '@/constants/modules'
 import { recordModuleVisit } from '@/utils/learningBookmarks'
 import { isLoggedIn, getUser, logout } from '@/stores/auth'
@@ -10,6 +12,9 @@ import { prefetchRoute } from '@/router/prefetch'
 
 const route = useRoute()
 const router = useRouter()
+const { isDark, toggleTheme } = useTheme()
+const { settings: personaUi } = providePersonaUi()
+const showAdvancedNav = computed(() => personaUi.value.graphDetail !== 'minimal')
 
 const ROUTE_TO_MODULE: Record<string, string> = Object.fromEntries(
   Object.entries(MODULE_ROUTE_NAMES).map(([key, name]) => [name as string, key]),
@@ -92,7 +97,11 @@ function onLogout() {
           <el-icon><Cpu /></el-icon>
           <span>在线 OJ</span>
         </el-menu-item>
-        <el-menu-item index="/agent-workbench" @mouseenter="prefetchRoute('/agent-workbench')">
+        <el-menu-item
+          v-if="showAdvancedNav"
+          index="/agent-workbench"
+          @mouseenter="prefetchRoute('/agent-workbench')"
+        >
           <span>多智能体</span>
         </el-menu-item>
         <el-menu-item index="/my-learning" @mouseenter="prefetchRoute('/my-learning')">
@@ -106,6 +115,11 @@ function onLogout() {
       </el-menu>
 
       <div class="header-actions">
+        <el-tooltip :content="isDark ? '切换浅色' : '切换深色'" placement="bottom">
+          <el-button circle size="small" class="theme-btn" @click="toggleTheme">
+            <el-icon><Moon v-if="isDark" /><Sunny v-else /></el-icon>
+          </el-button>
+        </el-tooltip>
         <template v-if="!isLoggedIn">
           <el-button type="primary" plain round size="small" @click="goLogin">登录</el-button>
           <el-button round size="small" @click="goRegister">注册</el-button>

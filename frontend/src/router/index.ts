@@ -3,6 +3,11 @@ import MainLayout from '@/layouts/MainLayout.vue'
 import { learnRoutes } from '@/router/learnRoutes'
 import { gamePlayRoutes } from '@/router/gameRoutes'
 import { prefetchCommonRoutesIdle } from '@/router/prefetch'
+import {
+  needsOnboarding,
+  ONBOARDING_ALLOWED_ROUTE_NAMES,
+} from '@/composables/usePersonaGate'
+import { isLoggedIn } from '@/stores/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -36,6 +41,10 @@ const router = createRouter({
           name: 'learning-path',
           component: () => import('@/views/LearningPathView.vue'),
           meta: { title: '学习路径' },
+        },
+        {
+          path: 'onboarding',
+          redirect: { name: 'learning-path', query: { onboarding: '1' } },
         },
         {
           path: 'resources',
@@ -85,6 +94,20 @@ const router = createRouter({
   scrollBehavior() {
     return { top: 0 }
   },
+})
+
+router.beforeEach(async (to) => {
+  if (!isLoggedIn.value || to.meta.public) return true
+  const routeName = typeof to.name === 'string' ? to.name : ''
+  if (ONBOARDING_ALLOWED_ROUTE_NAMES.has(routeName)) return true
+  if (to.name === 'learning-path' && to.query.onboarding === '1') return true
+  if (await needsOnboarding()) {
+    return {
+      name: 'learning-path',
+      query: { onboarding: '1', redirect: to.fullPath },
+    }
+  }
+  return true
 })
 
 router.afterEach((to) => {

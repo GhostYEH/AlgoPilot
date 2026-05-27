@@ -39,21 +39,21 @@ EXTRACT_SYSTEM = """你是学习画像结构化抽取 Agent。根据对话历史
     "error_preference": "…",
     "grit_level": "…"
   },
-  "scores": {
-    "knowledge_base": 1-10,
-    "cognitive_style": 1-10,
-    "coding_ability": 1-10,
-    "learning_goals": 1-10,
-    "error_preference": 1-10,
-    "grit_level": 1-10
+  "dimension_scores": {
+    "knowledge_base": 6,
+    "cognitive_style": 5,
+    "coding_ability": 4,
+    "learning_goals": 7,
+    "error_preference": 5,
+    "grit_level": 6
   },
   "confidence": {
     "knowledge_base": "explicit|inferred",
     …
   }
 }
-scores 为 1-10 整数：知识/代码能力越高分越高；error_preference 表示易错程度（越高越易错）；grit_level 抗挫折越高分越高。
-explicit=用户原话明确提供；inferred=模型推断。信息不足维度写「待补充」，对应 score 用 3。"""
+dimension_scores 为 1-10 整数（10=极强/非常熟练，1=几乎零基础）。须与 dimensions 文本一致。
+explicit=用户原话明确提供；inferred=模型推断。信息不足写「待补充」，对应 score 用 3-5。"""
 
 _DIMENSION_LABELS = {
     "knowledge_base": "知识基础",
@@ -133,11 +133,12 @@ class PersonaAgent(BaseAgent):
                 if k in PROFILE_DIMENSION_KEYS and v and not _is_empty(v):
                     setattr(dims, k, v)
                     confidence[k] = followup.get("confidence", {}).get(k, "inferred")
-            for k, v in followup.get("scores", {}).items():
+            for k, v in followup.get("dimension_scores", {}).items():
                 if k in PROFILE_DIMENSION_KEYS and isinstance(v, (int, float)):
                     scores[k] = _clamp_score(int(v))
             summary = followup.get("summary") or summary
             missing = _missing_dimension_keys(dims)
+        scores = _normalize_dimension_scores(scores, dims)
         return summary, dims, confidence, missing, scores
 
 
@@ -151,15 +152,15 @@ async def _followup_extract(history: list[ChatHistoryItem], missing: list[str]) 
         max_tokens=800,
     )
     try:
-        _, dims, conf, scores = _parse_profile_json(raw)
+        summary, dims, conf, scores = _parse_profile_json(raw)
         return {
             "summary": "",
             "dimensions": dims.model_dump(),
             "confidence": conf,
-            "scores": scores,
+            "dimension_scores": scores,
         }
     except Exception:
-        return {"dimensions": {}, "confidence": {}, "scores": {}}
+        return {"dimensions": {}, "confidence": {}, "dimension_scores": {}}
 
 
 def _missing_dimension_keys(dims: PersonaDimensions) -> list[str]:
@@ -189,8 +190,39 @@ def _merge_incremental(
     return PersonaDimensions.model_validate(merged), conf
 
 
-def _clamp_score(val: int) -> int:
-    return max(1, min(10, int(val)))
+def _clamp_score(value: int) -> int:
+    return max(1, min(10, int(value)))
+
+
+def _normalize_dimension_scores(
+    scores: dict[str, int], dims: PersonaDimensions
+) -> dict[str, int]:
+    out: dict[str, int] = {}
+    for k in PROFILE_DIMENSION_KEYS:
+        if k in scores:
+            out[k] = _clamp_score(scores[k])
+        else:
+            out[k] = _infer_score_from_text(getattr(dims, k, ""))
+    return out
+
+
+def _infer_score_from_text(text: str) -> int:
+    """维度文本 → 1-10 启发式分（LLM 未返回 scores 时的兜底）。"""
+    t = (text or "").strip()
+    if not t or t in ("待补充", "暂无", "未知"):
+        return 4
+    low_markers = ("零基础", "不会", "薄弱", "初学", "入门", "不太", "较差", "很少", "几乎没")
+    high_markers = ("熟练", "扎实", "较强", "独立", "竞赛", "ACM", "蓝桥", "能写", "较好", "深入")
+    score = 5
+    for m in low_markers:
+        if m in t:
+            score -= 1
+    for m in high_markers:
+        if m in t:
+            score += 1
+    if len(t) > 80:
+        score += 1
+    return _clamp_score(score)
 
 
 def _parse_profile_json(raw: str) -> tuple[str, PersonaDimensions, dict[str, str], dict[str, int]]:
@@ -205,7 +237,7 @@ def _parse_profile_json(raw: str) -> tuple[str, PersonaDimensions, dict[str, str
         if start >= 0 and end > start:
             data = json.loads(text[start : end + 1])
         else:
-            return "画像待完善", PersonaDimensions(), {}, _default_scores()
+            return "画像待完善", PersonaDimensions(), {}, {}
     summary = str(data.get("summary", "")).strip() or "画像待完善"
     dims_raw = data.get("dimensions") or data
     merged_raw = migrate_dimension_payload(
@@ -218,37 +250,11 @@ def _parse_profile_json(raw: str) -> tuple[str, PersonaDimensions, dict[str, str
         k: str(conf_raw.get(k, "inferred") if conf_raw.get(k) else "inferred")
         for k in PROFILE_DIMENSION_KEYS
     }
-    scores_raw = data.get("scores") or {}
-    scores = _default_scores()
+    scores_raw = data.get("dimension_scores") or {}
+    scores: dict[str, int] = {}
     for k in PROFILE_DIMENSION_KEYS:
-        if k in scores_raw and scores_raw[k] is not None:
-            try:
-                scores[k] = _clamp_score(int(scores_raw[k]))
-            except (TypeError, ValueError):
-                pass
-    scores = _infer_scores_from_text(dims, scores)
+        val = scores_raw.get(k)
+        if isinstance(val, (int, float)):
+            scores[k] = _clamp_score(int(val))
+    scores = _normalize_dimension_scores(scores, dims)
     return summary, dims, confidence, scores
-
-
-def _default_scores() -> dict[str, int]:
-    return {k: 5 for k in PROFILE_DIMENSION_KEYS}
-
-
-def _infer_scores_from_text(dims: PersonaDimensions, scores: dict[str, int]) -> dict[str, int]:
-    """对 LLM 未给出分数的维度，用文本长度与关键词做启发式补全。"""
-    out = dict(scores)
-    for k in PROFILE_DIMENSION_KEYS:
-        val = getattr(dims, k, "")
-        if _is_empty(val):
-            out[k] = 3
-            continue
-        if out.get(k, 5) != 5:
-            continue
-        t = val.lower()
-        if any(w in t for w in ("薄弱", "不会", "零基础", "刚开始", "不太会")):
-            out[k] = 4
-        elif any(w in t for w in ("熟练", "扎实", "较好", "ACM", "竞赛", "刷过很多")):
-            out[k] = 8
-        else:
-            out[k] = max(4, min(8, 4 + len(val) // 25))
-    return out

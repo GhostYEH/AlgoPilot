@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from collections.abc import AsyncIterator, Awaitable, Callable
 from datetime import datetime
@@ -22,8 +23,8 @@ from schemas.learning_path import LearningPathPlanResponse, LearningPathReplanRe
 from schemas.persona import ChatHistoryItem, PersonaDimensions, PersonaProfileResponse
 from schemas.resources import (
     CORE_RESOURCE_PIPELINE,
+    PARALLEL_PHASES,
     RESOURCE_AGENT_META,
-    AgentLogEntry,
     GeneratedResourceItem,
     ResourceGenerateRequest,
     ResourceType,
@@ -35,9 +36,15 @@ from services.agents.persona import PersonaAgent
 from services.agents.persona_learning import apply_learning_patch
 from services.agents.registry import agent_for_resource, list_agents
 from services.agents.tutor import TutorAgent
+from services.orchestrator.persona_fingerprint import (
+    find_latest_resource,
+    fingerprint_for_resource,
+    save_fingerprint,
+    should_skip_generation,
+)
 from services.orchestrator.pipeline_context import PipelineContext
 from services.orchestrator.workflow import resource_workflow
-from services.safety.content_filter import content_filter, safety_agent
+from services.safety.content_filter import content_filter
 
 _persona = PersonaAgent()
 _tutor = TutorAgent()
@@ -45,15 +52,17 @@ _oj = OjAssistantAgent()
 _path = LearningPathAgent()
 
 
-def _dimension_scores_from_storage(raw: dict) -> dict[str, int]:
-    scores = raw.pop("_scores", None) or {}
+def _dimension_scores_from_row(row: StudentProfile | None) -> dict[str, int]:
+    if row is None or not row.dimensions:
+        return {}
+    raw = (row.dimensions or {}).get("_dimension_scores") or {}
+    if not isinstance(raw, dict):
+        return {}
     out: dict[str, int] = {}
     for k in PersonaDimensions.model_fields:
-        if k in scores:
-            try:
-                out[k] = max(1, min(10, int(scores[k])))
-            except (TypeError, ValueError):
-                pass
+        val = raw.get(k)
+        if isinstance(val, (int, float)):
+            out[k] = max(1, min(10, int(val)))
     return out
 
 
@@ -67,14 +76,25 @@ def _profile_to_response(row: StudentProfile | None) -> PersonaProfileResponse:
     raw = dict(row.dimensions or {})
     confidence = {k: str(v) for k, v in (raw.pop("_confidence", None) or {}).items()}
     missing = list(raw.pop("_coverage_missing", None) or [])
-    dimension_scores = _dimension_scores_from_storage(raw)
+    scores_raw = raw.pop("_dimension_scores", None) or {}
     dims = PersonaDimensions.from_storage(raw)
+    scores: dict[str, int] = {}
+    if isinstance(scores_raw, dict):
+        for k in PersonaDimensions.model_fields:
+            val = scores_raw.get(k)
+            if isinstance(val, (int, float)):
+                scores[k] = max(1, min(10, int(val)))
+    if not scores:
+        from services.agents.persona import _infer_score_from_text
+
+        for k in PersonaDimensions.model_fields:
+            scores[k] = _infer_score_from_text(getattr(dims, k, ""))
     updated = row.updated_at.isoformat() if row.updated_at else None
     return PersonaProfileResponse(
         summary=row.summary or "",
         dimensions=dims,
         updated_at=updated,
-        dimension_scores=dimension_scores,
+        dimension_scores=scores,
         dimension_confidence=confidence,
         coverage_missing=missing,
     )
@@ -172,7 +192,7 @@ class Orchestrator:
         row.summary = summary
         payload = dims.model_dump()
         payload["_confidence"] = confidence
-        payload["_scores"] = scores
+        payload["_dimension_scores"] = scores
         if missing:
             payload["_coverage_missing"] = missing
         row.dimensions = payload
@@ -291,45 +311,6 @@ class Orchestrator:
 
         return result
 
-    async def evaluate_oj_struggle_and_replan(
-        self,
-        db: Session,
-        user: User,
-        body: OjStruggleEvaluationRequest,
-    ) -> OjStruggleEvaluationResponse:
-        """OJ 连续受挫 → EvaluatorAgent 评估 → PlannerAgent 插入降级节点。"""
-        struggle, rem_key, rem_label, logs = await evaluation_agent.evaluate_oj_struggle(
-            knowledge_point=body.knowledge_point,
-            module_key=body.module_key,
-            verdict=body.verdict,
-            consecutive_failures=body.consecutive_failures,
-            error_pattern=body.error_pattern,
-        )
-
-        path_updated = False
-        plan_summary = ""
-        if struggle and rem_key:
-            replan_body = LearningPathReplanRequest(
-                modules=body.modules,
-                overall_percent=body.overall_percent,
-            )
-            plan = await self.replan_learning_path(
-                db, user, replan_body, remediation_before=rem_key
-            )
-            path_updated = plan.remediation_inserted
-            plan_summary = plan.summary
-
-        return OjStruggleEvaluationResponse(
-            struggle_detected=struggle,
-            consecutive_failures=body.consecutive_failures,
-            remediation_module_key=rem_key or None,
-            remediation_label=rem_label,
-            planner_notified=struggle,
-            path_updated=path_updated,
-            agent_logs=[AgentLogItem.model_validate(x) for x in logs],
-            plan_summary=plan_summary,
-        )
-
     # --- 学习路径 ---
 
     def get_learning_path_plan(self, db: Session, user: User) -> LearningPathPlanResponse | None:
@@ -344,18 +325,16 @@ class Orchestrator:
         user: User,
         body: LearningPathReplanRequest,
         *,
-        remediation_before: str | None = None,
+        remediation_module_key: str | None = None,
     ) -> LearningPathPlanResponse:
         profile_row = db.get(StudentProfile, user.id)
         profile_block = _format_profile_block(profile_row)
-        scores: dict[str, int] = {}
-        if profile_row and profile_row.dimensions:
-            scores = dict((profile_row.dimensions or {}).get("_scores") or {})
+        scores = _dimension_scores_from_row(profile_row)
         plan_data = await _path.plan(
             profile_block=profile_block,
             request=body,
             dimension_scores=scores,
-            remediation_before=remediation_before,
+            remediation_before=remediation_module_key,
         )
 
         row = db.get(LearningPathPlan, user.id)
@@ -370,11 +349,52 @@ class Orchestrator:
         row.progress_snapshot = {
             "overall_percent": body.overall_percent,
             "modules": [m.model_dump() for m in body.modules],
+            "remediation_inserted": bool(plan_data.get("remediation_inserted")),
         }
         row.updated_at = datetime.utcnow()
         db.commit()
         db.refresh(row)
         return _path_plan_response(row)
+
+    async def evaluate_oj_struggle(
+        self,
+        db: Session,
+        user: User,
+        body: OjStruggleEvaluationRequest,
+    ) -> OjStruggleEvaluationResponse:
+        struggle, rem_key, rem_label, logs = await evaluation_agent.evaluate_oj_struggle(
+            knowledge_point=body.knowledge_point,
+            module_key=body.module_key,
+            verdict=body.verdict,
+            consecutive_failures=body.consecutive_failures,
+            error_pattern=body.error_pattern,
+        )
+        path_updated = False
+        plan_summary = ""
+        if struggle and rem_key:
+            replan_body = LearningPathReplanRequest(
+                modules=body.modules,
+                overall_percent=body.overall_percent,
+            )
+            plan = await self.replan_learning_path(
+                db,
+                user,
+                replan_body,
+                remediation_module_key=rem_key,
+            )
+            path_updated = bool(plan.remediation_inserted)
+            plan_summary = plan.summary or ""
+        return OjStruggleEvaluationResponse(
+            agent_name="EvaluatorAgent",
+            struggle_detected=struggle,
+            consecutive_failures=body.consecutive_failures,
+            remediation_module_key=rem_key or None,
+            remediation_label=rem_label,
+            planner_notified=struggle,
+            path_updated=path_updated,
+            agent_logs=[AgentLogItem.model_validate(entry) for entry in logs],
+            plan_summary=plan_summary,
+        )
 
     # --- 资源生成 ---
 
@@ -416,6 +436,22 @@ class Orchestrator:
         db.add(record)
         db.commit()
         db.refresh(record)
+        if row:
+            fp = fingerprint_for_resource(
+                row,
+                resource_type=body.resource_type,
+                topic=body.topic,
+                module_key=body.module_key,
+                focus_hint=body.focus_hint,
+            )
+            save_fingerprint(
+                row,
+                resource_type=body.resource_type,
+                topic=body.topic,
+                module_key=body.module_key,
+                fingerprint=fp,
+            )
+            db.commit()
         return _resource_item(record)
 
     def list_resources(self, db: Session, user: User) -> list[GeneratedResourceItem]:
@@ -555,6 +591,50 @@ class Orchestrator:
         db.refresh(row)
         return _resource_item(row)
 
+    async def _run_phase_task(
+        self,
+        _db: Session,
+        user: User,
+        *,
+        resource_type: ResourceType,
+        topic: str,
+        module_key: str,
+        focus_hint: str,
+        pipeline_ctx: PipelineContext,
+    ) -> tuple[ResourceType, list[dict], GeneratedResourceItem | None, Exception | None]:
+        """单阶段资源任务。并行阶段使用独立 Session，避免共享请求级 Session 并发 commit。"""
+        from core.database import SessionLocal
+
+        events: list[dict] = []
+
+        async def capture(ev: dict) -> None:
+            events.append(ev)
+
+        req = ResourceGenerateRequest(
+            resource_type=resource_type,
+            topic=topic,
+            module_key=module_key,
+            focus_hint=focus_hint,
+        )
+        local_db = SessionLocal()
+        try:
+            local_user = local_db.get(User, user.id)
+            if local_user is None:
+                return resource_type, events, None, ValueError("用户不存在")
+            item = await self.generate_resource(
+                local_db,
+                local_user,
+                req,
+                emit=capture,
+                pipeline_ctx=pipeline_ctx,
+            )
+            return resource_type, events, item, None
+        except Exception as exc:
+            local_db.rollback()
+            return resource_type, events, None, exc
+        finally:
+            local_db.close()
+
     async def generate_all_resources_stream(
         self,
         db: Session,
@@ -564,57 +644,199 @@ class Orchestrator:
         module_key: str = "",
         focus_hint: str = "",
     ) -> AsyncIterator[str]:
-        """SSE：依次生成五类核心资源，Agent 间传递协作上下文。"""
-        types: list[ResourceType] = list(CORE_RESOURCE_PIPELINE)
-        total = len(types)
+        """SSE：按并行阶段生成五类核心资源，无依赖的 Agent 并行执行。
+
+        阶段拓扑（来自 README DAG）：
+          Phase 1: document            ← 无依赖
+          Phase 2: mindmap + exercises ← 并行，均只依赖 document
+          Phase 3: code_case           ← 依赖 exercises
+          Phase 4: trace_animation     ← 依赖 code_case
+
+        asyncio 协作式调度保证：
+          PipelineContext 的 log() / update_from_resource() 均为纯同步方法，
+          在两个 await 之间原子完成；不同 Agent 写不同字段，无数据竞争。
+        """
+        phases: list[list[ResourceType]] = PARALLEL_PHASES
+        total = len(CORE_RESOURCE_PIPELINE)
         pipe_ctx = PipelineContext()
-        for idx, rtype in enumerate(types, start=1):
-            meta = RESOURCE_AGENT_META[rtype]
-            pct = int((idx - 1) / total * 100)
-            yield _sse(
-                {
+        started = 0
+        completed = 0
+        phase_errors: list[dict] = []
+        emitted_collab_count = 0
+        emitted_agent_log_count = 0
+        reused_count = 0
+
+        profile_row = db.get(StudentProfile, user.id)
+        existing_rows = (
+            db.query(GeneratedResource)
+            .filter(GeneratedResource.user_id == user.id)
+            .order_by(GeneratedResource.created_at.desc())
+            .limit(80)
+            .all()
+        )
+
+        for phase_idx, phase_types in enumerate(phases):
+            is_parallel = len(phase_types) > 1
+            to_generate: list[ResourceType] = []
+            reuse_results: list[tuple[ResourceType, GeneratedResourceItem, str]] = []
+
+            for rtype in phase_types:
+                started += 1
+                meta = RESOURCE_AGENT_META[rtype]
+                yield _sse({
                     "type": "progress",
-                    "step": idx,
+                    "step": started,
                     "total": total,
-                    "percent": pct,
+                    "percent": int((started - 1) / total * 100),
                     "resource_type": rtype,
                     "agent_name": meta["agent_name"],
                     "label": meta["label"],
-                }
-            )
-            req = ResourceGenerateRequest(
-                resource_type=rtype,
-                topic=topic,
-                module_key=module_key,
-                focus_hint=focus_hint,
-            )
+                    "parallel": is_parallel,
+                })
+                existing = find_latest_resource(
+                    existing_rows,
+                    resource_type=rtype,
+                    topic=topic,
+                    module_key=module_key,
+                )
+                skip, reason = should_skip_generation(
+                    profile_row,
+                    existing,
+                    resource_type=rtype,
+                    topic=topic,
+                    module_key=module_key,
+                    focus_hint=focus_hint,
+                )
+                if skip and existing is not None:
+                    item = _resource_item(existing)
+                    meta_dict = dict(item.meta or {})
+                    meta_dict["reused"] = True
+                    meta_dict["reuse_reason"] = reason
+                    item = GeneratedResourceItem(**{**item.model_dump(), "meta": meta_dict})
+                    # 复用资源时仍注入 PipelineContext，避免后续 phase 缺少上游摘要
+                    pipe_ctx.update_from_resource(rtype, existing.content or "")
+                    reuse_results.append((rtype, item, reason))
+                    reused_count += 1
+                else:
+                    to_generate.append(rtype)
 
-            events: list[dict] = []
+            coros = [
+                self._run_phase_task(
+                    db,
+                    user,
+                    resource_type=rtype,
+                    topic=topic,
+                    module_key=module_key,
+                    focus_hint=focus_hint,
+                    pipeline_ctx=pipe_ctx,
+                )
+                for rtype in to_generate
+            ]
 
-            async def capture(ev: dict) -> None:
-                events.append(ev)
+            raw_results: list = []
+            if is_parallel and len(coros) > 1:
+                raw_results = await asyncio.gather(*coros, return_exceptions=True)
+            elif len(coros) == 1:
+                raw_results = [await coros[0]]
+            elif len(coros) == 0:
+                raw_results = []
 
-            item = await self.generate_resource(
-                db, user, req, emit=capture, pipeline_ctx=pipe_ctx
-            )
-            for ev in events:
-                if ev.get("type") == "workflow":
-                    ev["percent"] = int(idx / total * 100)
-                yield _sse(ev)
-            yield _sse(
-                {
+            combined: list = list(reuse_results)
+            for raw in raw_results:
+                if isinstance(raw, Exception):
+                    combined.append(raw)
+                else:
+                    combined.append(raw)
+
+            for raw in combined:
+                if isinstance(raw, Exception):
+                    completed += 1
+                    phase_errors.append({"error": str(raw)[:300]})
+                    yield _sse({
+                        "type": "error",
+                        "message": f"阶段 {phase_idx + 1} 资源生成异常：{str(raw)[:200]}",
+                        "percent": int(completed / total * 100),
+                    })
+                    continue
+
+                if isinstance(raw, tuple) and len(raw) == 3:
+                    rtype, item, reason = raw
+                    completed += 1
+                    pct = int(completed / total * 100)
+                    yield _sse({
+                        "type": "workflow",
+                        "stage": "reuse",
+                        "agent": "Orchestrator",
+                        "status": "skipped",
+                        "resource_type": rtype,
+                        "detail": reason,
+                        "percent": pct,
+                    })
+                    yield _sse({
+                        "type": "resource",
+                        "resource": item.model_dump(),
+                        "percent": pct,
+                        "reused": True,
+                    })
+                    continue
+
+                rtype, events, item, error = raw
+                completed += 1
+                pct = int(completed / total * 100)
+
+                if error is not None:
+                    phase_errors.append({
+                        "resource_type": rtype,
+                        "agent_name": RESOURCE_AGENT_META[rtype]["agent_name"],
+                        "error": str(error)[:300],
+                    })
+                    for ev in events:
+                        yield _sse(ev)
+                    yield _sse({
+                        "type": "error",
+                        "message": f"{RESOURCE_AGENT_META[rtype]['agent_name']} 生成失败，跳过继续",
+                        "resource_type": rtype,
+                        "percent": pct,
+                    })
+                    continue
+
+                for ev in events:
+                    if ev.get("type") == "workflow":
+                        ev["percent"] = pct
+                    yield _sse(ev)
+
+                new_collab = pipe_ctx.collaboration_log[emitted_collab_count:]
+                new_logs = pipe_ctx.agent_logs[emitted_agent_log_count:]
+                emitted_collab_count = len(pipe_ctx.collaboration_log)
+                emitted_agent_log_count = len(pipe_ctx.agent_logs)
+                yield _sse({
                     "type": "collaboration",
-                    "log": pipe_ctx.collaboration_log[-5:],
-                    "agent_logs": pipe_ctx.agent_logs,
-                }
-            )
-            yield _sse({"type": "resource", "resource": item.model_dump(), "percent": int(idx / total * 100), "agent_logs": (item.meta or {}).get("agent_logs", [])})
-        yield _sse({"type": "done", "percent": 100, "agent_logs": pipe_ctx.agent_logs})
+                    "log": new_collab[-5:] if new_collab else [],
+                    "agent_logs": new_logs,
+                })
+                yield _sse({
+                    "type": "resource",
+                    "resource": item.model_dump(),
+                    "percent": pct,
+                    "agent_logs": (item.meta or {}).get("agent_logs", []),
+                })
+
+        yield _sse({
+            "type": "done",
+            "percent": 100,
+            "agent_logs": pipe_ctx.agent_logs,
+            "partial_failure": bool(phase_errors),
+            "errors": phase_errors or None,
+            "reused_count": reused_count,
+        })
 
 
 def _path_plan_response(row: LearningPathPlan) -> LearningPathPlanResponse:
     steps = [PathStepItem.model_validate(s) for s in (row.steps or [])]
-    remediation = any(s.is_remediation for s in steps)
+    snapshot = row.progress_snapshot or {}
+    remediation = bool(snapshot.get("remediation_inserted")) or any(
+        s.is_remediation for s in steps
+    )
     return LearningPathPlanResponse(
         agent_name="PlannerAgent",
         summary=row.summary or "",

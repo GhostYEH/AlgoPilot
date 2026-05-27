@@ -14,6 +14,8 @@ import {
 } from '@/api/orchestrator'
 import { renderAiReplyHtml } from '@/utils/renderAiReply'
 import { useLearningPathPlan } from '@/composables/useLearningPathPlan'
+import { invalidatePersonaCache } from '@/composables/usePersonaGate'
+import { usePersonaStore } from '@/stores/pinia/persona'
 import PersonaRadarChart from '@/components/persona/PersonaRadarChart.vue'
 
 interface UiMsg {
@@ -35,6 +37,7 @@ const messages = ref<UiMsg[]>([])
 const listRef = ref<HTMLElement | null>(null)
 const profile = ref<PersonaProfile | null>(null)
 const { replan: replanPath } = useLearningPathPlan()
+const personaStore = usePersonaStore()
 let msgId = 0
 const profileUpdateHintShown = ref(false)
 const showRadar = ref(false)
@@ -63,6 +66,7 @@ function scrollBottom() {
 async function loadProfile() {
   try {
     profile.value = await fetchPersonaProfile()
+    if (profile.value) personaStore.setProfile(profile.value)
     if (profile.value?.updated_at && profile.value.dimensions) {
       showRadar.value = true
       icebreakerDone.value = true
@@ -156,6 +160,7 @@ async function autoCompleteProfileFlow() {
     const { profile: p } = await syncPersonaFromStored()
     profile.value = p
     showRadar.value = true
+    invalidatePersonaCache()
     emit('profileReady', p)
     ElMessage.success('六维画像已生成，雷达图已更新')
     try {
@@ -187,6 +192,7 @@ async function onSyncProfile() {
     const { profile: p, message } = await syncPersonaFromStored()
     profile.value = p
     showRadar.value = true
+    invalidatePersonaCache()
     emit('profileReady', p)
     ElMessage.success(message)
     try {

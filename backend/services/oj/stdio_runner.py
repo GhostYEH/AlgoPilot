@@ -28,7 +28,12 @@ def run_cases_stdio(
     time_limit_ms: int = 3000,
     order_insensitive: bool = False,
 ) -> RunSummary:
+    from services.oj.static_audit import audit_user_code, run_summary_rejected
+
     lang = (language or "python").lower()
+    audit = audit_user_code(user_code, language=lang)
+    if not audit.passed:
+        return run_summary_rejected(audit, total=max(1, len(cases)))
     if lang in ("cpp", "c++", "cxx"):
         return _run_cpp_stdio(user_code, cases=cases, time_limit_ms=time_limit_ms, order_insensitive=order_insensitive)
     return _run_python_stdio(user_code, cases=cases, time_limit_ms=time_limit_ms, order_insensitive=order_insensitive)

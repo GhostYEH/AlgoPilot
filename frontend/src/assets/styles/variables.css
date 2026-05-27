@@ -64,3 +64,32 @@
   --el-scrollbar-hover-opacity: 0.95;
   --el-scrollbar-hover-bg-color: rgba(56, 189, 248, 0.82);
 }
+
+/* 浅色主题（演示时可切换；默认仍为暗色 IDE 风） */
+html:not(.dark) {
+  color-scheme: light;
+  --alp-color-primary: #0284c7;
+  --alp-color-primary-soft: rgba(2, 132, 199, 0.12);
+  --alp-color-accent: #4f46e5;
+  --alp-color-text: #0f172a;
+  --alp-color-muted: #64748b;
+  --alp-color-border: rgba(100, 116, 139, 0.28);
+  --alp-shadow-card: 0 8px 28px rgba(15, 23, 42, 0.08);
+  --alp-shadow-card-hover: 0 12px 36px rgba(2, 132, 199, 0.12);
+  --alp-bg-page: #f1f5f9;
+  --alp-bg-shell: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
+  --alp-bg-header: rgba(255, 255, 255, 0.88);
+  --alp-bg-toolbar: rgba(248, 250, 252, 0.95);
+  --alp-bg-surface: rgba(255, 255, 255, 0.96);
+  --alp-bg-surface-solid: #ffffff;
+  --alp-bg-surface-muted: #f8fafc;
+  --alp-bg-soft-block: #f1f5f9;
+  --alp-bg-main-panel: rgba(255, 255, 255, 0.6);
+  --alp-bg-aside-gradient: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  --alp-bg-nav: rgba(226, 232, 240, 0.65);
+  --alp-bg-nav-hover: rgba(2, 132, 199, 0.08);
+  --alp-bg-nav-active: rgba(2, 132, 199, 0.14);
+  --alp-bg-code-ish: #f8fafc;
+  --alp-scrollbar-track: rgba(241, 245, 249, 0.9);
+  --alp-scrollbar-thumb: rgba(2, 132, 199, 0.35);
+}

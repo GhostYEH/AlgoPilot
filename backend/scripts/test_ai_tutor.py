@@ -1,4 +1,4 @@
-"""Quick check: AI tutor API + SiliconFlow."""
+"""Quick check: AI tutor API + 讯飞星火 Spark。"""
 import asyncio
 import sys
 from pathlib import Path
@@ -10,8 +10,10 @@ from core.config import settings
 
 
 async def main() -> int:
-    print("SILICONFLOW_API_KEY:", "configured" if settings.siliconflow_api_key else "MISSING")
-    print("SILICONFLOW_MODEL:", settings.siliconflow_model)
+    print("LLM configured:", settings.llm_configured)
+    print("LLM provider:", settings.llm_provider)
+    print("LLM model:", settings.spark_model)
+    print("LLM URL:", settings.spark_chat_url)
 
     payload = {
         "message": "用一句话解释什么是单链表",

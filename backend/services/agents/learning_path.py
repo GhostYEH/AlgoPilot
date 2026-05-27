@@ -5,13 +5,13 @@ from __future__ import annotations
 import json
 import re
 
-from schemas.learning_path import LearningPathReplanRequest, ModuleProgressInput, PathStepItem
+from schemas.learning_path import LearningPathReplanRequest, ModuleProgressInput
 from services.agents.base import BaseAgent
+from services.knowledge.concept_clusters import concept_clusters
 from services.agents.learning_path_catalog import (
     DEFAULT_ORDER,
     MODULE_CATALOG,
     MODULE_DEPENDENCIES,
-    PHASE_LABELS,
     PHASE_RANK,
     VALID_MODULE_KEYS,
     lookup_remediation,
@@ -250,6 +250,25 @@ def _extract_weak_keys(profile_block: str) -> set[str]:
     return keys
 
 
+def _module_cluster_map() -> dict[str, str]:
+    """module_key -> 知识簇 id（概念图社区发现）。"""
+    clusters = concept_clusters()
+    try:
+        import json
+        from pathlib import Path
+
+        path = Path(__file__).resolve().parents[2] / "knowledge_base" / "concept_graph.json"
+        graph = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+    except Exception:
+        return {}
+    out: dict[str, str] = {}
+    for c in graph.get("concepts") or []:
+        mk, cid = c.get("module_key"), c.get("id")
+        if mk and cid and mk not in out:
+            out[str(mk)] = clusters.get(str(cid), "")
+    return out
+
+
 def _heuristic_plan(
     profile_block: str,
     request: LearningPathReplanRequest,
@@ -261,24 +280,26 @@ def _heuristic_plan(
     coding = scores.get("coding_ability", 5)
     beginner_mode = kb <= 4 or coding <= 4
     advanced_mode = kb >= 8 and coding >= 7
+    module_clusters = _module_cluster_map()
+    weak_clusters = {module_clusters.get(wk, "") for wk in weak_keys} - {""}
 
-    def score(key: str) -> tuple[int, int, int, int]:
+    def score(key: str) -> tuple[int, int, int, int, int]:
         m = progress_map.get(key)
         pct = m.percent if m else 0
         phase_rank = PHASE_RANK.get(
             next((c["phase"] for c in MODULE_CATALOG if c["key"] == key), ""), 9
         )
-        avail_penalty = 1 if (m and not m.available) or key == "graph" else 0
         weak_bonus = 0 if key in weak_keys else 1
+        cluster_bonus = 0 if module_clusters.get(key, "") in weak_clusters else 1
         if pct >= 100:
-            return (3, 100, phase_rank, DEFAULT_ORDER.index(key))
+            return (3, 100, phase_rank, DEFAULT_ORDER.index(key), cluster_bonus)
         if pct > 0:
-            return (0, pct, phase_rank * 10 + weak_bonus, DEFAULT_ORDER.index(key))
+            return (0, pct, phase_rank * 10 + weak_bonus, DEFAULT_ORDER.index(key), cluster_bonus)
         if beginner_mode and phase_rank > 1:
-            return (2, 80, phase_rank + 5, DEFAULT_ORDER.index(key))
+            return (2, 80, phase_rank + 5, DEFAULT_ORDER.index(key), cluster_bonus)
         if advanced_mode and phase_rank == 0 and key in ("array", "linked-list"):
-            return (2, 30, phase_rank, DEFAULT_ORDER.index(key))
-        return (1, 50 + (0 if key in weak_keys else 20), phase_rank, DEFAULT_ORDER.index(key))
+            return (2, 30, phase_rank, DEFAULT_ORDER.index(key), cluster_bonus)
+        return (1, 50 + (0 if key in weak_keys else 20), phase_rank, DEFAULT_ORDER.index(key), cluster_bonus)
 
     ordered = sorted(
         [k for k in DEFAULT_ORDER if k in VALID_MODULE_KEYS],

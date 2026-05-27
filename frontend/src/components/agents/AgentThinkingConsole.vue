@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onUnmounted, ref, toRef, watch } from 'vue'
 import type { AgentConsoleLine, AgentLogStatus } from '@/utils/agentConsole'
+import { useAgentLogStream } from '@/composables/useAgentLogStream'
 
 const props = withDefaults(
   defineProps<{
@@ -10,6 +11,8 @@ const props = withDefaults(
     subtitle?: string
     progress?: number
     mode?: 'resource' | 'diagnosis' | 'idle'
+    /** 活跃时逐字打字机 + 逐行滚屏 */
+    streamTyping?: boolean
   }>(),
   {
     active: false,
@@ -17,15 +20,33 @@ const props = withDefaults(
     subtitle: 'multi-agent orchestrator · live stream',
     progress: 0,
     mode: 'idle',
+    streamTyping: true,
   },
 )
+
+type DisplayLine = AgentConsoleLine & { typedMessage?: string; typingDone?: boolean }
 
 const scrollRef = ref<HTMLElement | null>(null)
 const cursorVisible = ref(true)
 let cursorTimer: number | undefined
 
+const sourceLines = toRef(props, 'lines')
+const streamEnabled = computed(() => props.streamTyping && props.active)
+const { visibleLines } = useAgentLogStream(sourceLines, {
+  enabled: streamEnabled,
+  lineIntervalMs: 420,
+  charIntervalMs: 16,
+})
+
+const displayLines = computed((): DisplayLine[] => {
+  if (props.streamTyping && props.active) return visibleLines.value
+  return props.lines
+})
+
+const displayCount = computed(() => displayLines.value.length)
+
 watch(
-  () => props.lines.length,
+  () => displayCount.value,
   async () => {
     await nextTick()
     const el = scrollRef.value
@@ -57,7 +78,14 @@ const modeBadge = computed(() => {
   return 'STANDBY'
 })
 
-const treeConnectors = computed(() => [...new Set(props.lines.map((l) => l.agent))].slice(0, 8))
+const treeConnectors = computed(() => [...new Set(displayLines.value.map((l) => l.agent))].slice(0, 8))
+
+function lineMessage(line: DisplayLine): string {
+  if (props.streamTyping && props.active && !line.typingDone) {
+    return line.typedMessage ?? ''
+  }
+  return line.message
+}
 
 function formatTime(ts: number): string {
   return new Date(ts).toLocaleTimeString('zh-CN', { hour12: false })
@@ -66,6 +94,7 @@ function formatTime(ts: number): string {
 
 <template>
   <div class="agent-console" :class="{ 'agent-console--live': active }">
+    <div class="console-scanlines" aria-hidden="true" />
     <div class="console-chrome">
       <div class="console-dots" aria-hidden="true">
         <span class="dot dot--r" />
@@ -86,7 +115,7 @@ function formatTime(ts: number): string {
       <span class="progress-pct">{{ Math.round(progress) }}%</span>
     </div>
 
-    <aside v-if="lines.length" class="agent-tree" aria-label="活跃 Agent">
+    <aside v-if="displayLines.length" class="agent-tree" aria-label="活跃 Agent">
       <div v-for="agent in treeConnectors" :key="agent" class="tree-node">
         <span class="tree-pulse" :class="{ live: active }" />
         <span class="tree-label">{{ agent }}</span>
@@ -94,24 +123,26 @@ function formatTime(ts: number): string {
     </aside>
 
     <div ref="scrollRef" class="console-body">
-      <div v-if="!lines.length" class="console-empty">
+      <div v-if="!displayLines.length" class="console-empty">
         <span class="empty-glyph">▸</span>
         <p>等待 Orchestrator 下发协同任务…</p>
-        <p class="empty-hint">触发「个性化资源生成」或「AI 诊断」后，Agent 交接日志将在此流式打印</p>
+        <p class="empty-hint">
+          触发「可视化调试 / AI 诊断」后，ASTAnalyzerAgent 将先执行静态扫描，再移交 trace_runner / GDB 动态沙箱
+        </p>
       </div>
 
       <transition-group name="log-line" tag="div" class="log-stream">
         <div
-          v-for="line in lines"
+          v-for="line in displayLines"
           :key="line.id"
           class="log-line"
-          :class="statusClass(line.status)"
+          :class="[statusClass(line.status), { 'log-line--typing': streamTyping && active && !line.typingDone }]"
           :style="{ paddingLeft: `${12 + line.indent * 18}px` }"
         >
           <span class="log-ts">{{ formatTime(line.ts) }}</span>
           <span class="log-icon">{{ line.icon }}</span>
           <span class="log-agent">[{{ line.agent }}]</span>
-          <span class="log-msg">{{ line.message }}</span>
+          <span class="log-msg">{{ lineMessage(line) }}</span>
           <span v-if="line.status === 'running'" class="log-spinner" aria-hidden="true" />
         </div>
       </transition-group>
@@ -124,7 +155,7 @@ function formatTime(ts: number): string {
 
     <footer class="console-footer">
       <span>agents online: {{ treeConnectors.length }}</span>
-      <span>events: {{ lines.length }}</span>
+      <span>events: {{ displayCount }}</span>
       <span v-if="active" class="live-tag">● LIVE</span>
     </footer>
   </div>
@@ -154,6 +185,47 @@ function formatTime(ts: number): string {
     inset 0 1px 0 color-mix(in srgb, #fff 6%, transparent);
   overflow: hidden;
   font-family: ui-monospace, 'Cascadia Code', 'Fira Code', Consolas, monospace;
+}
+
+.console-scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.14) 2px,
+    rgba(0, 0, 0, 0.14) 4px
+  );
+  opacity: 0.45;
+  mix-blend-mode: overlay;
+}
+
+.console-scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(56, 189, 248, 0.04) 48%,
+    rgba(56, 189, 248, 0.08) 50%,
+    rgba(56, 189, 248, 0.04) 52%,
+    transparent 100%
+  );
+  background-size: 100% 220%;
+  animation: crt-scan 6s linear infinite;
+}
+
+@keyframes crt-scan {
+  0% {
+    background-position: 0 -100%;
+  }
+  100% {
+    background-position: 0 200%;
+  }
 }
 
 .agent-console--live {
@@ -378,6 +450,17 @@ function formatTime(ts: number): string {
 
 .log-line.line--error {
   border-left-color: var(--term-error);
+}
+
+.log-line--typing .log-msg {
+  color: #a5f3fc;
+}
+
+.log-line--typing .log-msg::after {
+  content: '▋';
+  margin-left: 2px;
+  color: var(--term-accent);
+  animation: blink 0.9s step-end infinite;
 }
 
 .log-ts {

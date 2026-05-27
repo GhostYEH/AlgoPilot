@@ -390,6 +390,12 @@ def run_cases_cpp(
     time_limit_ms: int = 3000,
     order_insensitive: bool = False,
 ) -> RunSummary:
+    from services.oj.static_audit import audit_user_code, run_summary_rejected
+
+    audit = audit_user_code(user_code, language="cpp")
+    if not audit.passed:
+        return run_summary_rejected(audit, total=max(1, len(cases)))
+
     gpp = _find_gpp()
     if not gpp:
         return RunSummary(

@@ -247,8 +247,7 @@ async def evaluate_oj_struggle(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> OjStruggleEvaluationResponse:
-    """OJ 连续 WA/RE/TLE → EvaluatorAgent 通知 PlannerAgent 插入降级巩固节点。"""
-    return await orchestrator.evaluate_oj_struggle_and_replan(db, user, body)
+    return await orchestrator.evaluate_oj_struggle(db, user, body)
 
 
 @router.get("/resources", response_model=ResourceListResponse)

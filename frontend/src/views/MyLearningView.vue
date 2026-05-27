@@ -23,6 +23,12 @@ import { buildGameLearningOverview } from '@/utils/gameLearningOverview'
 import { applyRemoteProgressPayload } from '@/utils/learningStorage'
 import PersonaChatPanel from '@/components/persona/PersonaChatPanel.vue'
 import RecommendedResourcesPanel from '@/components/learning/RecommendedResourcesPanel.vue'
+import { buildActivityDays } from '@/utils/learningActivity'
+import LearningProgressRing from '@/components/learning/LearningProgressRing.vue'
+import LearningSectionDonut from '@/components/learning/LearningSectionDonut.vue'
+import LearningModuleBarChart from '@/components/learning/LearningModuleBarChart.vue'
+import LearningModuleRadar from '@/components/learning/LearningModuleRadar.vue'
+import LearningActivityHeatmap from '@/components/learning/LearningActivityHeatmap.vue'
 import LearningEvaluationPanel from '@/components/learning/LearningEvaluationPanel.vue'
 
 const route = useRoute()
@@ -74,6 +80,12 @@ const totalSectionsDone = computed(() =>
 const totalSections = computed(() =>
   overview.value.rows.reduce((acc, r) => acc + r.totalCount, 0),
 )
+
+const activityDays = computed(() => {
+  const visitTs = recentVisits.value.map((v) => v.visitedAt)
+  const gameTs = gameOverview.value.recentHistory.map((r) => r.clearedAt)
+  return buildActivityDays([...visitTs, ...gameTs])
+})
 
 function onToggleFavorite(key: string) {
   toggleFavorite(key)
@@ -168,6 +180,45 @@ function onTabChange(name: string | number) {
 
     <el-tabs v-model="activeTab" class="learn-tabs" @tab-change="onTabChange">
       <el-tab-pane label="学习概览" name="overview">
+        <el-row :gutter="16" class="viz-row">
+          <el-col :span="24" :md="8">
+            <div class="viz-card">
+              <h3 class="section-title viz-title">总进度</h3>
+              <LearningProgressRing
+                :percent="overview.overallPercent"
+                :sublabel="`${overview.completedModules} 个模块已完成`"
+              />
+            </div>
+          </el-col>
+          <el-col :span="24" :md="8">
+            <div class="viz-card">
+              <h3 class="section-title viz-title">阶段分布</h3>
+              <LearningSectionDonut :rows="overview.rows" />
+            </div>
+          </el-col>
+          <el-col :span="24" :md="8">
+            <div class="viz-card">
+              <h3 class="section-title viz-title">学习活跃度</h3>
+              <LearningActivityHeatmap :days="activityDays" />
+            </div>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="16" class="viz-row">
+          <el-col :span="24" :lg="14">
+            <div class="viz-card">
+              <h3 class="section-title viz-title">模块进度</h3>
+              <LearningModuleBarChart :rows="overview.rows" @select="goModule" />
+            </div>
+          </el-col>
+          <el-col :span="24" :lg="10">
+            <div class="viz-card">
+              <h3 class="section-title viz-title">掌握雷达</h3>
+              <LearningModuleRadar :rows="overview.rows" />
+            </div>
+          </el-col>
+        </el-row>
+
         <el-row :gutter="16">
           <el-col :xs="24" :md="14">
             <h3 class="section-title">进行中</h3>
@@ -391,6 +442,10 @@ function onTabChange(name: string | number) {
           <el-button type="primary" link @click="router.push({ name: 'login' })">去登录</el-button>
         </el-alert>
         <PersonaChatPanel v-else />
+        <div v-if="isLoggedIn" class="persona-viz">
+          <h3 class="section-title">模块掌握概览</h3>
+          <LearningModuleRadar :rows="overview.rows" />
+        </div>
         <div v-if="isLoggedIn" class="persona-hints">
           <span class="muted">本地进度参考：</span>
           <el-tag
@@ -469,6 +524,31 @@ function onTabChange(name: string | number) {
 
 .learn-tabs {
   margin-top: 8px;
+}
+
+.viz-row {
+  margin-bottom: 16px;
+}
+
+.viz-card {
+  padding: 14px 16px;
+  border-radius: var(--alp-radius-card);
+  background: var(--alp-bg-soft-block);
+  border: 1px solid var(--alp-color-border);
+  height: 100%;
+  margin-bottom: 12px;
+}
+
+.viz-title {
+  margin-top: 0 !important;
+}
+
+.persona-viz {
+  margin-top: 20px;
+  padding: 14px 16px;
+  border-radius: var(--alp-radius-card);
+  background: var(--alp-bg-soft-block);
+  border: 1px solid var(--alp-color-border);
 }
 
 .section-title {

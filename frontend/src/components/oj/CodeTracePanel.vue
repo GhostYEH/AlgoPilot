@@ -59,7 +59,9 @@ import { buildMonotonicQueueScene } from '@/utils/traceQueue'
 import TraceQueueScene from '@/components/oj/trace/TraceQueueScene.vue'
 import { buildStackScene } from '@/utils/traceStack'
 import TraceStackScene from '@/components/oj/trace/TraceStackScene.vue'
+import TraceMemoryLayout from '@/components/oj/trace/TraceMemoryLayout.vue'
 import { useTraceHighlightLine } from '@/composables/useTraceHighlight'
+import { extractMemorySlots, diffMemorySlotIds, hasMemoryLayout } from '@/utils/traceMemory'
 import {
   buildLevelOrderTreeInference,
   traceHasTreeBuildPattern,
@@ -168,7 +170,7 @@ async function onTraceBugDiagnose() {
       ElMessage.success(`AI 已定位第 ${idx + 1} 步，已跳转至可疑帧`)
     }
   } catch {
-    ElMessage.warning('AI 轨迹诊断失败，请检查 SILICONFLOW_API_KEY 与判题服务')
+    ElMessage.warning('AI 轨迹诊断失败，请检查 SPARK_API_PASSWORD 与判题服务')
   } finally {
     diagnosingTrace.value = false
   }
@@ -227,6 +229,22 @@ const currentForViz = computed(() => {
 
 const classified = computed(() => classifyStepVars(currentForViz.value))
 const prevClassified = computed(() => classifyStepVars(prevStep.value))
+
+const memorySlots = computed(() => extractMemorySlots(currentForViz.value))
+const prevMemorySlots = computed(() => extractMemorySlots(prevStep.value))
+const hotMemoryIds = computed(() =>
+  prevStep.value
+    ? [...diffMemorySlotIds(prevMemorySlots.value, memorySlots.value)]
+    : [],
+)
+const showMemoryLayout = computed(
+  () =>
+    (props.language === 'cpp' || hasMemoryLayout(currentForViz.value)) &&
+    memorySlots.value.length > 0,
+)
+const memoryLayoutChanged = computed(() =>
+  memorySlots.value.some((s) => hotMemoryIds.value.includes(s.id)),
+)
 
 const stackScene = computed(() =>
   props.trace
@@ -399,6 +417,7 @@ const prevAssociatives = computed(() => classifyStepVars(prevStep.value).associa
 
 const hasViz = computed(
   () =>
+    showMemoryLayout.value ||
     stackScene.value != null ||
     queueScene.value != null ||
     slidingWindowScene.value != null ||
@@ -548,6 +567,13 @@ const showNarrateBtn = computed(
           class="trace-viz trace-viz--primary"
           :class="{ 'trace-viz--split': splitMode }"
         >
+          <TraceMemoryLayout
+            v-if="showMemoryLayout"
+            :slots="memorySlots"
+            :hot-ids="hotMemoryIds"
+            :var-changed="memoryLayoutChanged"
+          />
+
           <TraceStackScene
             v-if="stackScene"
             :scene="stackScene"

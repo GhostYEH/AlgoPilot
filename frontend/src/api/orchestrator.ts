@@ -31,7 +31,6 @@ export interface PersonaProfile {
   summary: string
   dimensions: PersonaDimensions
   updated_at: string | null
-  /** 六维量化分值 1-10 */
   dimension_scores?: Record<string, number>
   dimension_confidence?: Record<string, string>
   coverage_missing?: string[]
@@ -65,7 +64,7 @@ export interface AgentLogItem {
   status?: string
 }
 
-export interface OjStruggleEvaluation {
+export interface OjStruggleEvaluationResult {
   agent_name: string
   struggle_detected: boolean
   consecutive_failures: number
@@ -140,8 +139,8 @@ const STAGE_IO: Record<string, WorkflowStageDetail> = {
   },
   safety_filter: {
     stage: 'safety_filter',
-    agent: 'SafetyAgent',
-    label: '内容安全审查',
+    agent: 'ContentSafety',
+    label: '安全过滤',
     input: '校验后正文',
     output: '脱敏后正文',
   },
@@ -289,6 +288,29 @@ export async function replanLearningPath(body: {
   }) as Promise<LearningPathPlan>
 }
 
+export async function evaluateOjStruggle(body: {
+  module_key?: string
+  problem_slug?: string
+  knowledge_point?: string
+  verdict?: string
+  consecutive_failures: number
+  error_pattern?: string
+  overall_percent: number
+  modules: Array<{
+    key: string
+    label: string
+    phase: string
+    available: boolean
+    percent: number
+    done_count: number
+    total_count: number
+  }>
+}): Promise<OjStruggleEvaluationResult> {
+  return request.post('/api/orchestrator/evaluation/oj-struggle', body, {
+    timeout: 120000,
+  }) as Promise<OjStruggleEvaluationResult>
+}
+
 export interface LearningEvaluation {
   agent_name: string
   overall_score: number
@@ -344,29 +366,6 @@ export async function syncPersonaFromStored(): Promise<{ profile: PersonaProfile
   }>
 }
 
-export async function evaluateOjStruggle(body: {
-  module_key?: string
-  problem_slug?: string
-  knowledge_point?: string
-  verdict: string
-  consecutive_failures: number
-  error_pattern?: string
-  overall_percent: number
-  modules: Array<{
-    key: string
-    label: string
-    phase: string
-    available: boolean
-    percent: number
-    done_count: number
-    total_count: number
-  }>
-}): Promise<OjStruggleEvaluation> {
-  return request.post('/api/orchestrator/evaluation/oj-struggle', body, {
-    timeout: 90000,
-  }) as Promise<OjStruggleEvaluation>
-}
-
 export function resourceVerifyTag(meta: Record<string, unknown>): {
   label: string
   type: 'success' | 'warning' | 'info'
@@ -397,7 +396,10 @@ export async function streamGenerateResource(
       percent?: number
     }) => void
     onResource?: (r: GeneratedResource) => void
-    onDone?: () => void
+    onDone?: (info?: {
+      partial_failure?: boolean
+      errors?: Array<{ resource_type?: string; agent_name?: string; error: string }>
+    }) => void
     onError?: (msg: string) => void
   },
 ): Promise<void> {
@@ -477,6 +479,7 @@ export async function streamGenerateAllResources(
       agent_name: string
       label: string
       percent?: number
+      parallel?: boolean
     }) => void
     onWorkflow?: (w: {
       stage: string
@@ -492,7 +495,11 @@ export async function streamGenerateAllResources(
       logs: Array<{ agent: string; action: string; detail?: string; role?: string; status?: string }>,
     ) => void
     onResource?: (r: GeneratedResource) => void
-    onDone?: () => void
+    onDone?: (info?: {
+      partial_failure?: boolean
+      reused_count?: number
+      errors?: Array<{ resource_type?: string; agent_name?: string; error: string }>
+    }) => void
     onError?: (msg: string) => void
   },
 ): Promise<void> {
@@ -543,7 +550,13 @@ export async function streamGenerateAllResources(
         }
       }
       if (ev.type === 'done') {
-        handlers.onDone?.()
+        handlers.onDone?.({
+          partial_failure: ev.partial_failure === true,
+          reused_count: typeof ev.reused_count === 'number' ? ev.reused_count : undefined,
+          errors: Array.isArray(ev.errors)
+            ? (ev.errors as Array<{ resource_type?: string; agent_name?: string; error: string }>)
+            : undefined,
+        })
         if (Array.isArray(ev.agent_logs)) {
           handlers.onAgentLogs?.(
             ev.agent_logs as Array<{

@@ -1,0 +1,1657 @@
+<script setup lang="ts">
+import * as d3 from 'd3'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  shallowRef,
+  watch,
+} from 'vue'
+import { useRouter } from 'vue-router'
+import {
+  Close,
+  FullScreen,
+  ZoomIn,
+  ZoomOut,
+  Aim,
+  ArrowRight,
+  Document,
+  MagicStick,
+  Search,
+  Guide,
+  Warning,
+} from '@element-plus/icons-vue'
+import { ALGORITHM_MODULES } from '@/constants/modules'
+import { MODULE_PATH_HINTS } from '@/constants/modulePathHints'
+import {
+  fetchPersonaProfile,
+  fetchRecommendedResources,
+  PROFILE_DIMENSION_LABELS,
+  RESOURCE_TYPE_META,
+  type GeneratedResource,
+  type PersonaProfile,
+} from '@/api/orchestrator'
+import { buildLearningOverview } from '@/utils/learningOverview'
+import { layoutUniverseDag } from '@/utils/universeDagLayout'
+import { useLearningPathPlan } from '@/composables/useLearningPathPlan'
+import { useModuleNavigation } from '@/composables/useModuleNavigation'
+import { isLoggedIn } from '@/stores/auth'
+import { useUniverseGraphEnhancements } from '@/composables/useUniverseGraphEnhancements'
+
+/** 模块 key → 画像维度 */
+const MODULE_DIMENSION: Record<string, keyof PersonaProfile['dimensions']> = {
+  array: 'knowledge_base',
+  'linked-list': 'knowledge_base',
+  'hash-table': 'knowledge_base',
+  string: 'knowledge_base',
+  'two-pointers': 'cognitive_style',
+  'stack-queue': 'cognitive_style',
+  'binary-tree': 'coding_ability',
+  backtracking: 'coding_ability',
+  greedy: 'coding_ability',
+  dp: 'coding_ability',
+  'monotonic-stack': 'error_preference',
+  graph: 'learning_goals',
+}
+
+const PERSONALIZED_SLOTS = [
+  { type: 'document', label: '自适应教案', icon: '📘' },
+  { type: 'mindmap', label: '思维导图', icon: '🧠' },
+  { type: 'code_case', label: '互动沙盒', icon: '🎮' },
+  { type: 'exercises', label: '个性化题单', icon: '📝' },
+  { type: 'trace_animation', label: '轨迹动画', icon: '✨' },
+] as const
+
+export type UniverseNodeStatus = 'mastered' | 'active' | 'progress' | 'locked' | 'remediation' | 'next'
+
+export interface UniverseGraphNode {
+  id: string
+  label: string
+  accent: string
+  weight: number
+  radius: number
+  score: number
+  percent: number
+  available: boolean
+  status: UniverseNodeStatus
+  isRemediation?: boolean
+  isNext?: boolean
+  rank?: number
+  reason?: string
+  x?: number
+  y?: number
+  fx?: number | null
+  fy?: number | null
+}
+
+const props = defineProps<{
+  highlightKey?: string
+  /** 画像完成后自动开启导览 */
+  autoStartTour?: boolean
+}>()
+
+const emit = defineEmits<{
+  select: [key: string]
+  replan: []
+}>()
+
+const router = useRouter()
+const { goModule } = useModuleNavigation()
+const { plan, hasPlan, stepMap, recommendedNext, loadPlan, replan, loading } =
+  useLearningPathPlan()
+
+const containerRef = ref<HTMLDivElement | null>(null)
+const canvasRef = ref<HTMLCanvasElement | null>(null)
+const svgRef = ref<SVGSVGElement | null>(null)
+const gRef = ref<SVGGElement | null>(null)
+
+const overview = computed(() => buildLearningOverview())
+const personaScores = ref<Record<string, number>>({})
+const hoveredNode = ref<UniverseGraphNode | null>(null)
+const tooltipPos = ref({ x: 0, y: 0 })
+const selectedKey = ref(props.highlightKey ?? 'array')
+const drawerVisible = ref(false)
+const drawerResources = ref<GeneratedResource[]>([])
+const drawerLoading = ref(false)
+
+let simulation: d3.Simulation<UniverseGraphNode, d3.SimulationLinkDatum<UniverseGraphNode>> | null =
+  null
+let zoomBehavior: d3.ZoomBehavior<SVGSVGElement, unknown> | null = null
+let chargeForce: d3.ForceManyBody<UniverseGraphNode> | null = null
+let nodeSelection: d3.Selection<SVGGElement, UniverseGraphNode, SVGGElement, unknown> | null = null
+let linkSelection: d3.Selection<SVGLineElement, unknown, SVGGElement, unknown> | null = null
+let focusReleaseTimer: number | undefined
+const focusedNodeId = ref<string | null>(null)
+let starsAnimId = 0
+let renderToken = 0
+const graphNodes = shallowRef<UniverseGraphNode[]>([])
+const graphLinks = shallowRef<Array<{ source: string; target: string }>>([])
+
+const remediationStep = computed(
+  () => plan.value?.steps?.find((s) => s.is_remediation) ?? null,
+)
+
+function scoreForModule(key: string): number {
+  const dim = MODULE_DIMENSION[key]
+  if (dim && personaScores.value[dim] != null) return personaScores.value[dim]
+  const row = overview.value.rows.find((r) => r.key === key)
+  if (row?.percent != null) return Math.max(2, Math.round(row.percent / 10))
+  return 5
+}
+
+function nodeStatusFor(
+  key: string,
+  available: boolean,
+  percent: number,
+  isRemediation: boolean,
+  isNext: boolean,
+): UniverseNodeStatus {
+  if (isRemediation) return 'remediation'
+  if (isNext) return 'next'
+  if (!available) return 'locked'
+  if (percent >= 100) return 'mastered'
+  if (key === selectedKey.value) return 'active'
+  if (percent > 0) return 'progress'
+  return 'progress'
+}
+
+const universeNodes = computed((): UniverseGraphNode[] => {
+  const steps = plan.value?.steps ?? []
+  const keys =
+    steps.length > 0
+      ? steps.map((s) => s.module_key)
+      : overview.value.rows.filter((r) => r.available).map((r) => r.key)
+
+  const uniqueKeys = [...new Set([...keys, ...ALGORITHM_MODULES.map((m) => m.key)])]
+
+  return uniqueKeys.map((key) => {
+    const mod = ALGORITHM_MODULES.find((m) => m.key === key)
+    const row = overview.value.rows.find((r) => r.key === key)
+    const step = stepMap.value.get(key)
+    const score = scoreForModule(key)
+    const percent = row?.percent ?? 0
+    const available = row?.available ?? mod?.available ?? false
+    const isRemediation = !!step?.is_remediation
+    const isNext = key === plan.value?.next_module_key
+    const weight = score + percent / 15 + (step?.rank ? 12 - step.rank * 0.3 : 0)
+    const radius = Math.max(14, Math.min(36, 16 + weight * 1.1))
+
+    return {
+      id: key,
+      label: row?.label ?? mod?.label ?? key,
+      accent: row?.accent ?? mod?.accent ?? '#38bdf8',
+      weight,
+      radius,
+      score,
+      percent,
+      available,
+      status: nodeStatusFor(key, available, percent, isRemediation, isNext),
+      isRemediation,
+      isNext,
+      rank: step?.rank,
+      reason: step?.reason,
+    }
+  })
+})
+
+const universeEdges = computed(() => {
+  const edges: Array<{ source: string; target: string }> = []
+  const ids = new Set(universeNodes.value.map((n) => n.id))
+  for (const s of plan.value?.steps ?? []) {
+    for (const dep of s.prerequisites ?? []) {
+      if (ids.has(dep) && ids.has(s.module_key)) {
+        edges.push({ source: dep, target: s.module_key })
+      }
+    }
+  }
+  if (!edges.length) {
+    const ordered = plan.value?.ordered_keys?.length
+      ? plan.value.ordered_keys.filter((k) => ids.has(k))
+      : universeNodes.value.filter((n) => n.available).map((n) => n.id)
+    for (let i = 0; i < ordered.length - 1; i++) {
+      edges.push({ source: ordered[i], target: ordered[i + 1] })
+    }
+  }
+  return edges
+})
+
+const enhancements = useUniverseGraphEnhancements(
+  plan,
+  personaScores,
+  universeNodes,
+  universeEdges,
+  selectedKey,
+)
+
+const {
+  graphView,
+  searchQuery,
+  searchLoading,
+  searchResults,
+  uiSettings,
+  impact,
+  tour,
+  displayNodes,
+  displayEdges,
+  selectedConceptDetail,
+  selectedModuleConcepts,
+  runSearch,
+  clearSearch,
+  applySearchHit,
+} = enhancements
+
+const tourActive = computed(() => tour.active.value)
+const tourCurrentStep = computed(() => tour.currentStep.value)
+const tourStepsLen = computed(() => tour.steps.value.length)
+const tourStepIndex = computed(() => tour.stepIndex.value)
+const tourIsFirst = computed(() => tour.isFirst.value)
+const tourIsLast = computed(() => tour.isLast.value)
+const struggleRippleNodes = computed(() => impact.struggleRipple.value)
+const pathDiffData = computed(() => impact.pathDiff.value)
+const showPathDiffFlag = computed(() => impact.showPathDiff.value)
+
+const tooltipDimensions = computed(() => {
+  const node = hoveredNode.value
+  if (!node) return []
+  const scores = personaScores.value
+  return (Object.keys(PROFILE_DIMENSION_LABELS) as Array<keyof typeof PROFILE_DIMENSION_LABELS>).map(
+    (key) => ({
+      key,
+      label: PROFILE_DIMENSION_LABELS[key].slice(0, 4),
+      score: Math.round(((scores[key] ?? node.score) / 10) * 100),
+      highlight: MODULE_DIMENSION[node.id] === key,
+    }),
+  )
+})
+
+const selectedNode = computed(() =>
+  displayNodes.value.find((n) => n.id === selectedKey.value),
+)
+
+const drawerSlots = computed(() => {
+  const byType = new Map(drawerResources.value.map((r) => [r.resource_type, r]))
+  return PERSONALIZED_SLOTS.map((slot) => ({
+    ...slot,
+    resource: byType.get(slot.type),
+    meta: RESOURCE_TYPE_META[slot.type],
+  }))
+})
+
+watch(
+  () => props.highlightKey,
+  (k) => {
+    if (k) selectedKey.value = k
+  },
+)
+
+watch(recommendedNext, (mod) => {
+  if (!props.highlightKey && mod?.key) selectedKey.value = mod.key
+})
+
+watch([displayNodes, displayEdges, graphView], () => void nextTick().then(initGraph), { deep: true })
+
+function drawStars() {
+  const canvas = canvasRef.value
+  const container = containerRef.value
+  if (!canvas || !container) return
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  const w = container.clientWidth
+  const h = container.clientHeight
+  canvas.width = w
+  canvas.height = h
+
+  const stars = Array.from({ length: Math.floor((w * h) / 9000) }, () => ({
+    x: Math.random() * w,
+    y: Math.random() * h,
+    r: Math.random() * 1.4 + 0.2,
+    a: Math.random(),
+    speed: 0.002 + Math.random() * 0.004,
+  }))
+
+  const tick = () => {
+    ctx.fillStyle = '#020617'
+    ctx.fillRect(0, 0, w, h)
+    const grad = ctx.createRadialGradient(w * 0.5, h * 0.35, 0, w * 0.5, h * 0.35, w * 0.65)
+    grad.addColorStop(0, 'rgba(56, 189, 248, 0.08)')
+    grad.addColorStop(1, 'transparent')
+    ctx.fillStyle = grad
+    ctx.fillRect(0, 0, w, h)
+
+    for (const s of stars) {
+      s.a += s.speed
+      const pulse = 0.35 + Math.sin(s.a * Math.PI * 2) * 0.25
+      ctx.beginPath()
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2)
+      ctx.fillStyle = `rgba(148, 163, 184, ${pulse})`
+      ctx.fill()
+    }
+    starsAnimId = requestAnimationFrame(tick)
+  }
+  cancelAnimationFrame(starsAnimId)
+  tick()
+}
+
+function nodeFill(n: UniverseGraphNode): string {
+  if (n.status === 'locked') return '#1e293b'
+  if (n.status === 'remediation') return '#7c2d12'
+  if (n.status === 'mastered') return `color-mix(in srgb, ${n.accent} 55%, #0c4a6e)`
+  return `color-mix(in srgb, ${n.accent} 35%, #0f172a)`
+}
+
+function nodeStroke(n: UniverseGraphNode): string {
+  if (n.status === 'locked') return '#475569'
+  if (n.status === 'remediation') return '#fb923c'
+  if (n.status === 'mastered') return '#4ade80'
+  if (n.status === 'next') return '#38bdf8'
+  return n.accent
+}
+
+function linkNode(
+  end: string | UniverseGraphNode,
+): UniverseGraphNode | undefined {
+  return typeof end === 'string' ? graphNodes.value.find((n) => n.id === end) : end
+}
+
+function fitGraphToView(nodes: UniverseGraphNode[], width: number, height: number) {
+  const svgEl = svgRef.value
+  if (!svgEl || !zoomBehavior || !nodes.length) return
+
+  let minX = Infinity
+  let maxX = -Infinity
+  let minY = Infinity
+  let maxY = -Infinity
+  for (const n of nodes) {
+    const r = (n.radius ?? 20) + 20
+    const x = n.x ?? width / 2
+    const y = n.y ?? height / 2
+    minX = Math.min(minX, x - r)
+    maxX = Math.max(maxX, x + r)
+    minY = Math.min(minY, y - r)
+    maxY = Math.max(maxY, y + r)
+  }
+  const dx = Math.max(maxX - minX, 80)
+  const dy = Math.max(maxY - minY, 80)
+  const midX = (minX + maxX) / 2
+  const midY = (minY + maxY) / 2
+  const scale = Math.min(1.8, 0.88 / Math.max(dx / width, dy / height, 0.05))
+  const tx = width / 2 - scale * midX
+  const ty = height / 2 - scale * midY
+
+  d3.select(svgEl)
+    .transition()
+    .duration(500)
+    .call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(scale))
+}
+
+function getLinkedNodeIds(nodeId: string): Set<string> {
+  const ids = new Set<string>([nodeId])
+  for (const l of graphLinks.value) {
+    const s = typeof l.source === 'string' ? l.source : (l.source as UniverseGraphNode).id
+    const t = typeof l.target === 'string' ? l.target : (l.target as UniverseGraphNode).id
+    if (s === nodeId) ids.add(t)
+    if (t === nodeId) ids.add(s)
+  }
+  return ids
+}
+
+function applyFocusStyles(focusId: string | null) {
+  if (!nodeSelection || !linkSelection) return
+  const linked = focusId ? getLinkedNodeIds(focusId) : null
+
+  nodeSelection
+    .classed('universe-node--focused', (d) => d.id === focusId)
+    .classed('universe-node--dimmed', (d) => !!focusId && !linked!.has(d.id))
+
+  nodeSelection
+    .select<SVGCircleElement>('.node-core')
+    .transition()
+    .duration(320)
+    .attr('r', (d) => (d.id === focusId ? d.radius * 1.28 : d.radius))
+
+  linkSelection
+    .transition()
+    .duration(320)
+    .attr('stroke-opacity', (d) => {
+      if (!focusId) return 0.6
+      const link = d as { source: string | UniverseGraphNode; target: string | UniverseGraphNode }
+      const s = linkNode(link.source)?.id
+      const t = linkNode(link.target)?.id
+      return s && t && linked!.has(s) && linked!.has(t) ? 0.95 : 0.1
+    })
+    .attr('stroke-width', (d) => {
+      if (!focusId) return 1.5
+      const link = d as { source: string | UniverseGraphNode; target: string | UniverseGraphNode }
+      const s = linkNode(link.source)?.id
+      const t = linkNode(link.target)?.id
+      return s && t && linked!.has(s) && linked!.has(t) ? 2.5 : 1
+    })
+}
+
+function focusNodeSpread(node: UniverseGraphNode) {
+  const container = containerRef.value
+  if (!container || !simulation || !chargeForce) return
+
+  if (focusReleaseTimer) window.clearTimeout(focusReleaseTimer)
+
+  focusedNodeId.value = node.id
+  const width = container.clientWidth
+  const height = container.clientHeight
+  const cx = width / 2
+  const cy = height / 2
+
+  panToNode(node.id)
+
+  const gn = graphNodes.value.find((n) => n.id === node.id)
+  if (gn) {
+    gn.fx = cx
+    gn.fy = cy
+  }
+
+  chargeForce.strength(-960)
+  applyFocusStyles(node.id)
+  simulation.alpha(0.9).restart()
+
+  focusReleaseTimer = window.setTimeout(() => {
+    chargeForce?.strength(-380)
+    if (gn) {
+      gn.fx = null
+      gn.fy = null
+    }
+    focusedNodeId.value = null
+    applyFocusStyles(null)
+    simulation?.alpha(0.35).restart()
+    focusReleaseTimer = undefined
+  }, 1500)
+}
+
+function clearNodeFocus() {
+  if (focusReleaseTimer) {
+    window.clearTimeout(focusReleaseTimer)
+    focusReleaseTimer = undefined
+  }
+  focusedNodeId.value = null
+  chargeForce?.strength(-380)
+  for (const n of graphNodes.value) {
+    n.fx = null
+    n.fy = null
+  }
+  applyFocusStyles(null)
+  simulation?.alpha(0.25).restart()
+}
+
+function panToNode(nodeId: string) {
+  const node = graphNodes.value.find((n) => n.id === nodeId)
+  const svgEl = svgRef.value
+  const container = containerRef.value
+  if (!node || !svgEl || !zoomBehavior || !container) return
+  const width = container.clientWidth
+  const height = container.clientHeight
+  const scale = 1.4
+  const tx = width / 2 - scale * (node.x ?? width / 2)
+  const ty = height / 2 - scale * (node.y ?? height / 2)
+  d3.select(svgEl)
+    .transition()
+    .duration(450)
+    .call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(scale))
+}
+
+function initGraph() {
+  const svgEl = svgRef.value
+  const gEl = gRef.value
+  const container = containerRef.value
+  if (!svgEl || !gEl || !container) return
+
+  if (focusReleaseTimer) {
+    window.clearTimeout(focusReleaseTimer)
+    focusReleaseTimer = undefined
+  }
+  focusedNodeId.value = null
+  nodeSelection = null
+  linkSelection = null
+
+  const token = ++renderToken
+  const width = container.clientWidth
+  const height = container.clientHeight
+
+  const nodes: UniverseGraphNode[] = displayNodes.value.map((n) => ({ ...n }))
+  const links = displayEdges.value.map((e) => ({ ...e }))
+
+  const layoutPos = layoutUniverseDag(
+    nodes.map((n) => ({ id: n.id, rank: n.rank, radius: n.radius })),
+    links,
+    width,
+    height,
+  )
+  for (const n of nodes) {
+    const p = layoutPos.get(n.id)
+    if (p) {
+      n.x = p.x
+      n.y = p.y
+    }
+  }
+
+  graphNodes.value = nodes
+  graphLinks.value = links
+
+  if (simulation) simulation.stop()
+
+  const svg = d3.select(svgEl)
+  svg.attr('width', width).attr('height', height)
+  const g = d3.select(gEl)
+  g.selectAll('*').remove()
+
+  if (!zoomBehavior) {
+    zoomBehavior = d3
+      .zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.15, 4])
+      .on('zoom', (event) => {
+        g.attr('transform', event.transform)
+      })
+    svg.call(zoomBehavior)
+  }
+
+  const linkG = g.append('g').attr('class', 'universe-links')
+  const nodeG = g.append('g').attr('class', 'universe-nodes')
+
+  const linkForce = d3
+    .forceLink<UniverseGraphNode, { source: string; target: string }>(links)
+    .id((d) => d.id)
+    .distance(140)
+    .strength(0.55)
+
+  const linkSel = linkG
+    .selectAll<SVGLineElement, { source: string | UniverseGraphNode; target: string | UniverseGraphNode }>(
+      'line',
+    )
+    .data(links)
+    .join('line')
+    .attr('stroke', 'rgba(56, 189, 248, 0.35)')
+    .attr('stroke-width', 1.5)
+    .attr('stroke-opacity', 0.6)
+
+  linkSelection = linkSel as d3.Selection<SVGLineElement, unknown, SVGGElement, unknown>
+
+  const nodeSel = nodeG
+    .selectAll<SVGGElement, UniverseGraphNode>('g')
+    .data(nodes, (d) => d.id)
+    .join('g')
+    .attr('class', (d) => {
+      const classes = ['universe-node', `universe-node--${d.status}`]
+      if (d.isNext) classes.push('universe-node--next')
+      if (d.isRemediation || d.status === 'remediation') classes.push('universe-node--remediation')
+      if (d.status === 'mastered') classes.push('universe-node--mastered-glow')
+      return classes.join(' ')
+    })
+    .style('cursor', 'pointer')
+    .call(
+      d3
+        .drag<SVGGElement, UniverseGraphNode>()
+        .on('start', (event, d) => {
+          if (!event.active) simulation?.alphaTarget(0.3).restart()
+          d.fx = d.x
+          d.fy = d.y
+        })
+        .on('drag', (event, d) => {
+          d.fx = event.x
+          d.fy = event.y
+        })
+        .on('end', (event, d) => {
+          if (!event.active) simulation?.alphaTarget(0)
+          d.fx = null
+          d.fy = null
+        }),
+    )
+
+  nodeSel
+    .filter((d) => d.isRemediation || d.status === 'remediation')
+    .append('circle')
+    .attr('class', 'remediation-halo')
+    .attr('r', (d) => d.radius + 10)
+    .attr('fill', 'none')
+    .attr('stroke', '#fb923c')
+    .attr('stroke-width', 2)
+    .attr('pointer-events', 'none')
+
+  nodeSel
+    .append('circle')
+    .attr('class', 'node-core')
+    .attr('r', (d) => d.radius)
+    .attr('fill', (d) => nodeFill(d))
+    .attr('stroke', (d) => nodeStroke(d))
+    .attr('stroke-width', (d) => (d.isNext || d.isRemediation ? 3 : 2))
+
+  nodeSel
+    .append('text')
+    .attr('text-anchor', 'middle')
+    .attr('dy', '0.35em')
+    .attr('fill', (d) => (d.status === 'locked' ? '#64748b' : '#e2e8f0'))
+    .attr('font-size', (d) => Math.max(9, Math.min(12, d.radius * 0.45)))
+    .attr('pointer-events', 'none')
+    .text((d) => (d.label.length > 5 ? d.label.slice(0, 4) + '…' : d.label))
+
+  nodeSel
+    .filter((d) => !!d.rank)
+    .append('text')
+    .attr('y', (d) => -d.radius - 6)
+    .attr('text-anchor', 'middle')
+    .attr('fill', '#38bdf8')
+    .attr('font-size', 9)
+    .attr('pointer-events', 'none')
+    .text((d) => `#${d.rank}`)
+
+  nodeSel
+    .on('mouseenter', (event, d) => {
+      hoveredNode.value = d
+      tooltipPos.value = { x: event.clientX, y: event.clientY }
+    })
+    .on('mousemove', (event) => {
+      tooltipPos.value = { x: event.clientX, y: event.clientY }
+    })
+    .on('mouseleave', () => {
+      hoveredNode.value = null
+    })
+    .on('click', (_, d) => {
+      void onNodeClick(d)
+    })
+
+  nodeSelection = nodeSel
+
+  chargeForce = d3.forceManyBody<UniverseGraphNode>().strength(-380)
+
+  simulation = d3
+    .forceSimulation(nodes)
+    .force('link', linkForce)
+    .force('charge', chargeForce)
+    .force('center', d3.forceCenter(width / 2, height / 2).strength(0.05))
+    .force(
+      'x',
+      d3
+        .forceX<UniverseGraphNode>((d) => layoutPos.get(d.id)?.x ?? width / 2)
+        .strength(0.18),
+    )
+    .force(
+      'y',
+      d3
+        .forceY<UniverseGraphNode>((d) => layoutPos.get(d.id)?.y ?? height / 2)
+        .strength(0.18),
+    )
+    .force(
+      'collision',
+      d3.forceCollide<UniverseGraphNode>().radius((d) => d.radius + 16),
+    )
+    .alpha(0.9)
+    .alphaDecay(0.035)
+    .on('tick', () => {
+      linkSel
+        .attr('x1', (d) => linkNode(d.source)?.x ?? 0)
+        .attr('y1', (d) => linkNode(d.source)?.y ?? 0)
+        .attr('x2', (d) => linkNode(d.target)?.x ?? 0)
+        .attr('y2', (d) => linkNode(d.target)?.y ?? 0)
+
+      nodeSel.attr('transform', (d) => `translate(${d.x ?? 0},${d.y ?? 0})`)
+    })
+    .on('end', () => {
+      if (token === renderToken) fitGraphToView(nodes, width, height)
+      if (tour.active.value && tour.currentStep.value) {
+        panToNode(tour.currentStep.value.id)
+      }
+    })
+
+  if (token !== renderToken) return
+}
+
+function zoomBy(factor: number) {
+  const svgEl = svgRef.value
+  if (!svgEl || !zoomBehavior) return
+  d3.select(svgEl).transition().duration(300).call(zoomBehavior.scaleBy, factor)
+}
+
+function resetView() {
+  const svgEl = svgRef.value
+  if (!svgEl || !zoomBehavior) return
+  clearNodeFocus()
+  d3.select(svgEl).transition().duration(400).call(zoomBehavior.transform, d3.zoomIdentity)
+}
+
+async function onNodeClick(node: UniverseGraphNode) {
+  selectedKey.value = node.id
+  focusNodeSpread(node)
+  emit('select', node.id)
+  drawerVisible.value = true
+  drawerLoading.value = true
+  try {
+    drawerResources.value = isLoggedIn.value
+      ? await fetchRecommendedResources({ module_key: node.id, limit: 8 })
+      : []
+  } catch {
+    drawerResources.value = []
+  } finally {
+    drawerLoading.value = false
+  }
+}
+
+function openResource(r: GeneratedResource) {
+  router.push({ name: 'resources', query: { highlight: String(r.id) } })
+}
+
+async function onReplan() {
+  emit('replan')
+  await replan()
+}
+
+function renderMiniRadar(svgRoot: SVGSVGElement, dims: Array<{ label: string; score: number; highlight?: boolean }>) {
+  const size = 120
+  const radius = 42
+  const n = dims.length
+  if (!n) return
+
+  const svg = d3.select(svgRoot)
+  svg.selectAll('*').remove()
+  svg.attr('width', size).attr('height', size)
+  const g = svg.append('g').attr('transform', `translate(${size / 2},${size / 2})`)
+  const angleSlice = (Math.PI * 2) / n
+  const rScale = d3.scaleLinear().domain([0, 100]).range([0, radius])
+
+  ;[25, 50, 75, 100].forEach((lvl) => {
+    g.append('circle')
+      .attr('r', rScale(lvl))
+      .attr('fill', 'none')
+      .attr('stroke', 'rgba(56, 189, 248, 0.2)')
+      .attr('stroke-dasharray', '2,2')
+  })
+
+  dims.forEach((d, i) => {
+    const angle = angleSlice * i - Math.PI / 2
+    g.append('line')
+      .attr('x2', radius * Math.cos(angle))
+      .attr('y2', radius * Math.sin(angle))
+      .attr('stroke', d.highlight ? 'rgba(56,189,248,0.6)' : 'rgba(71,85,105,0.5)')
+  })
+
+  const area = d3
+    .areaRadial<{ score: number }>()
+    .radius((d) => rScale(d.score))
+    .angle((_, i) => i * angleSlice)
+    .curve(d3.curveLinearClosed)
+
+  g.append('path')
+    .datum(dims.map((d) => ({ score: d.score })))
+    .attr('fill', 'rgba(56, 189, 248, 0.25)')
+    .attr('stroke', '#38bdf8')
+    .attr('stroke-width', 1.5)
+    .attr('d', area)
+}
+
+const miniRadarRef = ref<SVGSVGElement | null>(null)
+watch([hoveredNode, tooltipDimensions], async () => {
+  await nextTick()
+  if (miniRadarRef.value && hoveredNode.value) {
+    renderMiniRadar(miniRadarRef.value, tooltipDimensions.value)
+  }
+})
+
+onMounted(async () => {
+  if (isLoggedIn.value) {
+    try {
+      const p = await fetchPersonaProfile()
+      personaScores.value = p.dimension_scores ?? {}
+    } catch {
+      personaScores.value = {}
+    }
+  }
+  await loadPlan()
+  if (plan.value?.next_module_key) {
+    selectedKey.value = props.highlightKey ?? plan.value.next_module_key
+  }
+  if (props.autoStartTour && hasPlan.value) {
+    tour.start()
+  }
+  drawStars()
+  await nextTick()
+  initGraph()
+  window.addEventListener('resize', onResize)
+})
+
+function onResize() {
+  drawStars()
+  void nextTick().then(initGraph)
+}
+
+onUnmounted(() => {
+  renderToken += 1
+  if (focusReleaseTimer) window.clearTimeout(focusReleaseTimer)
+  simulation?.stop()
+  cancelAnimationFrame(starsAnimId)
+  window.removeEventListener('resize', onResize)
+  if (svgRef.value) d3.select(svgRef.value).on('.zoom', null)
+})
+</script>
+
+<template>
+  <div class="universe">
+    <el-alert
+      v-if="hasPlan"
+      type="success"
+      :closable="false"
+      show-icon
+      class="universe-banner"
+    >
+      <template #title>{{ plan?.agent_name }} · 算法知识宇宙已同步</template>
+      <p class="banner-text">{{ plan?.summary }}</p>
+    </el-alert>
+
+    <el-alert
+      v-if="plan?.remediation_inserted && remediationStep"
+      type="warning"
+      :closable="false"
+      show-icon
+      class="universe-banner"
+    >
+      <template #title>EvaluatorAgent → PlannerAgent 学情降级</template>
+      巩固节点「{{
+        overview.rows.find((r) => r.key === remediationStep?.module_key)?.label ??
+        remediationStep?.module_key
+      }}」已在星图中高亮闪烁
+    </el-alert>
+
+    <el-alert v-else-if="isLoggedIn && !hasPlan" type="info" :closable="false" show-icon class="universe-banner">
+      <template #title>PlannerAgent 待激活</template>
+      完成画像访谈或点击下方按钮，生成千人千面 DAG 星图。
+      <el-button type="primary" size="small" :loading="loading" class="banner-btn" @click="onReplan">
+        生成个性化宇宙
+      </el-button>
+    </el-alert>
+
+    <div ref="containerRef" class="universe-canvas">
+      <canvas ref="canvasRef" class="stars-layer" aria-hidden="true" />
+      <svg ref="svgRef" class="graph-layer" role="img" aria-label="算法知识宇宙力导向图">
+        <g ref="gRef" />
+      </svg>
+
+      <div class="universe-hud">
+        <span class="hud-title"><el-icon><FullScreen /></el-icon> 算法知识宇宙</span>
+        <el-radio-group v-model="graphView" size="small" class="hud-view-toggle">
+          <el-radio-button value="module">模块</el-radio-button>
+          <el-radio-button value="concept">概念</el-radio-button>
+        </el-radio-group>
+        <div class="hud-actions">
+          <el-button size="small" :icon="Guide" @click="tour.start()">导览</el-button>
+          <el-button size="small" :icon="Warning" @click="impact.togglePathDiff()">路径 Diff</el-button>
+          <el-button circle size="small" :icon="ZoomIn" title="放大" @click="zoomBy(1.25)" />
+          <el-button circle size="small" :icon="ZoomOut" title="缩小" @click="zoomBy(0.8)" />
+          <el-button circle size="small" :icon="Aim" title="复位视图" @click="resetView" />
+        </div>
+      </div>
+
+      <div class="universe-search">
+        <el-input
+          v-model="searchQuery"
+          placeholder="语义搜索：如「单调栈 medium 入门题」"
+          clearable
+          size="small"
+          @keyup.enter="runSearch"
+          @clear="clearSearch"
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+          <template #append>
+            <el-button :loading="searchLoading" @click="runSearch">搜索</el-button>
+          </template>
+        </el-input>
+        <ul v-if="searchResults.length" class="search-results">
+          <li
+            v-for="hit in searchResults"
+            :key="`${hit.kind}-${hit.id}`"
+            role="button"
+            tabindex="0"
+            @click="applySearchHit(hit)"
+            @keyup.enter="applySearchHit(hit)"
+          >
+            <span class="hit-kind">{{ hit.kind }}</span>
+            <strong>{{ hit.title }}</strong>
+            <span class="hit-snippet">{{ hit.snippet }}</span>
+          </li>
+        </ul>
+      </div>
+
+      <aside v-if="tourActive && tourCurrentStep" class="tour-panel">
+        <header class="tour-head">
+          <span>Guided Tour · {{ tourStepIndex + 1 }}/{{ tourStepsLen }}</span>
+          <el-button link type="primary" @click="tour.stop()">退出</el-button>
+        </header>
+        <h4>{{ tourCurrentStep.title }}</h4>
+        <p>{{ tourCurrentStep.summary }}</p>
+        <p v-if="uiSettings.encouragementLevel === 'high'" class="tour-encourage">一步一步来，你已经很棒了！</p>
+        <div class="tour-actions">
+          <el-button size="small" :disabled="tourIsFirst" @click="tour.prev()">上一步</el-button>
+          <el-button type="primary" size="small" @click="tour.next()">
+            {{ tourIsLast ? '完成' : '下一步' }}
+          </el-button>
+        </div>
+      </aside>
+
+      <div v-if="struggleRippleNodes.length" class="impact-ripple">
+        <span class="impact-label">受挫波及先修：</span>
+        <el-tag
+          v-for="n in struggleRippleNodes"
+          :key="n.id"
+          type="danger"
+          size="small"
+          effect="plain"
+        >
+          {{ n.label }}
+        </el-tag>
+      </div>
+
+      <div v-if="showPathDiffFlag && (pathDiffData.added.length || pathDiffData.removed.length)" class="impact-diff">
+        <span v-if="pathDiffData.added.length">新增：{{ pathDiffData.added.join('、') }}</span>
+        <span v-if="pathDiffData.removed.length">移除：{{ pathDiffData.removed.join('、') }}</span>
+      </div>
+
+      <div class="universe-legend">
+        <span><i class="dot dot--mastered" /> 已掌握</span>
+        <span><i class="dot dot--next" /> 推荐下一步</span>
+        <span><i class="dot dot--locked" /> 未解锁</span>
+        <span><i class="dot dot--remediation" /> 巩固 Remediation</span>
+      </div>
+
+      <div class="universe-stats">
+        <span>总进度 {{ overview.overallPercent }}%</span>
+        <span>·</span>
+        <span>已跟踪 {{ overview.trackedModules }} 模块</span>
+      </div>
+    </div>
+
+    <Teleport to="body">
+      <div
+        v-if="hoveredNode"
+        class="universe-tooltip"
+        :style="{ left: `${tooltipPos.x + 16}px`, top: `${tooltipPos.y + 16}px` }"
+      >
+        <div class="tooltip-head">
+          <span class="tooltip-title">{{ hoveredNode.label }}</span>
+          <el-tag size="small" effect="dark" :type="hoveredNode.status === 'remediation' ? 'warning' : 'info'">
+            {{ hoveredNode.percent }}% 熟练
+          </el-tag>
+        </div>
+        <p v-if="hoveredNode.reason" class="tooltip-reason">{{ hoveredNode.reason }}</p>
+        <div class="tooltip-radar-wrap">
+          <svg ref="miniRadarRef" class="tooltip-radar" role="img" aria-label="节点熟练度雷达" />
+          <ul class="tooltip-dims">
+            <li
+              v-for="d in tooltipDimensions.slice(0, 4)"
+              :key="d.key"
+              :class="{ 'is-highlight': d.highlight }"
+            >
+              {{ d.label }} <strong>{{ d.score }}</strong>
+            </li>
+          </ul>
+        </div>
+        <p class="tooltip-hint">单击节点 · 展开个性化资源抽屉</p>
+      </div>
+    </Teleport>
+
+    <el-drawer
+      v-model="drawerVisible"
+      :title="selectedNode?.label ?? '知识点详情'"
+      direction="rtl"
+      size="min(420px, 92vw)"
+      class="universe-drawer"
+      destroy-on-close
+    >
+      <template v-if="selectedNode">
+        <div class="drawer-head">
+          <div
+            class="drawer-node-preview"
+            :class="`drawer-node-preview--${selectedNode.status}`"
+            :style="{ '--node-accent': selectedNode.accent }"
+          >
+            <span class="preview-label">{{ selectedNode.label }}</span>
+            <span class="preview-pct">{{ selectedNode.percent }}%</span>
+          </div>
+          <p v-if="selectedNode.reason" class="drawer-reason">
+            <strong>PlannerAgent：</strong>{{ selectedNode.reason }}
+          </p>
+          <p v-if="MODULE_PATH_HINTS[selectedNode.id]" class="drawer-summary">
+            {{ MODULE_PATH_HINTS[selectedNode.id].summary }}
+          </p>
+          <div v-if="selectedModuleConcepts.length" class="drawer-concepts">
+            <span class="drawer-concepts-label">概念子图</span>
+            <el-tag
+              v-for="c in selectedModuleConcepts"
+              :key="c.id"
+              size="small"
+              effect="plain"
+              class="concept-chip"
+              @click="graphView = 'concept'; selectedKey = c.id"
+            >
+              {{ c.label }}
+            </el-tag>
+          </div>
+          <div v-if="selectedConceptDetail" class="drawer-problems">
+            <span class="drawer-concepts-label">关联 OJ</span>
+            <el-button
+              v-for="p in selectedConceptDetail.problems"
+              :key="p.slug"
+              link
+              type="primary"
+              @click="router.push({ name: 'practice-slug', params: { slug: p.slug } })"
+            >
+              {{ p.label }}
+            </el-button>
+          </div>
+        </div>
+
+        <h4 class="drawer-section-title">
+          <el-icon><MagicStick /></el-icon>
+          五种个性化学习资源
+        </h4>
+
+        <el-skeleton v-if="drawerLoading" :rows="4" animated />
+
+        <div v-else class="resource-grid">
+          <article
+            v-for="slot in drawerSlots"
+            :key="slot.type"
+            class="resource-card"
+            :class="{ 'resource-card--filled': !!slot.resource }"
+            role="button"
+            tabindex="0"
+            @click="slot.resource && openResource(slot.resource)"
+            @keyup.enter="slot.resource && openResource(slot.resource)"
+          >
+            <span class="resource-icon">{{ slot.icon }}</span>
+            <div class="resource-body">
+              <div class="resource-type">{{ slot.label }}</div>
+              <div v-if="slot.resource" class="resource-title">{{ slot.resource.title }}</div>
+              <div v-else class="resource-placeholder">
+                {{ isLoggedIn ? '登录后可在资源库一键生成' : '登录解锁' }}
+              </div>
+              <div v-if="slot.meta" class="resource-agent">{{ slot.meta.agentName }}</div>
+            </div>
+            <el-icon v-if="slot.resource" class="resource-arrow"><Document /></el-icon>
+          </article>
+        </div>
+
+        <div class="drawer-actions">
+          <el-button
+            v-if="selectedNode.available"
+            type="primary"
+            @click="goModule(selectedNode.id)"
+          >
+            {{ selectedNode.percent > 0 ? '继续学习' : '开始学习' }}
+            <el-icon class="el-icon--right"><ArrowRight /></el-icon>
+          </el-button>
+          <el-button v-else disabled>内容规划中</el-button>
+          <el-button @click="router.push({ name: 'resources' })">资源库</el-button>
+        </div>
+      </template>
+
+      <template #footer>
+        <el-button :icon="Close" @click="drawerVisible = false">关闭</el-button>
+      </template>
+    </el-drawer>
+  </div>
+</template>
+
+<style scoped>
+.universe {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.universe-banner {
+  margin: 0;
+}
+
+.banner-text {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.banner-btn {
+  margin-top: 8px;
+}
+
+.universe-canvas {
+  position: relative;
+  width: 100%;
+  min-height: min(72vh, 720px);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  box-shadow:
+    0 0 60px rgba(56, 189, 248, 0.08),
+    inset 0 0 80px rgba(2, 6, 23, 0.9);
+}
+
+.stars-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.graph-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+
+.graph-layer:active {
+  cursor: grabbing;
+}
+
+.graph-layer :deep(.universe-node--remediation .remediation-halo) {
+  animation: remediation-halo-pulse 1s ease-in-out infinite;
+}
+
+.graph-layer :deep(.universe-node--remediation .node-core) {
+  filter: drop-shadow(0 0 16px rgba(251, 146, 60, 0.95));
+  animation: warn-pulse 1.1s ease-in-out infinite;
+}
+
+.graph-layer :deep(.universe-node--mastered-glow .node-core) {
+  filter: drop-shadow(0 0 14px rgba(74, 222, 128, 0.85));
+  animation: breathe-glow 2.8s ease-in-out infinite;
+}
+
+.graph-layer :deep(.universe-node--next .node-core) {
+  filter: drop-shadow(0 0 14px rgba(56, 189, 248, 0.85));
+}
+
+.graph-layer :deep(.universe-node--locked .node-core) {
+  opacity: 0.55;
+}
+
+.graph-layer :deep(.universe-node--dimmed) {
+  opacity: 0.28;
+  transition: opacity 0.35s ease;
+}
+
+.graph-layer :deep(.universe-node--dimmed .node-core) {
+  filter: none;
+}
+
+.graph-layer :deep(.universe-node--focused .node-core) {
+  filter: drop-shadow(0 0 22px rgba(56, 189, 248, 1));
+  animation: focus-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes focus-pulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 18px rgba(56, 189, 248, 0.85));
+  }
+  50% {
+    filter: drop-shadow(0 0 28px rgba(167, 139, 250, 0.95));
+  }
+}
+
+@keyframes remediation-halo-pulse {
+  0%,
+  100% {
+    stroke-opacity: 0.35;
+    stroke: #fb923c;
+  }
+  50% {
+    stroke-opacity: 1;
+    stroke: #ef4444;
+  }
+}
+
+@keyframes breathe-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 8px rgba(74, 222, 128, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 18px rgba(56, 189, 248, 0.85));
+  }
+}
+
+@keyframes warn-pulse {
+  0%,
+  100% {
+    stroke-width: 2;
+    filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.6));
+  }
+  50% {
+    stroke-width: 3.5;
+    filter: drop-shadow(0 0 22px rgba(251, 146, 60, 1));
+  }
+}
+
+.universe-hud {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.hud-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #e2e8f0;
+  text-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+  pointer-events: auto;
+}
+
+.hud-actions {
+  display: flex;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.hud-actions :deep(.el-button) {
+  background: rgba(15, 23, 42, 0.75);
+  border-color: rgba(56, 189, 248, 0.35);
+  color: #e2e8f0;
+}
+
+.universe-legend {
+  position: absolute;
+  bottom: 12px;
+  left: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 11px;
+  color: #94a3b8;
+  z-index: 2;
+}
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.dot--mastered {
+  background: #4ade80;
+  box-shadow: 0 0 8px #4ade80;
+}
+
+.dot--next {
+  background: #38bdf8;
+  box-shadow: 0 0 8px #38bdf8;
+}
+
+.dot--locked {
+  background: #475569;
+}
+
+.dot--remediation {
+  background: #fb923c;
+  animation: warn-pulse 1.1s ease-in-out infinite;
+}
+
+.universe-stats {
+  position: absolute;
+  bottom: 12px;
+  right: 14px;
+  font-size: 11px;
+  color: #64748b;
+  z-index: 2;
+}
+
+.universe-tooltip {
+  position: fixed;
+  z-index: 3000;
+  min-width: 220px;
+  max-width: 280px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.98));
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  box-shadow:
+    0 0 24px rgba(56, 189, 248, 0.2),
+    0 8px 32px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+}
+
+.tooltip-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.tooltip-title {
+  font-weight: 600;
+  color: #f1f5f9;
+  font-size: 14px;
+}
+
+.tooltip-reason {
+  margin: 0 0 8px;
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.tooltip-radar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tooltip-radar {
+  flex-shrink: 0;
+}
+
+.tooltip-dims {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 10px;
+  color: #94a3b8;
+  line-height: 1.6;
+}
+
+.tooltip-dims li.is-highlight {
+  color: #38bdf8;
+}
+
+.tooltip-dims strong {
+  color: #e2e8f0;
+  font-variant-numeric: tabular-nums;
+}
+
+.tooltip-hint {
+  margin: 8px 0 0;
+  font-size: 10px;
+  color: #64748b;
+}
+
+.drawer-head {
+  margin-bottom: 16px;
+}
+
+.drawer-node-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.6));
+  border: 1px solid color-mix(in srgb, var(--node-accent) 40%, transparent);
+  margin-bottom: 12px;
+}
+
+.drawer-node-preview--remediation {
+  border-color: #fb923c;
+  box-shadow: 0 0 20px rgba(251, 146, 60, 0.25);
+  animation: warn-pulse 1.2s ease-in-out infinite;
+}
+
+.drawer-node-preview--mastered {
+  box-shadow: 0 0 20px rgba(74, 222, 128, 0.2);
+}
+
+.preview-label {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--node-accent);
+}
+
+.preview-pct {
+  font-size: 22px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.drawer-reason {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(56, 189, 248, 0.1);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.drawer-summary {
+  margin: 0;
+  font-size: 13px;
+  color: var(--alp-color-muted);
+  line-height: 1.6;
+}
+
+.drawer-section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.resource-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.resource-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px dashed var(--alp-color-border);
+  background: var(--alp-bg-soft-block);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.resource-card--filled {
+  border-style: solid;
+  cursor: pointer;
+}
+
+.resource-card--filled:hover {
+  border-color: var(--alp-color-primary);
+  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.12);
+}
+
+.resource-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.resource-type {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--alp-color-primary);
+}
+
+.resource-title {
+  font-size: 13px;
+  color: var(--alp-color-text);
+  margin-top: 2px;
+}
+
+.resource-placeholder {
+  font-size: 12px;
+  color: var(--alp-color-muted);
+  margin-top: 2px;
+}
+
+.resource-agent {
+  font-size: 10px;
+  color: var(--alp-color-muted);
+  margin-top: 4px;
+}
+
+.resource-arrow {
+  margin-left: auto;
+  color: var(--alp-color-muted);
+}
+
+.drawer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hud-view-toggle {
+  margin: 0 8px;
+}
+
+.universe-search {
+  position: absolute;
+  top: 52px;
+  left: 12px;
+  right: 12px;
+  z-index: 4;
+  max-width: 420px;
+}
+
+.search-results {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  max-height: 160px;
+  overflow: auto;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 8px;
+}
+
+.search-results li {
+  padding: 8px 10px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+  font-size: 12px;
+}
+
+.search-results li:hover {
+  background: rgba(56, 189, 248, 0.1);
+}
+
+.hit-kind {
+  font-size: 10px;
+  color: #64748b;
+  margin-right: 6px;
+}
+
+.hit-snippet {
+  display: block;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.tour-panel {
+  position: absolute;
+  right: 12px;
+  top: 52px;
+  width: min(280px, 42vw);
+  z-index: 5;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.94);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.tour-panel h4 {
+  margin: 8px 0 4px;
+  font-size: 14px;
+  color: #e2e8f0;
+}
+
+.tour-panel p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #94a3b8;
+}
+
+.tour-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: #64748b;
+}
+
+.tour-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.tour-encourage {
+  margin-top: 6px !important;
+  color: #fbbf24 !important;
+}
+
+.impact-ripple,
+.impact-diff {
+  position: absolute;
+  bottom: 48px;
+  left: 12px;
+  right: 12px;
+  z-index: 4;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  font-size: 11px;
+  color: #fca5a5;
+}
+
+.impact-label {
+  color: #94a3b8;
+}
+
+.drawer-concepts,
+.drawer-problems {
+  margin-top: 10px;
+}
+
+.drawer-concepts-label {
+  display: block;
+  font-size: 11px;
+  color: var(--alp-color-muted);
+  margin-bottom: 6px;
+}
+
+.concept-chip {
+  margin: 0 6px 6px 0;
+  cursor: pointer;
+}
+</style>
+
+<style>
+.universe-drawer .el-drawer__header {
+  margin-bottom: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--alp-color-border);
+}
+</style>

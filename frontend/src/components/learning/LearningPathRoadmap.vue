@@ -14,9 +14,32 @@ import { loadFavoriteKeys, toggleFavorite } from '@/utils/learningBookmarks'
 
 import { useModuleNavigation } from '@/composables/useModuleNavigation'
 
-import { useLearningPathPlan } from '@/composables/useLearningPathPlan'
+import { useLearningPathPlan, sortRowsByPlan } from '@/composables/useLearningPathPlan'
 
 import { isLoggedIn } from '@/stores/auth'
+
+import { fetchPersonaProfile, type PersonaProfile } from '@/api/orchestrator'
+
+import LearningPathDagViz, {
+  type DagEdgeDatum,
+  type DagNodeDatum,
+} from '@/components/learning/LearningPathDagViz.vue'
+
+/** 模块 key → 画像维度（用于 DAG 节点着色） */
+const MODULE_DIMENSION: Record<string, keyof PersonaProfile['dimensions']> = {
+  array: 'knowledge_base',
+  'linked-list': 'knowledge_base',
+  'hash-table': 'knowledge_base',
+  string: 'knowledge_base',
+  'two-pointers': 'cognitive_style',
+  'stack-queue': 'cognitive_style',
+  'binary-tree': 'coding_ability',
+  backtracking: 'coding_ability',
+  greedy: 'coding_ability',
+  dp: 'coding_ability',
+  'monotonic-stack': 'error_preference',
+  graph: 'learning_goals',
+}
 
 
 
@@ -38,9 +61,7 @@ const emit = defineEmits<{
 
 const { goModule } = useModuleNavigation()
 
-const { plan, hasPlan, stepMap, recommendedNext, loadPlan, replan, loading, sortRowsByPlan } =
-
-  useLearningPathPlan()
+const { plan, hasPlan, stepMap, recommendedNext, loadPlan, replan, loading } = useLearningPathPlan()
 
 
 
@@ -50,9 +71,29 @@ const selectedKey = ref(props.highlightKey ?? overview.value.nextModule?.key ?? 
 
 const favRevision = ref(0)
 
+const personaScores = ref<Record<string, number>>({})
+
 
 
 onMounted(() => {
+
+  if (isLoggedIn.value) {
+
+    void fetchPersonaProfile()
+
+      .then((p) => {
+
+        personaScores.value = p.dimension_scores ?? {}
+
+      })
+
+      .catch(() => {
+
+        personaScores.value = {}
+
+      })
+
+  }
 
   void loadPlan().then(() => {
 
@@ -63,6 +104,112 @@ onMounted(() => {
     }
 
   })
+
+})
+
+
+
+function scoreForModule(key: string): number {
+
+  const dim = MODULE_DIMENSION[key]
+
+  if (dim && personaScores.value[dim] != null) return personaScores.value[dim]
+
+  const row = overview.value.rows.find((r) => r.key === key)
+
+  if (row?.percent != null) return Math.max(2, Math.round(row.percent / 10))
+
+  return 5
+
+}
+
+
+
+const dagNodes = computed((): DagNodeDatum[] => {
+
+  const steps = plan.value?.steps ?? []
+
+  if (!steps.length) {
+
+    return overview.value.rows
+
+      .filter((r) => r.available)
+
+      .slice(0, 8)
+
+      .map((r, i) => ({
+
+        id: r.key,
+
+        label: r.label,
+
+        score: scoreForModule(r.key),
+
+        rank: i + 1,
+
+        isNext: r.key === plan.value?.next_module_key,
+
+      }))
+
+  }
+
+  return steps.map((s) => ({
+
+    id: s.module_key,
+
+    label: overview.value.rows.find((r) => r.key === s.module_key)?.label ?? s.module_key,
+
+    score: scoreForModule(s.module_key),
+
+    isRemediation: !!s.is_remediation,
+
+    isNext: s.module_key === plan.value?.next_module_key,
+
+    rank: s.rank,
+
+  }))
+
+})
+
+
+
+const dagEdges = computed((): DagEdgeDatum[] => {
+
+  const edges: DagEdgeDatum[] = []
+
+  for (const s of plan.value?.steps ?? []) {
+
+    for (const dep of s.prerequisites ?? []) {
+
+      edges.push({ source: dep, target: s.module_key })
+
+    }
+
+  }
+
+  if (!edges.length && dagNodes.value.length > 1) {
+
+    for (let i = 0; i < dagNodes.value.length - 1; i++) {
+
+      edges.push({ source: dagNodes.value[i].id, target: dagNodes.value[i + 1].id })
+
+    }
+
+  }
+
+  return edges
+
+})
+
+
+
+const remediationAnchorId = computed(() => {
+
+  const rem = remediationStep.value
+
+  if (!rem) return null
+
+  return rem.prerequisites?.[0] ?? null
 
 })
 
@@ -143,34 +290,6 @@ const orderedStepsPreview = computed(() => {
   if (!plan.value?.steps?.length) return []
 
   return [...plan.value.steps].sort((a, b) => a.rank - b.rank).slice(0, 8)
-
-})
-
-
-
-const dagEdges = computed(() => {
-
-  const edges: Array<{ from: string; to: string; label: string }> = []
-
-  for (const s of plan.value?.steps ?? []) {
-
-    for (const dep of s.prerequisites ?? []) {
-
-      const fromLabel =
-
-        overview.value.rows.find((r) => r.key === dep)?.label ?? dep
-
-      const toLabel =
-
-        overview.value.rows.find((r) => r.key === s.module_key)?.label ?? s.module_key
-
-      edges.push({ from: fromLabel, to: toLabel, label: `${fromLabel} → ${toLabel}` })
-
-    }
-
-  }
-
-  return edges.slice(0, 10)
 
 })
 
@@ -380,17 +499,25 @@ async function onReplan() {
 
 
 
-    <div v-if="dagEdges.length" class="dag-preview">
+    <section v-if="dagNodes.length" class="dag-canvas-section">
 
-      <span class="steps-label">DAG 先修依赖（千人千面拓扑）</span>
+      <span class="steps-label">个性化路径图谱 · 随画像动态演化</span>
 
-      <ul class="dag-edge-list">
+      <LearningPathDagViz
 
-        <li v-for="(e, i) in dagEdges" :key="'edge-' + i">{{ e.label }}</li>
+        :key="`${plan?.updated_at ?? 'default'}-${plan?.remediation_inserted ? 'rem' : 'base'}`"
 
-      </ul>
+        :nodes="dagNodes"
 
-    </div>
+        :edges="dagEdges"
+
+        :remediation-anchor-id="remediationAnchorId"
+
+        :height="300"
+
+      />
+
+    </section>
 
 
 
@@ -830,37 +957,15 @@ async function onReplan() {
 
 }
 
-.dag-preview {
+.dag-canvas-section {
 
-  margin-top: 10px;
+  display: flex;
 
-  padding: 10px 12px;
+  flex-direction: column;
 
-  border-radius: var(--alp-radius-card);
+  gap: 10px;
 
-  background: var(--alp-bg-surface);
-
-  border: 1px dashed var(--alp-color-border);
-
-}
-
-.dag-edge-list {
-
-  list-style: none;
-
-  margin: 6px 0 0;
-
-  padding: 0;
-
-  font-size: 12px;
-
-  color: var(--alp-color-muted);
-
-}
-
-.dag-edge-list li {
-
-  margin-bottom: 4px;
+  margin-top: 4px;
 
 }
 

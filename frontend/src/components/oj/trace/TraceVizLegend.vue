@@ -1,6 +1,6 @@
 <script setup lang="ts">
 defineProps<{
-  variant: 'matrix' | 'linked_list'
+  variant: 'matrix' | 'linked_list' | 'memory'
 }>()
 </script>
 
@@ -17,6 +17,20 @@ defineProps<{
     <li>
       <span class="trace-legend-swatch trace-legend-swatch--axis" />
       橙黄行列头 = 当前下标
+    </li>
+  </ul>
+  <ul v-else-if="variant === 'memory'" class="trace-legend" aria-label="内存图例">
+    <li>
+      <span class="trace-legend-swatch trace-legend-swatch--stack" />
+      蓝色边 = 栈帧指针
+    </li>
+    <li>
+      <span class="trace-legend-swatch trace-legend-swatch--heap" />
+      紫色边 = 堆节点
+    </li>
+    <li>
+      <span class="trace-legend-swatch trace-legend-swatch--cell-hot" />
+      绿色闪烁 = 地址/值本步变化
     </li>
   </ul>
   <ul v-else class="trace-legend" aria-label="链表图例">
@@ -95,6 +109,16 @@ defineProps<{
   background: var(--el-color-primary);
   width: 18px;
   height: 4px;
+  border-radius: 2px;
+}
+
+.trace-legend-swatch--stack {
+  border-left: 3px solid #38bdf8;
+  border-radius: 2px;
+}
+
+.trace-legend-swatch--heap {
+  border-left: 3px solid #a78bfa;
   border-radius: 2px;
 }
 </style>

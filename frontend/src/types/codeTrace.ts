@@ -93,6 +93,13 @@ export interface TraceNarrationLine {
   critical?: boolean
 }
 
+export interface StaticAuditRejection {
+  status: 'rejected'
+  agent: string
+  reason: string
+  findings?: Array<{ level: string; code: string; message: string; line?: number | null }>
+}
+
 export interface TraceResponse {
   verdict: TraceVerdict
   message: string
@@ -100,6 +107,8 @@ export interface TraceResponse {
   steps: TraceStep[]
   result_preview: string | null
   narrations?: TraceNarrationLine[]
+  /** ASTAnalyzer 静态熔断时返回 */
+  static_audit?: StaticAuditRejection | null
 }
 
 export interface AiEdgeCaseInfo {

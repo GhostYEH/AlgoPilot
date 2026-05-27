@@ -103,6 +103,7 @@ export async function streamAiTutorChat(
   if (!reader) throw new Error('无法读取流')
   const decoder = new TextDecoder()
   let buf = ''
+  let streamError: string | null = null
   while (true) {
     const { done, value } = await reader.read()
     if (done) break
@@ -116,11 +117,18 @@ export async function streamAiTutorChat(
           const ev = JSON.parse(line.slice(5).trim()) as Record<string, string>
           if (ev.type === 'token' && ev.content) handlers.onToken(ev.content)
           if (ev.type === 'done' && ev.content) handlers.onDone?.(ev.content)
-          if (ev.type === 'error') handlers.onError?.(String(ev.message))
+          if (ev.type === 'error') {
+            streamError = String(ev.message || 'AI 助教生成失败')
+            handlers.onError?.(streamError)
+          }
         } catch {
           /* skip */
         }
       }
     }
+  }
+  if (streamError) {
+    ElMessage.error(streamError)
+    throw new Error(streamError)
   }
 }

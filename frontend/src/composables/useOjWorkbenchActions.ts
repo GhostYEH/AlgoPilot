@@ -21,12 +21,17 @@ import { evaluateOjStruggle } from '@/api/orchestrator'
 import { buildLearningOverview } from '@/utils/learningOverview'
 import { isLoggedIn } from '@/stores/auth'
 import { showJudgeResultMessage } from '@/utils/ojErrors'
+import { recordOjPractice } from '@/utils/ojPracticeHistory'
 import {
+  astAnalyzerLine,
   diagnosisBootstrapLines,
+  systemLine,
+  traceBootstrapLines,
   linesFromAgentLogs,
   type AgentConsoleLine,
 } from '@/utils/agentConsole'
 import { useLearningPathPlan } from '@/composables/useLearningPathPlan'
+import { usePersonaUi } from '@/composables/usePersonaUiProvider'
 
 export function useOjWorkbenchActions(options: {
   slug: Ref<string>
@@ -42,6 +47,7 @@ export function useOjWorkbenchActions(options: {
   router: Router
   loginRedirect: () => string
 }) {
+  const personaUi = usePersonaUi()
   const running = ref(false)
   const submitting = ref(false)
   const tracing = ref(false)
@@ -59,8 +65,12 @@ export function useOjWorkbenchActions(options: {
   function recordVerdict(verdict: Verdict | undefined) {
     if (!verdict || verdict === 'AC') {
       consecutiveFailures.value = 0
+      if (verdict === 'AC') {
+        recordOjPractice(options.slug.value, verdict)
+      }
       return
     }
+    recordOjPractice(options.slug.value, verdict)
     if (verdict === 'WA' || verdict === 'RE' || verdict === 'TLE' || verdict === 'CE') {
       consecutiveFailures.value += 1
     }
@@ -270,7 +280,7 @@ export function useOjWorkbenchActions(options: {
         ElMessage.warning(traceRes.message.slice(0, 160))
       }
     } catch {
-      ElMessage.warning('可视化诊断失败，请检查判题服务与 SILICONFLOW_API_KEY')
+      ElMessage.warning('可视化诊断失败，请检查判题服务与 SPARK_API_PASSWORD')
     } finally {
       visualTraceDiagnosing.value = false
     }
@@ -292,16 +302,32 @@ export function useOjWorkbenchActions(options: {
     traceSourceCode.value = options.code.value
     options.trace.value = null
     options.traceBugDiagnosis.value = null
+    agentConsoleLines.value = traceBootstrapLines()
     try {
-      options.trace.value = await traceExecution(
+      const traceRes = await traceExecution(
         options.slug.value,
         options.code.value,
         options.language.value,
       )
-      if (options.trace.value.verdict === 'OK') {
-        ElMessage.success(`已生成 ${options.trace.value.steps.length} 步执行动画`)
+      options.trace.value = traceRes
+      if (traceRes.static_audit?.status === 'rejected') {
+        const lines = [systemLine('可视化调试管线 — 静动结合双轨诊断', 'warn')]
+        if (personaUi.value.showAstAudit) {
+          lines.push(astAnalyzerLine(false, traceRes.static_audit.reason ?? traceRes.message))
+        }
+        agentConsoleLines.value = lines
+        ElMessage.error(traceRes.message.slice(0, 200))
       } else {
-        ElMessage.error(options.trace.value.message.slice(0, 160))
+        const lines = [systemLine('可视化调试管线 — 静动结合双轨诊断', 'success')]
+        if (personaUi.value.showAstAudit) {
+          lines.push(astAnalyzerLine(true))
+        }
+        agentConsoleLines.value = lines
+        if (traceRes.verdict === 'OK') {
+          ElMessage.success(`已生成 ${traceRes.steps.length} 步执行动画`)
+        } else {
+          ElMessage.error(traceRes.message.slice(0, 160))
+        }
       }
     } catch {
       /* judgeClient 拦截器已提示 */
@@ -323,7 +349,7 @@ export function useOjWorkbenchActions(options: {
       options.trace.value = { ...options.trace.value, narrations: res.narrations }
       ElMessage.success('AI 旁白已生成')
     } catch {
-      ElMessage.warning('旁白生成失败，请检查 SILICONFLOW_API_KEY')
+      ElMessage.warning('旁白生成失败，请检查 SPARK_API_PASSWORD')
     } finally {
       narrating.value = false
     }
@@ -361,7 +387,7 @@ export function useOjWorkbenchActions(options: {
       await maybeTriggerStruggleReplan(verdict)
       ElMessage.success('AI 诊断完成：已生成边界测例与可视化回放')
     } catch {
-      ElMessage.warning('AI 诊断失败，请检查 SILICONFLOW_API_KEY 与判题服务')
+      ElMessage.warning('AI 诊断失败，请检查 SPARK_API_PASSWORD 与判题服务')
     } finally {
       diagnosing.value = false
     }

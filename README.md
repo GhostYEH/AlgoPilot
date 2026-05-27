@@ -161,8 +161,10 @@ WA 代码 → ai/diagnose（OjDiagnosisAgent）
 | [CodeMirror 6](https://codemirror.net/) | OJ 编辑器 |
 | [Mermaid](https://mermaid.js.org/) | 思维导图展示 |
 | [Axios](https://axios-http.com/) | HTTP |
+| [Pinia](https://pinia.vuejs.org/) | 全局状态（auth / persona / learningPath） |
+| [@vue-flow/core](https://vueflow.dev/) | 概念知识图谱交互可视化 |
 
-状态管理采用 **Composables + 本地存储同步**，未引入 Pinia；样式为 **CSS 变量 + Element Plus**，未使用 TailwindCSS。
+样式为 **CSS 变量 + Element Plus 暗色/浅色切换**（顶栏一键切换），未使用 TailwindCSS。
 
 ### 后端
 
@@ -172,6 +174,7 @@ WA 代码 → ai/diagnose（OjDiagnosisAgent）
 | [Pydantic v2](https://docs.pydantic.dev/) | Schema |
 | [SQLAlchemy 2](https://www.sqlalchemy.org/) | ORM（默认 SQLite `backend/data/alp_learning.db`） |
 | [httpx](https://www.python-httpx.org/) | 异步调用大模型 API |
+| [pytest](https://docs.pytest.org/) + [ruff](https://docs.astral.sh/ruff/) | 单元测试与 lint（`backend/tests/`） |
 
 ### 运行时与模型
 
@@ -179,14 +182,29 @@ WA 代码 → ai/diagnose（OjDiagnosisAgent）
 |------|------|
 | CPython `sys.settrace` | Python 追踪 |
 | MinGW `g++` / `gdb` | C++ 编译与 STL 追踪（**可选**，未安装时 C++ Trace/OJ 能力受限） |
-| [SiliconFlow](https://siliconflow.cn/) 等 **OpenAI 兼容**接口 | 默认模型见 `.env.example`（如 `Qwen/Qwen2.5-7B-Instruct`），可替换为讯飞星火等兼容端点 |
+| [讯飞星火 Spark](https://www.xfyun.cn/doc/spark/X1-http.html) **OpenAI 兼容** HTTP | 默认 `lite`（Spark Lite），见 `backend/.env.example` |
 | python-jose · bcrypt | JWT 与密码哈希 |
 
 ---
 
 ## 🚀 快速开始 (Quick Start)
 
-### 一键启动（Windows）
+### Docker 一键演示（推荐 · 现场答辩）
+
+需安装 [Docker Desktop](https://www.docker.com/products/docker-desktop/)：
+
+```bash
+docker compose up --build
+```
+
+| 服务 | 地址 |
+|------|------|
+| 前端（Nginx） | http://localhost:8080 |
+| 后端 API | http://localhost:9000/api/health |
+
+> 大模型 Key 仍通过 `backend/.env` 配置；未配置时 Trace / OJ / 静态资源可用，画像与资源生成需 API。
+
+### 一键启动（Windows 本地开发）
 
 根目录双击：
 
@@ -195,6 +213,27 @@ start.bat
 ```
 
 自动执行：`npm install` → `pip install` → 启动后端（默认 `http://127.0.0.1:9000`，端口占用时可能改用 `9010`）与前端（`http://127.0.0.1:5173`）。
+
+### 测试与 CI
+
+```powershell
+cd backend
+pip install -r requirements-dev.txt
+pytest -q --cov=services
+```
+
+GitHub Actions（`.github/workflows/ci.yml`）在 push/PR 时自动执行：后端 **Ruff + pytest 覆盖率**、前端 **vue-tsc 构建**、**docker compose build**。
+
+### 工程化增强（对标竞赛最佳实践）
+
+| 能力 | 说明 |
+|------|------|
+| **画像指纹增量生成** | `generate-all` 比对 persona/主题指纹，未变则复用已有五类资源（SSE `reused`） |
+| **Quiz strict 校验** | `schemas/agent_outputs.py` + Pydantic `extra=forbid` |
+| **概念图社区发现** | `concept_clusters.py` 标签传播 → 路径规划弱簇优先 |
+| **Fuse 模糊搜索** | 资源库标题/正文拼写容错 |
+| **画像 UI 密度** | `usePersonaUiProvider` 全局注入，弱基础隐藏多智能体入口、精简 Workflow 日志 |
+| **Trace 树懒展开** | 大树默认折叠深层，点击再渲染 |
 
 ### 手动启动
 
@@ -228,8 +267,8 @@ npm run dev
 | 变量 | 必填 | 说明 |
 |------|:----:|------|
 | `JWT_SECRET` | 是 | 登录会话签名 |
-| `SILICONFLOW_API_KEY` | 演示 LLM 功能时 | 画像对话、资源生成、AI 诊断、路径 LLM 润色 |
-| `SILICONFLOW_MODEL` | 否 | 默认 `Qwen/Qwen2.5-7B-Instruct` |
+| `SPARK_API_PASSWORD` | 演示 LLM 功能时 | 控制台 APIPassword；画像、资源生成、AI 诊断、助教 |
+| `SPARK_MODEL` | 否 | 默认 `lite`（Spark Lite） |
 | `DATABASE_URL` | 否 | 默认 SQLite，见 `.env.example` 注释 |
 
 ### 功能与环境依赖对照
@@ -237,7 +276,7 @@ npm run dev
 | 功能 | 依赖 | 无 API Key / 无 gdb 时 |
 |------|------|-------------------------|
 | 登录、进度、OJ 样例运行 | 后端 + 判题 | Python 题一般可用 |
-| 画像对话、资源生成、AI 诊断 | `SILICONFLOW_API_KEY` | **不可用** |
+| 画像对话、资源生成、AI 诊断 | `SPARK_API_PASSWORD` | **不可用** |
 | Python Trace | CPython | **可用** |
 | C++ STL Trace | `g++` + `gdb` | 受限或失败 |
 | Trace 规则旁白 | 特定 slug | **部分题目**可用（见 `trace_demo_narration.py`） |

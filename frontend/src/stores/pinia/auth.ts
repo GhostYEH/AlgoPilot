@@ -1,0 +1,93 @@
+import { computed, ref } from 'vue'
+import { defineStore } from 'pinia'
+
+import { applyRemoteProgressPayload, exportProgressPayload } from '@/utils/learningStorage'
+import type { UserInfo } from '@/api/auth'
+import { ACCESS_TOKEN_KEY, USER_JSON_KEY } from '@/constants/authStorage'
+
+function readUserFromStorage(): UserInfo | null {
+  try {
+    const raw = localStorage.getItem(USER_JSON_KEY)
+    if (!raw) return null
+    const o = JSON.parse(raw) as unknown
+    if (!o || typeof o !== 'object' || !('id' in o) || !('username' in o)) return null
+    return o as UserInfo
+  } catch {
+    return null
+  }
+}
+
+export const useAuthStore = defineStore('auth', () => {
+  const token = ref<string | null>(localStorage.getItem(ACCESS_TOKEN_KEY))
+  const user = ref<UserInfo | null>(readUserFromStorage())
+
+  const isLoggedIn = computed(() => !!token.value)
+
+  function getToken() {
+    return token.value
+  }
+
+  function getUser() {
+    return user.value
+  }
+
+  function clearRefs() {
+    token.value = null
+    user.value = null
+  }
+
+  function setSession(accessToken: string, u: UserInfo) {
+    token.value = accessToken
+    user.value = u
+    localStorage.setItem(ACCESS_TOKEN_KEY, accessToken)
+    localStorage.setItem(USER_JSON_KEY, JSON.stringify(u))
+  }
+
+  function clearSession() {
+    clearRefs()
+    localStorage.removeItem(ACCESS_TOKEN_KEY)
+    localStorage.removeItem(USER_JSON_KEY)
+  }
+
+  async function syncLearningProgressAfterAuth() {
+    if (!token.value) return
+    try {
+      const { fetchLearningProgress, saveLearningProgress } = await import('@/api/learning')
+      const remote = await fetchLearningProgress()
+      const serverPayload = remote.payload || {}
+      const localPayload = exportProgressPayload()
+      const serverEmpty = Object.keys(serverPayload).length === 0
+      const localEmpty = Object.keys(localPayload).length === 0
+
+      if (!serverEmpty) {
+        applyRemoteProgressPayload(serverPayload as Record<string, unknown>)
+      }
+      if (serverEmpty && !localEmpty) {
+        await saveLearningProgress(localPayload as Record<string, unknown>)
+      }
+      if (!serverEmpty && !localEmpty) {
+        const merged = exportProgressPayload()
+        await saveLearningProgress(merged as Record<string, unknown>)
+      }
+    } catch {
+      /* request 拦截器已提示 */
+    }
+  }
+
+  function logout() {
+    clearSession()
+  }
+
+  return {
+    token,
+    user,
+    isLoggedIn,
+    getToken,
+    getUser,
+    clearRefs,
+    setSession,
+    clearSession,
+    syncLearningProgressAfterAuth,
+    logout,
+  }
+})

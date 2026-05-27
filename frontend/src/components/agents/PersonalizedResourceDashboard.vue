@@ -5,6 +5,11 @@ import type { GeneratedResource } from '@/api/orchestrator'
 import CodeEditor from '@/components/oj/CodeEditor.vue'
 import TraceSequenceViz from '@/components/oj/trace/TraceSequenceViz.vue'
 import TraceAssociativeViz from '@/components/oj/trace/TraceAssociativeViz.vue'
+import DomainStructurePanels from '@/components/resources/DomainStructurePanels.vue'
+import {
+  looksLikeUnparsedDomainJson,
+  parseDomainStructureContent,
+} from '@/utils/domainStructureContent'
 import { renderAiReplyHtml } from '@/utils/renderAiReply'
 import { CORE_RESOURCE_TAB_META } from '@/utils/agentConsole'
 import type { TraceStep, TraceVarSnapshot } from '@/types/codeTrace'
@@ -62,10 +67,29 @@ const tabs = computed(() =>
 
 const current = computed(() => resourceMap.value.get(tab.value) ?? null)
 
-// --- Markdown 教案 ---
+// --- 教案 / 沙盒：Domain · Structure 双域 ---
+const docResource = computed(() => resourceMap.value.get('document') ?? null)
+const scenarioResource = computed(() => resourceMap.value.get('code_case') ?? null)
+
+const docPayload = computed(() =>
+  docResource.value ? parseDomainStructureContent(docResource.value.content) : null,
+)
+
+const scenarioPayload = computed(() =>
+  scenarioResource.value ? parseDomainStructureContent(scenarioResource.value.content) : null,
+)
+
+const docUnparsedJson = computed(
+  () => !!docResource.value && looksLikeUnparsedDomainJson(docResource.value.content),
+)
+const scenarioUnparsedJson = computed(
+  () => !!scenarioResource.value && looksLikeUnparsedDomainJson(scenarioResource.value.content),
+)
+
 const docHtml = computed(() => {
   const r = resourceMap.value.get('document')
-  return r ? renderAiReplyHtml(r.content) : ''
+  if (!r || docPayload.value) return ''
+  return renderAiReplyHtml(r.content)
 })
 
 // --- Mermaid ---
@@ -135,15 +159,30 @@ function revealHint(i: number) {
   quizRevealed.value = { ...quizRevealed.value, [i]: true }
 }
 
-// --- Scenario ---
-const scenarioBg = computed(() => extractSection(resourceMap.value.get('code_case')?.content ?? '', '剧本背景'))
-const scenarioGoal = computed(() => extractSection(resourceMap.value.get('code_case')?.content ?? '', '任务目标'))
-const scenarioCode = computed(() => extractCodeBlock(resourceMap.value.get('code_case')?.content ?? ''))
+// --- Scenario（旧版 Markdown 兼容）---
+const scenarioLegacy = computed(() => {
+  const raw = resourceMap.value.get('code_case')?.content ?? ''
+  return scenarioPayload.value ? null : raw
+})
+
+const scenarioBg = computed(() =>
+  scenarioLegacy.value ? extractSection(scenarioLegacy.value, '剧本背景') : '',
+)
+const scenarioGoal = computed(() =>
+  scenarioLegacy.value ? extractSection(scenarioLegacy.value, '任务目标') : '',
+)
+const scenarioCode = computed(() =>
+  scenarioLegacy.value ? extractCodeBlock(scenarioLegacy.value) : '',
+)
 const scenarioEditorCode = ref('')
 
-watch(scenarioCode, (c) => {
-  scenarioEditorCode.value = c
-}, { immediate: true })
+watch(
+  () => scenarioPayload.value?.structure_logic?.code_framework ?? scenarioCode.value,
+  (c) => {
+    scenarioEditorCode.value = c
+  },
+  { immediate: true },
+)
 
 function extractSection(md: string, heading: string): string {
   const re = new RegExp(`##\\s*${heading}[\\s\\S]*?(?=##|$)`, 'i')
@@ -242,8 +281,21 @@ const traceIsAssociative = computed(() => traceSnap.value && isAssociativeSnapsh
           <h3>自适应教案</h3>
           <span v-if="current" class="panel-meta">{{ current.agent_name }}</span>
         </header>
-        <div v-if="docHtml" class="doc-body ai-md-body" v-html="docHtml" />
-        <el-empty v-else description="ConceptAgent 生成后将在此渲染 Markdown 教案" />
+        <DomainStructurePanels
+          v-if="docPayload && docResource"
+          :content="docResource.content"
+          mode="document"
+        />
+        <el-alert
+          v-else-if="docUnparsedJson"
+          type="warning"
+          :closable="false"
+          show-icon
+          title="双域 JSON 解析失败"
+          description="内容似为 Domain/Structure 结构但格式不完整。请重新生成教案。"
+        />
+        <div v-else-if="docHtml" class="doc-body ai-md-body" v-html="docHtml" />
+        <el-empty v-else description="ConceptAgent 生成后将呈现「业务故事 + 结构剖析」双域教案" />
       </article>
 
       <!-- 知识思维导图 -->
@@ -297,7 +349,22 @@ const traceIsAssociative = computed(() => traceSnap.value && isAssociativeSnapsh
           <h3>剧情实操沙盒</h3>
           <span class="panel-meta">ScenarioAgent</span>
         </header>
-        <div v-if="scenarioBg || scenarioCode" class="scenario-layout">
+        <DomainStructurePanels
+          v-if="scenarioPayload && scenarioResource"
+          :content="scenarioResource.content"
+          mode="scenario"
+          editable-code
+          @update:code="scenarioEditorCode = $event"
+        />
+        <el-alert
+          v-else-if="scenarioUnparsedJson"
+          type="warning"
+          :closable="false"
+          show-icon
+          title="双域 JSON 解析失败"
+          description="内容似为 Domain/Structure 结构但格式不完整。请重新生成沙盒剧本。"
+        />
+        <div v-else-if="scenarioBg || scenarioCode" class="scenario-layout">
           <aside class="scenario-story">
             <h4>剧本背景</h4>
             <p>{{ scenarioBg || '（等待剧本生成）' }}</p>
@@ -309,7 +376,7 @@ const traceIsAssociative = computed(() => traceSnap.value && isAssociativeSnapsh
             <CodeEditor v-model="scenarioEditorCode" language="python" :readonly="false" min-height="280px" />
           </section>
         </div>
-        <el-empty v-else description="ScenarioAgent 将生成交互剧本与 TODO 代码框架" />
+        <el-empty v-else description="ScenarioAgent 将生成「叙事剧本 + 结构沙盒」双域内容" />
       </article>
 
       <!-- 执行轨迹回放 -->

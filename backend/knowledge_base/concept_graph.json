@@ -1,0 +1,37 @@
+{
+  "concepts": [
+    {"id": "array-traversal", "label": "数组遍历", "module_key": "array", "keywords": ["遍历", "下标", "for loop"], "prerequisites": [], "description": "按索引访问与遍历数组元素，是多数数组题的基础。"},
+    {"id": "prefix-sum", "label": "前缀和", "module_key": "array", "keywords": ["前缀和", "prefix sum", "区间和"], "prerequisites": ["array-traversal"], "description": "预处理区间和，将区间查询降为 O(1)。"},
+    {"id": "binary-search", "label": "二分查找", "module_key": "array", "keywords": ["二分", "binary search", "有序"], "prerequisites": ["array-traversal"], "description": "在有序数组上 O(log n) 定位目标。"},
+    {"id": "sliding-window", "label": "滑动窗口", "module_key": "string", "keywords": ["滑动窗口", "sliding window", "子串"], "prerequisites": ["two-pointers-same"], "description": "维护可变窗口统计连续子串/子数组性质。"},
+    {"id": "two-pointers-same", "label": "同向双指针", "module_key": "two-pointers", "keywords": ["同向", "快慢指针", "two pointers"], "prerequisites": ["array-traversal"], "description": "两指针同向移动，常用于去重与窗口类题。"},
+    {"id": "two-pointers-opposite", "label": "相向双指针", "module_key": "two-pointers", "keywords": ["相向", "对撞", "sorted array"], "prerequisites": ["array-traversal", "binary-search"], "description": "左右夹逼，适用于有序数组求和对类问题。"},
+    {"id": "linked-list-pointer", "label": "链表指针操作", "module_key": "linked-list", "keywords": ["链表", "指针", "next"], "prerequisites": [], "description": "虚拟头结点、反转、快慢指针等指针技巧。"},
+    {"id": "hash-map", "label": "哈希映射", "module_key": "hash-table", "keywords": ["哈希", "hash map", "两数之和"], "prerequisites": [], "description": "用空间换时间，O(1) 查找与计数。"},
+    {"id": "stack-adt", "label": "栈 ADT", "module_key": "stack-queue", "keywords": ["栈", "stack", "LIFO"], "prerequisites": [], "description": "后进先出，支撑括号匹配与单调栈。"},
+    {"id": "monotonic-stack", "label": "单调栈", "module_key": "monotonic-stack", "keywords": ["单调栈", "下一个更大", "next greater"], "prerequisites": ["stack-adt"], "description": "维护单调递增/递减栈，O(n) 求邻域极值。"},
+    {"id": "tree-traversal", "label": "树遍历", "module_key": "binary-tree", "keywords": ["前序", "中序", "层序", "dfs", "bfs"], "prerequisites": ["stack-adt"], "description": "递归与迭代实现二叉树各类遍历。"},
+    {"id": "bst", "label": "二叉搜索树", "module_key": "binary-tree", "keywords": ["bst", "二叉搜索树"], "prerequisites": ["tree-traversal", "binary-search"], "description": "利用有序性 O(log n) 查找与插入。"},
+    {"id": "backtrack-dfs", "label": "回溯 DFS", "module_key": "backtracking", "keywords": ["回溯", "dfs", "剪枝"], "prerequisites": ["tree-traversal"], "description": "选择-探索-撤销，搜索组合与排列解空间。"},
+    {"id": "greedy-choice", "label": "贪心选择", "module_key": "greedy", "keywords": ["贪心", "greedy", "局部最优"], "prerequisites": ["array-traversal"], "description": "每步局部最优，需证明正确性。"},
+    {"id": "dp-state", "label": "DP 状态定义", "module_key": "dp", "keywords": ["动态规划", "dp", "状态转移"], "prerequisites": ["array-traversal"], "description": "定义状态与转移方程，处理重叠子问题。"},
+    {"id": "dp-knapsack", "label": "背包 DP", "module_key": "dp", "keywords": ["背包", "knapsack", "01背包"], "prerequisites": ["dp-state"], "description": "经典一维/二维背包模型与空间优化。"}
+  ],
+  "problems": [
+    {"id": "prob-two-sum", "label": "两数之和", "slug": "two-sum", "module_key": "hash-table", "concept_ids": ["hash-map"], "difficulty": "easy", "keywords": ["two sum", "哈希"]},
+    {"id": "prob-3sum", "label": "三数之和", "slug": "3sum", "module_key": "two-pointers", "concept_ids": ["two-pointers-opposite"], "difficulty": "medium", "keywords": ["3sum", "双指针", "排序"]},
+    {"id": "prob-valid-paren", "label": "有效的括号", "slug": "valid-parentheses", "module_key": "stack-queue", "concept_ids": ["stack-adt"], "difficulty": "easy", "keywords": ["括号", "栈"]},
+    {"id": "prob-daily-temp", "label": "每日温度", "slug": "daily-temperatures", "module_key": "monotonic-stack", "concept_ids": ["monotonic-stack"], "difficulty": "medium", "keywords": ["单调栈", "next greater"]},
+    {"id": "prob-climb", "label": "爬楼梯", "slug": "climbing-stairs", "module_key": "dp", "concept_ids": ["dp-state"], "difficulty": "easy", "keywords": ["dp", "斐波那契"]},
+    {"id": "prob-coin-change", "label": "零钱兑换", "slug": "coin-change", "module_key": "dp", "concept_ids": ["dp-state"], "difficulty": "medium", "keywords": ["dp", "完全背包"]},
+    {"id": "prob-reverse-list", "label": "反转链表", "slug": "reverse-linked-list", "module_key": "linked-list", "concept_ids": ["linked-list-pointer"], "difficulty": "easy", "keywords": ["链表", "反转"]},
+    {"id": "prob-max-depth", "label": "二叉树最大深度", "slug": "maximum-depth-of-binary-tree", "module_key": "binary-tree", "concept_ids": ["tree-traversal"], "difficulty": "easy", "keywords": ["二叉树", "dfs"]}
+  ],
+  "pattern_edges": [
+    {"source": "prob-3sum", "target": "two-pointers-opposite", "label": "uses"},
+    {"source": "prob-3sum", "target": "binary-search", "label": "requires_sort"},
+    {"source": "prob-daily-temp", "target": "monotonic-stack", "label": "uses"},
+    {"source": "prob-two-sum", "target": "hash-map", "label": "uses"},
+    {"source": "sliding-window", "target": "two-pointers-same", "label": "extends"}
+  ]
+}

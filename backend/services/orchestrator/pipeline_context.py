@@ -9,6 +9,18 @@ from dataclasses import dataclass, field
 
 @dataclass
 class PipelineContext:
+    """多 Agent 协作共享上下文。
+
+    并发安全说明（asyncio 协作式调度）：
+      本类所有方法（log / agent_hints_block / update_from_resource）均为纯同步操作，
+      不含 await 点。在 asyncio 单线程事件循环中，两个 await 之间的同步代码原子执行，
+      不会被中断。因此当多个 Agent 通过 asyncio.gather 并行运行时：
+        - log() 的 list.append() 原子完成，不会出现半写入状态
+        - update_from_resource() 中不同 resource_type 写不同字段，无写冲突
+        - agent_hints_block() 读取时，所有先前阶段的写入已完成
+      如需引入线程池或多进程，须加锁保护。
+    """
+
     doc_summary: str = ""
     graph_outline: str = ""
     quiz_focus: str = ""
@@ -100,7 +112,31 @@ class PipelineContext:
             )
 
 
+def _try_parse_domain_structure(raw: str) -> dict | None:
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        start, end = raw.find("{"), raw.rfind("}")
+        if start < 0 or end <= start:
+            return None
+        try:
+            data = json.loads(raw[start : end + 1])
+        except json.JSONDecodeError:
+            return None
+    if isinstance(data, dict) and data.get("domain_narrative") and data.get("structure_logic"):
+        return data
+    return None
+
+
 def _extract_summary(md: str) -> str:
+    ds = _try_parse_domain_structure(md)
+    if ds:
+        domain = ds.get("domain_narrative")
+        if isinstance(domain, dict):
+            headline = str(domain.get("headline") or "")
+            story = str(domain.get("story") or "")
+            return f"{headline} {story}".strip()[:800]
+        return str(domain)[:800]
     lines = [ln.strip() for ln in md.splitlines() if ln.strip() and not ln.startswith("#")]
     text = " ".join(lines[:12])
     return text[:800] if text else md[:500]
@@ -127,6 +163,12 @@ def _extract_quiz_focus(raw: str) -> str:
 
 
 def _extract_scenario_hook(raw: str) -> str:
+    ds = _try_parse_domain_structure(raw)
+    if ds:
+        domain = ds.get("domain_narrative")
+        if isinstance(domain, dict):
+            parts = [str(domain.get("story") or ""), str(domain.get("mission") or "")]
+            return " ".join(p for p in parts if p).strip()[:300]
     for ln in raw.splitlines():
         if ln.strip().startswith("##") and "背景" in ln:
             idx = raw.splitlines().index(ln)

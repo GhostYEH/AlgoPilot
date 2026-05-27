@@ -28,7 +28,12 @@ import {
   type GeneratedResource,
 } from '@/api/orchestrator'
 import { isLoggedIn } from '@/stores/auth'
+import { usePersonaUi } from '@/composables/usePersonaUiProvider'
+import { fuzzyFilter } from '@/utils/fuzzySearch'
 import ResourceContentPreview from '@/components/resources/ResourceContentPreview.vue'
+
+const personaUi = usePersonaUi()
+const showWorkflowDetail = computed(() => personaUi.value.graphDetail !== 'minimal')
 
 const TYPE_ICONS: Record<string, Component> = {
   document: Document,
@@ -65,14 +70,9 @@ const activeResource = computed(() =>
 
 const filteredResources = computed(() => {
   let list = [...resources.value]
-  const q = searchQuery.value.trim().toLowerCase()
+  const q = searchQuery.value.trim()
   if (q) {
-    list = list.filter(
-      (r) =>
-        r.title.toLowerCase().includes(q) ||
-        r.agent_name.toLowerCase().includes(q) ||
-        r.content.toLowerCase().includes(q),
-    )
+    list = fuzzyFilter(list, q, ['title', 'agent_name', 'content', 'resource_type'])
   }
   if (filterType.value) list = list.filter((r) => r.resource_type === filterType.value)
   if (filterVerified.value === 'verified') {
@@ -213,9 +213,17 @@ async function onGenerateAll() {
         },
         onResource(r) {
           resources.value = [r, ...resources.value.filter((x) => x.id !== r.id)]
+          if (r.meta?.reused) {
+            workflowLogs.value.push(`[复用] ${r.agent_name} · ${r.title}`)
+          }
         },
-        onDone() {
-          ElMessage.success('六类资源已全部生成（含校验闭环）')
+        onDone(info) {
+          const reused = info?.reused_count ?? 0
+          if (reused > 0) {
+            ElMessage.success(`完成：${reused} 项画像未变已复用，其余已生成/校验`)
+          } else {
+            ElMessage.success('五类核心资源已全部生成（含校验闭环）')
+          }
           progressPercent.value = 100
         },
         onError: handleStreamError,
@@ -312,11 +320,15 @@ function verifyTag(meta: Record<string, unknown>) {
         </div>
       </div>
 
-      <div v-if="workflowLogs.length" class="workflow-toolbar">
+      <div v-if="workflowLogs.length && showWorkflowDetail" class="workflow-toolbar">
         <span class="muted small">Workflow / 协作日志（{{ workflowLogs.length }} 条）</span>
         <el-button link type="primary" @click="logFullscreen = true">全屏查看</el-button>
       </div>
-      <el-scrollbar v-if="workflowLogs.length && !logFullscreen" max-height="120" class="workflow-log">
+      <el-scrollbar
+        v-if="workflowLogs.length && showWorkflowDetail && !logFullscreen"
+        max-height="120"
+        class="workflow-log"
+      >
         <div v-for="(line, i) in workflowLogs" :key="i" class="log-line">{{ line }}</div>
       </el-scrollbar>
       <el-drawer v-model="logFullscreen" title="Workflow 全屏日志" size="90%" direction="btt">

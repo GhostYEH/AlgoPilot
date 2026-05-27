@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { ChatDotRound, Delete, Promotion } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { streamAiTutorChat, type ChatHistoryItem } from '@/api/aiTutor'
 import type { LearnSection } from '@/modules/shared/learningTypes'
 import { suggestQuestionsForModule } from '@/modules/shared/aiTutorConfig'
@@ -85,11 +86,24 @@ async function sendMessage(text?: string) {
           if (row) row.content += chunk
           scrollToBottom()
         },
+        onError(msg) {
+          const row = messages.value.find((m) => m.id === assistantId)
+          if (row) row.content = `⚠️ ${msg}`
+        },
       },
     )
-    focusPanel()
+    const assistantRow = messages.value.find((m) => m.id === assistantId)
+    if (assistantRow && !assistantRow.content.trim()) {
+      messages.value = messages.value.filter((m) => m.id !== assistantId)
+      ElMessage.warning('助教未返回内容，请稍后重试')
+    } else {
+      focusPanel()
+    }
   } catch {
-    messages.value = messages.value.filter((m) => m.id !== assistantId)
+    const row = messages.value.find((m) => m.id === assistantId)
+    if (!row?.content.trim()) {
+      messages.value = messages.value.filter((m) => m.id !== assistantId)
+    }
   } finally {
     loading.value = false
   }

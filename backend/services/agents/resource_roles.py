@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any
 
+from schemas.agent_outputs import QuizQuestion, validate_quiz_payload
 from schemas.resources import ResourceType
 from services.knowledge.retriever import KnowledgeChunk, format_context_block
 from services.llm import chat_completion
@@ -66,6 +67,136 @@ class PersonaHints:
         if self.grit_level:
             parts.append(f"- 抗挫折心理：{self.grit_level}")
         return "\n".join(parts) if parts else "（按通用大一计科算法初学者处理）"
+
+    def interest_theme(self) -> str:
+        """从学习目标/兴趣侧写提取叙事世界观（供业务域 Prompt）。"""
+        goals = (self.learning_goals or "").strip()
+        if not goals:
+            return "星际探险"
+        themes = (
+            "赛博朋克",
+            "原神",
+            "星际探险",
+            "哈利波特",
+            "三体",
+            "黑客帝国",
+            "minecraft",
+            "我的世界",
+            "武侠",
+            "修仙",
+        )
+        lower = goals.lower()
+        for t in themes:
+            if t.lower() in lower or t in goals:
+                return t
+        return goals[:48]
+
+
+# --- Domain / Structure 双域 JSON（understand-anything 式 Prompt 分离）---
+
+DOMAIN_STRUCTURE_JSON_SCHEMA = """
+{
+  "domain_narrative": {
+    "headline": "业务场景标题（纯故事语言）",
+    "story": "代入感故事正文（Markdown 可用，禁止代码与数据结构名）",
+    "illustration_hint": "给 UI 插画占位的一句话画面描述（如：霓虹雨夜的数据港）"
+  },
+  "structure_logic": {
+    "learning_objectives": ["学术目标1", "学术目标2"],
+    "abstract_model": "形式化问题抽象（输入/输出/不变量）",
+    "data_structures": ["双端队列", "邻接矩阵"],
+    "algorithm_outline": "步骤化算法描述（可用伪代码，禁止故事）",
+    "time_complexity": "O(n) 及简要理由",
+    "space_complexity": "O(1) 及简要理由",
+    "correctness_proof": "正确性/复杂度论证要点（2~5句严谨表述）",
+    "pitfalls": ["易错点1", "易错点2"]
+  }
+}
+""".strip()
+
+SCENARIO_DOMAIN_STRUCTURE_SCHEMA = """
+{
+  "domain_narrative": {
+    "headline": "剧本标题",
+    "story": "剧本背景（纯叙事，禁止代码与数据结构名）",
+    "mission": "任务目标（故事语言描述要达成什么）",
+    "illustration_hint": "场景插画提示"
+  },
+  "structure_logic": {
+    "problem_formalization": "剥离故事后的形式化题意",
+    "data_structures": ["需要的数据结构"],
+    "code_framework": "Python3 代码框架，关键处 // TODO: …",
+    "step_hints": ["分步提示1", "分步提示2", "分步提示3"],
+    "time_complexity": "O(?) 及理由",
+    "space_complexity": "O(?) 及理由",
+    "correctness_proof": "复杂度或正确性论证要点"
+  }
+}
+""".strip()
+
+def _domain_structure_system_preamble(*, agent_label: str, hints: PersonaHints) -> str:
+    theme = hints.interest_theme()
+    return f"""你是 {agent_label}。你必须遵守 **业务域 (Domain) 与结构域 (Structure) 严格分离** 原则，杜绝把故事与底层实现混写。
+
+## 学生兴趣世界观（仅用于 domain_narrative）
+- 叙事主题：{theme}
+- 画像侧写：
+{hints.personalization_block()}
+
+## 绝对禁令
+- domain_narrative 内：**禁止** 出现任何编程语言、代码片段、伪代码、变量名、API、复杂度符号、数据结构/算法专有名词（如数组、链表、栈、队列、哈希、堆、图、指针、动态规划等）。
+- structure_logic 内：**禁止** 出现故事情节、角色对白、世界观设定；只用计算机科学学术语言。
+- 输出必须是 **唯一 JSON 对象**，不要用 markdown 代码围栏包裹。"""
+
+
+def _normalize_domain_structure_payload(
+    data: dict[str, Any],
+    *,
+    fallback_topic: str,
+    scenario: bool = False,
+) -> dict[str, Any]:
+    domain = data.get("domain_narrative")
+    structure = data.get("structure_logic")
+    if not isinstance(domain, dict):
+        domain = {"headline": fallback_topic, "story": str(domain or fallback_topic), "illustration_hint": ""}
+    if not isinstance(structure, dict):
+        structure = {"abstract_model": str(structure or ""), "data_structures": []}
+
+    story = str(domain.get("story") or "").strip()
+    if not story:
+        domain["story"] = f"围绕「{fallback_topic}」展开的沉浸式任务（待模型补全）。"
+
+    if scenario:
+        domain.setdefault("mission", str(domain.get("mission") or "在叙事中完成核心挑战"))
+    else:
+        structure.setdefault("learning_objectives", structure.get("learning_objectives") or [])
+        structure.setdefault("pitfalls", structure.get("pitfalls") or [])
+
+    structure.setdefault("data_structures", structure.get("data_structures") or [])
+    if scenario and not str(structure.get("code_framework") or "").strip():
+        structure["code_framework"] = (
+            "# TODO: 在此补全核心逻辑\n"
+            "def solve():\n"
+            "    pass\n"
+        )
+
+    domain.setdefault("headline", str(domain.get("headline") or fallback_topic))
+    domain.setdefault(
+        "illustration_hint",
+        str(domain.get("illustration_hint") or f"{fallback_topic} 主题场景概念图"),
+    )
+    structure.setdefault("time_complexity", str(structure.get("time_complexity") or "待分析"))
+    structure.setdefault("space_complexity", str(structure.get("space_complexity") or "待分析"))
+    structure.setdefault(
+        "correctness_proof",
+        str(structure.get("correctness_proof") or "请结合算法不变量完成论证。"),
+    )
+
+    return {"domain_narrative": domain, "structure_logic": structure}
+
+
+def _serialize_domain_structure(data: dict[str, Any]) -> str:
+    return json.dumps(data, ensure_ascii=False, indent=2)
 
 
 class ResourceRoleAgent(ABC):
@@ -159,40 +290,86 @@ class ResourceRoleAgent(ABC):
 
 
 class ConceptAgent(ResourceRoleAgent):
-    """概念导师：定制化 Markdown 课程讲解。"""
+    """概念导师：业务域故事 + 结构域学术剖析（JSON 双域输出）。"""
 
     agent_id = "ConceptAgent"
     display_name = "ConceptAgent"
-    role = "概念导师 · 课程讲解文档"
+    role = "概念导师 · Domain/Structure 双域教案"
 
     def system_prompt(self, hints: PersonaHints) -> str:
         style = (hints.cognitive_style or "").lower()
         if any(k in style for k in ("视觉", "visual", "图", "动画")):
-            detail = "认知风格偏视觉：段落精简，多用列表、对比表、步骤编号，少用大段文字。"
+            domain_style = "业务故事宜画面感强、节奏快，多用场景动作与对话感。"
         else:
-            detail = "认知风格偏文本：讲解详尽，含定义、原理、例题 walkthrough 与小结。"
+            domain_style = "业务故事可稍详尽，注重动机与因果。"
         ability = hints.coding_ability or "待评估"
-        return f"""你是 ConceptAgent（概念导师）。根据学生画像与知识库撰写 Markdown 讲解文档。
+        preamble = _domain_structure_system_preamble(agent_label="ConceptAgent（概念导师）", hints=hints)
+        return f"""{preamble}
 
-## 个性化要求
-{detail}
-- 代码实操能力：{ability}，示例代码难度与之匹配
-- 学习目标：{hints.learning_goals or '夯实算法基础'}
-- 易错点：重点标注 {hints.error_preference or '常见边界与复杂度误区'}
+## domain_narrative（业务域）写作指导
+请结合学生兴趣世界观（如：赛博朋克、原神、星际探险等），用生动、代入感极强的故事讲解当前算法的**业务应用场景**（「现实中要解决什么问题」）。
+{domain_style}
+- 此部分**绝对不允许**出现任何代码、伪代码、变量名、复杂度符号或具体数据结构/算法名称。
+- 用「货物」「通道」「情报网」等隐喻可，但不能出现「数组」「队列」等术语。
 
-## 输出规范
-- 结构：学习目标（3条）、核心概念、分节讲解（≥2节）、易错提醒、小结、自测思考题（不给答案）
-- 600～1200 字，中文，术语与知识库一致
-- 不得编造库外四位题号、虚假 URL"""
+## structure_logic（结构域）写作指导
+剥离所有业务故事，用最严谨的计算机科学学术语言，从抽象层级讲解底层实现：
+- 明确指出需要哪些**数据结构**（如：优先队列、双端队列、邻接矩阵）
+- 给出**时间/空间复杂度**及简要证明或论证草图
+- 代码实操能力：{ability}，算法描述难度与之匹配
+- 易错点侧重：{hints.error_preference or '边界与复杂度'}
+- 术语须与知识库一致，不得编造库外四位题号、虚假 URL
+
+## JSON Schema（严格遵守字段名）
+{DOMAIN_STRUCTURE_JSON_SCHEMA}
+
+## 篇幅
+- domain_narrative.story：200～400 字
+- structure_logic 各字段合计：400～900 字"""
 
     def temperature(self) -> float:
-        return 0.5
+        return 0.45
+
+    def max_tokens(self) -> int:
+        return 2400
 
     def output_format(self) -> str:
-        return "markdown"
+        return "domain_structure_json"
 
     def normalize_output(self, raw: str, *, hints: PersonaHints) -> str:
-        return raw
+        data = _parse_json_object(raw)
+        if data.get("domain_narrative") and data.get("structure_logic"):
+            normalized = _normalize_domain_structure_payload(
+                data,
+                fallback_topic=hints.learning_goals[:32] or "算法主题",
+                scenario=False,
+            )
+            return _serialize_domain_structure(normalized)
+
+        # 兼容旧版 Markdown：拆成双域
+        legacy_story = raw.strip()
+        normalized = _normalize_domain_structure_payload(
+            {
+                "domain_narrative": {
+                    "headline": "学习场景",
+                    "story": legacy_story[:1200],
+                    "illustration_hint": hints.interest_theme(),
+                },
+                "structure_logic": {
+                    "learning_objectives": ["理解核心算法思想", "掌握复杂度分析"],
+                    "abstract_model": "（由旧版教案迁移，建议重新生成）",
+                    "data_structures": [],
+                    "algorithm_outline": legacy_story[1200:2400] or "请参考知识库补全形式化描述。",
+                    "time_complexity": "待分析",
+                    "space_complexity": "待分析",
+                    "correctness_proof": "待补全",
+                    "pitfalls": [hints.error_preference or "边界条件"],
+                },
+            },
+            fallback_topic=hints.learning_goals[:32] or "算法主题",
+            scenario=False,
+        )
+        return _serialize_domain_structure(normalized)
 
 
 class GraphAgent(ResourceRoleAgent):
@@ -275,6 +452,26 @@ class QuizAgent(ResourceRoleAgent):
 
     def normalize_output(self, raw: str, *, hints: PersonaHints) -> str:
         data = _parse_json_object(raw)
+        validated, issues = validate_quiz_payload(data if isinstance(data, dict) else {})
+        if validated is not None:
+            trimmed: list[QuizQuestion] = list(validated.questions[:3])
+            while len(trimmed) < 3:
+                trimmed.append(
+                    QuizQuestion(
+                        type="fill",
+                        stem="请用一句话总结本主题要点",
+                        hint="参考讲解文档",
+                        focus=hints.error_preference or "综合",
+                        difficulty="medium",
+                    )
+                )
+            return json.dumps(
+                {"questions": [q.model_dump() for q in trimmed[:3]]},
+                ensure_ascii=False,
+                indent=2,
+            )
+        if issues:
+            data = {**(data if isinstance(data, dict) else {}), "_validation_issues": issues[:5]}
         questions = data.get("questions") if isinstance(data, dict) else None
         if not isinstance(questions, list) or not questions:
             focus = hints.error_preference or "综合"
@@ -324,39 +521,96 @@ class QuizAgent(ResourceRoleAgent):
 
 
 class ScenarioAgent(ResourceRoleAgent):
-    """互动编剧：实操案例剧本 + 待补全 TODO 代码框架。"""
+    """互动编剧：业务域剧本 + 结构域 TODO 沙盒（JSON 双域输出）。"""
 
     agent_id = "ScenarioAgent"
     display_name = "ScenarioAgent"
-    role = "互动编剧 · 剧本沙盒"
+    role = "互动编剧 · Domain/Structure 沙盒"
 
     def system_prompt(self, hints: PersonaHints) -> str:
         grit = hints.grit_level or "中等"
-        return f"""你是 ScenarioAgent（互动编剧）。生成**代入感实操剧本**与带 // TODO 的代码框架（动态沙盒模式，非小游戏）。
+        preamble = _domain_structure_system_preamble(agent_label="ScenarioAgent（互动编剧）", hints=hints)
+        return f"""{preamble}
 
-## 个性化要求
-- 剧本背景贴合学习目标：{hints.learning_goals or '算法实践'}
-- 代码框架难度匹配 coding_ability：{hints.coding_ability or '入门'}
-- 抗挫折心理 {grit}：hint 分步给出，避免一次暴露完整答案
-- 在 TODO 处设计易错点：{hints.error_preference or '边界处理'}
+## domain_narrative（业务域）写作指导
+结合学生兴趣世界观，用**剧本/任务**形式描述业务场景与使命；要有角色、冲突、目标。
+- **绝对禁止** 代码、TODO、变量名、数据结构/算法专有名词。
+- story + mission 合计 120～220 字。
 
-## 输出规范（Markdown）
-1. ## 剧本背景（80～150字，有场景代入感）
-2. ## 任务目标
-3. ## 代码框架（Python3，15～35 行，关键逻辑处写 // TODO: …）
-4. ## 分步提示（3 条，不给完整答案）
-5. ## 复杂度说明"""
+## structure_logic（结构域）写作指导
+剥离全部故事后，给出严谨 CS 描述与可运行代码骨架：
+- problem_formalization：形式化输入输出
+- data_structures：明确列出所需结构（如单调栈、优先队列）
+- code_framework：Python3，15～35 行，关键逻辑处 `// TODO: …`（抗挫折 {grit}，分步 hint 不泄露完整答案）
+- 易错点嵌入 TODO：{hints.error_preference or '边界处理'}
+- coding_ability：{hints.coding_ability or '入门'}
+- 必须含 time/space 复杂度及 correctness_proof 论证要点
+
+## JSON Schema（严格遵守字段名）
+{SCENARIO_DOMAIN_STRUCTURE_SCHEMA}"""
 
     def temperature(self) -> float:
-        return 0.55
+        return 0.5
+
+    def max_tokens(self) -> int:
+        return 2200
 
     def output_format(self) -> str:
-        return "scenario_markdown"
+        return "domain_structure_json"
 
     def normalize_output(self, raw: str, *, hints: PersonaHints) -> str:
-        if "// TODO" not in raw and "TODO" not in raw:
-            raw += "\n\n```python\n# TODO: 在此补全核心逻辑\ndef solve():\n    pass\n```"
-        return raw
+        data = _parse_json_object(raw)
+        if data.get("domain_narrative") and data.get("structure_logic"):
+            normalized = _normalize_domain_structure_payload(
+                data,
+                fallback_topic=hints.learning_goals[:32] or "实操任务",
+                scenario=True,
+            )
+            code = str(normalized["structure_logic"].get("code_framework") or "")
+            if "TODO" not in code:
+                normalized["structure_logic"]["code_framework"] = (
+                    code.rstrip() + "\n\n# TODO: 在此补全核心逻辑\n"
+                )
+            return _serialize_domain_structure(normalized)
+
+        # 兼容旧版 Markdown 章节
+        bg = ""
+        mission = ""
+        code = ""
+        m_bg = re.search(r"##\s*剧本背景[\s\S]*?(?=##|$)", raw, re.I)
+        if m_bg:
+            bg = re.sub(r"^##[^\n]*\n?", "", m_bg.group(0)).strip()
+        m_goal = re.search(r"##\s*任务目标[\s\S]*?(?=##|$)", raw, re.I)
+        if m_goal:
+            mission = re.sub(r"^##[^\n]*\n?", "", m_goal.group(0)).strip()
+        m_code = re.search(r"```(?:python|py)?\s*([\s\S]*?)```", raw, re.I)
+        if m_code:
+            code = m_code.group(1).strip()
+        if not code:
+            code = "# TODO: 在此补全核心逻辑\ndef solve():\n    pass\n"
+
+        normalized = _normalize_domain_structure_payload(
+            {
+                "domain_narrative": {
+                    "headline": "实操剧本",
+                    "story": bg or raw[:400],
+                    "mission": mission or "完成叙事中的核心挑战",
+                    "illustration_hint": hints.interest_theme(),
+                },
+                "structure_logic": {
+                    "problem_formalization": "（由旧版剧本迁移）",
+                    "data_structures": [],
+                    "code_framework": code,
+                    "step_hints": ["先明确输入输出", "再补全核心循环", "最后处理边界"],
+                    "time_complexity": "待分析",
+                    "space_complexity": "待分析",
+                    "correctness_proof": "待补全",
+                },
+            },
+            fallback_topic=hints.learning_goals[:32] or "实操任务",
+            scenario=True,
+        )
+        return _serialize_domain_structure(normalized)
 
 
 class TraceAgent(ResourceRoleAgent):

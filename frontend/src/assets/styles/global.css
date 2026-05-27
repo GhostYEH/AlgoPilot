@@ -8,6 +8,6 @@
 @import './auth-page.css';
 @import './page-transitions.css';
 @import './games.css';
-html {
+html.dark {
   color-scheme: dark;
 }

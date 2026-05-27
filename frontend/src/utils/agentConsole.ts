@@ -2,6 +2,14 @@
 
 export type AgentLogStatus = 'pending' | 'running' | 'done' | 'error' | 'success' | 'warn'
 
+export type LogTier = 'system' | 'agent' | 'detail'
+
+export function inferLogTier(agent: string, status: string, message: string): LogTier {
+  if (agent === 'System' || agent === 'Orchestrator') return 'system'
+  if (status === 'running' || /BM25|检索|dispatch/i.test(message)) return 'detail'
+  return 'agent'
+}
+
 export interface AgentConsoleLine {
   id: string
   icon: string
@@ -37,27 +45,30 @@ export const AGENT_ICONS: Record<string, string> = {
   System: '✨',
   LearningPathAgent: '💡',
   PlannerAgent: '💡',
+  ASTAnalyzerAgent: '🔬',
+  ASTAnalyzer: '🔬',
   OjDiagnosisAgent: '🔬',
-  EvaluationAgent: '🚑',
+  EvaluationAgent: '📊',
   EvaluatorAgent: '🚑',
 }
 
 const FRIENDLY_AGENT_MSG: Record<string, string> = {
   ProfilingAgent: '正在解析您的 6 维动态学情画像…',
-  ConceptAgent: '正在流式铸造个性化 Markdown 算法视听教案…',
+  ConceptAgent: '正在分离业务域叙事与结构域学术剖析（Domain/Structure JSON）…',
   GraphAgent: '正在拓扑化核心知识点并绘制 Mermaid 思维导图…',
   QuizAgent: '正在根据易错点偏好动态组卷（3 道精练题）…',
-  ScenarioAgent: '正在编写代入感剧本并注入 // TODO 实操框架…',
+  ScenarioAgent: '正在编写业务域剧本 + 结构域 TODO 沙盒（双域分离）…',
   TraceAgent: '正在编译标准题解并注入 trace_runner 录制轨迹动画…',
   KnowledgeRetriever: 'BM25 检索课程知识库，对齐防幻觉切片…',
   ContentVerifierAgent: '对照知识库执行防幻觉校验闭环…',
   ContentSafety: '内容安全过滤与脱敏…',
-  SafetyAgent: '内容安全审查：涉政敏感、学术幻觉、Prompt 注入…',
+  SafetyAgent: '内容安全审查通过，未发现事实性幻觉，准许下发资源…',
   LearningPathAgent: '评估薄弱点后正在重构学习路径…',
   PlannerAgent: '评估完成：检测到薄弱点，正在重构学习路径…',
+  ASTAnalyzerAgent:
+    '静态抽象语法树扫描通过，未发现死循环特征，移交动态沙箱…',
   OjDiagnosisAgent: '边界测例 → 判题 → 轨迹诊断并发分析中…',
-  EvaluationAgent: '学情评估：监测连续作答失败并联动路径降级…',
-  EvaluatorAgent: '学情评估：监测连续作答失败并联动路径降级…',
+  EvaluatorAgent: '监测 OJ 连续失败并联动 Planner 插入降级巩固关卡…',
 }
 
 export function iconForAgent(agent: string): string {
@@ -102,14 +113,16 @@ export function lineFromProgress(p: {
   agent_name: string
   label: string
   percent?: number
+  parallel?: boolean
 }): AgentConsoleLine {
+  const tag = p.parallel ? ' [并行]' : ''
   return {
     id: nextLogId(),
     icon: iconForAgent(p.agent_name),
     agent: p.agent_name,
     message: friendlyAgentMessage(
       p.agent_name,
-      `[${p.step}/${p.total}] ${p.label}（${p.resource_type}）`,
+      `[${p.step}/${p.total}] ${p.label}（${p.resource_type}）${tag}`,
     ),
     status: 'running',
     ts: Date.now(),
@@ -153,6 +166,12 @@ export function lineFromAgentLog(entry: {
   }
 }
 
+export function linesFromAgentLogs(
+  logs: Array<{ agent: string; action: string; detail?: string; status?: string }>,
+): AgentConsoleLine[] {
+  return logs.map((entry) => lineFromAgentLog(entry))
+}
+
 export function systemLine(message: string, status: AgentLogStatus = 'success'): AgentConsoleLine {
   return {
     id: nextLogId(),
@@ -165,9 +184,36 @@ export function systemLine(message: string, status: AgentLogStatus = 'success'):
   }
 }
 
+export function astAnalyzerScanningLine(): AgentConsoleLine {
+  return {
+    id: nextLogId(),
+    icon: '🔬',
+    agent: 'ASTAnalyzerAgent',
+    message: '正在执行静态抽象语法树扫描（死循环 / 越界 / 野指针）…',
+    status: 'running',
+    ts: Date.now(),
+    indent: 0,
+  }
+}
+
+export function astAnalyzerLine(passed: boolean, reason?: string): AgentConsoleLine {
+  return {
+    id: nextLogId(),
+    icon: '🔬',
+    agent: 'ASTAnalyzerAgent',
+    message: passed
+      ? '静态抽象语法树扫描通过，未发现死循环特征，移交动态沙箱…'
+      : reason ?? '静态分析拦截：高风险代码已熔断',
+    status: passed ? 'success' : 'error',
+    ts: Date.now(),
+    indent: 0,
+  }
+}
+
 export function diagnosisBootstrapLines(): AgentConsoleLine[] {
   return [
     systemLine('AI 诊断管线已启动 — 多智能体协同模式', 'running'),
+    astAnalyzerLine(true),
     {
       id: nextLogId(),
       icon: '⏳',
@@ -189,18 +235,11 @@ export function diagnosisBootstrapLines(): AgentConsoleLine[] {
   ]
 }
 
-export function linesFromAgentLogs(
-  logs: Array<{ agent: string; action: string; detail?: string; status?: string }>,
-): AgentConsoleLine[] {
-  return logs.map((entry) => ({
-    id: nextLogId(),
-    icon: iconForAgent(entry.agent),
-    agent: entry.agent,
-    message: entry.detail ? `${entry.action} · ${entry.detail}` : entry.action,
-    status: mapWorkflowStatus(entry.status ?? 'done'),
-    ts: Date.now(),
-    indent: entry.agent === 'EvaluationAgent' || entry.agent === 'EvaluatorAgent' ? 0 : 1,
-  }))
+export function traceBootstrapLines(): AgentConsoleLine[] {
+  return [
+    systemLine('可视化调试管线 — 静动结合双轨诊断', 'running'),
+    astAnalyzerScanningLine(),
+  ]
 }
 
 function mapWorkflowStatus(status: string): AgentLogStatus {

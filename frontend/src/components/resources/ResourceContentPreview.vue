@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import DomainStructurePanels from '@/components/resources/DomainStructurePanels.vue'
+import {
+  looksLikeUnparsedDomainJson,
+  parseDomainStructureContent,
+} from '@/utils/domainStructureContent'
 import { renderAiReplyHtml } from '@/utils/renderAiReply'
 
 const props = defineProps<{
@@ -9,6 +14,9 @@ const props = defineProps<{
 }>()
 
 const parsed = computed(() => {
+  if (props.resourceType === 'document' || props.resourceType === 'code_case') {
+    return null
+  }
   try {
     return JSON.parse(props.content) as Record<string, unknown>
   } catch {
@@ -21,6 +29,28 @@ const isQuiz = computed(
 )
 const isMindmap = computed(
   () => props.resourceType === 'mindmap' || props.meta?.format === 'mindmap_json',
+)
+const domainStructure = computed(() => parseDomainStructureContent(props.content))
+const isDocOrScenario = computed(
+  () => props.resourceType === 'document' || props.resourceType === 'code_case',
+)
+const isDomainStructure = computed(
+  () =>
+    !!domainStructure.value &&
+    (isDocOrScenario.value || props.meta?.format === 'domain_structure_json'),
+)
+const unparsedDomainJson = computed(
+  () => isDocOrScenario.value && looksLikeUnparsedDomainJson(props.content),
+)
+const legacyMarkdown = computed(
+  () =>
+    isDocOrScenario.value &&
+    !domainStructure.value &&
+    !unparsedDomainJson.value &&
+    !!props.content.trim(),
+)
+const domainStructureMode = computed((): 'document' | 'scenario' =>
+  props.resourceType === 'code_case' ? 'scenario' : 'document',
 )
 </script>
 
@@ -49,6 +79,27 @@ const isMindmap = computed(
     </ul>
     <pre class="raw-json">{{ props.content }}</pre>
   </div>
+
+  <DomainStructurePanels
+    v-else-if="isDomainStructure"
+    :content="content"
+    :mode="domainStructureMode"
+  />
+
+  <el-alert
+    v-else-if="unparsedDomainJson"
+    type="warning"
+    :closable="false"
+    show-icon
+    title="双域 JSON 解析失败"
+    description="内容似为 Domain/Structure 结构但格式不完整。请重新生成资源，或联系管理员检查 Agent 输出。"
+  />
+
+  <div
+    v-else-if="legacyMarkdown"
+    class="preview-body ai-md-body"
+    v-html="renderAiReplyHtml(content)"
+  />
 
   <div v-else class="preview-body ai-md-body" v-html="renderAiReplyHtml(content)" />
 </template>

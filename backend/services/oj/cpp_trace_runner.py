@@ -18,6 +18,14 @@ from services.oj.trace_line_refine import refine_trace_step_lines
 
 TraceVerdict = Literal["OK", "RE", "TLE", "CE"]
 MAX_CPP_TRACE_STEPS = 200
+# 用户代码 GDB 追踪子进程硬上限（秒），防止死循环拖垮沙箱
+CPP_TRACE_SUBPROCESS_CAP_S = 3.0
+
+
+def _trace_subprocess_timeout(time_limit_ms: int) -> float:
+    """动态追踪 GDB 超时：不超过 3 秒，避免死循环占满 worker。"""
+    requested = max(1.0, time_limit_ms / 1000)
+    return min(CPP_TRACE_SUBPROCESS_CAP_S, requested)
 
 _GDB_STL_SCRIPT = Path(__file__).with_name("gdb_stl_extract.py")
 _TRACE_VIZ_MARKER_START = "@@TRACE_VIZ_JSON@@"
@@ -126,7 +134,11 @@ def _run_gdb_mi(exe: Path, commands: list[str], timeout_s: float) -> tuple[int, 
             cwd=str(exe.parent),
         )
     except subprocess.TimeoutExpired:
-        return 124, "GDB 追踪超时"
+        return (
+            124,
+            "GDB 追踪超时：疑似死循环或单步过慢，已强制终止（上限 "
+            f"{timeout_s:.0f}s）。请检查 while/for 中指针/计数器是否更新。",
+        )
     out = (proc.stdout or "") + "\n" + (proc.stderr or "")
     return proc.returncode, out
 
@@ -742,6 +754,12 @@ def run_trace_cpp(
     case: dict[str, Any],
     time_limit_ms: int = 5000,
 ) -> TraceSummary:
+    from services.oj.static_audit import audit_user_code, trace_summary_rejected
+
+    audit = audit_user_code(user_code, language="cpp")
+    if not audit.passed:
+        return trace_summary_rejected(audit)
+
     gpp = _find_gpp()
     if not gpp:
         return TraceSummary(
@@ -788,7 +806,7 @@ def run_trace_cpp(
     except TypeError as e:
         return TraceSummary(verdict="RE", message=str(e), user_line_count=user_lines, steps=[])
 
-    timeout_s = max(2, min(time_limit_ms / 1000, 15))
+    timeout_s = _trace_subprocess_timeout(time_limit_ms)
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
@@ -813,7 +831,15 @@ def run_trace_cpp(
 
         ret, full_out = _run_gdb_mi(exe_file, gdb_cmds, timeout_s)
         if ret == 124:
-            return TraceSummary(verdict="TLE", message="GDB 追踪超时", user_line_count=user_lines, steps=[])
+            return TraceSummary(
+                verdict="TLE",
+                message=(
+                    "动态追踪超时（≤3s）：程序可能在死循环中运行。"
+                    " 请结合 ASTAnalyzer 静态提示检查 while/for 内 left/right 等是否更新。"
+                ),
+                user_line_count=user_lines,
+                steps=[],
+            )
 
         steps = _collect_gdb_steps(
             full_out,
@@ -843,7 +869,12 @@ def run_trace_cpp_stdio(
     time_limit_ms: int = 5000,
 ) -> TraceSummary:
     """洛谷风格：对用户 main 程序 GDB 单步追踪。"""
+    from services.oj.static_audit import audit_user_code, trace_summary_rejected
     from services.oj.stdio_io import case_input_text
+
+    audit = audit_user_code(user_code, language="cpp")
+    if not audit.passed:
+        return trace_summary_rejected(audit)
 
     gpp = _find_gpp()
     if not gpp:
@@ -863,7 +894,7 @@ def run_trace_cpp_stdio(
 
     stdin = case_input_text(case)
     user_lines = len(user_code.strip().splitlines()) or 1
-    timeout_s = max(2, min(time_limit_ms / 1000, 15))
+    timeout_s = _trace_subprocess_timeout(time_limit_ms)
 
     try:
         check_cpp_security(user_code)
@@ -900,7 +931,15 @@ def run_trace_cpp_stdio(
 
         ret, full_out = _run_gdb_mi(exe_file, gdb_cmds, timeout_s)
         if ret == 124:
-            return TraceSummary(verdict="TLE", message="GDB 追踪超时", user_line_count=user_lines, steps=[])
+            return TraceSummary(
+                verdict="TLE",
+                message=(
+                    "动态追踪超时（≤3s）：疑似死循环。建议检查 while/for 循环变量是否推进，"
+                    "或先根据静态分析报告修正后再运行可视化调试。"
+                ),
+                user_line_count=user_lines,
+                steps=[],
+            )
 
         steps = _collect_gdb_steps(
             full_out,

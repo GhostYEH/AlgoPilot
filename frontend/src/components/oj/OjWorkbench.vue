@@ -315,10 +315,10 @@ function onReset() {
     </section>
 
     <AgentThinkingConsole
-      v-if="!traceLayout && (diagnosing || (agentConsoleLines?.length ?? 0) > 0)"
+      v-if="!traceLayout && (diagnosing || tracing || (agentConsoleLines?.length ?? 0) > 0)"
       class="oj-workbench-agent-console"
       :lines="agentConsoleLines ?? []"
-      :active="diagnosing"
+      :active="diagnosing || tracing"
       mode="diagnosis"
       title="Agent Synergy Terminal"
       subtitle="OJ 诊断 · 学情评估 · 路径降级"

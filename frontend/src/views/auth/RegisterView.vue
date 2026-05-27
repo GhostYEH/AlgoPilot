@@ -14,6 +14,7 @@ import {
   usernameRules,
 } from '@/utils/authFormRules'
 import { setSession, syncLearningProgressAfterAuth } from '@/stores/auth'
+import { needsOnboarding } from '@/composables/usePersonaGate'
 
 const router = useRouter()
 const route = useRoute()
@@ -62,7 +63,13 @@ async function submitForm() {
     await syncLearningProgressAfterAuth()
     ElMessage.success('注册成功')
     const redir = route.query.redirect as string | undefined
-    await router.replace(redir && redir.startsWith('/') ? redir : '/')
+    if (redir && redir.startsWith('/') && !(await needsOnboarding())) {
+      await router.replace(redir)
+    } else if (await needsOnboarding()) {
+      await router.replace({ name: 'learning-path', query: { onboarding: '1' } })
+    } else {
+      await router.replace('/')
+    }
   } catch {
     /* axios 拦截器 */
   } finally {

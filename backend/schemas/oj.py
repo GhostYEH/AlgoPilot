@@ -84,6 +84,13 @@ class TraceNarrateRequest(BaseModel):
     problem_title: str = ""
 
 
+class StaticAuditRejection(BaseModel):
+    status: Literal["rejected"] = "rejected"
+    agent: str = "ASTAnalyzerAgent"
+    reason: str
+    findings: list[dict[str, Any]] = Field(default_factory=list)
+
+
 class TraceResponse(BaseModel):
     verdict: Literal["OK", "RE", "TLE", "CE"]
     message: str
@@ -91,6 +98,7 @@ class TraceResponse(BaseModel):
     steps: list[TraceStepOut] = Field(default_factory=list)
     result_preview: str | None = None
     narrations: list[TraceNarrationLine] = Field(default_factory=list)
+    static_audit: StaticAuditRejection | dict[str, Any] | None = None
 
 
 class AiDiagnoseRequest(BaseModel):

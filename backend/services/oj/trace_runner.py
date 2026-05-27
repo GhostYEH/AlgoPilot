@@ -115,6 +115,7 @@ class TraceSummary:
     user_line_count: int
     steps: list[TraceStepOut]
     result_preview: str | None = None
+    static_rejection: dict[str, Any] | None = None
 
 
 def _build_trace_script(
@@ -262,9 +263,15 @@ def run_trace_stdio(
     *,
     case: dict[str, Any],
     time_limit_ms: int = 3000,
+    language: str = "python",
 ) -> TraceSummary:
     """洛谷 stdin/stdout：对首个样例追踪用户 main 程序。"""
+    from services.oj.static_audit import audit_user_code, trace_summary_rejected
     from services.oj.stdio_io import case_input_text
+
+    audit = audit_user_code(user_code, language=language)
+    if not audit.passed:
+        return trace_summary_rejected(audit)
 
     stdin = case_input_text(case)
 
@@ -356,8 +363,15 @@ def run_trace(
     entry: dict[str, Any],
     case: dict[str, Any],
     time_limit_ms: int = 3000,
+    language: str = "python",
 ) -> TraceSummary:
     """对首个样例运行并返回逐步追踪（仅 Python 力扣风格）。"""
+    from services.oj.static_audit import audit_user_code, trace_summary_rejected
+
+    audit = audit_user_code(user_code, language=language)
+    if not audit.passed:
+        return trace_summary_rejected(audit)
+
     class_name = entry.get("class") or "Solution"
     method_name = entry["method"]
     args = case.get("args", [])

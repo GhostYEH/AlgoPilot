@@ -73,7 +73,7 @@ class PersonaProfileResponse(BaseModel):
     updated_at: str | None = None
     dimension_scores: dict[str, int] = Field(
         default_factory=dict,
-        description="六维量化分值 1-10，用于雷达图与路径规划",
+        description="六维量化分（1-10），用于雷达图与路径难度",
     )
     dimension_confidence: dict[str, str] = Field(
         default_factory=dict,

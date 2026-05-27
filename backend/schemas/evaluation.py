@@ -53,7 +53,7 @@ class AgentLogItem(BaseModel):
 
 
 class OjStruggleEvaluationResponse(BaseModel):
-    agent_name: str = "EvaluationAgent"
+    agent_name: str = "EvaluatorAgent"
     struggle_detected: bool = False
     consecutive_failures: int = 0
     remediation_module_key: str | None = None

@@ -113,13 +113,19 @@ async function runResourceGeneration() {
             ),
           )
         },
-        onDone() {
+        onDone(info) {
           progress.value = 100
-          pushLine(systemLine('个性化自适应资源装配完毕！', 'success'))
-          ElMessage.success('五类个性化资源已全部生成')
+          if (info?.partial_failure) {
+            const failed = info.errors?.map((e) => e.agent_name ?? e.resource_type ?? '未知').join('、') ?? '部分资源'
+            pushLine(systemLine(`部分资源生成失败（${failed}），其余已装配完毕`, 'warn'))
+            ElMessage.warning(`${failed} 生成失败，其余资源已就绪`)
+          } else {
+            pushLine(systemLine('个性化自适应资源装配完毕！', 'success'))
+            ElMessage.success('五类个性化资源已全部生成')
+          }
         },
-        onError() {
-          pushLine(systemLine('生成管线异常终止', 'error'))
+        onError(msg) {
+          pushLine(systemLine(msg || '生成管线异常终止', 'error'))
         },
       },
     )

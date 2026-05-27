@@ -36,6 +36,7 @@ from services.oj.trace_narration import generate_trace_narration
 from services.oj.ai_diagnosis import (
     analyze_complexity,
     diagnose_trace_bug,
+    gate_code_before_dynamic_analysis,
     generate_edge_case,
     generate_trace_diagnosis,
     merge_diagnosis_narrations,
@@ -138,6 +139,7 @@ def _trace_to_response(
     user_code: str = "",
     attach_demo_narration: bool = True,
 ) -> TraceResponse:
+    static_rejection = getattr(summary, "static_rejection", None)
     steps_out = [
         TraceStepOut(
             line=s.line,
@@ -183,6 +185,7 @@ def _trace_to_response(
         result_preview=summary.result_preview,
         steps=steps_out,
         narrations=narrations,
+        static_audit=static_rejection,
     )
 
 
@@ -190,6 +193,12 @@ def _trace_to_response(
 def api_trace_execution(slug: str, body: TraceRequest):
     """可视化调试：Python sys.settrace / C++ GDB MI（可指定样例下标）。"""
     lang = _normalize_lang(body.language)
+
+    ast_gate = gate_code_before_dynamic_analysis(body.code, language=lang)
+    if not ast_gate.passed:
+        from services.oj.static_audit import trace_summary_rejected
+
+        return _trace_to_response(trace_summary_rejected(ast_gate), user_code=body.code)
 
     try:
         problem = get_public_problem(slug)
@@ -248,6 +257,12 @@ def _run_trace_for_case(
     case: dict,
     time_limit_ms: int,
 ):
+    ast_gate = gate_code_before_dynamic_analysis(user_code, language=lang)
+    if not ast_gate.passed:
+        from services.oj.static_audit import trace_summary_rejected
+
+        return trace_summary_rejected(ast_gate)
+
     judge_mode = problem.get("judge_mode", "stdio")
     if judge_mode == "stdio":
         if lang == "cpp":
@@ -275,6 +290,10 @@ def _judge_single_case(
     case: dict,
     time_limit_ms: int,
 ):
+    ast_gate = gate_code_before_dynamic_analysis(user_code, language=lang)
+    if not ast_gate.passed:
+        return "CE", ast_gate.reason
+
     judge_mode = problem.get("judge_mode", "stdio")
     if judge_mode == "stdio":
         summary = run_cases_stdio(
@@ -340,6 +359,39 @@ async def api_ai_diagnose(slug: str, body: AiDiagnoseRequest):
     AI 深度诊断：生成边界测例 → 判题验证 → 可视化追踪 → 破案式旁白 → 复杂度报告。
     """
     lang = _normalize_lang(body.language)
+
+    ast_gate = gate_code_before_dynamic_analysis(body.code, language=lang)
+    if not ast_gate.passed:
+        from services.oj.static_audit import trace_summary_rejected
+
+        trace_resp = _trace_to_response(
+            trace_summary_rejected(ast_gate),
+            slug=slug,
+            user_code=body.code,
+            attach_demo_narration=False,
+        )
+        return AiDiagnoseResponse(
+            edge_case=AiEdgeCaseInfo(
+                reason="静态分析熔断，未生成边界测例",
+                category="static_rejected",
+                input_preview="",
+                expected_preview="",
+                source="ASTAnalyzerAgent",
+            ),
+            edge_verdict="CE",
+            edge_message=ast_gate.reason[:300],
+            trace=trace_resp,
+            complexity=AiComplexityReport(
+                input_size_n=0,
+                total_steps=0,
+                meaningful_steps=0,
+                estimated_complexity="N/A",
+                report="代码未通过静态 AST 审计，已拦截动态沙箱执行。",
+                alternative_hint="请修复死循环/指针未更新等问题后重试。",
+                source="ASTAnalyzerAgent",
+            ),
+            summary=ast_gate.reason,
+        )
 
     try:
         problem = get_public_problem(slug)
@@ -537,7 +589,7 @@ def _judge(slug: str, body: JudgeRequest, *, mode: str) -> JudgeResponse:
         if lang == "cpp":
             summary = run_cases_cpp(body.code, **kwargs)
         else:
-            summary = run_cases(body.code, **kwargs)
+            summary = run_cases(body.code, **kwargs, language=lang)
 
     return JudgeResponse(
         verdict=summary.verdict,

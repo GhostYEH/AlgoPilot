@@ -160,7 +160,7 @@ class EvaluationAgent:
         if not struggle:
             logs.append(
                 {
-                    "agent": self.name,
+                    "agent": "EvaluatorAgent",
                     "action": "学情监测",
                     "detail": f"连续失败 {consecutive_failures} 次（{verdict}），未达降级阈值",
                     "status": "done",
@@ -182,7 +182,7 @@ class EvaluationAgent:
 
         logs.append(
             {
-                "agent": self.name,
+                "agent": "EvaluatorAgent",
                 "action": "捕捉到连续受挫",
                 "detail": (
                     f"连续 {consecutive_failures} 次 {verdict}"

@@ -62,6 +62,13 @@ CORE_RESOURCE_PIPELINE: list[ResourceType] = [
     "trace_animation",
 ]
 
+PARALLEL_PHASES: list[list[ResourceType]] = [
+    ["document"],
+    ["mindmap", "exercises"],
+    ["code_case"],
+    ["trace_animation"],
+]
+
 
 class AgentLogEntry(BaseModel):
     agent: str

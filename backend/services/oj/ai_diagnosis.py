@@ -7,11 +7,21 @@ import re
 from typing import Any, Literal
 
 from core.config import settings
+from services.agents.ast_analyzer import ASTAnalyzerAgent, AstAuditResult
 from services.llm import chat_completion
 from services.oj.stdio_io import ensure_stdio_fields
 
 MAX_STEPS_IN_PROMPT = 80
 MAX_TRACE_BUG_STEPS = 120
+
+
+def gate_code_before_dynamic_analysis(
+    user_code: str,
+    *,
+    language: str = "python",
+) -> AstAuditResult:
+    """静动结合：动态 trace_runner / GDB 执行前的 AST 熔断门闸。"""
+    return ASTAnalyzerAgent.audit(user_code, language=language)
 
 TRACE_BUG_DIAGNOSIS_SYSTEM = """你是一个算法竞赛金牌教练与调试侦探。
 你将收到：题目描述、学生代码、以及压缩后的执行轨迹（仅含 changed 非空的步，每步一行文本快照）。

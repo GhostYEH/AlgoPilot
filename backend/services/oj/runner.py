@@ -228,7 +228,14 @@ def run_cases(
     cases: list[dict[str, Any]],
     time_limit_ms: int = 3000,
     order_insensitive: bool = False,
+    language: str = "python",
 ) -> RunSummary:
+    from services.oj.static_audit import audit_user_code, run_summary_rejected
+
+    audit = audit_user_code(user_code, language=language)
+    if not audit.passed:
+        return run_summary_rejected(audit, total=max(1, len(cases)))
+
     class_name = entry.get("class") or "Solution"
     method_name = entry["method"]
     entry_with_slug = {**entry}

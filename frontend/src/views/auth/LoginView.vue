@@ -9,6 +9,7 @@ import AuthPageFrame from '@/components/auth/AuthPageFrame.vue'
 import { loginApi } from '@/api/auth'
 import { passwordRules, usernameRules } from '@/utils/authFormRules'
 import { setSession, syncLearningProgressAfterAuth } from '@/stores/auth'
+import { needsOnboarding } from '@/composables/usePersonaGate'
 
 const router = useRouter()
 const route = useRoute()
@@ -52,7 +53,13 @@ async function submitForm() {
     await syncLearningProgressAfterAuth()
     ElMessage.success('登录成功')
     const redir = route.query.redirect as string | undefined
-    await router.replace(redir && redir.startsWith('/') ? redir : '/')
+    if (redir && redir.startsWith('/') && !(await needsOnboarding())) {
+      await router.replace(redir)
+    } else if (await needsOnboarding()) {
+      await router.replace({ name: 'learning-path', query: { onboarding: '1' } })
+    } else {
+      await router.replace('/')
+    }
   } catch {
     /* 错误由 axios 拦截器提示 */
   } finally {

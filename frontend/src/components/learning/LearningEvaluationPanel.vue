@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { DataAnalysis } from '@element-plus/icons-vue'
+import LearningDimensionRadar from '@/components/learning/LearningDimensionRadar.vue'
 import { fetchLearningEvaluation, type LearningEvaluation } from '@/api/orchestrator'
 import { buildLearningOverview } from '@/utils/learningOverview'
 import { isLoggedIn } from '@/stores/auth'
@@ -65,6 +66,7 @@ onMounted(() => {
         综合得分 <strong>{{ report.overall_score }}</strong>
       </div>
       <p class="narrative">{{ report.narrative }}</p>
+      <LearningDimensionRadar v-if="report.dimensions.length" :dimensions="report.dimensions" />
       <el-row :gutter="10" class="dim-row">
         <el-col v-for="d in report.dimensions" :key="d.key" :xs="12" :sm="6">
           <div class="dim-tile">

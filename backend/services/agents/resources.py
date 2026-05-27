@@ -1,4 +1,8 @@
-"""资源生成编排门面：路由至五类角色 Agent。"""
+"""资源生成编排门面：路由至五类角色 Agent。
+
+ConceptAgent / ScenarioAgent 的 Prompt 与双域 JSON 规范见 resource_roles.py
+（domain_narrative 业务域 + structure_logic 结构域，understand-anything 式分离）。
+"""
 
 from __future__ import annotations
 

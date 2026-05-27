@@ -1,0 +1,12 @@
+target-version = "py311"
+line-length = 120
+src = [".", "tests"]
+
+exclude = [
+  "scripts",
+  "t_test.py",
+]
+
+[lint]
+select = ["E4", "E7", "E9", "F"]
+ignore = ["E501"]

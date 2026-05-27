@@ -226,7 +226,7 @@ async def generate_trace_narration(
     scene = _detect_scene(user_code, steps)
     condensed = _condense_steps(steps, scene)
 
-    if not settings.siliconflow_api_key:
+    if not settings.llm_configured:
         demo = generate_demo_narration(slug, user_code, steps)
         if demo:
             return demo
