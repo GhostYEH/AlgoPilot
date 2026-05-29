@@ -6,12 +6,14 @@ import CodeEditor from '@/components/oj/CodeEditor.vue'
 import TraceSequenceViz from '@/components/oj/trace/TraceSequenceViz.vue'
 import TraceAssociativeViz from '@/components/oj/trace/TraceAssociativeViz.vue'
 import DomainStructurePanels from '@/components/resources/DomainStructurePanels.vue'
+import SafetyValidationPanel from '@/components/resources/SafetyValidationPanel.vue'
 import {
   looksLikeUnparsedDomainJson,
   parseDomainStructureContent,
 } from '@/utils/domainStructureContent'
 import { renderAiReplyHtml } from '@/utils/renderAiReply'
 import { CORE_RESOURCE_TAB_META } from '@/utils/agentConsole'
+import { synthesizeTtsAudio } from '@/api/tts'
 import type { TraceStep, TraceVarSnapshot } from '@/types/codeTrace'
 import {
   associativeEntries,
@@ -52,8 +54,6 @@ const resourceMap = computed(() => {
 })
 
 function normalizeType(t: string): string {
-  if (t === 'video_script') return 'trace_animation'
-  if (t === 'reading') return 'document'
   return t
 }
 
@@ -252,6 +252,82 @@ const tracePrevSnap = computed((): TraceVarSnapshot | null => {
 
 const traceIsSequence = computed(() => traceSnap.value && isSequenceSnapshot(traceSnap.value))
 const traceIsAssociative = computed(() => traceSnap.value && isAssociativeSnapshot(traceSnap.value))
+
+interface PptSlide {
+  title: string
+  subtitle?: string
+  layout?: string
+  bullets?: string[]
+  visual_hint?: string
+  speaker_note?: string
+}
+
+interface VideoScene {
+  time_range: string
+  visual: string
+  voiceover: string
+  animation_focus: string
+}
+
+interface ReadingLevel {
+  level: string
+  fit_for?: string
+  items?: Array<{ title: string; type?: string; why?: string; task?: string }>
+}
+
+const pptPayload = computed(() => {
+  const r = resourceMap.value.get('ppt')
+  if (!r) return null
+  try {
+    return JSON.parse(r.content) as { deck_title?: string; design_style?: string; slides?: PptSlide[] }
+  } catch {
+    return null
+  }
+})
+
+const videoPayload = computed(() => {
+  const r = resourceMap.value.get('video_script')
+  if (!r) return null
+  try {
+    return JSON.parse(r.content) as {
+      title?: string
+      duration_seconds?: number
+      cognitive_style?: string
+      tts_preview_text?: string
+      scenes?: VideoScene[]
+    }
+  } catch {
+    return null
+  }
+})
+
+const readingPayload = computed(() => {
+  const r = resourceMap.value.get('reading')
+  if (!r) return null
+  try {
+    return JSON.parse(r.content) as { reading_goal?: string; levels?: ReadingLevel[] }
+  } catch {
+    return null
+  }
+})
+
+const ttsLoading = ref(false)
+
+async function playVideoTtsPreview() {
+  const text = videoPayload.value?.tts_preview_text?.trim()
+  if (!text) return
+  ttsLoading.value = true
+  try {
+    const blob = await synthesizeTtsAudio({ text })
+    const url = URL.createObjectURL(blob)
+    const audio = new Audio(url)
+    audio.onended = () => URL.revokeObjectURL(url)
+    audio.onerror = () => URL.revokeObjectURL(url)
+    await audio.play()
+  } finally {
+    ttsLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -422,7 +498,96 @@ const traceIsAssociative = computed(() => traceSnap.value && isAssociativeSnapsh
         </div>
         <el-empty v-else description="TraceAgent 将录制标准题解并逐步回放" />
       </article>
+
+      <!-- PPT 胶片预览 -->
+      <article v-show="tab === 'ppt'" class="panel-card panel-card--ppt">
+        <header class="panel-head">
+          <h3>{{ pptPayload?.deck_title ?? 'PPT 胶片预览' }}</h3>
+          <span class="panel-meta">PptAgent · {{ pptPayload?.design_style ?? 'JSON Preview' }}</span>
+        </header>
+        <el-carousel v-if="pptPayload?.slides?.length" height="280px" indicator-position="outside">
+          <el-carousel-item v-for="(slide, i) in pptPayload.slides" :key="i">
+            <section class="ppt-slide">
+              <span class="ppt-page">Slide {{ i + 1 }} · {{ slide.layout ?? 'concept' }}</span>
+              <h4>{{ slide.title }}</h4>
+              <p v-if="slide.subtitle" class="ppt-subtitle">{{ slide.subtitle }}</p>
+              <ul>
+                <li v-for="(b, j) in slide.bullets ?? []" :key="j">{{ b }}</li>
+              </ul>
+              <div class="ppt-note">
+                <span>{{ slide.visual_hint }}</span>
+                <small>{{ slide.speaker_note }}</small>
+              </div>
+            </section>
+          </el-carousel-item>
+        </el-carousel>
+        <el-empty v-else description="PptAgent 将输出可轮播展示的核心知识胶片" />
+      </article>
+
+      <!-- 教学短视频分镜脚本 -->
+      <article v-show="tab === 'video_script'" class="panel-card panel-card--video">
+        <header class="panel-head">
+          <h3>{{ videoPayload?.title ?? '60 秒教学短视频脚本' }}</h3>
+          <span class="panel-meta">VideoScriptAgent · iFlytek TTS Ready</span>
+        </header>
+        <div v-if="videoPayload?.scenes?.length" class="video-script">
+          <div class="tts-preview">
+            <div>
+              <strong>科大讯飞 TTS 试听文案</strong>
+              <p>{{ videoPayload.tts_preview_text }}</p>
+            </div>
+            <el-button
+              type="primary"
+              plain
+              :loading="ttsLoading"
+              :disabled="!videoPayload.tts_preview_text"
+              @click="playVideoTtsPreview"
+            >
+              试听
+            </el-button>
+          </div>
+          <div class="scene-grid">
+            <div v-for="(scene, i) in videoPayload.scenes" :key="i" class="scene-card">
+              <span class="scene-time">{{ scene.time_range }}</span>
+              <h4>画面</h4>
+              <p>{{ scene.visual }}</p>
+              <h4>旁白</h4>
+              <p>{{ scene.voiceover }}</p>
+              <h4>动画重点</h4>
+              <p>{{ scene.animation_focus }}</p>
+            </div>
+          </div>
+        </div>
+        <el-empty v-else description="VideoScriptAgent 将根据认知风格生成 60 秒分镜脚本" />
+      </article>
+
+      <!-- 分层拓展阅读 -->
+      <article v-show="tab === 'reading'" class="panel-card panel-card--reading">
+        <header class="panel-head">
+          <h3>分层拓展阅读</h3>
+          <span class="panel-meta">ReadingAgent · 基础 / 进阶 / 挑战</span>
+        </header>
+        <p v-if="readingPayload?.reading_goal" class="reading-goal">{{ readingPayload.reading_goal }}</p>
+        <div v-if="readingPayload?.levels?.length" class="reading-levels">
+          <section v-for="level in readingPayload.levels" :key="level.level" class="reading-level">
+            <h4>{{ level.level }}</h4>
+            <p class="reading-fit">{{ level.fit_for }}</p>
+            <div v-for="(item, i) in level.items ?? []" :key="i" class="reading-item">
+              <strong>{{ item.title }}</strong>
+              <span>{{ item.type }}</span>
+              <p>{{ item.why }}</p>
+              <small>读后任务：{{ item.task }}</small>
+            </div>
+          </section>
+        </div>
+        <el-empty v-else description="ReadingAgent 将生成三层拓展阅读清单" />
+      </article>
     </div>
+    <SafetyValidationPanel
+      v-if="current"
+      :meta="current.meta"
+      :resource-type="current.resource_type"
+    />
   </div>
 </template>
 
@@ -435,7 +600,7 @@ const traceIsAssociative = computed(() => traceSnap.value && isAssociativeSnapsh
 
 .dash-tabs {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
   gap: 10px;
 }
 
@@ -708,5 +873,115 @@ const traceIsAssociative = computed(() => traceSnap.value && isAssociativeSnapsh
   background: var(--alp-bg-code-ish);
   overflow: auto;
   max-height: 180px;
+}
+
+.ppt-slide {
+  height: 100%;
+  padding: 22px 26px;
+  border-radius: 12px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, #06b6d4 18%, transparent), transparent 48%),
+    color-mix(in srgb, var(--alp-bg-soft-block) 78%, transparent);
+  border: 1px solid color-mix(in srgb, #06b6d4 32%, var(--alp-color-border));
+}
+
+.ppt-page,
+.scene-time {
+  font-size: 11px;
+  color: var(--alp-color-primary);
+  font-family: ui-monospace, monospace;
+}
+
+.ppt-slide h4 {
+  margin: 12px 0 6px;
+  font-size: 24px;
+}
+
+.ppt-subtitle,
+.reading-goal {
+  margin: 0 0 12px;
+  color: var(--alp-color-muted);
+}
+
+.ppt-slide ul {
+  margin: 14px 0;
+  padding-left: 18px;
+  line-height: 1.8;
+}
+
+.ppt-note {
+  display: grid;
+  gap: 4px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--alp-color-border);
+  font-size: 12px;
+  color: var(--alp-color-muted);
+}
+
+.tts-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px;
+  margin-bottom: 14px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, #ec4899 32%, var(--alp-color-border));
+  background: color-mix(in srgb, #ec4899 8%, var(--alp-bg-soft-block));
+}
+
+.tts-preview p {
+  margin: 6px 0 0;
+  color: var(--alp-color-muted);
+  line-height: 1.6;
+}
+
+.scene-grid,
+.reading-levels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.scene-card,
+.reading-level {
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid var(--alp-color-border);
+  background: var(--alp-bg-soft-block);
+}
+
+.scene-card h4,
+.reading-level h4 {
+  margin: 10px 0 4px;
+  color: var(--alp-color-primary);
+  font-size: 13px;
+}
+
+.scene-card p,
+.reading-fit,
+.reading-item p {
+  margin: 0 0 8px;
+  color: var(--alp-color-muted);
+  line-height: 1.55;
+  font-size: 13px;
+}
+
+.reading-item {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--alp-color-border);
+}
+
+.reading-item strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.reading-item span,
+.reading-item small {
+  color: var(--alp-color-muted);
+  font-size: 11px;
 }
 </style>

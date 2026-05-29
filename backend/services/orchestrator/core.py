@@ -252,16 +252,24 @@ class Orchestrator:
         return (
             "flowchart TD\n"
             "  PROFILE[ProfilingAgent<br/>六维画像] --> ORCH[Orchestrator]\n"
+            "  SPARK[科大讯飞星火 Spark<br/>默认核心大模型] --> ORCH\n"
             "  ORCH --> RAG[KnowledgeRetriever]\n"
             "  RAG --> CONCEPT[ConceptAgent<br/>讲解文档]\n"
             "  CONCEPT -.摘要.-> GRAPH[GraphAgent<br/>Mermaid图谱]\n"
             "  CONCEPT -.摘要.-> QUIZ[QuizAgent<br/>3道练习题]\n"
             "  QUIZ -.易错点.-> SCENARIO[ScenarioAgent<br/>剧本沙盒]\n"
             "  SCENARIO -.TODO框架.-> TRACE[TraceAgent<br/>轨迹动画JSON]\n"
+            "  CONCEPT -.核心提炼.-> PPT[PptAgent<br/>PPT胶片预览]\n"
+            "  CONCEPT -.认知风格.-> VIDEO[VideoScriptAgent<br/>60秒短视频脚本]\n"
+            "  CONCEPT -.拓展方向.-> READ[ReadingAgent<br/>三层拓展阅读]\n"
+            "  VIDEO --> TTS[科大讯飞 TTS<br/>讲解音频试听]\n"
             "  CONCEPT --> VERIFY{ContentVerifier}\n"
             "  GRAPH --> VERIFY\n"
             "  QUIZ --> VERIFY\n"
             "  SCENARIO --> VERIFY\n"
+            "  PPT --> VERIFY\n"
+            "  VIDEO --> VERIFY\n"
+            "  READ --> VERIFY\n"
             "  TRACE --> SAFETY[SafetyAgent]\n"
             "  VERIFY -->|passed| SAFETY\n"
             "  VERIFY -->|failed| CONCEPT\n"
@@ -501,8 +509,9 @@ class Orchestrator:
             "mindmap",
             "code_case",
             "trace_animation",
-            "reading",
+            "ppt",
             "video_script",
+            "reading",
         ]
 
         def score(row: GeneratedResource) -> float:
@@ -644,13 +653,13 @@ class Orchestrator:
         module_key: str = "",
         focus_hint: str = "",
     ) -> AsyncIterator[str]:
-        """SSE：按并行阶段生成五类核心资源，无依赖的 Agent 并行执行。
+        """SSE：按并行阶段生成比赛展示资源，无依赖的 Agent 并行执行。
 
         阶段拓扑（来自 README DAG）：
           Phase 1: document            ← 无依赖
           Phase 2: mindmap + exercises ← 并行，均只依赖 document
           Phase 3: code_case           ← 依赖 exercises
-          Phase 4: trace_animation     ← 依赖 code_case
+          Phase 4: trace_animation + ppt + video_script + reading ← 展示型资源并行
 
         asyncio 协作式调度保证：
           PipelineContext 的 log() / update_from_resource() 均为纯同步方法，

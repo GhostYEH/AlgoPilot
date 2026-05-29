@@ -139,6 +139,7 @@ function resetCode() {
   max-width: none;
   margin: 0;
   padding: 8px var(--alp-layout-padding-x, 16px) 24px;
+  box-sizing: border-box;
   overflow: visible;
   min-width: 0;
 }
@@ -152,5 +153,18 @@ function resetCode() {
 
 .head {
   margin-bottom: 12px;
+}
+
+@media (max-width: 600px) {
+  .practice-problem-page {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .practice-problem-page :deep(.oj-practice-layout) {
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+  }
 }
 </style>

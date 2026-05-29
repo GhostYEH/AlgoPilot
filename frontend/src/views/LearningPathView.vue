@@ -94,31 +94,45 @@ onMounted(async () => {
       </el-col>
     </el-row>
 
-    <section class="universe-section">
-      <AlgorithmUniverseGraph
-        :key="`${universeKey}-${highlightKey ?? 'default'}`"
-        :highlight-key="highlightKey"
-        :auto-start-tour="autoTour"
-      />
-    </section>
+    <section class="path-explorer-grid">
+      <div class="universe-panel">
+        <div class="panel-heading">
+          <div>
+            <h3 class="section-title">算法知识宇宙</h3>
+            <p class="muted section-desc">
+              以数据结构、算法范式、练习任务三层构建竞赛式学习星图，支持滚轮缩放、拖拽与路径自动巡航。
+            </p>
+          </div>
+          <el-tag effect="plain" type="success">DAG 路径引擎</el-tag>
+        </div>
+        <AlgorithmUniverseGraph
+          :key="`${universeKey}-${highlightKey ?? 'default'}`"
+          :highlight-key="highlightKey"
+          :auto-start-tour="autoTour"
+        />
+      </div>
 
-    <section class="concept-graph-section">
-      <h3 class="section-title">概念依赖图谱 · 可交互探索</h3>
-      <p class="muted section-desc">
-        基于 <code>concept_graph.json</code> 的先修关系与题目关联；滚轮缩放、拖拽平移，点击节点跳转模块或 OJ 练习。
-      </p>
-      <ConceptKnowledgeGraph
-        :module-key="highlightKey"
-        :highlight-path-ids="pathHighlightIds"
-        height="440px"
-      />
+      <aside class="concept-side-panel">
+        <div class="panel-heading panel-heading--compact">
+          <div>
+            <h3 class="section-title">概念依赖图谱 · 可交互探索</h3>
+            <p class="muted section-desc">
+              基于 <code>concept_graph.json</code> 的先修关系与题目关联，点击节点跳转到模块或 OJ 练习。
+            </p>
+          </div>
+        </div>
+        <ConceptKnowledgeGraph
+          :module-key="highlightKey"
+          :highlight-path-ids="pathHighlightIds"
+          height="620px"
+        />
+        <RecommendedResourcesPanel
+          v-if="isLoggedIn"
+          :module-key="highlightKey ?? plan?.next_module_key ?? ''"
+          title="路径关联推荐资源"
+        />
+      </aside>
     </section>
-
-    <RecommendedResourcesPanel
-      v-if="isLoggedIn"
-      :module-key="highlightKey ?? plan?.next_module_key ?? ''"
-      title="路径关联推荐资源"
-    />
   </el-card>
 </template>
 
@@ -199,14 +213,70 @@ onMounted(async () => {
   color: var(--alp-color-text);
 }
 
-.universe-section {
-  margin: 0 -4px 8px;
+.path-explorer-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 18px;
+  align-items: start;
 }
 
-@media (min-width: 960px) {
-  .universe-section {
-    margin-left: -12px;
-    margin-right: -12px;
+.universe-panel,
+.concept-side-panel {
+  border: 1px solid var(--alp-color-border);
+  border-radius: var(--alp-radius-card);
+  background: var(--alp-bg-surface);
+}
+
+.universe-panel {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.concept-side-panel {
+  position: sticky;
+  top: calc(var(--alp-header-height, 60px) + 16px);
+  max-height: calc(100vh - var(--alp-header-height, 60px) - 32px);
+  overflow: auto;
+  padding: 14px;
+}
+
+.panel-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px 0;
+}
+
+.panel-heading--compact {
+  padding: 0;
+}
+
+.section-desc {
+  margin: 0;
+  font-size: 13px;
+}
+
+.universe-panel :deep(.algorithm-universe) {
+  border: 0;
+  border-radius: 0;
+}
+
+.concept-side-panel :deep(.concept-graph-card) {
+  border-radius: calc(var(--alp-radius-card) - 2px);
+}
+
+.concept-side-panel :deep(.recommended-resources-panel) {
+  margin-top: 14px;
+}
+
+@media (max-width: 1180px) {
+  .path-explorer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .concept-side-panel {
+    position: static;
+    max-height: none;
   }
 }
 

@@ -9,7 +9,7 @@
 | Agent | 职责 |
 |-------|------|
 | PersonaAgent | 对话构建 7 维学习画像 |
-| 课纲/导图/出题/拓展/实操/视频脚本 Agent | 六类个性化资源 |
+| Concept/Graph/Quiz/Scenario/Trace/Ppt/VideoScript/Reading Agent | 八类个性化资源，满足“至少 5 种个性化资源”要求 |
 | ContentVerifierAgent | 对照知识库校验生成内容 |
 | LearningPathAgent | 动态模块学习顺序 |
 | TutorAgent / OjAssistantAgent | 智能辅导 |
@@ -43,6 +43,19 @@
 4. 我的学习 → 效果评估 → 雷达维度与推送策略  
 5. 完成小节后登录态下画像 `weak_points` 自动更新  
 
-## 6. 开源与工具声明
+## 6. 科大讯飞生态集成
 
-见项目根目录及各 `README.md`；大模型 API 配置见 `.env.example`（赛题要求科大讯飞工具接入时替换 `services/llm` 实现即可，编排层无需改动）。
+- 核心大模型：`backend/services/llm/client.py` 默认调用科大讯飞星火 Spark OpenAI 兼容接口，配置项为 `SPARK_API_PASSWORD`、`SPARK_MODEL`、`SPARK_CHAT_URL`。
+- 多模态语音：`backend/services/tts/iflytek_tts.py` 封装科大讯飞在线语音合成 WebAPI，前端教案朗读与短视频脚本试听均走 `/api/ai/tts/synthesize`。
+- 前端显式标识：主导航展示“讯飞星火 Spark · iFlytek TTS”，Agent DAG 展示 Spark、TTS 节点。
+- AI Coding 工具声明：团队使用“讯飞星火智能编程助手（iFlyCode）”辅助 AlgoPilot 开发，包括 Agent Prompt 草稿、FastAPI/TypeScript 样板生成、单测样例补全、Bug 排查建议和文档润色。所有生成代码均由团队人工审阅、运行测试并纳入 Git 版本管理。
+
+## 7. 防幻觉与安全可视化
+
+- 每份资源 `meta.safety_panel` 记录知识库溯源、复杂度事实校验、敏感词过滤和承办 Agent。
+- 前端 `SafetyValidationPanel.vue` 以绿色盾牌面板展示“知识库溯源 / 复杂度校验 / 敏感词过滤 / ContentVerifierAgent + SafetyAgent”。
+- OJ Playground 与资源校验面板展示沙盒限制：限时、限内存、危险系统调用拦截、子进程执行，生产部署建议 Docker 隔离。
+
+## 8. 开源与工具声明
+
+见项目根目录及各 `README.md`；大模型与语音 API 配置见 `.env.example`，当前后端已默认接入科大讯飞星火 Spark 与科大讯飞在线语音合成。

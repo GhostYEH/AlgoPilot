@@ -15,7 +15,8 @@ async def tts_synthesize(body: TtsSynthesizeRequest) -> Response:
     if not settings.tts_configured:
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,
-            "语音合成未配置：请在 backend/.env 设置 DASHSCOPE_API_KEY",
+            "语音合成未配置：请在 backend/.env 设置科大讯飞 TTS "
+            "（IFLYTEK_TTS_APP_ID / API_KEY / API_SECRET）",
         )
     try:
         audio = await asyncio.to_thread(synthesize_speech, body.text, voice=body.voice)
@@ -26,7 +27,7 @@ async def tts_synthesize(body: TtsSynthesizeRequest) -> Response:
     except Exception as exc:
         raise HTTPException(
             status.HTTP_502_BAD_GATEWAY,
-            f"CosyVoice 合成失败：{exc}",
+            f"科大讯飞语音合成失败：{exc}",
         ) from exc
 
     return Response(

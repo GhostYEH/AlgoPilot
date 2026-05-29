@@ -7,7 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # .env 示例占位符，勿当作真实密钥
 _LLM_PLACEHOLDER_RE = re.compile(
-    r"请替换|你的星火|你的百炼|changeme|replace.?me|xxx+",
+    r"请替换|你的星火|你的百炼|你的讯飞|changeme|replace.?me|xxx+",
     re.IGNORECASE,
 )
 
@@ -60,23 +60,32 @@ class Settings(BaseSettings):
     def llm_provider(self) -> str:
         return "spark"
 
-    # 阿里云百炼 DashScope · CosyVoice 语音合成
-    dashscope_api_key: str = Field(
+    # 科大讯飞在线语音合成（流式 WebAPI v2）
+    iflytek_tts_app_id: str = Field(
         default="",
-        validation_alias=AliasChoices("DASHSCOPE_API_KEY", "BAILIAN_API_KEY"),
+        validation_alias=AliasChoices("IFLYTEK_TTS_APP_ID", "XFYUN_APP_ID"),
     )
-    tts_model: str = Field(
-        default="cosyvoice-v3-flash",
-        validation_alias=AliasChoices("TTS_MODEL", "COSYVOICE_MODEL"),
+    iflytek_tts_api_key: str = Field(
+        default="",
+        validation_alias=AliasChoices("IFLYTEK_TTS_API_KEY", "XFYUN_API_KEY"),
+    )
+    iflytek_tts_api_secret: str = Field(
+        default="",
+        validation_alias=AliasChoices("IFLYTEK_TTS_API_SECRET", "XFYUN_API_SECRET"),
     )
     tts_voice: str = Field(
-        default="longanyang",
-        validation_alias=AliasChoices("TTS_VOICE", "COSYVOICE_VOICE"),
+        default="x4_xiaoyan",
+        validation_alias=AliasChoices("TTS_VOICE", "TTS_VCN", "IFLYTEK_TTS_VCN"),
     )
 
     @property
     def tts_configured(self) -> bool:
-        return bool(self.dashscope_api_key.strip())
+        app_id = self.iflytek_tts_app_id.strip()
+        api_key = self.iflytek_tts_api_key.strip()
+        api_secret = self.iflytek_tts_api_secret.strip()
+        if not (app_id and api_key and api_secret):
+            return False
+        return not any(_is_llm_placeholder(v) for v in (app_id, api_key, api_secret))
 
 
 settings = Settings()

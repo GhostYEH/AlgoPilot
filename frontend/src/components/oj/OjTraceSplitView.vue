@@ -160,9 +160,9 @@ onUnmounted(() => {
 }
 
 .oj-trace-split__left {
-  flex: 1 1 50%;
+  flex: 1 1 46%;
   min-width: 0;
-  max-width: 50%;
+  max-width: 46%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -196,8 +196,8 @@ onUnmounted(() => {
 }
 
 .oj-trace-split__right--ready {
-  flex: 1 1 50%;
-  max-width: 50%;
+  flex: 1 1 54%;
+  max-width: 54%;
   opacity: 1;
 }
 
@@ -227,7 +227,7 @@ onUnmounted(() => {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 0 12px 12px;
+  padding: 0 16px 12px;
 }
 
 .oj-trace-split__viz :deep(.code-trace-panel) {
@@ -324,6 +324,18 @@ onUnmounted(() => {
   }
 }
 
+@media (min-width: 1440px) {
+  .oj-trace-split__left {
+    flex-basis: 44%;
+    max-width: 44%;
+  }
+
+  .oj-trace-split__right--ready {
+    flex-basis: 56%;
+    max-width: 56%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .oj-trace-split__left,
   .oj-trace-split__right {
@@ -333,8 +345,15 @@ onUnmounted(() => {
   }
 
   .oj-trace-split__right--ready {
-    flex: 1 1 50%;
-    max-width: 50%;
+    flex: 1 1 54%;
+    max-width: 54%;
+  }
+}
+
+@media (max-width: 900px) and (prefers-reduced-motion: reduce) {
+  .oj-trace-split__right--ready {
+    flex: 1 1 55%;
+    max-width: none;
   }
 }
 </style>

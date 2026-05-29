@@ -1,0 +1,13 @@
+{
+  "id": "interview_practical",
+  "name": "冲刺大厂面试 / 偏好实操",
+  "summary": "已有刷题经验，希望用高频题型、复杂度约束和工程调试提升稳定 AC 率。",
+  "dimensions": {
+    "knowledge_base": "掌握基础结构，动态规划和贪心证明仍需强化",
+    "cognitive_style": "偏好代码实操、对比题型和复杂度表格",
+    "coding_ability": "能独立实现中等题，偶发边界和状态定义错误",
+    "learning_goals": "冲刺面试高频题，提升一次通过率",
+    "error_preference": "状态转移、贪心证明、哈希均摊前提、双指针边界",
+    "grit_level": "抗挫折较强，希望反馈直接指出根因"
+  }
+}

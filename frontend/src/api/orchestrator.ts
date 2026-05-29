@@ -96,8 +96,9 @@ export const RESOURCE_TYPE_META: Record<
   exercises: { label: '个性化题单', agentName: 'QuizAgent', color: '#f59e0b' },
   code_case: { label: '剧本沙盒', agentName: 'ScenarioAgent', color: '#ef4444' },
   trace_animation: { label: '轨迹动画', agentName: 'TraceAgent', color: '#ec4899' },
-  reading: { label: '拓展阅读', agentName: 'ConceptAgent', color: '#10b981' },
-  video_script: { label: '教学动画', agentName: 'TraceAgent', color: '#ec4899' },
+  ppt: { label: 'PPT 胶片', agentName: 'PptAgent', color: '#06b6d4' },
+  video_script: { label: '短视频脚本', agentName: 'VideoScriptAgent', color: '#ec4899' },
+  reading: { label: '分层阅读', agentName: 'ReadingAgent', color: '#10b981' },
 }
 
 export interface AgentInfo {

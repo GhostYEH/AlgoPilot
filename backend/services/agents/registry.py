@@ -50,6 +50,24 @@ AGENT_REGISTRY: list[AgentMeta] = [
         "role": "动画总导演 · 执行轨迹动画",
         "layer": "resource",
     },
+    {
+        "id": "PptAgent",
+        "display_name": "PptAgent",
+        "role": "核心知识胶片导演 · PPT 大纲页面预览",
+        "layer": "resource",
+    },
+    {
+        "id": "VideoScriptAgent",
+        "display_name": "VideoScriptAgent",
+        "role": "教学短视频分镜导演 · 60 秒脚本 + TTS 试听文案",
+        "layer": "resource",
+    },
+    {
+        "id": "ReadingAgent",
+        "display_name": "ReadingAgent",
+        "role": "学术/工程阅读策展人 · 基础/进阶/挑战分层阅读",
+        "layer": "resource",
+    },
     {"id": "PlannerAgent", "display_name": "PlannerAgent", "role": "千人千面学习路径 DAG 规划", "layer": "path"},
     {
         "id": "LearningPathAgent",
@@ -79,9 +97,9 @@ RESOURCE_TYPE_TO_AGENT: dict[str, str] = {
     "exercises": "QuizAgent",
     "code_case": "ScenarioAgent",
     "trace_animation": "TraceAgent",
-    # 兼容旧类型
-    "reading": "ConceptAgent",
-    "video_script": "TraceAgent",
+    "ppt": "PptAgent",
+    "video_script": "VideoScriptAgent",
+    "reading": "ReadingAgent",
 }
 
 

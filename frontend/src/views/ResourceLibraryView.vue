@@ -12,6 +12,7 @@ import {
   Reading,
   Monitor,
   VideoCamera,
+  DataBoard,
   Box,
   CircleCheck,
   Clock,
@@ -31,6 +32,7 @@ import { isLoggedIn } from '@/stores/auth'
 import { usePersonaUi } from '@/composables/usePersonaUiProvider'
 import { fuzzyFilter } from '@/utils/fuzzySearch'
 import ResourceContentPreview from '@/components/resources/ResourceContentPreview.vue'
+import SafetyValidationPanel from '@/components/resources/SafetyValidationPanel.vue'
 
 const personaUi = usePersonaUi()
 const showWorkflowDetail = computed(() => personaUi.value.graphDetail !== 'minimal')
@@ -41,6 +43,8 @@ const TYPE_ICONS: Record<string, Component> = {
   exercises: EditPen,
   reading: Reading,
   code_case: Monitor,
+  trace_animation: VideoCamera,
+  ppt: DataBoard,
   video_script: VideoCamera,
 }
 
@@ -222,7 +226,7 @@ async function onGenerateAll() {
           if (reused > 0) {
             ElMessage.success(`完成：${reused} 项画像未变已复用，其余已生成/校验`)
           } else {
-            ElMessage.success('五类核心资源已全部生成（含校验闭环）')
+            ElMessage.success('比赛展示资源已全部生成（含校验闭环）')
           }
           progressPercent.value = 100
         },
@@ -338,7 +342,7 @@ function verifyTag(meta: Record<string, unknown>) {
       <div class="agents-section">
         <div class="section-head">
           <h3 class="section-title">智能体矩阵</h3>
-          <span class="section-badge">{{ generatedCount }} / 6 已生成</span>
+          <span class="section-badge">{{ generatedCount }} / 8 已生成</span>
         </div>
         <div class="type-grid">
           <div
@@ -504,6 +508,10 @@ function verifyTag(meta: Record<string, unknown>) {
                 :resource-type="activeResource.resource_type"
                 :content="activeResource.content"
                 :meta="activeResource.meta"
+              />
+              <SafetyValidationPanel
+                :meta="activeResource.meta"
+                :resource-type="activeResource.resource_type"
               />
               <p
                 v-if="

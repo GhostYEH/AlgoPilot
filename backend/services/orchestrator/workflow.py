@@ -27,7 +27,7 @@ RESOURCE_PIPELINE_STAGES = [
 MAX_VERIFY_RETRIES = 2
 
 # trace_animation 由 TraceAgent 内部调用 trace_runner，跳过文本校验回流
-_SKIP_VERIFY_TYPES = frozenset({"trace_animation", "video_script"})
+_SKIP_VERIFY_TYPES = frozenset({"trace_animation"})
 
 
 class ResourceGenerationWorkflow:
@@ -154,7 +154,6 @@ class ResourceGenerationWorkflow:
 
         ctx.update_from_resource(resource_type, content)
         gen_meta["collaboration_log"] = list(ctx.collaboration_log)
-        gen_meta["agent_logs"] = list(ctx.agent_logs)
 
         await _emit("safety_filter", "SafetyAgent", "running")
         safe_text, safety_logs, passed_safety = safety_agent.audit(
@@ -186,6 +185,20 @@ class ResourceGenerationWorkflow:
             for w in [entry.get("detail", "")]
             if w
         ]
+        gen_meta["safety_panel"] = {
+            "shield": "green" if passed and passed_safety else "yellow",
+            "knowledge_source": _source_label(gen_meta.get("knowledge_refs") or [], module_key),
+            "complexity_verified": bool(passed),
+            "sensitive_filter_passed": bool(passed_safety),
+            "agents": ["ContentVerifierAgent", "SafetyAgent"],
+            "oj_sandbox": {
+                "time_limit": "Python trace 8s / OJ 题目级限时",
+                "memory_limit": "题目级内存限制",
+                "syscall_policy": "禁用 system/fork/exec 与危险头文件",
+                "isolation": "子进程执行；生产部署建议 Docker/容器隔离",
+            },
+        }
+        gen_meta["agent_logs"] = list(ctx.agent_logs)
         await _emit(
             "safety_filter",
             "SafetyAgent",
@@ -205,3 +218,11 @@ class ResourceGenerationWorkflow:
 
 
 resource_workflow = ResourceGenerationWorkflow()
+
+
+def _source_label(refs: list[str], module_key: str) -> str:
+    if refs:
+        return "、".join(str(r) for r in refs[:3])
+    if module_key:
+        return f"knowledge_base/{module_key}"
+    return "课程知识库检索片段"

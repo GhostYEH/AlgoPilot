@@ -17,7 +17,7 @@ function stopPlayback() {
   }
 }
 
-/** 教案「AI 朗读」→ 后端 CosyVoice（cosyvoice-v3-flash）合成 MP3 并播放 */
+/** 教案「AI 朗读」→ 后端科大讯飞 TTS 合成 MP3 并播放 */
 export function useArticleTts() {
   const reading = ref(false)
 
@@ -46,7 +46,7 @@ export function useArticleTts() {
         stopPlayback()
       }
       await activeAudio.play()
-      ElMessage.success('正在播放（CosyVoice · 百炼）')
+      ElMessage.success('正在播放（科大讯飞语音合成）')
     } catch {
       stopPlayback()
     } finally {

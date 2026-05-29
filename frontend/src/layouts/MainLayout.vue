@@ -69,7 +69,7 @@ function onLogout() {
         <div class="logo-mark" aria-hidden="true">AP</div>
         <div class="brand-text">
           <span class="brand-title">AlgoPilot</span>
-          <span class="brand-sub">Personalized · Multi-Agent Learning</span>
+          <span class="brand-sub">讯飞星火 Spark · iFlytek TTS</span>
         </div>
       </div>
 
@@ -167,6 +167,7 @@ function onLogout() {
   position: sticky;
   top: 0;
   z-index: 20;
+  min-width: 0;
 }
 
 .header-brand {
@@ -212,6 +213,13 @@ function onLogout() {
   min-width: 0;
   border-bottom: none !important;
   height: var(--alp-header-height, 60px) !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.header-menu::-webkit-scrollbar {
+  display: none;
 }
 
 .header-menu :deep(.el-menu-item) {
@@ -230,6 +238,7 @@ function onLogout() {
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
+  min-width: 0;
 }
 
 .user-name {
@@ -294,6 +303,43 @@ function onLogout() {
 
   .header-menu :deep(.el-menu-item span) {
     display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-header {
+    gap: 8px;
+    padding: 0 12px;
+  }
+
+  .logo-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+  }
+
+  .brand-title {
+    max-width: 72px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .header-menu {
+    flex: 1 1 72px;
+  }
+
+  .header-menu :deep(.el-menu-item) {
+    padding: 0 10px;
+  }
+
+  .header-actions {
+    gap: 6px;
+  }
+
+  .header-actions :deep(.el-button) {
+    padding-left: 9px;
+    padding-right: 9px;
   }
 }
 </style>

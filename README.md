@@ -37,7 +37,7 @@ AlgoPilot 将 **代码执行轨迹追踪（Trace Engine）** 与 **大模型多�
 |--------|----------------------|
 | **对话式画像** | 破冰引导 + `ProfilingAgent` 抽取六维文本与 **1–10 分** → `PersonaRadarChart` |
 | **DAG 学习路径** | `LearningPathAgent` 拓扑排序 + 画像分数启发式 + `prerequisites` / `difficulty` |
-| **资源铸造** | `CORE_RESOURCE_PIPELINE` 五类资源；RAG → 生成 ⇄ 校验 → `SafetyAgent` |
+| **资源铸造** | `CORE_RESOURCE_PIPELINE` 八类资源（含 PPT、短视频脚本、分层阅读）；RAG → 生成 ⇄ 校验 → `SafetyAgent` |
 | **学情自适应** | 连续 3 次 WA/RE/TLE/CE → `EvaluationAgent` 通知 `PlannerAgent` **插入路径巩固节点** |
 | **安全** | C++ **静态**危险调用拦截 + LLM 输出 `SafetyAgent` 审查 |
 | **轨迹可视化** | Python `settrace` / C++ `gdb_stl_extract` → `oj/trace` 组件族 |
@@ -51,21 +51,29 @@ AlgoPilot 将 **代码执行轨迹追踪（Trace Engine）** 与 **大模型多�
 
 ### 资源生成流水线（与代码一致）
 
-下列 DAG 与 `Orchestrator.describe_resource_dag_mermaid()` / `workflow.py` 一致；`generate-all` 按五类资源**依次**生成，Agent 间通过 `PipelineContext` 传递协作摘要（虚线）。
+下列 DAG 与 `Orchestrator.describe_resource_dag_mermaid()` / `workflow.py` 一致；`generate-all` 按比赛展示资源生成，Agent 间通过 `PipelineContext` 传递协作摘要（虚线）。
 
 ```mermaid
 flowchart TD
   PROFILE[ProfilingAgent<br/>六维画像] --> ORCH[Orchestrator]
+  SPARK[科大讯飞星火 Spark<br/>默认核心大模型] --> ORCH
   ORCH --> RAG[KnowledgeRetriever]
   RAG --> CONCEPT[ConceptAgent<br/>讲解文档]
   CONCEPT -.摘要.-> GRAPH[GraphAgent<br/>Mermaid图谱]
   CONCEPT -.摘要.-> QUIZ[QuizAgent<br/>3道练习题]
   QUIZ -.易错点.-> SCENARIO[ScenarioAgent<br/>剧本沙盒]
   SCENARIO -.TODO框架.-> TRACE[TraceAgent<br/>轨迹动画JSON]
+  CONCEPT -.核心提炼.-> PPT[PptAgent<br/>PPT胶片预览]
+  CONCEPT -.认知风格.-> VIDEO[VideoScriptAgent<br/>60秒短视频脚本]
+  CONCEPT -.拓展方向.-> READ[ReadingAgent<br/>三层拓展阅读]
+  VIDEO --> TTS[科大讯飞 TTS<br/>讲解音频试听]
   CONCEPT --> VERIFY{ContentVerifier}
   GRAPH --> VERIFY
   QUIZ --> VERIFY
   SCENARIO --> VERIFY
+  PPT --> VERIFY
+  VIDEO --> VERIFY
+  READ --> VERIFY
   TRACE --> SAFETY[SafetyAgent]
   VERIFY -->|passed| SAFETY
   VERIFY -->|failed| CONCEPT
@@ -90,12 +98,15 @@ flowchart LR
 |:----:|------------------|----------|
 | 🎯 | **ProfilerAgent** / `ProfilingAgent` | 自然语言破冰（预设 3 条引导语 + 用户回复）；`sync-from-stored` 抽取 **6 维**特征与量化分，驱动雷达图。 |
 | 🗺️ | **PlannerAgent** / `LearningPathAgent` | 依据画像分数与模块进度做 DAG 拓扑排序；步骤含先修边、难度档；受挫时可 **插播巩固模块**（如 DP 受挫回退数组）。 |
-| 🏭 | **Generator Swarm** | 五类资源：`document` · `mindmap` · `exercises` · `code_case` · `trace_animation`。 |
+| 🏭 | **Generator Swarm** | 八类资源：`document` · `mindmap` · `exercises` · `code_case` · `trace_animation` · `ppt` · `video_script` · `reading`。 |
 | ↳ | `ConceptAgent` | Markdown 讲解文档（流式 SSE）。 |
 | ↳ | `GraphAgent` | Mermaid 知识图谱。 |
 | ↳ | `QuizAgent` | 个性化 **3 道**练习题（选择/填空）。 |
 | ↳ | `ScenarioAgent` | 剧情沙盒 + `// TODO` 代码框架。 |
 | ↳ | `TraceAgent` | 轨迹动画 JSON（对接 Trace Runner）。 |
+| ↳ | `PptAgent` | PPT 大纲页面预览，前端轮播展示核心知识胶片。 |
+| ↳ | `VideoScriptAgent` | 60 秒教学短视频分镜脚本，生成可交给科大讯飞 TTS 的试听旁白。 |
+| ↳ | `ReadingAgent` | 基础 / 进阶 / 挑战三层拓展阅读材料。 |
 | 🚑 | `EvaluationAgent` | OJ **连续 ≥3 次** 非 AC → `POST /evaluation/oj-struggle` → 触发路径重规划（**非**自动生成教案文件）。 |
 | 🛡️ | `SafetyAgent` | 资源正文：敏感词 / 幻觉题号预警 / Prompt 注入粗检；终端输出审查结论。 |
 | 🔬 | `OjDiagnosisAgent` | **`/api/oj/.../ai/diagnose`**，不经资源 Orchestrator；边界测例 + Trace + LLM 旁白。 |
@@ -142,7 +153,7 @@ WA 代码 → ai/diagnose（OjDiagnosisAgent）
 ### 演示旁白（有限 Mock）
 
 `trace_demo_narration.py` 为**部分题目**（如 `reverse-linked-list`、`unique-paths`）提供**无 LLM** 的规则旁白，在 Trace 成功且未生成 LLM 旁白时兜底。  
-**不能**替代画像对话、五类资源生成或 AI 诊断（后者依赖 API Key）。
+**不能**替代画像对话、比赛展示资源生成或 AI 诊断（后者依赖 API Key）。
 
 ---
 
@@ -183,7 +194,12 @@ WA 代码 → ai/diagnose（OjDiagnosisAgent）
 | CPython `sys.settrace` | Python 追踪 |
 | MinGW `g++` / `gdb` | C++ 编译与 STL 追踪（**可选**，未安装时 C++ Trace/OJ 能力受限） |
 | [讯飞星火 Spark](https://www.xfyun.cn/doc/spark/X1-http.html) **OpenAI 兼容** HTTP | 默认 `lite`（Spark Lite），见 `backend/.env.example` |
+| 科大讯飞在线语音合成 WebAPI | Tutor 讲解音频、短视频分镜脚本试听，见 `backend/services/tts/iflytek_tts.py` |
 | python-jose · bcrypt | JWT 与密码哈希 |
+
+### 讯飞星火智能编程助手（iFlyCode）使用声明
+
+团队在 AlgoPilot 开发过程中使用“讯飞星火智能编程助手（iFlyCode）”辅助完成样板代码生成、单测用例草拟、Bug 排查建议、Agent Prompt 结构化和文档初稿润色。所有辅助产出均经过人工审阅、运行验证和版本管理，不直接作为未经校验的最终提交。
 
 ---
 
@@ -228,7 +244,7 @@ GitHub Actions（`.github/workflows/ci.yml`）在 push/PR 时自动执行：后�
 
 | 能力 | 说明 |
 |------|------|
-| **画像指纹增量生成** | `generate-all` 比对 persona/主题指纹，未变则复用已有五类资源（SSE `reused`） |
+| **画像指纹增量生成** | `generate-all` 比对 persona/主题指纹，未变则复用已有资源（SSE `reused`） |
 | **Quiz strict 校验** | `schemas/agent_outputs.py` + Pydantic `extra=forbid` |
 | **概念图社区发现** | `concept_clusters.py` 标签传播 → 路径规划弱簇优先 |
 | **Fuse 模糊搜索** | 资源库标题/正文拼写容错 |

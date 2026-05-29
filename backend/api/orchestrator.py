@@ -317,7 +317,7 @@ async def generate_all_resources_stream(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """流式批量生成五类核心个性化资源（Concept/Graph/Quiz/Scenario/Trace）。"""
+    """流式批量生成比赛展示资源（含 PPT、短视频脚本、拓展阅读）。"""
 
     async def event_gen():
         try:

@@ -47,8 +47,10 @@ python scripts/build_oj_data.py
 
 当前判题在宿主机 Python 子进程中执行，适合课程演示与内网部署。公网生产建议：
 
-- Docker / isolate 隔离
-- 禁止网络、限制 CPU/内存
-- 判题队列与主 API 分离
+- 限时：每次运行设置题目级超时，Trace 录制额外设置 8s 上限。
+- 限内存：生产环境通过 Docker/cgroup 按题目配置内存上限。
+- 禁止危险调用：提交前拦截 `system` / `fork` / `exec` / 危险头文件等高风险代码。
+- 隔离执行：判题逻辑与主 API 进程分离，推荐 Docker / isolate 容器隔离并关闭网络。
+- 队列化：判题队列与主 API 分离，避免恶意或异常提交拖垮服务。
 
 可选后续接入 [Judge0](https://github.com/judge0/judge0) 以支持 C++/Java 等多语言。

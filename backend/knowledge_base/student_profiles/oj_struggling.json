@@ -1,0 +1,13 @@
+{
+  "id": "oj_struggling",
+  "name": "OJ 连续受挫 / 需要降级巩固",
+  "summary": "课堂听得懂，但 OJ 连续 WA/RE，主要卡在输入输出、边界和调试方法。",
+  "dimensions": {
+    "knowledge_base": "核心概念有印象，但无法稳定迁移到代码",
+    "cognitive_style": "偏好错误轨迹回放、反例驱动和短反馈",
+    "coding_ability": "能写出大体框架，调试和隐藏测例处理弱",
+    "learning_goals": "先恢复 AC 体验，再逐步回到当前模块",
+    "error_preference": "输入格式、数组越界、空结构、死循环、返回值遗漏",
+    "grit_level": "近期挫败感强，需要小步成功和自动降级练习"
+  }
+}

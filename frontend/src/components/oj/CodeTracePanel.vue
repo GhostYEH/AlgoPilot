@@ -1088,7 +1088,7 @@ const showNarrateBtn = computed(
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 4px 2px;
+  padding: 8px;
   border-radius: 8px;
   background: var(--alp-bg-soft-block);
   border: 1px solid var(--alp-color-border);
@@ -1105,9 +1105,7 @@ const showNarrateBtn = computed(
 .trace-split-viz :deep(.trace-tree-stage) {
   flex: 1;
   min-height: 140px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
+  display: block;
 }
 
 .trace-playback-bar--split {
@@ -1227,7 +1225,7 @@ const showNarrateBtn = computed(
   min-height: 200px;
   max-height: min(480px, 52vh);
   overflow: auto;
-  padding: 4px 2px;
+  padding: 4px 8px 4px 2px;
 }
 
 .var-label {

@@ -1,0 +1,13 @@
+{
+  "textbooks": [
+    {"title": "数据结构（C语言版）", "authors": "严蔚敏、吴伟民", "usage": "中文基础教材，对齐线性表、树、图等章节。"},
+    {"title": "Introduction to Algorithms", "authors": "Cormen, Leiserson, Rivest, Stein", "usage": "复杂度分析、贪心、动态规划和图算法的理论依据。"},
+    {"title": "Algorithms, 4th Edition", "authors": "Robert Sedgewick, Kevin Wayne", "usage": "工程化算法示例与可视化讲解参考。"}
+  ],
+  "engineering_sources": [
+    {"title": "CPython list/dict implementation notes", "usage": "解释动态数组与哈希表的工程实现成本。"},
+    {"title": "C++ STL container requirements", "usage": "解释 vector、stack、queue、unordered_map 等容器接口和复杂度。"},
+    {"title": "Online judge sandbox design notes", "usage": "支撑 OJ 沙盒限时、限内存、系统调用限制与容器隔离说明。"}
+  ],
+  "citation_policy": "生成资源可以引用上述教材/材料名称，但不得编造具体页码、URL 或不存在的论文。"
+}

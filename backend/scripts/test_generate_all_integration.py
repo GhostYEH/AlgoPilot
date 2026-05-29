@@ -116,12 +116,74 @@ _MOCK_TRACE = json.dumps(
     ensure_ascii=False,
 )
 
+_MOCK_PPT = json.dumps(
+    {
+        "deck_title": "栈核心知识胶片",
+        "design_style": "图解优先",
+        "slides": [
+            {
+                "title": "栈的 LIFO 规则",
+                "subtitle": "后进先出",
+                "layout": "concept",
+                "bullets": ["push 入栈", "pop 出栈", "空栈需判定"],
+                "visual_hint": "竖向容器图",
+                "speaker_note": "强调只能从栈顶操作。",
+            }
+        ],
+    },
+    ensure_ascii=False,
+)
+
+_MOCK_VIDEO = json.dumps(
+    {
+        "title": "60 秒理解栈",
+        "duration_seconds": 60,
+        "cognitive_style": "图解",
+        "tts_preview_text": "观察栈顶元素如何变化，先入栈再出栈。",
+        "scenes": [
+            {
+                "time_range": "0-10s",
+                "visual": "标题卡片",
+                "voiceover": "栈是后进先出结构。",
+                "animation_focus": "栈顶高亮",
+            }
+        ],
+    },
+    ensure_ascii=False,
+)
+
+_MOCK_READING = json.dumps(
+    {
+        "reading_goal": "从课堂概念过渡到工程应用",
+        "levels": [
+            {
+                "level": "基础",
+                "fit_for": "初学者",
+                "items": [
+                    {
+                        "title": "数据结构教材栈章节",
+                        "type": "textbook",
+                        "why": "巩固定义",
+                        "task": "画出 push/pop 过程",
+                    }
+                ],
+            },
+            {"level": "进阶", "items": []},
+            {"level": "挑战", "items": []},
+        ],
+    },
+    ensure_ascii=False,
+)
+
 _MOCK_BY_TYPE: dict[str, str] = {
     "document": _MOCK_DOCUMENT,
     "mindmap": _MOCK_MINDMAP,
     "exercises": _MOCK_EXERCISES,
     "code_case": _MOCK_SCENARIO,
     "trace_animation": _MOCK_TRACE,
+    "ppt": _MOCK_PPT,
+    "video_script": _MOCK_VIDEO,
+    "reading": _MOCK_READING,
 }
 
 _generate_calls: list[tuple[str, str]] = []
@@ -232,8 +294,11 @@ async def _run_test() -> None:
     assert done_events[-1].get("percent") == 100
     assert done_events[-1].get("partial_failure") is not True
 
-    assert progress_parallel, "Phase 2 应标记 parallel=true"
-    assert len(progress_parallel) == 2
+    assert progress_parallel, "并行阶段应标记 parallel=true"
+    phase2_progress = [
+        e for e in progress_parallel if e.get("resource_type") in ("mindmap", "exercises")
+    ]
+    assert len(phase2_progress) == 2
 
     # 协作摘要：Phase 2 的 mindmap / exercises 应收到 ConceptAgent 摘要
     phase2_calls = [c for c in _generate_calls if c[0] in ("mindmap", "exercises")]
@@ -256,9 +321,9 @@ async def _run_test() -> None:
         f"增量日志条数 {len(batched_logs)} != done 全量 {len(final_logs)}"
     )
 
-    # 落库：五类各一条（并行 Session 亦写入同一 engine）
+    # 落库：每类展示资源各一条（并行 Session 亦写入同一 engine）
     rows = db.query(GeneratedResource).filter(GeneratedResource.user_id == user.id).all()
-    assert len(rows) == 5
+    assert len(rows) == len(CORE_RESOURCE_PIPELINE)
     assert {r.resource_type for r in rows} == set(CORE_RESOURCE_PIPELINE)
 
     # 拓扑与常量一致

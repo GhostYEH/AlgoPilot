@@ -680,15 +680,252 @@ class TraceAgent(ResourceRoleAgent):
         return json.dumps(data, ensure_ascii=False, indent=2)
 
 
+class PptAgent(ResourceRoleAgent):
+    """PPT 胶片导演：输出可由前端轮播展示的 PPT 大纲页面 JSON。"""
+
+    agent_id = "PptAgent"
+    display_name = "PptAgent"
+    role = "核心知识胶片导演 · PPT 大纲页面预览"
+
+    def system_prompt(self, hints: PersonaHints) -> str:
+        return f"""你是 PptAgent。请为高校《数据结构与算法》课程生成一组可直接渲染为轮播卡片的 PPT 胶片预览。
+
+## 个性化要求
+- 认知风格：{hints.cognitive_style or '通用'}
+- 知识基础：{hints.knowledge_base or '大一计科入门'}
+- 易错点：{hints.error_preference or '边界条件与复杂度'}
+
+## 输出规范
+输出唯一 JSON，不要 markdown 代码块：
+{{
+  "deck_title": "标题",
+  "design_style": "深色科技/清爽课堂/图解优先等",
+  "slides": [
+    {{
+      "title": "胶片标题",
+      "subtitle": "一句话副标题",
+      "layout": "title|concept|compare|steps|summary",
+      "bullets": ["要点1", "要点2", "要点3"],
+      "visual_hint": "画面/图示建议",
+      "speaker_note": "讲解备注，80字以内"
+    }}
+  ]
+}}
+
+要求：5-6 页；每页不超过 3 个 bullet；术语与知识库一致；不要编造题号、论文链接或外部 URL。"""
+
+    def temperature(self) -> float:
+        return 0.42
+
+    def max_tokens(self) -> int:
+        return 1800
+
+    def output_format(self) -> str:
+        return "ppt_preview_json"
+
+    def normalize_output(self, raw: str, *, hints: PersonaHints) -> str:
+        data = _parse_json_object(raw)
+        slides = data.get("slides") if isinstance(data, dict) else None
+        if not isinstance(slides, list) or not slides:
+            topic = hints.learning_goals[:32] or "核心算法"
+            slides = [
+                {
+                    "title": f"{topic} 的问题画像",
+                    "subtitle": "先看它解决什么问题",
+                    "layout": "title",
+                    "bullets": ["输入输出是什么", "需要维护哪些状态", "边界条件先落笔"],
+                    "visual_hint": "左侧问题场景，右侧抽象模型",
+                    "speaker_note": "用生活化问题引入，再切回严格定义。",
+                },
+                {
+                    "title": "核心结构与不变量",
+                    "subtitle": "算法正确性的锚点",
+                    "layout": "concept",
+                    "bullets": ["明确数据结构", "写出循环不变量", "每步只维护必要信息"],
+                    "visual_hint": "用高亮箭头标出状态转移或指针移动",
+                    "speaker_note": "强调不变量比记模板更重要。",
+                },
+                {
+                    "title": "复杂度与易错点",
+                    "subtitle": "从会写到写对",
+                    "layout": "summary",
+                    "bullets": ["分析最坏/均摊前提", "检查空输入", "用测试样例验证边界"],
+                    "visual_hint": "复杂度表格 + 错误警示栏",
+                    "speaker_note": "结合画像易错点做针对性提醒。",
+                },
+            ]
+        normalized = {
+            "deck_title": str(data.get("deck_title") or "核心知识胶片"),
+            "design_style": str(data.get("design_style") or "图解优先、课堂展示"),
+            "slides": [_normalize_slide(s, idx) for idx, s in enumerate(slides[:6], start=1)],
+        }
+        return json.dumps(normalized, ensure_ascii=False, indent=2)
+
+
+class VideoScriptAgent(ResourceRoleAgent):
+    """短视频分镜导演：生成 60 秒教学短视频脚本与 TTS 试听文案。"""
+
+    agent_id = "VideoScriptAgent"
+    display_name = "VideoScriptAgent"
+    role = "教学短视频分镜导演 · 60 秒脚本 + TTS 试听文案"
+
+    def system_prompt(self, hints: PersonaHints) -> str:
+        style = hints.cognitive_style or "图解 + 逐步推演"
+        return f"""你是 VideoScriptAgent。请根据学生认知风格生成 60 秒教学短视频脚本。
+
+## 学生认知风格
+{style}
+
+## 输出规范
+输出唯一 JSON，不要 markdown：
+{{
+  "title": "视频标题",
+  "duration_seconds": 60,
+  "cognitive_style": "引用或归纳学生认知风格",
+  "tts_preview_text": "可直接交给科大讯飞 TTS 的 20-40 秒试听旁白",
+  "scenes": [
+    {{
+      "time_range": "0-10s",
+      "visual": "画面描述",
+      "voiceover": "旁白文案",
+      "animation_focus": "动画重点"
+    }}
+  ]
+}}
+
+要求：6 个分镜，每个 10 秒；画面描述、旁白、动画重点必须齐全；不编造外链或题号。"""
+
+    def temperature(self) -> float:
+        return 0.48
+
+    def max_tokens(self) -> int:
+        return 1800
+
+    def output_format(self) -> str:
+        return "video_script_json"
+
+    def normalize_output(self, raw: str, *, hints: PersonaHints) -> str:
+        data = _parse_json_object(raw)
+        scenes = data.get("scenes") if isinstance(data, dict) else None
+        if not isinstance(scenes, list) or not scenes:
+            topic = hints.learning_goals[:32] or "算法核心概念"
+            scenes = [
+                {
+                    "time_range": "0-10s",
+                    "visual": "标题卡片进入，背景展示问题输入与目标输出",
+                    "voiceover": f"这 60 秒，我们抓住{topic}最关键的一条线。",
+                    "animation_focus": "问题目标高亮",
+                },
+                {
+                    "time_range": "10-20s",
+                    "visual": "把输入拆成若干元素，逐个进入处理区域",
+                    "voiceover": "先看当前状态，再决定下一步怎么更新。",
+                    "animation_focus": "当前元素与状态变量联动",
+                },
+                {
+                    "time_range": "20-30s",
+                    "visual": "核心结构以卡片/表格形式展开",
+                    "voiceover": "真正要维护的是不变量，而不是死记模板。",
+                    "animation_focus": "不变量保持不变的过程",
+                },
+                {
+                    "time_range": "30-40s",
+                    "visual": "展示一个常见错误分支并打断",
+                    "voiceover": "这里最容易漏掉边界，先把空输入和首尾位置想清楚。",
+                    "animation_focus": "错误路径变红并回退",
+                },
+                {
+                    "time_range": "40-50s",
+                    "visual": "复杂度计数器随循环推进",
+                    "voiceover": "每个元素被处理的次数，决定了整体复杂度。",
+                    "animation_focus": "访问次数统计",
+                },
+                {
+                    "time_range": "50-60s",
+                    "visual": "总结卡片列出三条记忆点",
+                    "voiceover": "最后记住：定义状态、维护不变量、验证边界。",
+                    "animation_focus": "三条要点依次定格",
+                },
+            ]
+        normalized = {
+            "title": str(data.get("title") or "60 秒算法短视频"),
+            "duration_seconds": int(data.get("duration_seconds") or 60),
+            "cognitive_style": str(data.get("cognitive_style") or hints.cognitive_style or "图解优先"),
+            "tts_preview_text": str(
+                data.get("tts_preview_text")
+                or "先看问题目标，再看状态如何变化。把不变量守住，算法就不容易写偏。"
+            )[:600],
+            "scenes": [_normalize_scene(s, idx) for idx, s in enumerate(scenes[:6])],
+        }
+        return json.dumps(normalized, ensure_ascii=False, indent=2)
+
+
+class ReadingAgent(ResourceRoleAgent):
+    """阅读策展人：基础/进阶/挑战三层拓展阅读。"""
+
+    agent_id = "ReadingAgent"
+    display_name = "ReadingAgent"
+    role = "学术/工程阅读策展人 · 基础/进阶/挑战分层阅读"
+
+    def system_prompt(self, hints: PersonaHints) -> str:
+        return f"""你是 ReadingAgent。请为高校《数据结构与算法》课程生成分层拓展阅读清单。
+
+## 个性化要求
+- 学习目标：{hints.learning_goals or '夯实课程与工程应用'}
+- 知识基础：{hints.knowledge_base or '入门'}
+- 代码能力：{hints.coding_ability or '待评估'}
+
+## 输出规范
+输出唯一 JSON，不要 markdown：
+{{
+  "reading_goal": "阅读目标",
+  "levels": [
+    {{
+      "level": "基础",
+      "fit_for": "适合人群",
+      "items": [
+        {{"title": "教材/文献/工程材料名称", "type": "textbook|paper|engineering", "why": "为什么读", "task": "读后任务"}}
+      ]
+    }}
+  ]
+}}
+
+要求：必须包含「基础」「进阶」「挑战」三层；每层 2-3 条；优先使用经典教材、公开工程材料、算法课程通用材料；不要编造 URL。"""
+
+    def temperature(self) -> float:
+        return 0.35
+
+    def max_tokens(self) -> int:
+        return 1800
+
+    def output_format(self) -> str:
+        return "leveled_reading_json"
+
+    def normalize_output(self, raw: str, *, hints: PersonaHints) -> str:
+        data = _parse_json_object(raw)
+        levels = data.get("levels") if isinstance(data, dict) else None
+        if not isinstance(levels, list) or not levels:
+            levels = _fallback_reading_levels(hints)
+        normalized = {
+            "reading_goal": str(data.get("reading_goal") or "从课堂概念过渡到工程与面试应用"),
+            "levels": [_normalize_reading_level(l) for l in levels],
+        }
+        required = {"基础", "进阶", "挑战"}
+        present = {str(l.get("level")) for l in normalized["levels"]}
+        for missing in required - present:
+            normalized["levels"].append(_normalize_reading_level({"level": missing, "items": []}))
+        return json.dumps(normalized, ensure_ascii=False, indent=2)
+
+
 ROLE_AGENT_BY_TYPE: dict[ResourceType, ResourceRoleAgent] = {
     "document": ConceptAgent(),
     "mindmap": GraphAgent(),
     "exercises": QuizAgent(),
     "code_case": ScenarioAgent(),
     "trace_animation": TraceAgent(),
-    # 兼容旧类型别名
-    "reading": ConceptAgent(),
-    "video_script": TraceAgent(),
+    "ppt": PptAgent(),
+    "video_script": VideoScriptAgent(),
+    "reading": ReadingAgent(),
 }
 
 
@@ -751,6 +988,128 @@ def _fallback_trace_payload(*, topic: str) -> dict[str, Any]:
         "steps": [],
         "verdict": "PENDING",
         "trace_source": "fallback_template",
+    }
+
+
+def _normalize_slide(raw: Any, idx: int) -> dict[str, Any]:
+    item = raw if isinstance(raw, dict) else {}
+    bullets = item.get("bullets")
+    if not isinstance(bullets, list):
+        bullets = []
+    bullets = [str(b).strip() for b in bullets if str(b).strip()][:3]
+    if not bullets:
+        bullets = ["核心概念", "关键步骤", "易错提醒"]
+    return {
+        "title": str(item.get("title") or f"核心知识胶片 {idx}"),
+        "subtitle": str(item.get("subtitle") or "个性化课堂预览"),
+        "layout": str(item.get("layout") or "concept"),
+        "bullets": bullets,
+        "visual_hint": str(item.get("visual_hint") or "用结构图展示核心状态变化"),
+        "speaker_note": str(item.get("speaker_note") or "围绕知识库术语进行讲解。")[:160],
+    }
+
+
+def _normalize_scene(raw: Any, idx: int) -> dict[str, str]:
+    item = raw if isinstance(raw, dict) else {}
+    start = idx * 10
+    return {
+        "time_range": str(item.get("time_range") or f"{start}-{start + 10}s"),
+        "visual": str(item.get("visual") or "展示算法状态变化画面"),
+        "voiceover": str(item.get("voiceover") or "观察当前状态，并说明下一步更新依据。"),
+        "animation_focus": str(item.get("animation_focus") or "高亮当前元素、状态变量与边界条件"),
+    }
+
+
+def _fallback_reading_levels(hints: PersonaHints) -> list[dict[str, Any]]:
+    topic = hints.learning_goals[:32] or "数据结构与算法"
+    return [
+        {
+            "level": "基础",
+            "fit_for": hints.knowledge_base or "概念尚不稳定的学习者",
+            "items": [
+                {
+                    "title": "《数据结构（C语言版）》相关章节",
+                    "type": "textbook",
+                    "why": f"用于补齐{topic}的定义、存储结构与基本操作。",
+                    "task": "整理 5 个关键术语，并用自己的话复述。",
+                },
+                {
+                    "title": "《算法导论》基础数据结构章节",
+                    "type": "textbook",
+                    "why": "建立抽象数据类型、循环不变量与复杂度分析的标准表达。",
+                    "task": "为一个例题写出输入、输出和复杂度。",
+                },
+            ],
+        },
+        {
+            "level": "进阶",
+            "fit_for": "已能完成基础题、希望提升建模能力的学习者",
+            "items": [
+                {
+                    "title": "《算法》第 4 版相关算法范式章节",
+                    "type": "textbook",
+                    "why": "通过工程化示例理解同一结构在不同问题中的复用方式。",
+                    "task": "对比两道题的状态定义或数据结构选择。",
+                },
+                {
+                    "title": "CPython / STL 容器实现说明",
+                    "type": "engineering",
+                    "why": "理解列表、哈希表、树形结构在真实运行时中的成本。",
+                    "task": "写出一次操作的均摊/最坏复杂度前提。",
+                },
+            ],
+        },
+        {
+            "level": "挑战",
+            "fit_for": "准备竞赛、考研或大厂面试的学习者",
+            "items": [
+                {
+                    "title": "经典动态规划与贪心正确性证明材料",
+                    "type": "paper",
+                    "why": "训练从经验解法上升到可证明策略的能力。",
+                    "task": "用交换论证或归纳法证明一个策略正确。",
+                },
+                {
+                    "title": "开源判题系统沙盒与资源隔离设计资料",
+                    "type": "engineering",
+                    "why": "理解算法平台如何限制时间、内存与系统调用。",
+                    "task": "画出一次提交从编译到运行隔离的流程图。",
+                },
+            ],
+        },
+    ]
+
+
+def _normalize_reading_level(raw: Any) -> dict[str, Any]:
+    item = raw if isinstance(raw, dict) else {}
+    level = str(item.get("level") or "基础")
+    entries = item.get("items")
+    if not isinstance(entries, list):
+        entries = []
+    normalized_items = []
+    for entry in entries[:3]:
+        e = entry if isinstance(entry, dict) else {}
+        normalized_items.append(
+            {
+                "title": str(e.get("title") or "课程拓展材料"),
+                "type": str(e.get("type") or "textbook"),
+                "why": str(e.get("why") or "巩固课程知识点并连接工程实践。"),
+                "task": str(e.get("task") or "读后写出 3 条要点。"),
+            }
+        )
+    if not normalized_items:
+        normalized_items.append(
+            {
+                "title": f"{level}层拓展阅读材料",
+                "type": "textbook",
+                "why": "围绕当前模块补齐知识深度。",
+                "task": "完成一页读书摘要。",
+            }
+        )
+    return {
+        "level": level,
+        "fit_for": str(item.get("fit_for") or f"{level}学习者"),
+        "items": normalized_items,
     }
 
 

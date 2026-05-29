@@ -388,6 +388,7 @@ watch(activeContainer, (id) => {
       <div class="pg-hero-meta">
         <span class="pg-chip">纯前端 Mock</span>
         <span class="pg-chip">trace_viz 协议</span>
+        <span class="pg-chip">OJ 沙盒：限时 / 限内存 / 禁危险调用</span>
         <span class="pg-chip">Step {{ stepIndex }}</span>
       </div>
     </header>
@@ -454,6 +455,16 @@ watch(activeContainer, (id) => {
             <span>traceStep.changed</span>
             <code>{{ JSON.stringify(lastTraceStep.changed) }}</code>
           </div>
+        </section>
+
+        <section class="pg-panel pg-panel--sandbox">
+          <h2 class="pg-panel-title">沙盒安全限制</h2>
+          <ul class="pg-sandbox-list">
+            <li>限时执行：样例运行与 Trace 均设置超时上限。</li>
+            <li>内存限制：生产部署按题目配置 cgroup / 容器内存。</li>
+            <li>危险调用：拦截 system / fork / exec 与危险头文件。</li>
+            <li>隔离策略：判题子进程执行，答辩部署建议 Docker 隔离。</li>
+          </ul>
         </section>
 
         <section v-if="operationLog.length" class="pg-panel pg-panel--log">
@@ -721,6 +732,14 @@ watch(activeContainer, (id) => {
 .pg-log-list li {
   padding: 4px 0;
   border-bottom: 1px solid color-mix(in srgb, var(--alp-color-border) 60%, transparent);
+}
+
+.pg-sandbox-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--alp-color-muted);
+  font-size: 12px;
+  line-height: 1.7;
 }
 
 .pg-canvas {

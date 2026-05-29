@@ -86,7 +86,7 @@ async function runResourceGeneration() {
         onProgress(p) {
           pushLine(lineFromProgress(p))
           if (typeof p.percent === 'number') progress.value = p.percent
-          activeResourceTab.value = p.resource_type === 'video_script' ? 'trace_animation' : p.resource_type
+          activeResourceTab.value = p.resource_type
         },
         onWorkflow(w) {
           if (w.status === 'done') markRunningDone(w.agent)
@@ -104,8 +104,7 @@ async function runResourceGeneration() {
             r,
             ...generatedResources.value.filter((x) => x.id !== r.id),
           ]
-          const key = r.resource_type === 'video_script' ? 'trace_animation' : r.resource_type
-          activeResourceTab.value = key
+          activeResourceTab.value = r.resource_type
           pushLine(
             systemLine(
               `${r.agent_name} 已落库 · ${r.title.slice(0, 40)}`,
@@ -120,8 +119,8 @@ async function runResourceGeneration() {
             pushLine(systemLine(`部分资源生成失败（${failed}），其余已装配完毕`, 'warn'))
             ElMessage.warning(`${failed} 生成失败，其余资源已就绪`)
           } else {
-            pushLine(systemLine('个性化自适应资源装配完毕！', 'success'))
-            ElMessage.success('五类个性化资源已全部生成')
+            pushLine(systemLine('比赛展示型个性化资源装配完毕！', 'success'))
+            ElMessage.success('比赛展示资源已全部生成')
           }
         },
         onError(msg) {
@@ -149,7 +148,7 @@ function agentStatus(id: string): 'running' | 'idle' {
   <div class="workbench-page">
     <div class="wb-hero">
       <el-page-header title="多智能体协同工作台" @back="router.push({ name: 'home' })" />
-      <p class="wb-desc">{{ note || 'ProfilingAgent 驱动五类资源 Agent 协同生成 · 赛题答辩演示入口' }}</p>
+      <p class="wb-desc">{{ note || 'ProfilingAgent 驱动比赛展示资源 Agent 协同生成 · 赛题答辩演示入口' }}</p>
     </div>
 
     <section class="wb-generate">
@@ -183,7 +182,7 @@ function agentStatus(id: string): 'running' | 'idle' {
       :progress="progress"
       mode="resource"
       title="Agent Synergy Terminal"
-      subtitle="Concept → Graph → Quiz → Scenario → Trace"
+      subtitle="Concept → Graph → Quiz → Scenario → Trace → PPT → Video → Reading"
       class="wb-console"
     />
 
@@ -199,7 +198,7 @@ function agentStatus(id: string): 'running' | 'idle' {
         <div class="dag-visual">
           <div class="dag-node">KnowledgeRetriever</div>
           <span class="dag-arrow">→</span>
-          <div class="dag-node accent">五类 Role Agents</div>
+          <div class="dag-node accent">八类 Role Agents</div>
           <span class="dag-arrow">→</span>
           <div class="dag-node warn">Verifier</div>
           <span class="dag-arrow">→</span>

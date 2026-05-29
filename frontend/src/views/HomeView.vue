@@ -19,7 +19,7 @@ import HomeDashboardCharts from '@/components/home/HomeDashboardCharts.vue'
 import HomeCommunityPanel from '@/components/home/HomeCommunityPanel.vue'
 import HomeTrainingSection from '@/components/home/HomeTrainingSection.vue'
 import HomeSortDemo from '@/components/home/HomeSortDemo.vue'
-import { ALGORITHM_MODULES, MODULE_ROUTE_NAMES } from '@/constants/modules'
+import { ALGORITHM_MODULES, MODULE_PHASE_LABELS, MODULE_ROUTE_NAMES } from '@/constants/modules'
 import { getApiBaseUrl } from '@/utils/apiBase'
 import { buildLearningOverview } from '@/utils/learningOverview'
 import { prefetchRoute } from '@/router/prefetch'
@@ -45,7 +45,6 @@ const router = useRouter()
 const route = useRoute()
 
 const asideCollapsed = ref(false)
-const asideWidth = computed(() => (asideCollapsed.value ? '72px' : '268px'))
 
 const activeModule = ref<string>(ALGORITHM_MODULES[0]?.key ?? 'array')
 
@@ -75,6 +74,22 @@ const progressSummary = computed(() => ({
   tracked: overview.value.trackedModules,
   completed: overview.value.completedModules,
 }))
+
+const phaseGroups = computed(() =>
+  (Object.keys(MODULE_PHASE_LABELS) as Array<keyof typeof MODULE_PHASE_LABELS>).map((phase) => ({
+    phase,
+    label: MODULE_PHASE_LABELS[phase],
+    modules: ALGORITHM_MODULES.filter((m) => m.phase === phase),
+  })),
+)
+
+const selectedModule = computed(
+  () => ALGORITHM_MODULES.find((m) => m.key === activeModule.value) ?? ALGORITHM_MODULES[0],
+)
+
+function progressFor(key: string) {
+  return overview.value.rows.find((row) => row.key === key)?.percent ?? 0
+}
 
 const hasRealProgress = computed(() => overview.value.trackedModules > 0)
 
@@ -214,375 +229,670 @@ onMounted(async () => {
 </script>
 
 <template>
-  <el-container class="home-layout" :style="{ '--home-aside-width': asideWidth }">
-    <el-aside :width="asideWidth" class="home-aside">
-      <div class="aside-toolbar">
-        <span v-show="!asideCollapsed" class="aside-title">学习地图</span>
-        <el-button
-          :icon="asideCollapsed ? Expand : Fold"
-          circle
-          size="small"
-          text
-          bg
-          @click="asideCollapsed = !asideCollapsed"
-        />
+  <div class="home-page">
+    <section class="home-hero">
+      <div class="hero-copy">
+        <p class="hero-kicker">软件杯 A3 · AlgoPilot</p>
+        <h1 class="hero-title">算法学习驾驶舱</h1>
+        <p class="hero-desc">
+          用阶段化学习地图串起讲义、OJ、Trace 动画、游戏化练习与多智能体资源生成，答辩现场可一屏展示完整教学闭环。
+        </p>
+        <div class="hero-actions">
+          <el-button type="primary" size="large" :icon="ArrowRight" @click="continueLearning">
+            {{ overview.nextModule ? `继续：${overview.nextModule.label}` : '开始学习路径' }}
+          </el-button>
+          <el-button
+            size="large"
+            plain
+            :icon="Cpu"
+            @mouseenter="prefetchRoute('/practice')"
+            @click="router.push({ name: 'practice-list' })"
+          >
+            进入在线 OJ
+          </el-button>
+        </div>
       </div>
 
-      <el-scrollbar class="aside-scroll">
-        <AlgorithmLearningMap
-          :collapsed="asideCollapsed"
-          :active-key="activeModule"
-          @select="onModuleSelect"
-        />
-      </el-scrollbar>
-    </el-aside>
+      <div class="hero-stats">
+        <div class="stat-card">
+          <el-icon :size="20"><Trophy /></el-icon>
+          <div>
+            <strong>{{ progressSummary.overallPercent }}%</strong>
+            <span>平均章节进度</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <el-icon :size="20"><Timer /></el-icon>
+          <div>
+            <strong>{{ progressSummary.completed }}/{{ progressSummary.tracked || '—' }}</strong>
+            <span>已学完模块</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <el-icon :size="20"><Connection /></el-icon>
+          <div>
+            <strong v-if="healthStatus === 'checking'">…</strong>
+            <strong v-else-if="healthStatus === 'ok'">在线</strong>
+            <strong v-else>离线</strong>
+            <span>判题服务</span>
+          </div>
+        </div>
+        <div v-if="ojReadyCount != null" class="stat-card accent">
+          <el-icon :size="20"><Cpu /></el-icon>
+          <div>
+            <strong>{{ ojReadyCount }}</strong>
+            <span>可判题数量</span>
+          </div>
+        </div>
+      </div>
+    </section>
 
-    <el-container direction="vertical" class="home-right">
-      <section class="home-hero">
-        <div class="hero-copy">
-          <p class="hero-kicker">软件杯 · 算法智能学习平台</p>
-          <h1 class="hero-title">可视化讲义 + 在线判题，一站打通算法学习</h1>
-          <p class="hero-desc">
-            沿左侧学习地图进入各模块；右侧可查看真实学习进度、快捷进入 OJ 与路径规划。
+    <section class="map-command">
+      <div class="map-board">
+        <div class="map-board-head">
+          <div>
+            <p class="section-kicker">Course Knowledge Map</p>
+            <h2>阶段星轨学习地图</h2>
+          </div>
+          <div class="map-legend">
+            <span><i class="legend-dot done" /> 已完成</span>
+            <span><i class="legend-dot active" /> 当前聚焦</span>
+            <span><i class="legend-dot idle" /> 待学习</span>
+          </div>
+        </div>
+
+        <div class="phase-lanes">
+          <section v-for="group in phaseGroups" :key="group.phase" class="phase-lane">
+            <div class="phase-head">
+              <span>{{ group.label }}</span>
+              <small>{{ group.modules.length }} modules</small>
+            </div>
+            <div class="module-track">
+              <button
+                v-for="(module, index) in group.modules"
+                :key="module.key"
+                type="button"
+                class="module-node"
+                :class="{
+                  active: activeModule === module.key,
+                  done: progressFor(module.key) === 100,
+                  progress: progressFor(module.key) > 0 && progressFor(module.key) < 100,
+                  locked: !module.available,
+                }"
+                :style="{ '--node-accent': module.accent }"
+                @mouseenter="activeModule = module.key"
+                @focus="activeModule = module.key"
+                @click="onModuleSelect(module.key)"
+              >
+                <span class="module-index">{{ String(index + 1).padStart(2, '0') }}</span>
+                <span class="module-name">{{ module.label }}</span>
+                <span class="module-progress">{{ progressFor(module.key) }}%</span>
+              </button>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <aside class="map-inspector">
+        <div class="inspector-card selected-module">
+          <span class="inspector-label">当前模块</span>
+          <h3>{{ selectedModule?.label }}</h3>
+          <el-progress
+            :percentage="selectedModule ? progressFor(selectedModule.key) : 0"
+            :stroke-width="8"
+          />
+          <p>
+            {{ selectedModule?.available ? '课程内容已接入，可直接进入学习页。' : '模块已纳入知识体系，后续可扩展完整学习页。' }}
           </p>
-          <div class="hero-actions">
-            <el-button type="primary" size="large" :icon="ArrowRight" @click="continueLearning">
-              {{ overview.nextModule ? `继续：${overview.nextModule.label}` : '开始学习路径' }}
-            </el-button>
-            <el-button
-              size="large"
-              plain
-              :icon="Cpu"
-              @mouseenter="prefetchRoute('/practice')"
-              @click="router.push({ name: 'practice-list' })"
-            >
-              进入在线 OJ
-            </el-button>
-          </div>
+          <el-button type="primary" plain :icon="ArrowRight" @click="selectedModule && onModuleSelect(selectedModule.key)">
+            打开模块
+          </el-button>
         </div>
 
-        <div class="hero-stats">
-          <div class="stat-card">
-            <el-icon :size="20"><Trophy /></el-icon>
-            <div>
-              <strong>{{ progressSummary.overallPercent }}%</strong>
-              <span>平均章节进度</span>
-            </div>
+        <div class="inspector-card compact-map">
+          <div class="compact-head">
+            <span class="inspector-label">纵向路径索引</span>
+            <el-button
+              :icon="asideCollapsed ? Expand : Fold"
+              circle
+              size="small"
+              text
+              bg
+              @click="asideCollapsed = !asideCollapsed"
+            />
           </div>
-          <div class="stat-card">
-            <el-icon :size="20"><Timer /></el-icon>
-            <div>
-              <strong>{{ progressSummary.completed }}/{{ progressSummary.tracked || '—' }}</strong>
-              <span>已学完模块</span>
-            </div>
-          </div>
-          <div class="stat-card">
-            <el-icon :size="20"><Connection /></el-icon>
-            <div>
-              <strong v-if="healthStatus === 'checking'">…</strong>
-              <strong v-else-if="healthStatus === 'ok'">在线</strong>
-              <strong v-else>离线</strong>
-              <span>判题服务</span>
-            </div>
-          </div>
-          <div v-if="ojReadyCount != null" class="stat-card accent">
-            <el-icon :size="20"><Cpu /></el-icon>
-            <div>
-              <strong>{{ ojReadyCount }}</strong>
-              <span>可判题数量</span>
-            </div>
-          </div>
+          <el-scrollbar max-height="300px">
+            <AlgorithmLearningMap
+              :collapsed="asideCollapsed"
+              :active-key="activeModule"
+              @select="onModuleSelect"
+            />
+          </el-scrollbar>
         </div>
+      </aside>
+    </section>
+
+    <div class="home-toolbar">
+      <div class="toolbar-left">
+        <el-tag type="info" effect="dark" round size="small">快捷入口</el-tag>
+        <span class="toolbar-hint">悬停预加载页面，点击即可跳转</span>
+      </div>
+      <div class="toolbar-right">
+        <span class="health-label">后端联调</span>
+        <el-tag v-if="healthStatus === 'checking'" type="info" size="small">检测中</el-tag>
+        <el-tag v-else-if="healthStatus === 'ok'" type="success" size="small">/api/health 正常</el-tag>
+        <el-tag v-else type="danger" size="small">不可用</el-tag>
+      </div>
+    </div>
+
+    <main class="home-main">
+      <HomeAnnounceBar />
+
+      <el-row :gutter="14" class="quick-row">
+        <el-col v-for="item in quickActions" :key="item.key" :xs="24" :sm="8">
+          <button
+            type="button"
+            class="quick-card"
+            @mouseenter="prefetchRoute(item.prefetch)"
+            @click="goQuick(item.route, item.prefetch)"
+          >
+            <el-icon class="quick-icon" :size="22">
+              <component :is="item.icon" />
+            </el-icon>
+            <div class="quick-text">
+              <span class="quick-label">{{ item.label }}</span>
+              <span class="quick-desc">{{ item.desc }}</span>
+            </div>
+            <el-icon class="quick-arrow"><ArrowRight /></el-icon>
+          </button>
+        </el-col>
+      </el-row>
+
+      <el-row :gutter="16" class="analytics-row">
+        <el-col :xs="24" :lg="14" :xl="15">
+          <el-card class="hover-card analytics-card" shadow="hover">
+            <template #header>
+              <span class="card-header-title">数据可视化与进度反馈</span>
+            </template>
+            <HomeDashboardCharts
+              :radar="skillRadar"
+              :series="activitySeries"
+              :heatmap="heatmapCells"
+            />
+          </el-card>
+        </el-col>
+        <el-col :xs="24" :lg="10" :xl="9">
+          <el-card class="hover-card analytics-card community-card" shadow="hover">
+            <template #header>
+              <span class="card-header-title">社区氛围与全站数据</span>
+            </template>
+            <HomeCommunityPanel
+              :stats="platformStats"
+              :ac-board="getLeaderboardAc()"
+              :streak-board="getLeaderboardStreak()"
+              :feed="getActivityFeed()"
+            />
+          </el-card>
+        </el-col>
+      </el-row>
+
+      <section class="training-section">
+        <div class="section-head">
+          <h2 class="section-title">每日训练与复习</h2>
+          <span class="section-hint">基于学习进度与薄弱项推荐</span>
+        </div>
+        <HomeTrainingSection
+          :daily="dailyProblem"
+          :targeted="targetedProblems"
+          :review="reviewQueue"
+          :recent="recentVisits"
+          @open-problem="openPractice"
+          @open-module="onModuleSelect"
+        />
       </section>
 
-      <div class="home-toolbar">
-        <div class="toolbar-left">
-          <el-tag type="info" effect="dark" round size="small">快捷入口</el-tag>
-          <span class="toolbar-hint">悬停预加载页面，点击即可跳转</span>
-        </div>
-        <div class="toolbar-right">
-          <span class="health-label">后端联调</span>
-          <el-tag v-if="healthStatus === 'checking'" type="info" size="small">检测中</el-tag>
-          <el-tag v-else-if="healthStatus === 'ok'" type="success" size="small">/api/health 正常</el-tag>
-          <el-tag v-else type="danger" size="small">不可用</el-tag>
-        </div>
-      </div>
+      <el-row :gutter="20" class="home-top-row">
+        <el-col :xs="24" :md="10" :lg="8" :xl="6" class="home-stretch-col">
+          <el-card class="hover-card persona-card" shadow="hover">
+            <div class="card-kicker">个性化起点</div>
+            <h2 class="card-title">开启个性化学习</h2>
+            <p class="card-desc">
+              通过对话构建 6 维学习画像，并由多智能体生成个性化资源与学习路径。
+            </p>
+            <el-button
+              type="primary"
+              :icon="ChatDotRound"
+              @mouseenter="prefetchRoute('/my-learning')"
+              @click="goQuick({ name: 'my-learning', query: { tab: 'persona' } }, '/my-learning')"
+            >
+              进入画像对话
+            </el-button>
+          </el-card>
+        </el-col>
 
-      <el-main class="home-main">
-        <div class="home-main-surface">
-          <HomeAnnounceBar />
-
-          <el-row :gutter="14" class="quick-row">
-            <el-col v-for="item in quickActions" :key="item.key" :xs="24" :sm="8">
-              <button
-                type="button"
-                class="quick-card"
-                @mouseenter="prefetchRoute(item.prefetch)"
-                @click="goQuick(item.route, item.prefetch)"
-              >
-                <el-icon class="quick-icon" :size="22">
-                  <component :is="item.icon" />
-                </el-icon>
-                <div class="quick-text">
-                  <span class="quick-label">{{ item.label }}</span>
-                  <span class="quick-desc">{{ item.desc }}</span>
-                </div>
-                <el-icon class="quick-arrow"><ArrowRight /></el-icon>
-              </button>
-            </el-col>
-          </el-row>
-
-          <el-row :gutter="16" class="analytics-row">
-            <el-col :xs="24" :lg="14">
-              <el-card class="hover-card analytics-card" shadow="hover">
-                <template #header>
-                  <span class="card-header-title">数据可视化与进度反馈</span>
-                </template>
-                <HomeDashboardCharts
-                  :radar="skillRadar"
-                  :series="activitySeries"
-                  :heatmap="heatmapCells"
-                />
-              </el-card>
-            </el-col>
-            <el-col :xs="24" :lg="10">
-              <el-card class="hover-card analytics-card community-card" shadow="hover">
-                <template #header>
-                  <span class="card-header-title">社区氛围与全站数据</span>
-                </template>
-                <HomeCommunityPanel
-                  :stats="platformStats"
-                  :ac-board="getLeaderboardAc()"
-                  :streak-board="getLeaderboardStreak()"
-                  :feed="getActivityFeed()"
-                />
-              </el-card>
-            </el-col>
-          </el-row>
-
-          <section class="training-section">
-            <div class="section-head">
-              <h2 class="section-title">每日训练与复习</h2>
-              <span class="section-hint">基于学习进度与薄弱项推荐</span>
+        <el-col :xs="24" :md="14" :lg="8" :xl="6" class="home-stretch-col">
+          <el-card class="hover-card" shadow="hover">
+            <template #header>
+              <div class="card-header-row">
+                <span class="card-header-title">学习进度概览</span>
+                <el-tag v-if="hasRealProgress" size="small" type="success" effect="light">
+                  本地进度
+                </el-tag>
+                <el-tag v-else size="small" type="info" effect="light">尚未开始</el-tag>
+              </div>
+            </template>
+            <div class="progress-head">
+              <span>总进度</span>
+              <strong>{{ progressSummary.overallPercent }}%</strong>
             </div>
-            <HomeTrainingSection
-              :daily="dailyProblem"
-              :targeted="targetedProblems"
-              :review="reviewQueue"
-              :recent="recentVisits"
-              @open-problem="openPractice"
-              @open-module="onModuleSelect"
+            <el-progress
+              :percentage="progressSummary.overallPercent"
+              :stroke-width="10"
+              striped
+              striped-flow
             />
-          </section>
-
-          <el-row :gutter="20" class="home-top-row">
-            <el-col :xs="24" :md="10" :lg="8" class="home-stretch-col">
-              <el-card class="hover-card persona-card" shadow="hover">
-                <div class="card-kicker">个性化起点</div>
-                <h2 class="card-title">开启个性化学习</h2>
-                <p class="card-desc">
-                  通过对话构建 6 维学习画像，并由多智能体生成个性化资源与学习路径。
-                </p>
-                <el-button
-                  type="primary"
-                  :icon="ChatDotRound"
-                  @mouseenter="prefetchRoute('/my-learning')"
-                  @click="goQuick({ name: 'my-learning', query: { tab: 'persona' } }, '/my-learning')"
+            <div class="tag-groups">
+              <div v-if="progressSummary.strong.length">
+                <div class="tag-label">掌握较好</div>
+                <el-tag
+                  v-for="t in progressSummary.strong"
+                  :key="t"
+                  class="mini-tag"
+                  type="success"
+                  effect="plain"
                 >
-                  进入画像对话
+                  {{ t }}
+                </el-tag>
+              </div>
+              <div v-if="progressSummary.weak.length">
+                <div class="tag-label">建议加强</div>
+                <el-tag
+                  v-for="t in progressSummary.weak"
+                  :key="t"
+                  class="mini-tag"
+                  type="warning"
+                  effect="plain"
+                >
+                  {{ t }}
+                </el-tag>
+              </div>
+              <p v-if="!hasRealProgress" class="empty-progress-hint">
+                完成任意模块章节后，此处将自动汇总强弱项。
+              </p>
+            </div>
+          </el-card>
+        </el-col>
+
+        <el-col :xs="24" :md="12" :lg="8" :xl="6" class="home-stretch-col">
+          <ModuleGameEntry module-key="array" variant="detective-only" />
+        </el-col>
+
+        <el-col :xs="24" :md="12" :lg="8" :xl="6" class="home-stretch-col">
+          <el-card class="hover-card tall-card" shadow="hover">
+            <template #header>
+              <div class="card-header-row">
+                <span class="card-header-title">推荐资源</span>
+                <el-button
+                  text
+                  type="primary"
+                  size="small"
+                  @mouseenter="prefetchRoute('/resources')"
+                  @click="router.push({ name: 'resources' })"
+                >
+                  进入资源库
                 </el-button>
-              </el-card>
-            </el-col>
-
-            <el-col :xs="24" :md="14" :lg="8" class="home-stretch-col">
-              <el-card class="hover-card" shadow="hover">
-                <template #header>
-                  <div class="card-header-row">
-                    <span class="card-header-title">学习进度概览</span>
-                    <el-tag v-if="hasRealProgress" size="small" type="success" effect="light">
-                      本地进度
-                    </el-tag>
-                    <el-tag v-else size="small" type="info" effect="light">尚未开始</el-tag>
-                  </div>
-                </template>
-                <div class="progress-head">
-                  <span>总进度</span>
-                  <strong>{{ progressSummary.overallPercent }}%</strong>
-                </div>
-                <el-progress
-                  :percentage="progressSummary.overallPercent"
-                  :stroke-width="10"
-                  striped
-                  striped-flow
-                />
-                <div class="tag-groups">
-                  <div v-if="progressSummary.strong.length">
-                    <div class="tag-label">掌握较好</div>
-                    <el-tag
-                      v-for="t in progressSummary.strong"
-                      :key="t"
-                      class="mini-tag"
-                      type="success"
-                      effect="plain"
-                    >
-                      {{ t }}
-                    </el-tag>
-                  </div>
-                  <div v-if="progressSummary.weak.length">
-                    <div class="tag-label">建议加强</div>
-                    <el-tag
-                      v-for="t in progressSummary.weak"
-                      :key="t"
-                      class="mini-tag"
-                      type="warning"
-                      effect="plain"
-                    >
-                      {{ t }}
-                    </el-tag>
-                  </div>
-                  <p v-if="!hasRealProgress" class="empty-progress-hint">
-                    完成任意模块章节后，此处将自动汇总强弱项。
-                  </p>
-                </div>
-              </el-card>
-            </el-col>
-
-            <el-col :xs="24" :lg="8" class="home-stretch-col">
-              <ModuleGameEntry module-key="array" variant="detective-only" />
-            </el-col>
-
-            <el-col :xs="24" :lg="8" class="home-stretch-col">
-              <el-card class="hover-card tall-card" shadow="hover">
-                <template #header>
-                  <div class="card-header-row">
-                    <span class="card-header-title">推荐资源</span>
-                    <el-button
-                      text
-                      type="primary"
-                      size="small"
-                      @mouseenter="prefetchRoute('/resources')"
-                      @click="router.push({ name: 'resources' })"
-                    >
-                      进入资源库
-                    </el-button>
-                  </div>
-                </template>
-                <RecommendedResourcesPanel v-if="isLoggedIn" :limit="5" />
-                <el-scrollbar v-else max-height="360px">
-                  <div
-                    v-for="item in recommended"
-                    :key="item.id"
-                    class="resource-item resource-item--rich"
-                    role="button"
-                    tabindex="0"
-                    @click="router.push({ name: 'resources', query: { highlight: item.id } })"
-                    @keydown.enter.prevent="
-                      router.push({ name: 'resources', query: { highlight: item.id } })
-                    "
-                  >
-                    <div class="resource-cover" :style="{ background: item.cover }" />
-                    <div class="resource-body">
-                      <div class="resource-title-row">
-                        <span class="resource-title">{{ item.title }}</span>
-                        <el-tag size="small" type="info" effect="plain">{{ item.module }}</el-tag>
-                      </div>
-                      <div class="resource-stats">
-                        <el-tag size="small" effect="dark" round>{{ item.problemCount }} 题</el-tag>
-                        <el-tag size="small" type="success" effect="plain" round>
-                          通过率 {{ item.passRate }}%
-                        </el-tag>
-                        <el-tag
-                          v-for="tag in item.tags"
-                          :key="tag"
-                          size="small"
-                          effect="plain"
-                          round
-                        >
-                          {{ tag }}
-                        </el-tag>
-                      </div>
-                      <p class="resource-desc">{{ item.desc }}</p>
-                    </div>
-                  </div>
-                </el-scrollbar>
-              </el-card>
-            </el-col>
-          </el-row>
-
-          <el-row :gutter="16" class="viz-row">
-            <el-col :xs="24">
-              <HomeSortDemo />
-            </el-col>
-          </el-row>
-
-          <el-row :gutter="16" class="viz-row">
-            <el-col :xs="24" :md="12" :lg="8">
-              <el-card class="hover-card continue-card" shadow="hover">
-                <template #header>
-                  <span class="card-header-title">继续学习</span>
-                </template>
-                <p v-if="overview.nextModule" class="continue-lead">
-                  上次路径建议从
-                  <strong>{{ overview.nextModule.label }}</strong>
-                  继续；也可从下方最近访问快速进入。
-                </p>
-                <p v-else class="continue-lead">选择左侧模块或下方入口开始第一条学习路径。</p>
-                <el-button type="primary" :icon="ArrowRight" @click="continueLearning">
-                  {{ overview.nextModule ? `继续 ${overview.nextModule.label}` : '打开学习路径' }}
-                </el-button>
-                <ul v-if="recentVisits.length" class="continue-recent">
-                  <li v-for="v in recentVisits.slice(0, 4)" :key="v.moduleKey">
-                    <button type="button" @click="onModuleSelect(v.moduleKey)">
-                      {{ v.label }}
-                    </button>
-                  </li>
-                </ul>
-              </el-card>
-            </el-col>
-          </el-row>
-
-          <el-row :gutter="20" class="second-row">
-            <el-col :xs="24" :md="12" class="home-stretch-col">
-              <el-card shadow="never" class="soft-card actionable" @click="router.push({ name: 'learning-path' })">
-                <div class="soft-card-inner">
-                  <el-icon class="soft-icon" :size="22"><Reading /></el-icon>
-                  <div>
-                    <div class="soft-title">学习路径规划</div>
-                    <div class="soft-desc">
-                      按基础结构 → 技巧 → 树与搜索 → 进阶查看模块路线图与章节完成度。
-                    </div>
-                  </div>
-                  <el-icon class="soft-go"><ArrowRight /></el-icon>
-                </div>
-              </el-card>
-            </el-col>
-            <el-col :xs="24" :md="12" class="home-stretch-col">
-              <el-card
-                shadow="never"
-                class="soft-card actionable"
-                @mouseenter="prefetchRoute('/practice')"
-                @click="router.push({ name: 'practice-list' })"
+              </div>
+            </template>
+            <RecommendedResourcesPanel v-if="isLoggedIn" :limit="5" />
+            <el-scrollbar v-else max-height="360px">
+              <div
+                v-for="item in recommended"
+                :key="item.id"
+                class="resource-item resource-item--rich"
+                role="button"
+                tabindex="0"
+                @click="router.push({ name: 'resources', query: { highlight: item.id } })"
+                @keydown.enter.prevent="
+                  router.push({ name: 'resources', query: { highlight: item.id } })
+                "
               >
-                <div class="soft-card-inner">
-                  <el-icon class="soft-icon" :size="22"><Cpu /></el-icon>
-                  <div>
-                    <div class="soft-title">在线 OJ 题库</div>
-                    <div class="soft-desc">
-                      与课程题单同步，支持样例运行与提交；后端在线时可 Python / C++ 判题。
-                    </div>
+                <div class="resource-cover" :style="{ background: item.cover }" />
+                <div class="resource-body">
+                  <div class="resource-title-row">
+                    <span class="resource-title">{{ item.title }}</span>
+                    <el-tag size="small" type="info" effect="plain">{{ item.module }}</el-tag>
                   </div>
-                  <el-icon class="soft-go"><ArrowRight /></el-icon>
+                  <div class="resource-stats">
+                    <el-tag size="small" effect="dark" round>{{ item.problemCount }} 题</el-tag>
+                    <el-tag size="small" type="success" effect="plain" round>
+                      通过率 {{ item.passRate }}%
+                    </el-tag>
+                    <el-tag
+                      v-for="tag in item.tags"
+                      :key="tag"
+                      size="small"
+                      effect="plain"
+                      round
+                    >
+                      {{ tag }}
+                    </el-tag>
+                  </div>
+                  <p class="resource-desc">{{ item.desc }}</p>
                 </div>
-              </el-card>
-            </el-col>
-          </el-row>
-        </div>
-      </el-main>
-    </el-container>
-  </el-container>
+              </div>
+            </el-scrollbar>
+          </el-card>
+        </el-col>
+      </el-row>
+
+      <el-row :gutter="16" class="viz-row">
+        <el-col :xs="24">
+          <HomeSortDemo />
+        </el-col>
+      </el-row>
+
+      <el-row :gutter="16" class="viz-row">
+        <el-col :xs="24" :md="12" :lg="8" :xl="6">
+          <el-card class="hover-card continue-card" shadow="hover">
+            <template #header>
+              <span class="card-header-title">继续学习</span>
+            </template>
+            <p v-if="overview.nextModule" class="continue-lead">
+              上次路径建议从
+              <strong>{{ overview.nextModule.label }}</strong>
+              继续；也可从下方最近访问快速进入。
+            </p>
+            <p v-else class="continue-lead">选择上方模块或下方入口开始第一条学习路径。</p>
+            <el-button type="primary" :icon="ArrowRight" @click="continueLearning">
+              {{ overview.nextModule ? `继续 ${overview.nextModule.label}` : '打开学习路径' }}
+            </el-button>
+            <ul v-if="recentVisits.length" class="continue-recent">
+              <li v-for="v in recentVisits.slice(0, 4)" :key="v.moduleKey">
+                <button type="button" @click="onModuleSelect(v.moduleKey)">
+                  {{ v.label }}
+                </button>
+              </li>
+            </ul>
+          </el-card>
+        </el-col>
+      </el-row>
+
+      <el-row :gutter="20" class="second-row">
+        <el-col :xs="24" :md="12" class="home-stretch-col">
+          <el-card shadow="never" class="soft-card actionable" @click="router.push({ name: 'learning-path' })">
+            <div class="soft-card-inner">
+              <el-icon class="soft-icon" :size="22"><Reading /></el-icon>
+              <div>
+                <div class="soft-title">学习路径规划</div>
+                <div class="soft-desc">
+                  按基础结构 → 技巧 → 树与搜索 → 进阶查看模块路线图与章节完成度。
+                </div>
+              </div>
+              <el-icon class="soft-go"><ArrowRight /></el-icon>
+            </div>
+          </el-card>
+        </el-col>
+        <el-col :xs="24" :md="12" class="home-stretch-col">
+          <el-card
+            shadow="never"
+            class="soft-card actionable"
+            @mouseenter="prefetchRoute('/practice')"
+            @click="router.push({ name: 'practice-list' })"
+          >
+            <div class="soft-card-inner">
+              <el-icon class="soft-icon" :size="22"><Cpu /></el-icon>
+              <div>
+                <div class="soft-title">在线 OJ 题库</div>
+                <div class="soft-desc">
+                  与课程题单同步，支持样例运行与提交；后端在线时可 Python / C++ 判题。
+                </div>
+              </div>
+              <el-icon class="soft-go"><ArrowRight /></el-icon>
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
+    </main>
+  </div>
 </template>
 
 <style scoped>
+.home-page {
+  --home-page-gutter: clamp(16px, 2.2vw, 40px);
+  --home-page-max: 2160px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: min(var(--home-page-max), calc(100vw - (var(--home-page-gutter) * 2)));
+  max-width: none;
+  margin: 0 auto;
+  padding-bottom: 48px;
+}
+
+.map-command {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.map-board,
+.map-inspector .inspector-card,
+.home-main {
+  border-radius: 16px;
+  border: 1px solid var(--alp-color-border);
+  background: var(--alp-bg-surface);
+  box-shadow: var(--alp-shadow-card);
+}
+
+.map-board {
+  min-width: 0;
+  padding: 18px;
+  overflow: hidden;
+}
+
+.map-board-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.section-kicker {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--alp-color-primary);
+}
+
+.map-board-head h2 {
+  margin: 0;
+  font-size: 20px;
+  color: var(--alp-color-text);
+}
+
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: var(--alp-color-muted);
+  font-size: 12px;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: #64748b;
+}
+
+.legend-dot.done {
+  background: #22c55e;
+}
+
+.legend-dot.active {
+  background: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
+}
+
+.phase-lanes {
+  display: grid;
+  gap: 14px;
+}
+
+.phase-lane {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.phase-head {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  padding: 12px 10px;
+  border-radius: 12px;
+  background: var(--alp-bg-soft-block);
+  border: 1px solid var(--alp-color-border);
+}
+
+.phase-head span {
+  font-weight: 700;
+  color: var(--alp-color-text);
+}
+
+.phase-head small {
+  color: var(--alp-color-muted);
+  font-size: 11px;
+  font-family: ui-monospace, Consolas, monospace;
+}
+
+.module-track {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  padding: 8px;
+  border-radius: 14px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--alp-color-primary) 12%, transparent) 1px, transparent 1px),
+    var(--alp-bg-main-panel);
+  background-size: 64px 100%;
+  border: 1px solid color-mix(in srgb, var(--alp-color-border) 70%, transparent);
+}
+
+.module-node {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 54px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--node-accent) 32%, var(--alp-color-border));
+  background:
+    radial-gradient(circle at 0 0, color-mix(in srgb, var(--node-accent) 16%, transparent), transparent 55%),
+    color-mix(in srgb, var(--alp-bg-surface) 92%, transparent);
+  color: var(--alp-color-text);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    transform var(--alp-transition-fast),
+    box-shadow var(--alp-transition-fast),
+    border-color var(--alp-transition-fast);
+}
+
+.module-node:hover,
+.module-node:focus-visible,
+.module-node.active {
+  transform: translateY(-2px);
+  border-color: var(--node-accent);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--node-accent) 28%, transparent);
+  outline: none;
+}
+
+.module-node.locked {
+  opacity: 0.62;
+  border-style: dashed;
+}
+
+.module-node.done {
+  border-color: rgba(34, 197, 94, 0.65);
+}
+
+.module-index,
+.module-progress {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 11px;
+  color: var(--alp-color-muted);
+}
+
+.module-name {
+  min-width: 0;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.module-progress {
+  color: var(--node-accent);
+}
+
+.map-inspector {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.inspector-card {
+  padding: 16px;
+}
+
+.selected-module h3 {
+  margin: 6px 0 12px;
+  font-size: 22px;
+  color: var(--alp-color-text);
+}
+
+.selected-module p {
+  color: var(--alp-color-muted);
+  line-height: 1.6;
+  font-size: 13px;
+}
+
+.inspector-label {
+  color: var(--alp-color-primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.compact-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.compact-map :deep(.learning-map) {
+  padding: 0;
+}
+
+.home-main {
+  padding: 18px;
+}
+
 .home-layout {
   --home-sticky-top: calc(var(--alp-header-height, 60px) + var(--alp-layout-padding-y, 20px));
   --home-bottom-gap: calc(var(--alp-layout-padding-y, 20px) + 32px);
@@ -597,10 +907,9 @@ onMounted(async () => {
 }
 
 .home-hero {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(360px, 1fr) minmax(520px, 0.82fr);
   align-items: stretch;
-  justify-content: space-between;
   gap: 16px;
   margin-bottom: 16px;
   padding: 22px 24px;
@@ -611,10 +920,10 @@ onMounted(async () => {
     radial-gradient(ellipse 60% 80% at 100% 100%, rgba(167, 139, 250, 0.1), transparent 50%),
     var(--alp-bg-surface);
   box-shadow: var(--alp-shadow-card);
+  min-width: 0;
 }
 
 .hero-copy {
-  flex: 1 1 320px;
   min-width: 0;
 }
 
@@ -632,11 +941,13 @@ onMounted(async () => {
   font-size: clamp(1.25rem, 2.4vw, 1.65rem);
   line-height: 1.35;
   color: var(--alp-color-text);
+  overflow-wrap: anywhere;
+  word-break: break-all;
 }
 
 .hero-desc {
   margin: 0 0 16px;
-  max-width: 52ch;
+  max-width: 74ch;
   font-size: 14px;
   line-height: 1.6;
   color: var(--alp-color-muted);
@@ -649,18 +960,18 @@ onMounted(async () => {
 }
 
 .hero-stats {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   align-items: stretch;
-  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .stat-card {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 118px;
+  min-width: 0;
   padding: 12px 14px;
   border-radius: 12px;
   background: rgba(15, 23, 42, 0.35);
@@ -1120,6 +1431,57 @@ onMounted(async () => {
   margin-top: 20px;
 }
 
+@media (min-width: 1720px) {
+  .home-page {
+    gap: 20px;
+  }
+
+  .map-command {
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 380px);
+  }
+
+  .map-board,
+  .home-main {
+    padding: 20px;
+  }
+
+  .phase-lane {
+    grid-template-columns: 136px minmax(0, 1fr);
+  }
+
+  .module-track {
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  }
+
+  .module-node {
+    min-height: 58px;
+    padding-inline: 14px;
+  }
+}
+
+@media (max-width: 1180px) {
+  .home-page {
+    width: min(100%, calc(100vw - 24px));
+  }
+
+  .home-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .map-command {
+    grid-template-columns: 1fr;
+  }
+
+  .map-inspector {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .soft-card {
   border-radius: var(--alp-radius-card);
   background: var(--alp-bg-soft-block);
@@ -1183,6 +1545,14 @@ onMounted(async () => {
     margin-bottom: 12px;
   }
 
+  .map-inspector {
+    grid-template-columns: 1fr;
+  }
+
+  .phase-lane {
+    grid-template-columns: 1fr;
+  }
+
   .home-right {
     margin-left: 0;
     width: 100%;
@@ -1198,6 +1568,31 @@ onMounted(async () => {
 
   .home-hero {
     padding: 16px;
+    overflow: hidden;
+  }
+
+  .hero-copy {
+    flex: 1 1 100%;
+  }
+
+  .hero-title {
+    max-width: 100%;
+    white-space: normal !important;
+    word-break: break-word;
+  }
+
+  .hero-actions :deep(.el-button) {
+    flex: 1 1 100%;
+    margin-left: 0;
+  }
+
+  .hero-stats {
+    width: 100%;
+  }
+
+  .stat-card {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 0;
   }
 
   .home-main-surface {

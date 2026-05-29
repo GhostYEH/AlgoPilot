@@ -156,11 +156,11 @@ const emit = defineEmits<{
 }
 
 .oj-practice-shell--outside {
-  --oj-outside-pad: calc(var(--oj-side-width) + var(--oj-side-gap));
-  width: calc(100% + 2 * var(--oj-outside-pad));
+  --oj-outside-pad: 0px;
+  width: 100%;
   max-width: none;
-  margin-left: calc(-1 * var(--oj-outside-pad));
-  margin-right: calc(-1 * var(--oj-outside-pad));
+  margin-left: 0;
+  margin-right: 0;
   padding-left: 0;
   padding-right: 0;
   grid-template-columns: var(--oj-side-width) minmax(0, 1fr) var(--oj-side-width);
@@ -267,6 +267,14 @@ const emit = defineEmits<{
 
   .oj-practice-side :deep(.oj-agent-body) {
     max-height: 200px;
+  }
+}
+
+@media (max-width: 600px) {
+  .oj-practice-side {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
   }
 }
 </style>

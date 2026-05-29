@@ -458,14 +458,17 @@ function onReset() {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   padding: 8px 12px;
   background: #252526;
   border-bottom: 1px solid #333;
+  min-width: 0;
 }
 .header-left {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 .pane-title {
   font-size: 13px;
@@ -622,6 +625,55 @@ function onReset() {
   .problem-scroll {
     max-height: 320px;
     min-height: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .oj-workbench,
+  .oj-code-pane,
+  .main-editor {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .oj-code-pane {
+    overflow: hidden;
+  }
+
+  .code-pane-header {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .header-left {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+  }
+
+  .lang-select {
+    width: min(120px, calc(50vw - 28px));
+  }
+
+  .font-select {
+    width: min(88px, calc(50vw - 28px));
+  }
+
+  .code-pane-header > .el-button {
+    flex: 1 1 100%;
+    margin-left: 0;
+  }
+
+  .code-pane-footer {
+    align-items: stretch;
+  }
+
+  .code-pane-footer :deep(.el-button) {
+    flex: 1 1 calc(50% - 8px);
+    margin-left: 0;
   }
 }
 </style>

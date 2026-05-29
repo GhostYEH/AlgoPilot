@@ -8,12 +8,12 @@ ResourceType = Literal[
     "exercises",
     "code_case",
     "trace_animation",
-    # 兼容旧库记录
-    "reading",
+    "ppt",
     "video_script",
+    "reading",
 ]
 
-# 赛题五类核心资源 ↔ 角色 Agent
+# 赛题展示资源 ↔ 角色 Agent
 RESOURCE_AGENT_META: dict[str, dict[str, str]] = {
     "document": {
         "agent_name": "ConceptAgent",
@@ -40,33 +40,40 @@ RESOURCE_AGENT_META: dict[str, dict[str, str]] = {
         "label": "轨迹动画",
         "role": "动画总导演",
     },
-    # 旧类型兼容
-    "reading": {
-        "agent_name": "ConceptAgent",
-        "label": "拓展阅读",
-        "role": "概念导师",
+    "ppt": {
+        "agent_name": "PptAgent",
+        "label": "PPT 胶片预览",
+        "role": "核心知识胶片导演",
     },
     "video_script": {
-        "agent_name": "TraceAgent",
-        "label": "教学动画",
-        "role": "动画总导演",
+        "agent_name": "VideoScriptAgent",
+        "label": "60 秒短视频脚本",
+        "role": "教学短视频分镜导演",
+    },
+    "reading": {
+        "agent_name": "ReadingAgent",
+        "label": "分层拓展阅读",
+        "role": "学术/工程阅读策展人",
     },
 }
 
-# 批量生成流水线（赛题要求的 5 类）
+# 批量生成流水线（赛题展示视角：已有 5 类 + PPT/短视频/拓展阅读）
 CORE_RESOURCE_PIPELINE: list[ResourceType] = [
     "document",
     "mindmap",
     "exercises",
     "code_case",
     "trace_animation",
+    "ppt",
+    "video_script",
+    "reading",
 ]
 
 PARALLEL_PHASES: list[list[ResourceType]] = [
     ["document"],
     ["mindmap", "exercises"],
     ["code_case"],
-    ["trace_animation"],
+    ["trace_animation", "ppt", "video_script", "reading"],
 ]
 
 

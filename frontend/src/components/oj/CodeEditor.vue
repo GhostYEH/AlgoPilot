@@ -114,13 +114,18 @@ watch(
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid var(--el-border-color);
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 .oj-editor :deep(.cm-editor) {
   min-height: inherit;
   font-size: var(--oj-editor-font-size, 14px);
+  max-width: 100%;
 }
 .oj-editor :deep(.cm-scroller) {
   min-height: inherit;
+  overflow: auto;
 }
 .oj-editor :deep(.cm-trace-current-line) {
   background: rgba(56, 189, 248, 0.16) !important;

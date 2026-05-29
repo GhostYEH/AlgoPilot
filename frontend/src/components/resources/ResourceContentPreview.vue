@@ -30,6 +30,13 @@ const isQuiz = computed(
 const isMindmap = computed(
   () => props.resourceType === 'mindmap' || props.meta?.format === 'mindmap_json',
 )
+const isPpt = computed(() => props.resourceType === 'ppt' || props.meta?.format === 'ppt_preview_json')
+const isVideo = computed(
+  () => props.resourceType === 'video_script' || props.meta?.format === 'video_script_json',
+)
+const isReading = computed(
+  () => props.resourceType === 'reading' || props.meta?.format === 'leveled_reading_json',
+)
 const domainStructure = computed(() => parseDomainStructureContent(props.content))
 const isDocOrScenario = computed(
   () => props.resourceType === 'document' || props.resourceType === 'code_case',
@@ -85,6 +92,62 @@ const domainStructureMode = computed((): 'document' | 'scenario' =>
     :content="content"
     :mode="domainStructureMode"
   />
+
+  <div v-else-if="isPpt && parsed?.slides" class="ppt-preview">
+    <h3>{{ parsed.deck_title }}</h3>
+    <p class="muted">{{ parsed.design_style }}</p>
+    <div
+      v-for="(slide, i) in (parsed.slides as Array<Record<string, unknown>>)"
+      :key="i"
+      class="ppt-card"
+    >
+      <span>Slide {{ i + 1 }} · {{ slide.layout }}</span>
+      <strong>{{ slide.title }}</strong>
+      <p v-if="slide.subtitle">{{ slide.subtitle }}</p>
+      <ul v-if="Array.isArray(slide.bullets)">
+        <li v-for="(b, j) in slide.bullets" :key="j">{{ b }}</li>
+      </ul>
+      <small>{{ slide.visual_hint }} · {{ slide.speaker_note }}</small>
+    </div>
+  </div>
+
+  <div v-else-if="isVideo && parsed?.scenes" class="video-preview">
+    <h3>{{ parsed.title }}</h3>
+    <p class="muted">TTS 试听文案：{{ parsed.tts_preview_text }}</p>
+    <div
+      v-for="(scene, i) in (parsed.scenes as Array<Record<string, string>>)"
+      :key="i"
+      class="scene-card"
+    >
+      <span>{{ scene.time_range }}</span>
+      <p><strong>画面：</strong>{{ scene.visual }}</p>
+      <p><strong>旁白：</strong>{{ scene.voiceover }}</p>
+      <p><strong>动画重点：</strong>{{ scene.animation_focus }}</p>
+    </div>
+  </div>
+
+  <div v-else-if="isReading && parsed?.levels" class="reading-preview">
+    <h3>分层拓展阅读</h3>
+    <p class="muted">{{ parsed.reading_goal }}</p>
+    <section
+      v-for="(level, i) in (parsed.levels as Array<Record<string, unknown>>)"
+      :key="i"
+      class="reading-level"
+    >
+      <h4>{{ level.level }}</h4>
+      <p class="muted">{{ level.fit_for }}</p>
+      <div
+        v-for="(item, j) in ((level.items as Array<Record<string, string>>) ?? [])"
+        :key="j"
+        class="reading-item"
+      >
+        <strong>{{ item.title }}</strong>
+        <span>{{ item.type }}</span>
+        <p>{{ item.why }}</p>
+        <small>读后任务：{{ item.task }}</small>
+      </div>
+    </section>
+  </div>
 
   <el-alert
     v-else-if="unparsedDomainJson"
@@ -142,5 +205,47 @@ const domainStructureMode = computed((): 'document' | 'scenario' =>
 .preview-body {
   line-height: 1.6;
   font-size: 14px;
+}
+
+.ppt-card,
+.scene-card,
+.reading-level {
+  margin-bottom: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--alp-color-border);
+  background: var(--alp-bg-soft-block);
+}
+
+.ppt-card span,
+.scene-card span,
+.reading-item span,
+.reading-item small,
+.muted {
+  color: var(--alp-color-muted);
+  font-size: 12px;
+}
+
+.ppt-card strong,
+.reading-item strong {
+  display: block;
+  margin: 6px 0;
+}
+
+.scene-card p,
+.reading-item p {
+  margin: 6px 0;
+  line-height: 1.55;
+}
+
+.reading-level h4 {
+  margin: 0 0 6px;
+  color: var(--alp-color-primary);
+}
+
+.reading-item {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--alp-color-border);
 }
 </style>
