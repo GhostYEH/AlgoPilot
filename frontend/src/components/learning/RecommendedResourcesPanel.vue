@@ -5,8 +5,10 @@ import { MagicStick, Document } from '@element-plus/icons-vue'
 import {
   fetchRecommendedResources,
   RESOURCE_TYPE_META,
+  resourceVerifyTag,
   type GeneratedResource,
 } from '@/api/orchestrator'
+import { verificationDisplayTag } from '@/utils/verification'
 import { isLoggedIn } from '@/stores/auth'
 
 const props = defineProps<{
@@ -81,24 +83,13 @@ function typeLabel(type: string) {
             <el-tag size="small" effect="plain">{{ typeLabel(r.resource_type) }}</el-tag>
             <span class="agent">{{ r.agent_name }}</span>
             <el-tag
-              v-if="r.meta?.verified === true"
               size="small"
-              type="success"
+              :type="resourceVerifyTag(r.meta ?? {}).type"
               effect="plain"
             >
-              已校验
+              {{ verificationDisplayTag(r.meta ?? {}).riskLabel }}
             </el-tag>
-            <el-tag
-              v-else-if="
-                Array.isArray(r.meta?.knowledge_refs) &&
-                (r.meta.knowledge_refs as unknown[]).length > 0
-              "
-              size="small"
-              type="info"
-              effect="plain"
-            >
-              已引用
-            </el-tag>
+            <span v-if="r.meta?.chapter_id" class="chapter">{{ r.meta.chapter_id }}</span>
           </div>
         </div>
       </div>
@@ -160,6 +151,11 @@ function typeLabel(type: string) {
   align-items: center;
   gap: 6px;
   margin-top: 4px;
+}
+
+.rec-meta .chapter {
+  font-size: 11px;
+  color: var(--alp-color-muted);
 }
 
 .agent {

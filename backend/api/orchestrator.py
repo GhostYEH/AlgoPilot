@@ -23,6 +23,7 @@ from schemas.persona import ChatHistoryItem, PersonaChatRequest, PersonaProfileR
 from schemas.learning_path import LearningPathPlanResponse, LearningPathReplanRequest
 from schemas.resources import (
     AgentLogEntry,
+    ResourceGenerateAllRequest,
     ResourceGenerateRequest,
     ResourceGenerateResponse,
     ResourceListResponse,
@@ -75,27 +76,36 @@ async def persona_chat_stream(
 
     async def event_gen():
         parts: list[str] = []
-        try:
-            async for chunk in orchestrator.persona_chat_stream(
-                db, user, message=body.message, history=body.history
-            ):
-                parts.append(chunk)
-                yield _sse({"type": "token", "content": chunk})
-            reply = "".join(parts)
-            new_history = [
-                *body.history,
-                ChatHistoryItem(role="user", content=body.message),
-                ChatHistoryItem(role="assistant", content=reply),
-            ]
-            orchestrator.save_persona_history(db, user, new_history)
-            yield _sse({"type": "done", "content": reply})
-        except Exception as exc:
-            yield _sse({"type": "error", "message": str(exc)})
+        async for chunk in orchestrator.persona_chat_stream(
+            db, user, message=body.message, history=body.history
+        ):
+            parts.append(chunk)
+            yield _sse({"type": "token", "content": chunk})
+
+        reply = "".join(parts)
+        new_history = [
+            *body.history,
+            ChatHistoryItem(role="user", content=body.message),
+            ChatHistoryItem(role="assistant", content=reply),
+        ]
+        orchestrator.save_persona_history(db, user, new_history)
+        meta = orchestrator.last_persona_chat_meta()
+        yield _sse({"type": "done", "content": reply, "meta": meta})
 
     return StreamingResponse(
         event_gen(),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+def _persona_sync_response(profile: PersonaProfileResponse) -> PersonaSyncResponse:
+    return PersonaSyncResponse(
+        profile=profile,
+        message="画像已更新（离线模板模式）" if profile.fallback else "画像已更新",
+        fallback=profile.fallback,
+        fallback_reason=profile.fallback_reason,
+        generated_by=profile.generated_by,
     )
 
 
@@ -111,7 +121,7 @@ async def sync_persona_profile(
         ChatHistoryItem(role="user", content=body.message),
     ] if body.message else list(body.history)
     profile = await orchestrator.sync_persona_profile(db, user, history=history)
-    return PersonaSyncResponse(profile=profile)
+    return _persona_sync_response(profile)
 
 
 @router.post("/persona/patch-from-learning", response_model=PersonaProfileResponse)
@@ -136,7 +146,7 @@ async def sync_persona_from_stored(
             message="暂无对话记录，请先与画像 Agent 对话",
         )
     profile = await orchestrator.sync_persona_profile(db, user, history=history)
-    return PersonaSyncResponse(profile=profile)
+    return _persona_sync_response(profile)
 
 
 @router.get("/agents")
@@ -161,7 +171,7 @@ async def orchestrator_tutor_chat(
         from services.orchestrator.core import _format_profile_block as fmt
 
         row = db.get(StudentProfile, user.id)
-        profile_block = fmt(row)
+        profile_block = fmt(row, db=db, user_id=user.id)
     reply = await orchestrator.tutor_chat(body, profile_block=profile_block)
     return AiTutorChatResponse(reply=reply)
 
@@ -178,7 +188,7 @@ async def orchestrator_tutor_chat_stream(
         from services.orchestrator.core import _format_profile_block
 
         row = db.get(StudentProfile, user.id)
-        profile_block = _format_profile_block(row)
+        profile_block = _format_profile_block(row, db=db, user_id=user.id)
 
     async def event_gen():
         parts: list[str] = []
@@ -313,7 +323,7 @@ def favorite_resource(
 
 @router.post("/resources/generate-all")
 async def generate_all_resources_stream(
-    body: ResourceGenerateRequest,
+    body: ResourceGenerateAllRequest,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):

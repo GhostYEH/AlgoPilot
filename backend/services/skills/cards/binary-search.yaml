@@ -1,0 +1,97 @@
+id: binary-search
+name: 二分查找与有序不变式
+course_id: data_structures_algorithms
+chapter_id: ch07-search
+description: |
+  约束有序数组二分查找教学：循环不变式 left/right、中点取法、
+  lower_bound/upper_bound 语义。资源生成须强调「为何有序才能二分」；
+  辅导时对「边界」「死循环」「mid 溢出」类错误给出分级提示。
+prerequisites:
+  - ch02-linear-list
+  - ch01-introduction-complexity
+triggers:
+  keywords:
+    - 二分
+    - 二分查找
+    - 有序
+    - lower_bound
+    - upper_bound
+    - 中点
+    - mid
+  module_keys:
+    - hash-table
+    - array
+  chapter_ids:
+    - ch07-search
+  oj_verdicts:
+    - WA
+    - TLE
+  error_patterns:
+    - 边界
+    - 死循环
+    - mid
+    - 有序
+    - left
+    - right
+    - 越界
+  min_consecutive_failures: 2
+common_mistakes:
+  - text: while left < right 与 while left <= right 混用导致漏解或死循环。
+    severity: high
+    detector_hint: 循环次数接近 n
+  - text: mid 计算溢出或偏置导致跳过唯一解（Python 亦需习惯 left+(right-left)//2）。
+    severity: medium
+    detector_hint: 样例 n=2 失败
+  - text: 数组未排序仍二分，逻辑全错。
+    severity: high
+    detector_hint: 题意无单调性
+  - text: 找「第一个≥x」却返回 upper_bound 语义。
+    severity: medium
+    detector_hint: 相等元素应取左端仍取右
+  - text: 更新 left/right 时未排除 mid，无限循环。
+    severity: high
+    detector_hint: left,right 收敛停滞
+resource_strategy:
+  default: 每题标注单调性与目标（存在/左边界/右边界）。
+  document: 二分模板对比表（两个 while 变体）+ 手算 5 元素例题。
+  exercises: 3 道选择：判能否二分、选 mid 更新规则、复杂度。
+  code_case: 只给 left,right 初始化与 while 行，TODO 更新分支。
+  trace_animation: 高亮 left/right/mid 与 nums[mid] 比较结果。
+hint_policy:
+  max_code_lines: 8
+  forbid_full_solution: true
+  socratic: true
+  escalation_after_failures: 2
+  levels:
+    - level: 1
+      policy: 问「数组是否有序？要找的是任意存在还是边界？」
+    - level: 2
+      policy: 提示不变式「答案在 [left,right] 内」不给出完整 while。
+    - level: 3
+      policy: 用 5 元素手算表让用户填 3 轮 mid 与收缩方向。
+    - level: 4
+      policy: 给 while left<=right 骨架两行更新，缺比较目标注释。
+trace_focus:
+  - left、right、mid 每轮数值
+  - 比较结果与分支走向
+  - 终止时 left 是否指向答案
+evaluation_rules:
+  - rule_id: monotonic-check
+    description: 能判断题意是否满足二分前提。
+    weight: 0.3
+    pass_threshold: 70
+  - rule_id: invariant
+    description: 口头说明循环不变式。
+    weight: 0.35
+    pass_threshold: 65
+  - rule_id: hand-sim
+    description: 手算 5 元素二分 3 轮正确。
+    weight: 0.35
+    pass_threshold: 70
+recommended_resources:
+  - document
+  - exercises
+  - trace_animation
+recommended_problems:
+  - binary-search
+  - search-insert-position

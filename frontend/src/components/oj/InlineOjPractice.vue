@@ -49,6 +49,7 @@ const {
   onAiDiagnose,
   onVisualTraceDiagnose,
   agentConsoleLines,
+  struggleView,
 } = useOjWorkbenchActions({
   slug: activeSlug,
   code,
@@ -161,7 +162,6 @@ function resetCode() {
         v-if="problem"
         v-model="code"
         v-model:language="language"
-        hints-outside
         :problem="problem"
         :running="running"
         :submitting="submitting"
@@ -178,6 +178,7 @@ function resetCode() {
         :api-online="apiOnline"
         :trace-cpp="traceCpp"
         :agent-console-lines="agentConsoleLines"
+        :struggle-view="struggleView"
         @run="onRun"
         @submit="onSubmit"
         @trace="onTrace"

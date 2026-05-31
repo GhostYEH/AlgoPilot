@@ -9,6 +9,7 @@ import { isLoggedIn } from '@/stores/auth'
 import { useLearningPathPlan } from '@/composables/useLearningPathPlan'
 
 const loading = ref(false)
+const loadFailed = ref(false)
 const report = ref<LearningEvaluation | null>(null)
 const { replan } = useLearningPathPlan()
 
@@ -34,15 +35,31 @@ async function runEvaluation() {
     return
   }
   loading.value = true
+  loadFailed.value = false
   try {
     report.value = await fetchLearningEvaluation(buildPayload())
+  } catch {
+    loadFailed.value = true
+    ElMessage.warning('评估报告加载失败，请检查登录状态或稍后重试')
   } finally {
     loading.value = false
   }
 }
 
 async function applyStrategy() {
-  await replan()
+  if (!report.value) return
+  await replan({
+    trigger: 'evaluation',
+    triggerLabel: '按评估重排路径',
+    evidence: [
+      `EvaluationAgent 综合得分 ${report.value.overall_score}`,
+      ...(report.value.weak_module_keys?.length
+        ? [`薄弱模块：${report.value.weak_module_keys.join('、')}`]
+        : []),
+      report.value.push_strategy,
+      ...report.value.suggestions.slice(0, 2),
+    ].filter(Boolean),
+  })
   ElMessage.success('已根据评估结果重新规划学习路径')
 }
 
@@ -52,14 +69,18 @@ onMounted(() => {
 </script>
 
 <template>
-  <el-card shadow="never" class="eval-card">
+  <el-card v-loading="loading" shadow="never" class="eval-card">
     <div class="eval-head">
       <el-icon><DataAnalysis /></el-icon>
       <span>EvaluationAgent · 学习效果评估</span>
       <el-button size="small" :loading="loading" @click="runEvaluation">刷新评估</el-button>
     </div>
 
-    <el-empty v-if="!report && !loading" description="登录后生成多维度评估报告" />
+    <el-empty v-if="!isLoggedIn && !loading" description="登录后生成多维度评估报告" />
+    <el-empty v-else-if="loadFailed && !report" description="评估加载失败">
+      <el-button type="primary" plain size="small" @click="runEvaluation">重试</el-button>
+    </el-empty>
+    <el-empty v-else-if="!report && !loading" description="点击「刷新评估」生成报告" />
 
     <template v-else-if="report">
       <div class="overall">

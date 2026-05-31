@@ -82,6 +82,21 @@ def get_public_problem(slug: str) -> dict[str, Any]:
         "ready": ready,
         "time_limit_ms": full.get("time_limit_ms", 3000),
         "order_insensitive": full.get("order_insensitive", False),
+        **_course_context_fields(full, slug),
+    }
+
+
+def _course_context_fields(full: dict[str, Any], slug: str) -> dict[str, str]:
+    """合并 catalog 字段与 concept_graph / SkillRouter 推断的课程上下文。"""
+    from services.oj.problem_context import resolve_problem_context
+
+    title = str(full.get("title") or slug)
+    ctx = resolve_problem_context(slug, title=title, meta=full)
+    return {
+        "course_id": ctx["course_id"],
+        "chapter_id": ctx.get("chapter_id") or "",
+        "module_key": ctx.get("module_key") or "",
+        "skill_id": ctx.get("skill_id") or "",
     }
 
 

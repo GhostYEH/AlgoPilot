@@ -22,6 +22,6 @@ async def tutor_chat(
     profile_block = ""
     if user:
         row = db.get(StudentProfile, user.id)
-        profile_block = _format_profile_block(row)
+        profile_block = _format_profile_block(row, db=db, user_id=user.id)
     reply = await orchestrator.tutor_chat(body, profile_block=profile_block)
     return AiTutorChatResponse(reply=reply)

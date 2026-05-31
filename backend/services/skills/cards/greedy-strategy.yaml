@@ -1,0 +1,31 @@
+id: greedy-strategy
+name: 贪心策略
+course_id: data_structures_algorithms
+chapter_id: ch10-greedy
+description: 贪心选择性质与交换论证入门；辅导强调「为何局部最优可行」而非直接给策略代码。
+prerequisites: [ch08-sorting]
+triggers:
+  keywords: [贪心, greedy, 区间, 调度]
+  module_keys: [greedy]
+  chapter_ids: [ch10-greedy]
+  oj_verdicts: [WA]
+  error_patterns: [贪心, 局部, 证明]
+  min_consecutive_failures: 2
+common_mistakes:
+  - text: 未证明贪心正确性凭直觉提交。
+    severity: high
+resource_strategy:
+  default: 先举反例说明非贪心场景，再给合法贪心排序键。
+hint_policy:
+  forbid_full_solution: true
+  levels:
+    - level: 1
+      policy: 问「局部最优选什么？为何不会错过最优？」
+trace_focus: [当前选择变量]
+evaluation_rules:
+  - rule_id: greedy-proof-sketch
+    description: 能口头给出交换论证草图。
+    weight: 1.0
+    pass_threshold: 60
+recommended_resources: [document, reading, exercises]
+recommended_problems: [jump-game]

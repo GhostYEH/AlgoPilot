@@ -53,6 +53,10 @@ export const AGENT_ICONS: Record<string, string> = {
   OjDiagnosisAgent: '🔬',
   EvaluationAgent: '📊',
   EvaluatorAgent: '🚑',
+  MasteryAgent: '📈',
+  EventBus: '🔗',
+  StudentMemory: '🧠',
+  SkillRouter: '🎯',
 }
 
 const FRIENDLY_AGENT_MSG: Record<string, string> = {
@@ -75,6 +79,10 @@ const FRIENDLY_AGENT_MSG: Record<string, string> = {
     '静态抽象语法树扫描通过，未发现死循环特征，移交动态沙箱…',
   OjDiagnosisAgent: '边界测例 → 判题 → 轨迹诊断并发分析中…',
   EvaluatorAgent: '监测 OJ 连续失败并联动 Planner 插入降级巩固关卡…',
+  EventBus: '学习事件总线：编排多智能体协同闭环…',
+  MasteryAgent: '基于学习行为重算章节掌握度…',
+  StudentMemory: '写入错因记忆，支撑画像随学随新…',
+  SkillRouter: '根据错因模式推荐 SkillCard…',
 }
 
 export function iconForAgent(agent: string): string {
@@ -176,6 +184,15 @@ export function linesFromAgentLogs(
   logs: Array<{ agent: string; action: string; detail?: string; status?: string }>,
 ): AgentConsoleLine[] {
   return logs.map((entry) => lineFromAgentLog(entry))
+}
+
+export function linesFromEventLogs(
+  logs: Array<{ agent: string; action: string; detail?: string; status?: string }>,
+): AgentConsoleLine[] {
+  return [
+    systemLine('EventBus · 学习事件链已触发', 'running'),
+    ...linesFromAgentLogs(logs),
+  ]
 }
 
 export function systemLine(message: string, status: AgentLogStatus = 'success'): AgentConsoleLine {

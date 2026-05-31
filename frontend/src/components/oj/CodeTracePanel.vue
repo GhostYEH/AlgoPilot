@@ -20,6 +20,7 @@ import GameArrayBoard from '@/modules/games/shared/GameArrayBoard.vue'
 import TraceMatrixGrid from '@/components/oj/trace/TraceMatrixGrid.vue'
 import TraceLinkedList from '@/components/oj/trace/TraceLinkedList.vue'
 import TraceTreePanel from '@/components/oj/trace/TraceTreePanel.vue'
+import OjTutoringSection from '@/components/oj/OjTutoringSection.vue'
 import { useCodeTracePlayback } from '@/composables/useCodeTracePlayback'
 import type { MatrixValue, TraceBugDiagnoseResponse, TraceResponse } from '@/types/codeTrace'
 import {
@@ -932,6 +933,8 @@ const showNarrateBtn = computed(
           {{ diagnosisBugLine || '?' }} 行
         </span>
       </button>
+
+      <OjTutoringSection :tutoring="effectiveDiagnosis?.tutoring" />
     </SteppedAnimShell>
 
     <el-empty

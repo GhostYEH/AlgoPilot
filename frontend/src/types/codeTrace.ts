@@ -129,6 +129,49 @@ export interface AiComplexityReport {
   source: string
 }
 
+export interface SkillCardBrief {
+  id: string
+  name: string
+  chapter_id?: string
+  description?: string
+}
+
+export interface RecommendedResourceHint {
+  resource_type: string
+  topic?: string
+  reason?: string
+  chapter_id?: string
+}
+
+/** OJ Trace 智能辅导闭环载荷（可选，旧客户端可忽略） */
+export interface OjTutoringPayload {
+  course_id?: string
+  chapter_id?: string
+  skill_id?: string
+  module_key?: string
+  matched_skill?: SkillCardBrief | null
+  error_pattern?: string
+  error_pattern_label?: string
+  bug_step_index?: number
+  trace_summary?: string
+  hint_level?: number
+  layered_hints?: string[]
+  recommended_resources?: RecommendedResourceHint[]
+  memory_event_id?: number | null
+  mastery_update_summary?: string
+  path_adjustment_hint?: string
+  /** 是否写入 StudentMemory */
+  memory_recorded?: boolean
+  /** 是否重算 Mastery 掌握度 */
+  mastery_updated?: boolean
+  /** 是否成功 patch 六维画像 */
+  persona_updated?: boolean
+  /** @deprecated 等价于 persona_updated，不代表 memory_recorded */
+  profile_updated?: boolean
+  persona_patch_summary?: string
+  persona_patch_warning?: string
+}
+
 export interface AiDiagnoseResponse {
   edge_case: AiEdgeCaseInfo
   edge_verdict: string
@@ -136,6 +179,7 @@ export interface AiDiagnoseResponse {
   trace: TraceResponse
   complexity: AiComplexityReport
   summary: string
+  tutoring?: OjTutoringPayload | null
 }
 
 /** AI 轨迹诊断：定位 bug 起源步（POST /diagnose） */
@@ -144,4 +188,5 @@ export interface TraceBugDiagnoseResponse {
   diagnosis_title: string
   detailed_analysis: string
   source?: string
+  tutoring?: OjTutoringPayload | null
 }

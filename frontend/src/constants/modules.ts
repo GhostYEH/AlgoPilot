@@ -36,7 +36,7 @@ export const ALGORITHM_MODULES: AlgorithmModuleItem[] = [
   { key: 'greedy', label: '贪心算法', phase: 'advanced', available: true, accent: '#fbbf24' },
   { key: 'dp', label: '动态规划', phase: 'advanced', available: true, accent: '#f97316' },
   { key: 'monotonic-stack', label: '单调栈', phase: 'advanced', available: true, accent: '#c084fc' },
-  { key: 'graph', label: '图论', phase: 'advanced', available: false, accent: '#ef4444' },
+  { key: 'graph', label: '图论', phase: 'advanced', available: true, accent: '#ef4444' },
 ]
 
 /** 具名学习路由（与 HomeView / 地图点击逻辑一致） */
@@ -52,4 +52,5 @@ export const MODULE_ROUTE_NAMES: Partial<Record<string, string>> = {
   greedy: 'learn-greedy',
   dp: 'learn-dp',
   'monotonic-stack': 'learn-monotonic-stack',
+  graph: 'learn-graph',
 }

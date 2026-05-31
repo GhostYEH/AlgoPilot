@@ -6,6 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
+    "typecheck": "vue-tsc -b --noEmit",
+    "test:oj-struggle": "npx tsx --tsconfig tsconfig.app.json src/utils/ojStruggleSession.test.ts",
+    "test:path-replan-diff": "npx tsx --tsconfig tsconfig.app.json src/utils/pathReplanDiff.test.ts",
+    "test:graph-module": "npx tsx --tsconfig tsconfig.app.json src/utils/graphModuleContract.test.ts",
     "preview": "vite preview"
   },
   "dependencies": {

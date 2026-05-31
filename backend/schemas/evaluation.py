@@ -1,6 +1,8 @@
 from pydantic import BaseModel, Field
 
 from schemas.learning_path import ModuleProgressInput
+from schemas.oj import RecommendedResourceHint, SkillCardBrief
+from schemas.skills import SkillCardSummary
 
 
 class EvaluationDimensionScore(BaseModel):
@@ -17,6 +19,10 @@ class LearningEvaluationResponse(BaseModel):
     suggestions: list[str] = Field(default_factory=list)
     narrative: str = ""
     push_strategy: str = ""
+    recommended_skill_cards: list[SkillCardSummary] = Field(
+        default_factory=list,
+        description="根据薄弱模块推荐的 Learning SkillCard",
+    )
 
 
 class PersonaLearningSignal(BaseModel):
@@ -43,6 +49,11 @@ class OjStruggleEvaluationRequest(BaseModel):
     error_pattern: str = Field(default="", max_length=256, description="如「边界溢出」「下标越界」")
     overall_percent: int = Field(default=0, ge=0, le=100)
     modules: list[ModuleProgressInput] = Field(default_factory=list)
+    course_id: str = Field(default="data_structures_algorithms", max_length=64)
+    chapter_id: str = Field(default="", max_length=80)
+    skill_id: str = Field(default="", max_length=64)
+    statuses: list[str] = Field(default_factory=list, max_length=20)
+    recent_trace_summary: str = Field(default="", max_length=2000)
 
 
 class AgentLogItem(BaseModel):
@@ -62,3 +73,19 @@ class OjStruggleEvaluationResponse(BaseModel):
     path_updated: bool = False
     agent_logs: list[AgentLogItem] = Field(default_factory=list)
     plan_summary: str = ""
+    recommended_skill_cards: list[SkillCardSummary] = Field(
+        default_factory=list,
+        description="连续失败时推荐针对性技能卡",
+    )
+    course_id: str = "data_structures_algorithms"
+    chapter_id: str = ""
+    matched_skill: SkillCardBrief | None = None
+    error_pattern: str = ""
+    error_pattern_label: str = ""
+    recommended_actions: list[str] = Field(default_factory=list)
+    recommended_resources: list[RecommendedResourceHint] = Field(default_factory=list)
+    memory_recorded: bool = False
+    memory_event_id: int | None = None
+    mastery_updated: bool = False
+    mastery_update_summary: str = ""
+    path_adjustment_suggestion: str = ""

@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { MagicStick } from '@element-plus/icons-vue'
 import type { AiDiagnoseResponse } from '@/types/codeTrace'
+import OjTutoringSection from '@/components/oj/OjTutoringSection.vue'
 
 const props = defineProps<{
   diagnosis: AiDiagnoseResponse | null
@@ -68,6 +69,8 @@ const edgeVerdictLabel = computed(() => {
           {{ diagnosis.complexity.alternative_hint }}
         </p>
       </section>
+
+      <OjTutoringSection :tutoring="diagnosis.tutoring" />
     </template>
   </div>
 </template>

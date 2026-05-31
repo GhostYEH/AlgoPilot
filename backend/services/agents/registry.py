@@ -88,6 +88,18 @@ AGENT_REGISTRY: list[AgentMeta] = [
     {"id": "SafetyAgent", "display_name": "SafetyAgent", "role": "内容安全审查与防幻觉把关", "layer": "safety"},
     {"id": "EvaluatorAgent", "display_name": "EvaluatorAgent", "role": "OJ 学情评估与动态降级", "layer": "eval"},
     {"id": "EvaluationAgent", "display_name": "EvaluationAgent", "role": "学习效果评估", "layer": "eval"},
+    {
+        "id": "MasteryAgent",
+        "display_name": "MasteryAgent",
+        "role": "章节/技能掌握度可解释评估",
+        "layer": "eval",
+    },
+    {
+        "id": "EventBus",
+        "display_name": "EventBus",
+        "role": "学习事件编排与多智能体闭环",
+        "layer": "eval",
+    },
     {"id": "KnowledgeRetriever", "display_name": "KnowledgeRetriever", "role": "知识库检索", "layer": "safety"},
 ]
 

@@ -7,6 +7,7 @@ import { ElMessage } from 'element-plus'
 
 import router from '@/router'
 import { ACCESS_TOKEN_KEY, USER_JSON_KEY } from '@/constants/authStorage'
+import { clearRefs } from '@/stores/auth'
 import { getApiBaseUrl } from '@/utils/apiBase'
 
 /**
@@ -55,7 +56,7 @@ service.interceptors.response.use(
       }
       localStorage.removeItem(ACCESS_TOKEN_KEY)
       localStorage.removeItem(USER_JSON_KEY)
-      void import('@/stores/auth').then((m) => m.clearRefs())
+      clearRefs()
       ElMessage.warning('登录已过期，请重新登录')
       void router.replace({ name: 'login', query: { redirect: router.currentRoute.value.fullPath } })
       return Promise.reject(error)

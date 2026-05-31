@@ -3,6 +3,7 @@ import { ElMessage } from 'element-plus'
 import { ACCESS_TOKEN_KEY } from '@/constants/authStorage'
 import { getApiBaseUrl } from '@/utils/apiBase'
 import request from '@/utils/request'
+import { verificationDisplayTag } from '@/utils/verification'
 
 export interface ChatHistoryItem {
   role: 'user' | 'assistant'
@@ -27,6 +28,17 @@ export const PROFILE_DIMENSION_LABELS: Record<keyof PersonaDimensions, string> =
   grit_level: '抗挫折心理',
 }
 
+export interface LearningEvidenceBrief {
+  id: number
+  event_type: string
+  event_label: string
+  problem_slug: string
+  skill_id: string
+  chapter_id: string
+  summary: string
+  at: string | null
+}
+
 export interface PersonaProfile {
   summary: string
   dimensions: PersonaDimensions
@@ -34,6 +46,47 @@ export interface PersonaProfile {
   dimension_scores?: Record<string, number>
   dimension_confidence?: Record<string, string>
   coverage_missing?: string[]
+  dimension_evidence?: Record<string, string[]>
+  update_reason?: string
+  recent_evidence?: LearningEvidenceBrief[]
+  fallback?: boolean
+  fallback_reason?: string
+  generated_by?: string
+}
+
+export interface PersonaChatMeta {
+  fallback?: boolean
+  fallback_reason?: string
+  generated_by?: string
+}
+
+/** 学习证据 event_type → 来源标签与 el-tag 类型 */
+export const EVIDENCE_SOURCE_META: Record<
+  string,
+  { label: string; tagType: 'success' | 'warning' | 'danger' | 'info' | 'primary' }
+> = {
+  oj_submit_fail: { label: 'OJ', tagType: 'warning' },
+  oj_diagnosis: { label: 'OJ 诊断', tagType: 'danger' },
+  trace_diagnosis: { label: 'Trace', tagType: 'primary' },
+  evaluation_struggle: { label: '练习', tagType: 'info' },
+  resource_complete: { label: '资源学习', tagType: 'success' },
+  quiz_complete: { label: '练习', tagType: 'success' },
+  section_done: { label: '资源学习', tagType: 'success' },
+  skill_recommended: { label: '对话', tagType: 'info' },
+  persona_chat: { label: '对话', tagType: 'info' },
+}
+
+/** event_type → 主要影响维度 */
+export const EVIDENCE_DIMENSION_FOR_EVENT: Record<string, keyof PersonaDimensions> = {
+  oj_submit_fail: 'coding_ability',
+  oj_diagnosis: 'error_preference',
+  trace_diagnosis: 'error_preference',
+  evaluation_struggle: 'grit_level',
+  resource_complete: 'knowledge_base',
+  quiz_complete: 'knowledge_base',
+  section_done: 'knowledge_base',
+  skill_recommended: 'learning_goals',
+  persona_chat: 'cognitive_style',
 }
 
 export interface PathStepItem {
@@ -64,6 +117,14 @@ export interface AgentLogItem {
   status?: string
 }
 
+export interface SkillCardSummary {
+  id: string
+  name: string
+  course_id?: string
+  chapter_id?: string
+  description?: string
+}
+
 export interface OjStruggleEvaluationResult {
   agent_name: string
   struggle_detected: boolean
@@ -74,6 +135,24 @@ export interface OjStruggleEvaluationResult {
   path_updated: boolean
   agent_logs: AgentLogItem[]
   plan_summary: string
+  recommended_skill_cards?: SkillCardSummary[]
+  course_id?: string
+  chapter_id?: string
+  matched_skill?: SkillCardSummary | null
+  error_pattern?: string
+  error_pattern_label?: string
+  recommended_actions?: string[]
+  recommended_resources?: Array<{
+    resource_type: string
+    topic?: string
+    reason?: string
+    chapter_id?: string
+  }>
+  memory_recorded?: boolean
+  memory_event_id?: number | null
+  mastery_updated?: boolean
+  mastery_update_summary?: string
+  path_adjustment_suggestion?: string
 }
 
 export interface GeneratedResource {
@@ -84,6 +163,7 @@ export interface GeneratedResource {
   content: string
   meta: Record<string, unknown>
   created_at: string
+  verification?: Record<string, unknown> | null
 }
 
 
@@ -248,14 +328,17 @@ export async function streamPersonaChat(
   params: { message: string; history: ChatHistoryItem[] },
   handlers: {
     onToken: (chunk: string) => void
-    onDone?: (full: string) => void
+    onDone?: (full: string, meta?: PersonaChatMeta) => void
     onError?: (msg: string) => void
   },
 ): Promise<void> {
   try {
     await consumeSse('/api/orchestrator/persona/chat', params, (ev) => {
       if (ev.type === 'token' && typeof ev.content === 'string') handlers.onToken(ev.content)
-      if (ev.type === 'done' && typeof ev.content === 'string') handlers.onDone?.(ev.content)
+      if (ev.type === 'done' && typeof ev.content === 'string') {
+        const meta = (ev.meta ?? {}) as PersonaChatMeta
+        handlers.onDone?.(ev.content, meta)
+      }
       if (ev.type === 'error') handlers.onError?.(String(ev.message ?? '对话失败'))
     })
   } catch (e) {
@@ -360,7 +443,13 @@ export async function fetchLearningEvaluation(body: {
   }) as Promise<LearningEvaluation>
 }
 
-export async function syncPersonaFromStored(): Promise<{ profile: PersonaProfile; message: string }> {
+export async function syncPersonaFromStored(): Promise<{
+  profile: PersonaProfile
+  message: string
+  fallback?: boolean
+  fallback_reason?: string
+  generated_by?: string
+}> {
   return request.post('/api/orchestrator/persona/sync-from-stored', {}) as Promise<{
     profile: PersonaProfile
     message: string
@@ -369,15 +458,10 @@ export async function syncPersonaFromStored(): Promise<{ profile: PersonaProfile
 
 export function resourceVerifyTag(meta: Record<string, unknown>): {
   label: string
-  type: 'success' | 'warning' | 'info'
+  type: 'success' | 'warning' | 'info' | 'danger'
 } {
-  if (meta?.verified === true || meta?.status === 'published') {
-    return { label: '已校验', type: 'success' }
-  }
-  if (meta?.status === 'draft') {
-    return { label: '待校验', type: 'warning' }
-  }
-  return { label: '未校验', type: 'info' }
+  const t = verificationDisplayTag(meta)
+  return { label: t.label, type: t.type }
 }
 
 export async function streamGenerateResource(
@@ -499,6 +583,8 @@ export async function streamGenerateAllResources(
     onDone?: (info?: {
       partial_failure?: boolean
       reused_count?: number
+      fallback_mode?: boolean
+      fallback_reason?: string
       errors?: Array<{ resource_type?: string; agent_name?: string; error: string }>
     }) => void
     onError?: (msg: string) => void
@@ -554,6 +640,9 @@ export async function streamGenerateAllResources(
         handlers.onDone?.({
           partial_failure: ev.partial_failure === true,
           reused_count: typeof ev.reused_count === 'number' ? ev.reused_count : undefined,
+          fallback_mode: ev.fallback_mode === true,
+          fallback_reason:
+            typeof ev.fallback_reason === 'string' ? ev.fallback_reason : undefined,
           errors: Array.isArray(ev.errors)
             ? (ev.errors as Array<{ resource_type?: string; agent_name?: string; error: string }>)
             : undefined,

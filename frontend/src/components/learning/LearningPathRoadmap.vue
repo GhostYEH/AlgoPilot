@@ -377,7 +377,7 @@ async function onReplan() {
 
   emit('replan')
 
-  await replan()
+  await replan({ trigger: 'manual', triggerLabel: '手动重新规划路径' })
 
 }
 

@@ -67,6 +67,7 @@ const filterType = ref('')
 const filterVerified = ref('')
 const page = ref(1)
 const pageSize = ref(8)
+const batchFallbackNotice = ref('')
 
 const activeResource = computed(() =>
   resources.value.find((r) => r.id === activeId.value) ?? null,
@@ -127,18 +128,23 @@ function applyHighlightFromRoute() {
 
 async function loadList() {
   if (!isLoggedIn.value) return
+  loading.value = true
   try {
     resources.value = await fetchResources()
     applyHighlightFromRoute()
   } catch {
     resources.value = []
+    ElMessage.warning('资源列表加载失败')
+  } finally {
+    loading.value = false
   }
 }
 
 onMounted(loadList)
 
-function handleStreamError(_msg: string) {
+function handleStreamError(msg: string) {
   progressText.value = ''
+  ElMessage.error(msg || '资源生成失败，请检查 LLM 是否已配置')
 }
 
 async function onGenerateOne(type: string) {
@@ -198,6 +204,7 @@ async function onGenerateAll() {
   batchLoading.value = true
   workflowLogs.value = []
   progressPercent.value = 0
+  batchFallbackNotice.value = ''
   progressText.value = 'DAG Pipeline：检索 → 生成 ⇄ 校验 → 安全 → 落库…'
   try {
     await streamGenerateAllResources(
@@ -217,13 +224,21 @@ async function onGenerateAll() {
         },
         onResource(r) {
           resources.value = [r, ...resources.value.filter((x) => x.id !== r.id)]
+          if (isTemplateFallback(r.meta)) {
+            batchFallbackNotice.value =
+              '当前为无模型 Key 的模板降级资源，配置 SPARK_API_PASSWORD 后可生成更高质量内容。'
+          }
           if (r.meta?.reused) {
             workflowLogs.value.push(`[复用] ${r.agent_name} · ${r.title}`)
           }
         },
         onDone(info) {
           const reused = info?.reused_count ?? 0
-          if (reused > 0) {
+          if (info?.fallback_mode) {
+            batchFallbackNotice.value =
+              '当前为无模型 Key 的模板降级资源，配置 SPARK_API_PASSWORD 后可生成更高质量内容。'
+            ElMessage.warning('已使用 TemplateFallbackAgent 模板降级完成批量生成（非大模型输出）')
+          } else if (reused > 0) {
             ElMessage.success(`完成：${reused} 项画像未变已复用，其余已生成/校验`)
           } else {
             ElMessage.success('比赛展示资源已全部生成（含校验闭环）')
@@ -254,6 +269,10 @@ async function onToggleFavorite(r: GeneratedResource) {
   resources.value = resources.value.map((x) => (x.id === updated.id ? updated : x))
 }
 
+function isTemplateFallback(meta: Record<string, unknown> | undefined): boolean {
+  return meta?.fallback === true || meta?.generated_by === 'TemplateFallbackAgent'
+}
+
 function openResource(r: GeneratedResource) {
   activeId.value = r.id
 }
@@ -276,6 +295,17 @@ function verifyTag(meta: Record<string, unknown>) {
       <el-alert v-if="!isLoggedIn" type="warning" show-icon :closable="false" class="login-alert">
         登录后可生成并保存资源到云端
       </el-alert>
+
+      <el-alert
+        v-if="batchFallbackNotice"
+        type="warning"
+        show-icon
+        :closable="true"
+        class="fallback-alert"
+        :title="batchFallbackNotice"
+        description="资源标题以 [模板] 前缀标识；meta.fallback=true，由课程知识库片段拼装，请勿当作大模型原创输出。"
+        @close="batchFallbackNotice = ''"
+      />
 
       <div class="gen-panel">
         <div class="gen-panel-inner">
@@ -456,6 +486,9 @@ function verifyTag(meta: Record<string, unknown>) {
                   <span class="res-agent">{{ r.agent_name }}</span>
                   <el-tag size="small" :type="verifyTag(r.meta ?? {}).type" effect="plain">
                     {{ verifyTag(r.meta ?? {}).label }}
+                  </el-tag>
+                  <el-tag v-if="isTemplateFallback(r.meta)" size="small" type="warning" effect="plain">
+                    模板降级
                   </el-tag>
                 </div>
                 <span class="res-title">{{ r.title }}</span>

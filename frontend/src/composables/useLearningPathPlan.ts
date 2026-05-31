@@ -9,7 +9,8 @@ export { sortRowsByPlan }
 
 export function useLearningPathPlan() {
   const store = useLearningPathStore()
-  const { plan, loading, loaded, hasPlan, stepMap, recommendedNext } = storeToRefs(store)
+  const { plan, loading, loaded, hasPlan, stepMap, recommendedNext, lastReplanDiff } =
+    storeToRefs(store)
 
   return {
     plan,
@@ -18,8 +19,11 @@ export function useLearningPathPlan() {
     loaded,
     stepMap,
     recommendedNext,
+    lastReplanDiff,
     loadPlan: store.loadPlan,
     replan: store.replan,
+    recordExternalReplan: store.recordExternalReplan,
+    clearReplanDiff: store.clearReplanDiff,
     clearPlan: store.clearPlan,
   }
 }

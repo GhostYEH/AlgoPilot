@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 
 
 class ProblemListItem(BaseModel):
@@ -11,6 +11,10 @@ class ProblemListItem(BaseModel):
     lc_id: int = 0
     difficulty: str = "medium"
     ready: bool = False
+    course_id: str = "data_structures_algorithms"
+    chapter_id: str = ""
+    module_key: str = ""
+    skill_id: str = ""
 
 
 class ProblemDetail(BaseModel):
@@ -27,6 +31,10 @@ class ProblemDetail(BaseModel):
     ready: bool = False
     time_limit_ms: int = 3000
     order_insensitive: bool = False
+    course_id: str = "data_structures_algorithms"
+    chapter_id: str = ""
+    module_key: str = ""
+    skill_id: str = ""
 
 
 class JudgeRequest(BaseModel):
@@ -57,6 +65,8 @@ class JudgeResponse(BaseModel):
     total: int
     cases: list[CaseResultOut]
     compile_error: str | None = None
+    event_id: str | None = None
+    event_logs: list[dict[str, str]] = Field(default_factory=list)
 
 
 class TraceVarSnapshot(BaseModel):
@@ -127,6 +137,49 @@ class AiComplexityReport(BaseModel):
     source: str = "llm"
 
 
+class SkillCardBrief(BaseModel):
+    id: str
+    name: str
+    chapter_id: str = ""
+    description: str = ""
+
+
+class RecommendedResourceHint(BaseModel):
+    resource_type: str
+    topic: str = ""
+    reason: str = ""
+    chapter_id: str = ""
+
+
+class OjTutoringPayload(BaseModel):
+    course_id: str = "data_structures_algorithms"
+    chapter_id: str = ""
+    skill_id: str = ""
+    module_key: str = ""
+    matched_skill: SkillCardBrief | None = None
+    error_pattern: str = ""
+    error_pattern_label: str = ""
+    bug_step_index: int = 0
+    trace_summary: str = ""
+    hint_level: int = Field(default=1, ge=1, le=4)
+    layered_hints: list[str] = Field(default_factory=list)
+    recommended_resources: list[RecommendedResourceHint] = Field(default_factory=list)
+    memory_event_id: int | None = None
+    mastery_update_summary: str = ""
+    path_adjustment_hint: str = ""
+    memory_recorded: bool = False
+    mastery_updated: bool = False
+    persona_updated: bool = False
+    persona_patch_summary: str = ""
+    persona_patch_warning: str = ""
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def profile_updated(self) -> bool:
+        """已弃用：等价于 persona_updated，不代表 memory_recorded。"""
+        return self.persona_updated
+
+
 class AiDiagnoseResponse(BaseModel):
     edge_case: AiEdgeCaseInfo
     edge_verdict: str
@@ -134,6 +187,7 @@ class AiDiagnoseResponse(BaseModel):
     trace: TraceResponse
     complexity: AiComplexityReport
     summary: str
+    tutoring: OjTutoringPayload | None = None
 
 
 class TraceBugDiagnoseRequest(BaseModel):
@@ -149,3 +203,4 @@ class TraceBugDiagnoseResponse(BaseModel):
     diagnosis_title: str
     detailed_analysis: str
     source: str = "llm"
+    tutoring: OjTutoringPayload | None = None

@@ -14,6 +14,7 @@ import { isLoggedIn } from '@/stores/auth'
 import AgentThinkingConsole from '@/components/agents/AgentThinkingConsole.vue'
 import PersonalizedResourceDashboard from '@/components/agents/PersonalizedResourceDashboard.vue'
 import type { AgentConsoleLine } from '@/utils/agentConsole'
+import { A3_SHOWCASE_AGENTS, DEMO_RESOURCE_PIPELINE } from '@/constants/a3Demo'
 import {
   lineFromCollaboration,
   lineFromProgress,
@@ -44,6 +45,8 @@ const stageDetail = computed(() => {
   return s ? getStageDetail(s.stage) : null
 })
 
+const catalogError = ref(false)
+
 onMounted(async () => {
   try {
     const r = await fetchAgentsCatalog()
@@ -52,7 +55,15 @@ onMounted(async () => {
     note.value = r.framework_note
     dagMermaid.value = r.dag_mermaid ?? ''
   } catch {
-    agents.value = []
+    catalogError.value = true
+    agents.value = A3_SHOWCASE_AGENTS.map((a) => ({
+      id: a.id,
+      display_name: a.id,
+      role: a.role,
+      layer: a.layer,
+    }))
+    pipeline.value = [...DEMO_RESOURCE_PIPELINE]
+    note.value = '后端 catalog 暂不可用，已加载演示用 Pipeline 说明'
   }
 })
 
@@ -114,7 +125,17 @@ async function runResourceGeneration() {
         },
         onDone(info) {
           progress.value = 100
-          if (info?.partial_failure) {
+          if (info?.fallback_mode) {
+            pushLine(
+              systemLine(
+                'TemplateFallbackAgent：无 LLM Key，已用课程知识库模板降级（非大模型生成）',
+                'warn',
+              ),
+            )
+            ElMessage.warning(
+              '当前为无模型 Key 的模板降级资源，配置 SPARK_API_PASSWORD 后可生成更高质量内容。',
+            )
+          } else if (info?.partial_failure) {
             const failed = info.errors?.map((e) => e.agent_name ?? e.resource_type ?? '未知').join('、') ?? '部分资源'
             pushLine(systemLine(`部分资源生成失败（${failed}），其余已装配完毕`, 'warn'))
             ElMessage.warning(`${failed} 生成失败，其余资源已就绪`)
@@ -149,6 +170,14 @@ function agentStatus(id: string): 'running' | 'idle' {
     <div class="wb-hero">
       <el-page-header title="多智能体协同工作台" @back="router.push({ name: 'home' })" />
       <p class="wb-desc">{{ note || 'ProfilingAgent 驱动比赛展示资源 Agent 协同生成 · 赛题答辩演示入口' }}</p>
+      <el-alert
+        v-if="catalogError"
+        type="warning"
+        :closable="false"
+        show-icon
+        title="Agent 目录加载失败，已展示演示 Pipeline；登录后可生成资源（无 LLM Key 时为模板降级）"
+        class="wb-catalog-alert"
+      />
     </div>
 
     <section class="wb-generate">

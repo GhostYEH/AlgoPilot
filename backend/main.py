@@ -17,6 +17,10 @@ from api.health import router as health_router
 from api.learning import router as learning_router
 from api.oj import router as oj_router
 from api.search import router as search_router
+from api.skills import router as skills_router
+from api.memory import router as memory_router
+from api.mastery import router as mastery_router
+from api.events import router as events_router
 from core.database import Base, engine
 
 
@@ -54,3 +58,7 @@ app.include_router(tts_router, prefix="/api/ai/tts", tags=["ai-tts"])
 app.include_router(oj_assistant_router, prefix="/api/ai/oj", tags=["ai-oj"])
 app.include_router(oj_router, prefix="/api", tags=["oj"])
 app.include_router(search_router, prefix="/api/search", tags=["search"])
+app.include_router(skills_router, prefix="/api")
+app.include_router(memory_router, prefix="/api")
+app.include_router(mastery_router, prefix="/api")
+app.include_router(events_router, prefix="/api")

@@ -7,7 +7,13 @@ import {
   type LearningPathPlan,
   type PathStepItem,
 } from '@/api/orchestrator'
+import { fetchMasteryReport, MASTERY_LEVEL_LABELS } from '@/api/mastery'
 import { buildLearningOverview, type ModuleProgressRow } from '@/utils/learningOverview'
+import {
+  computePathReplanDiff,
+  type PathReplanDiffResult,
+  type ReplanContext,
+} from '@/utils/pathReplanDiff'
 import { useAuthStore } from '@/stores/pinia/auth'
 
 export function sortRowsByPlan(rows: ModuleProgressRow[], orderedKeys: string[]): ModuleProgressRow[] {
@@ -24,6 +30,7 @@ export const useLearningPathStore = defineStore('learningPath', () => {
   const plan = ref<LearningPathPlan | null>(null)
   const loading = ref(false)
   const loaded = ref(false)
+  const lastReplanDiff = ref<PathReplanDiffResult | null>(null)
 
   const hasPlan = computed(() => !!plan.value?.ordered_keys?.length)
 
@@ -75,16 +82,72 @@ export const useLearningPathStore = defineStore('learningPath', () => {
     }
   }
 
-  async function replan() {
+  async function gatherMasteryEvidence(): Promise<string[]> {
+    try {
+      const overview = await fetchMasteryReport()
+      const lines: string[] = []
+      lines.push(
+        `掌握度 ${overview.overall_score}（${MASTERY_LEVEL_LABELS[overview.overall_level]}）`,
+      )
+      const report = overview.report ?? overview.chapters?.[0]
+      if (report?.weak_skills?.length) {
+        lines.push(`薄弱技能：${report.weak_skills.slice(0, 4).join('、')}`)
+      }
+      if (report?.path_adjustment_suggestion) {
+        lines.push(report.path_adjustment_suggestion)
+      }
+      for (const action of report?.recommended_actions?.slice(0, 2) ?? []) {
+        lines.push(action)
+      }
+      return lines
+    } catch {
+      return []
+    }
+  }
+
+  function applyReplanDiff(
+    beforeKeys: string[],
+    newPlan: LearningPathPlan,
+    context?: ReplanContext,
+    extraEvidence?: string[],
+    beforeSteps?: PathStepItem[],
+  ) {
+    lastReplanDiff.value = computePathReplanDiff(beforeKeys, newPlan, {
+      beforeSteps: beforeSteps ?? plan.value?.steps,
+      context,
+      extraEvidence,
+    })
+  }
+
+  async function replan(context?: ReplanContext) {
     const auth = useAuthStore()
     if (!auth.isLoggedIn) return null
+    const beforeKeys = [...(plan.value?.ordered_keys ?? [])]
+    const beforeSteps = plan.value?.steps ?? []
     loading.value = true
     try {
-      plan.value = await replanLearningPath(buildReplanPayload())
-      return plan.value
+      const newPlan = await replanLearningPath(buildReplanPayload())
+      plan.value = newPlan
+      const masteryEvidence = await gatherMasteryEvidence()
+      applyReplanDiff(beforeKeys, newPlan, context, masteryEvidence, beforeSteps)
+      return newPlan
     } finally {
       loading.value = false
     }
+  }
+
+  async function recordExternalReplan(
+    beforeKeys: string[],
+    context: ReplanContext,
+    beforeSteps?: PathStepItem[],
+  ) {
+    if (!plan.value) return
+    const masteryEvidence = await gatherMasteryEvidence()
+    applyReplanDiff(beforeKeys, plan.value, context, masteryEvidence, beforeSteps)
+  }
+
+  function clearReplanDiff() {
+    lastReplanDiff.value = null
   }
 
   function clearPlan() {
@@ -98,8 +161,11 @@ export const useLearningPathStore = defineStore('learningPath', () => {
     hasPlan,
     stepMap,
     recommendedNext,
+    lastReplanDiff,
     loadPlan,
     replan,
+    recordExternalReplan,
+    clearReplanDiff,
     clearPlan,
   }
 })

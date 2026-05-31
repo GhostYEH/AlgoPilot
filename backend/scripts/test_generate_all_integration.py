@@ -209,8 +209,10 @@ async def _mock_generate_with_context(
     return f"Mock · {resource_type}", content, meta
 
 
-async def _mock_verify(content: str, chunks: list, *, topic: str = "") -> tuple[bool, str, list, str]:
-    return True, content, ["mock-chunk-1"], ""
+async def _mock_verify(content: str, chunks: list, *, topic: str = "") -> tuple:
+    from services.agents.verifier import VerifierStructuredResult
+
+    return True, content, ["mock-chunk-1"], "", VerifierStructuredResult(status="passed", passed=True)
 
 
 def _parse_sse_lines(chunks: list[str]) -> list[dict[str, Any]]:

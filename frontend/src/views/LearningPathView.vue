@@ -6,6 +6,7 @@ import AlgorithmUniverseGraph from '@/components/learning/AlgorithmUniverseGraph
 import ConceptKnowledgeGraph from '@/components/learning/ConceptKnowledgeGraph.vue'
 import PersonaChatPanel from '@/components/persona/PersonaChatPanel.vue'
 import RecommendedResourcesPanel from '@/components/learning/RecommendedResourcesPanel.vue'
+import PathReplanDiffCard from '@/components/learning/PathReplanDiffCard.vue'
 import { ALGORITHM_MODULES } from '@/constants/modules'
 import { buildLearningOverview } from '@/utils/learningOverview'
 import { useLearningPathPlan } from '@/composables/useLearningPathPlan'
@@ -14,7 +15,7 @@ import type { PersonaProfile } from '@/api/orchestrator'
 
 const route = useRoute()
 const router = useRouter()
-const { plan, loadPlan } = useLearningPathPlan()
+const { plan, loadPlan, lastReplanDiff, clearReplanDiff } = useLearningPathPlan()
 const universeKey = ref(0)
 
 const highlightKey = computed(() => {
@@ -41,6 +42,9 @@ const autoTour = ref(false)
 const onboardingSectionRef = ref<HTMLElement | null>(null)
 
 onMounted(async () => {
+  if (isLoggedIn.value) {
+    await loadPlan()
+  }
   if (route.query.onboarding === '1') {
     await nextTick()
     onboardingSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -93,6 +97,12 @@ onMounted(async () => {
         </div>
       </el-col>
     </el-row>
+
+    <PathReplanDiffCard
+      v-if="isLoggedIn && lastReplanDiff"
+      :diff="lastReplanDiff"
+      @dismiss="clearReplanDiff"
+    />
 
     <section class="path-explorer-grid">
       <div class="universe-panel">

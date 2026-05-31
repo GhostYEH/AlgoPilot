@@ -44,6 +44,13 @@ import {
   monotonicStackProgress,
 } from '@/modules/monotonicStack/monotonicStackProgress'
 import {
+  GRAPH_SECTIONS,
+  GRAPH_INTRO,
+  GRAPH_COUNT,
+  GRAPH_EXTRA,
+} from '@/modules/graph/graphCurriculum'
+import { GRAPH_SECTION_STORAGE_KEY, graphProgress } from '@/modules/graph/graphProgress'
+import {
   LINKED_LIST_SECTIONS,
   LINKED_LIST_CURRICULUM_INTRO,
   LINKED_LIST_SECTION_COUNT,
@@ -201,6 +208,22 @@ export const MODULE_LEARN_CONFIGS: Record<string, ModuleLearnConfig> = {
       import('@/modules/monotonicStack/components/MonotonicStackSectionAnimation.vue'),
     animTransitionClass: 'ms-anim-fade',
     extraTables: MONOTONIC_STACK_EXTRA,
+  },
+  graph: {
+    key: 'graph',
+    routeName: 'learn-graph',
+    breadcrumb: '图论学习',
+    heroTitle: '图论学习模块',
+    chapterTag: '图论篇 · ch06-graph',
+    intro: GRAPH_INTRO,
+    sections: GRAPH_SECTIONS,
+    sectionCount: GRAPH_COUNT,
+    storageKey: GRAPH_SECTION_STORAGE_KEY,
+    loadSectionDone: graphProgress.loadSectionDone,
+    toggleSectionDone: graphProgress.toggleSectionDone,
+    animationComponent: () => import('@/modules/graph/components/GraphSectionAnimation.vue'),
+    animTransitionClass: 'graph-anim-fade',
+    extraTables: GRAPH_EXTRA,
   },
 }
 

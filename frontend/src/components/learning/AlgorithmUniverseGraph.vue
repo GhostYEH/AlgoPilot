@@ -740,7 +740,7 @@ function openResource(r: GeneratedResource) {
 
 async function onReplan() {
   emit('replan')
-  await replan()
+  await replan({ trigger: 'universe', triggerLabel: '宇宙图路径规划' })
 }
 
 function renderMiniRadar(svgRoot: SVGSVGElement, dims: Array<{ label: string; score: number; highlight?: boolean }>) {

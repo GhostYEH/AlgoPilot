@@ -43,6 +43,12 @@ from services.orchestrator.persona_fingerprint import (
     should_skip_generation,
 )
 from services.orchestrator.pipeline_context import PipelineContext
+from services.agents.template_fallback import (
+    GENERATED_BY as TEMPLATE_FALLBACK_AGENT,
+    is_llm_related_error,
+    llm_unavailable_reason,
+)
+from services.orchestrator.fallback_workflow import fallback_resource_workflow
 from services.orchestrator.workflow import resource_workflow
 from services.safety.content_filter import content_filter
 
@@ -66,7 +72,11 @@ def _dimension_scores_from_row(row: StudentProfile | None) -> dict[str, int]:
     return out
 
 
-def _profile_to_response(row: StudentProfile | None) -> PersonaProfileResponse:
+def _profile_to_response(
+    row: StudentProfile | None,
+    db: Session | None = None,
+    user_id: int | None = None,
+) -> PersonaProfileResponse:
     if row is None:
         return PersonaProfileResponse(
             summary="",
@@ -74,6 +84,9 @@ def _profile_to_response(row: StudentProfile | None) -> PersonaProfileResponse:
             updated_at=None,
         )
     raw = dict(row.dimensions or {})
+    persona_fallback = bool(raw.pop("_persona_fallback", False))
+    fallback_reason = str(raw.pop("_fallback_reason", "") or "")
+    generated_by = str(raw.pop("_generated_by", "") or "")
     confidence = {k: str(v) for k, v in (raw.pop("_confidence", None) or {}).items()}
     missing = list(raw.pop("_coverage_missing", None) or [])
     scores_raw = raw.pop("_dimension_scores", None) or {}
@@ -90,6 +103,34 @@ def _profile_to_response(row: StudentProfile | None) -> PersonaProfileResponse:
         for k in PersonaDimensions.model_fields:
             scores[k] = _infer_score_from_text(getattr(dims, k, ""))
     updated = row.updated_at.isoformat() if row.updated_at else None
+    dim_evidence: dict[str, list[str]] = dict(raw.get("_dimension_evidence") or {})
+    update_reason = str(raw.get("_update_reason") or "")
+    recent_raw = raw.get("_recent_evidence") or []
+    recent_evidence = []
+    if db is not None and user_id is not None:
+        try:
+            from schemas.persona import LearningEvidenceBrief
+            from services.memory.memory_summarizer import (
+                build_dimension_evidence,
+                build_recent_evidence_items,
+                build_update_reason,
+            )
+
+            dim_evidence = build_dimension_evidence(db, user_id) or dim_evidence
+            update_reason = build_update_reason(db, user_id) or update_reason
+            recent_evidence = [
+                LearningEvidenceBrief.model_validate(x)
+                for x in build_recent_evidence_items(db, user_id, limit=3)
+            ]
+        except Exception:
+            pass
+    elif recent_raw:
+        from schemas.persona import LearningEvidenceBrief
+
+        recent_evidence = [
+            LearningEvidenceBrief.model_validate(x) for x in recent_raw[:3]
+        ]
+
     return PersonaProfileResponse(
         summary=row.summary or "",
         dimensions=dims,
@@ -97,37 +138,66 @@ def _profile_to_response(row: StudentProfile | None) -> PersonaProfileResponse:
         dimension_scores=scores,
         dimension_confidence=confidence,
         coverage_missing=missing,
+        dimension_evidence=dim_evidence,
+        update_reason=update_reason,
+        recent_evidence=recent_evidence,
+        fallback=persona_fallback,
+        fallback_reason=fallback_reason,
+        generated_by=generated_by,
     )
 
 
-def _format_profile_block(row: StudentProfile | None) -> str:
+def _format_profile_block(
+    row: StudentProfile | None,
+    db: Session | None = None,
+    user_id: int | None = None,
+) -> str:
     if row is None or not row.dimensions:
-        return "（尚未建立画像，按通用大一计科算法初学者处理）"
-    dims = row.dimensions
-    lines = [f"摘要：{row.summary or '无'}"]
-    labels = {
-        "knowledge_base": "知识基础",
-        "cognitive_style": "认知风格",
-        "coding_ability": "代码实操能力",
-        "learning_goals": "学习目标",
-        "error_preference": "易错点偏好",
-        "grit_level": "抗挫折心理能力",
-    }
-    for key, label in labels.items():
-        val = dims.get(key, "")
-        if val:
-            lines.append(f"- {label}：{val}")
-    return "\n".join(lines)
+        base = "（尚未建立画像，按通用大一计科算法初学者处理）"
+    else:
+        dims = row.dimensions
+        lines = [f"摘要：{row.summary or '无'}"]
+        labels = {
+            "knowledge_base": "知识基础",
+            "cognitive_style": "认知风格",
+            "coding_ability": "代码实操能力",
+            "learning_goals": "学习目标",
+            "error_preference": "易错点偏好",
+            "grit_level": "抗挫折心理能力",
+        }
+        for key, label in labels.items():
+            val = dims.get(key, "")
+            if val:
+                lines.append(f"- {label}：{val}")
+        ev = dims.get("_dimension_evidence") or {}
+        if isinstance(ev, dict):
+            for key, snippets in ev.items():
+                if snippets and key in labels:
+                    lines.append(f"- {labels[key]}证据：" + "；".join(snippets[:2]))
+        base = "\n".join(lines)
+
+    if db is not None and user_id is not None:
+        try:
+            from services.memory.memory_summarizer import append_memory_to_profile_block
+
+            return append_memory_to_profile_block(db, user_id, base)
+        except Exception:
+            pass
+    return base
 
 
 class Orchestrator:
     """自研轻量编排：按任务类型路由到对应 Agent。"""
 
+    def __init__(self) -> None:
+        self._last_persona_chat_fallback = False
+        self._last_persona_chat_fallback_reason = ""
+
     # --- 画像 ---
 
     def get_profile(self, db: Session, user: User) -> PersonaProfileResponse:
         row = db.get(StudentProfile, user.id)
-        return _profile_to_response(row)
+        return _profile_to_response(row, db=db, user_id=user.id)
 
     async def persona_chat_stream(
         self,
@@ -137,18 +207,73 @@ class Orchestrator:
         message: str,
         history: list[ChatHistoryItem],
     ) -> AsyncIterator[str]:
+        from services.agents.persona_fallback import (
+            FALLBACK_REASON_DEFAULT,
+            should_use_persona_fallback,
+            stream_persona_fallback_reply,
+        )
+        from services.agents.template_fallback import is_llm_related_error
+
         row = db.get(StudentProfile, user.id)
         summary = row.summary if row else ""
         existing_dims = None
         if row and row.dimensions:
             existing_dims = PersonaDimensions.from_storage(row.dimensions)
-        async for chunk in _persona.run_stream(
-            message=message,
-            history=history,
-            profile_summary=summary,
-            existing_dims=existing_dims,
-        ):
-            yield chunk
+
+        self._last_persona_chat_fallback = False
+        self._last_persona_chat_fallback_reason = ""
+
+        if should_use_persona_fallback():
+            self._last_persona_chat_fallback = True
+            self._last_persona_chat_fallback_reason = FALLBACK_REASON_DEFAULT
+            async for chunk in stream_persona_fallback_reply(
+                message=message,
+                history=history,
+                existing_dims=existing_dims,
+            ):
+                yield chunk
+            return
+
+        try:
+            async for chunk in _persona.run_stream(
+                message=message,
+                history=history,
+                profile_summary=summary,
+                existing_dims=existing_dims,
+            ):
+                yield chunk
+        except Exception as exc:
+            if not is_llm_related_error(exc):
+                raise
+            self._last_persona_chat_fallback = True
+            self._last_persona_chat_fallback_reason = str(exc)[:200] or FALLBACK_REASON_DEFAULT
+            async for chunk in stream_persona_fallback_reply(
+                message=message,
+                history=history,
+                existing_dims=existing_dims,
+            ):
+                yield chunk
+
+    def last_persona_chat_meta(self) -> dict:
+        from services.agents.persona_fallback import persona_fallback_meta
+
+        if self._last_persona_chat_fallback:
+            return persona_fallback_meta(self._last_persona_chat_fallback_reason)
+        return {
+            "fallback": False,
+            "fallback_reason": "",
+            "generated_by": "ProfilingAgent",
+        }
+
+    def persona_chat_fallback_meta(self, reason: str | None = None) -> dict:
+        from services.agents.persona_fallback import persona_fallback_meta
+
+        return persona_fallback_meta(reason)
+
+    def persona_chat_used_fallback(self) -> bool:
+        from services.agents.persona_fallback import should_use_persona_fallback
+
+        return should_use_persona_fallback()
 
     def patch_persona_from_learning(
         self,
@@ -163,12 +288,27 @@ class Orchestrator:
             db.add(row)
         dims = PersonaDimensions.from_storage(row.dimensions or {})
         summary, new_dims = apply_learning_patch(row.summary or "", dims, body)
+        payload = new_dims.model_dump()
+        try:
+            from services.memory.memory_summarizer import (
+                build_dimension_evidence,
+                build_recent_evidence_items,
+                build_update_reason,
+            )
+
+            payload["_dimension_evidence"] = build_dimension_evidence(db, user.id)
+            payload["_update_reason"] = (
+                build_update_reason(db, user.id) or "随学随新：学习行为已同步至画像"
+            )
+            payload["_recent_evidence"] = build_recent_evidence_items(db, user.id, limit=3)
+        except Exception:
+            payload["_update_reason"] = "随学随新：学习行为已同步至画像"
         row.summary = summary
-        row.dimensions = new_dims.model_dump()
+        row.dimensions = payload
         row.updated_at = datetime.utcnow()
         db.commit()
         db.refresh(row)
-        return _profile_to_response(row)
+        return _profile_to_response(row, db=db, user_id=user.id)
 
     async def sync_persona_profile(
         self,
@@ -177,15 +317,63 @@ class Orchestrator:
         *,
         history: list[ChatHistoryItem],
     ) -> PersonaProfileResponse:
+        from services.agents.persona_fallback import (
+            extract_persona_fallback,
+            should_use_persona_fallback,
+        )
+        from services.agents.template_fallback import is_llm_related_error
+
         row = db.get(StudentProfile, user.id)
         existing = None
         existing_conf: dict[str, str] = {}
         if row and row.dimensions:
             existing = PersonaDimensions.from_storage(row.dimensions)
             existing_conf = dict((row.dimensions or {}).get("_confidence") or {})
-        summary, dims, confidence, missing, scores = await _persona.extract_dimensions(
-            history, existing=existing, existing_confidence=existing_conf
-        )
+
+        used_fallback = False
+        fallback_reason = ""
+        dim_evidence: dict[str, list[str]] = {}
+        update_reason = ""
+        recent_evidence: list = []
+
+        if should_use_persona_fallback():
+            (
+                summary,
+                dims,
+                confidence,
+                missing,
+                scores,
+                dim_evidence,
+                update_reason,
+                recent_evidence,
+            ) = extract_persona_fallback(
+                history, existing=existing, existing_confidence=existing_conf
+            )
+            used_fallback = True
+            fallback_reason = "LLM key missing or provider unavailable"
+        else:
+            try:
+                summary, dims, confidence, missing, scores = await _persona.extract_dimensions(
+                    history, existing=existing, existing_confidence=existing_conf
+                )
+            except Exception as exc:
+                if not is_llm_related_error(exc):
+                    raise
+                (
+                    summary,
+                    dims,
+                    confidence,
+                    missing,
+                    scores,
+                    dim_evidence,
+                    update_reason,
+                    recent_evidence,
+                ) = extract_persona_fallback(
+                    history, existing=existing, existing_confidence=existing_conf
+                )
+                used_fallback = True
+                fallback_reason = str(exc)[:200]
+
         if row is None:
             row = StudentProfile(user_id=user.id)
             db.add(row)
@@ -195,12 +383,24 @@ class Orchestrator:
         payload["_dimension_scores"] = scores
         if missing:
             payload["_coverage_missing"] = missing
+        if used_fallback:
+            from services.agents.persona_fallback import GENERATED_BY
+
+            payload["_persona_fallback"] = True
+            payload["_fallback_reason"] = fallback_reason or "LLM key missing or provider unavailable"
+            payload["_generated_by"] = GENERATED_BY
+            if dim_evidence:
+                payload["_dimension_evidence"] = dim_evidence
+            if update_reason:
+                payload["_update_reason"] = update_reason
+            if recent_evidence:
+                payload["_recent_evidence"] = [x.model_dump() for x in recent_evidence]
         row.dimensions = payload
         row.chat_history = [{"role": h.role, "content": h.content} for h in history[-30:]]
         row.updated_at = datetime.utcnow()
         db.commit()
         db.refresh(row)
-        return _profile_to_response(row)
+        return _profile_to_response(row, db=db, user_id=user.id)
 
     def save_persona_history(
         self, db: Session, user: User, history: list[ChatHistoryItem]
@@ -298,7 +498,7 @@ class Orchestrator:
 
         result = await evaluation_agent.evaluate(
             profile_summary=profile_row.summary if profile_row else "",
-            profile_block=_format_profile_block(profile_row),
+            profile_block=_format_profile_block(profile_row, db=db, user_id=user.id),
             request=body,
             resources_count=len(resources),
             recent_resource_types=[r.resource_type for r in resources[:8]],
@@ -336,13 +536,21 @@ class Orchestrator:
         remediation_module_key: str | None = None,
     ) -> LearningPathPlanResponse:
         profile_row = db.get(StudentProfile, user.id)
-        profile_block = _format_profile_block(profile_row)
+        profile_block = _format_profile_block(profile_row, db=db, user_id=user.id)
         scores = _dimension_scores_from_row(profile_row)
+        mastery_by_chapter: dict[str, int] = {}
+        try:
+            from services.mastery.mastery_service import get_cached_mastery_by_chapter
+
+            mastery_by_chapter = get_cached_mastery_by_chapter(db, user.id)
+        except Exception:
+            pass
         plan_data = await _path.plan(
             profile_block=profile_block,
             request=body,
             dimension_scores=scores,
             remediation_before=remediation_module_key,
+            mastery_by_chapter=mastery_by_chapter,
         )
 
         row = db.get(LearningPathPlan, user.id)
@@ -362,6 +570,21 @@ class Orchestrator:
         row.updated_at = datetime.utcnow()
         db.commit()
         db.refresh(row)
+        try:
+            from services.events.event_bus import event_bus
+
+            event_bus.publish(
+                db,
+                event_type="on_path_adjusted",
+                user_id=user.id,
+                payload={
+                    "summary": plan_data.get("summary", ""),
+                    "remediation_inserted": bool(plan_data.get("remediation_inserted")),
+                    "next_module_key": plan_data.get("next_module_key"),
+                },
+            )
+        except Exception:
+            pass
         return _path_plan_response(row)
 
     async def evaluate_oj_struggle(
@@ -370,12 +593,30 @@ class Orchestrator:
         user: User,
         body: OjStruggleEvaluationRequest,
     ) -> OjStruggleEvaluationResponse:
-        struggle, rem_key, rem_label, logs = await evaluation_agent.evaluate_oj_struggle(
+        from schemas.oj import SkillCardBrief
+        from services.oj.error_patterns import ERROR_TYPE_LABELS
+        from services.oj.tutoring_pipeline import _recommended_resources
+
+        course_id = body.course_id or "data_structures_algorithms"
+        chapter_id = body.chapter_id or ""
+        if not chapter_id:
+            try:
+                from services.knowledge.course_loader import chapter_id_for_module, load_manifest
+
+                chapter_id = chapter_id_for_module(load_manifest(course_id), body.module_key) or ""
+            except Exception:
+                pass
+
+        error_pattern = (body.error_pattern or "").strip()
+        error_pattern_label = ERROR_TYPE_LABELS.get(error_pattern, error_pattern or body.verdict)
+
+        struggle, rem_key, rem_label, logs, skill_cards = await evaluation_agent.evaluate_oj_struggle(
             knowledge_point=body.knowledge_point,
             module_key=body.module_key,
             verdict=body.verdict,
             consecutive_failures=body.consecutive_failures,
-            error_pattern=body.error_pattern,
+            error_pattern=error_pattern,
+            recent_trace_summary=body.recent_trace_summary,
         )
         path_updated = False
         plan_summary = ""
@@ -392,6 +633,104 @@ class Orchestrator:
             )
             path_updated = bool(plan.remediation_inserted)
             plan_summary = plan.summary or ""
+
+        memory_recorded = False
+        memory_event_id: int | None = None
+        try:
+            from services.memory.memory_service import record_evaluation_struggle
+
+            mem = record_evaluation_struggle(
+                db,
+                user.id,
+                module_key=body.module_key,
+                knowledge_point=body.knowledge_point,
+                verdict=body.verdict,
+                error_pattern=error_pattern,
+                consecutive_failures=body.consecutive_failures,
+                skill_ids=[s.id for s in skill_cards],
+            )
+            memory_recorded = True
+            memory_event_id = mem.id
+        except Exception:
+            pass
+
+        mastery_updated = False
+        mastery_update_summary = ""
+        recommended_actions: list[str] = []
+        path_adjustment_suggestion = ""
+        try:
+            from services.events.event_bus import event_bus
+
+            pub = event_bus.publish(
+                db,
+                event_type="on_mastery_recalculated",
+                user_id=user.id,
+                course_id=course_id,
+                chapter_id=chapter_id,
+                payload={
+                    "module_key": body.module_key,
+                    "knowledge_point": body.knowledge_point,
+                    "error_pattern": error_pattern,
+                    "mastery_score": None,
+                    "modules": [m.model_dump() for m in body.modules],
+                },
+            )
+            logs.extend([entry.model_dump() for entry in pub.event.agent_logs])
+            path_adj = pub.event.payload.get("path_adjustment") or {}
+            if isinstance(path_adj, dict) and path_adj.get("reason"):
+                path_adjustment_suggestion = str(path_adj["reason"])
+        except Exception:
+            pass
+
+        try:
+            from services.mastery.mastery_service import MasteryService
+
+            overview = MasteryService(db).recalculate(
+                user.id,
+                course_id=course_id,
+                chapter_id=chapter_id,
+                modules=body.modules,
+            )
+            if overview.report:
+                mastery_updated = True
+                mastery_update_summary = (
+                    f"掌握度 {overview.report.mastery_score}（{overview.report.mastery_level}）"
+                )
+                recommended_actions = list(overview.report.recommended_actions)
+                if overview.report.path_adjustment_suggestion:
+                    path_adjustment_suggestion = overview.report.path_adjustment_suggestion
+        except Exception:
+            pass
+
+        skill_id = body.skill_id or (skill_cards[0].id if skill_cards else "")
+        recommended_resources = _recommended_resources(skill_id, body.module_key, chapter_id)
+        matched_skill: SkillCardBrief | None = None
+        if skill_cards:
+            primary = skill_cards[0]
+            matched_skill = SkillCardBrief(
+                id=primary.id,
+                name=primary.name,
+                chapter_id=primary.chapter_id,
+                description=primary.description,
+            )
+        elif skill_id:
+            try:
+                from services.skills.registry import SkillRegistry
+
+                card = SkillRegistry().get(skill_id)
+                if card:
+                    matched_skill = SkillCardBrief(
+                        id=card.id,
+                        name=card.name,
+                        chapter_id=card.chapter_id,
+                        description=card.description,
+                    )
+            except Exception:
+                pass
+
+        if struggle and rem_label and not path_adjustment_suggestion:
+            path_adjustment_suggestion = f"LearningPathAgent：优先巩固「{rem_label}」"
+
         return OjStruggleEvaluationResponse(
             agent_name="EvaluatorAgent",
             struggle_detected=struggle,
@@ -402,6 +741,19 @@ class Orchestrator:
             path_updated=path_updated,
             agent_logs=[AgentLogItem.model_validate(entry) for entry in logs],
             plan_summary=plan_summary,
+            recommended_skill_cards=skill_cards,
+            course_id=course_id,
+            chapter_id=chapter_id,
+            matched_skill=matched_skill,
+            error_pattern=error_pattern,
+            error_pattern_label=error_pattern_label,
+            recommended_actions=recommended_actions,
+            recommended_resources=recommended_resources,
+            memory_recorded=memory_recorded,
+            memory_event_id=memory_event_id,
+            mastery_updated=mastery_updated,
+            mastery_update_summary=mastery_update_summary,
+            path_adjustment_suggestion=path_adjustment_suggestion,
         )
 
     # --- 资源生成 ---
@@ -416,7 +768,7 @@ class Orchestrator:
         pipeline_ctx: PipelineContext | None = None,
     ) -> GeneratedResourceItem:
         row = db.get(StudentProfile, user.id)
-        profile_block = _format_profile_block(row)
+        profile_block = _format_profile_block(row, db=db, user_id=user.id)
         title, content, gen_meta = await resource_workflow.run(
             body.resource_type,
             topic=body.topic,
@@ -460,6 +812,69 @@ class Orchestrator:
                 fingerprint=fp,
             )
             db.commit()
+        try:
+            from services.events.event_bus import event_bus
+
+            event_bus.publish(
+                db,
+                event_type="on_resource_generated",
+                user_id=user.id,
+                chapter_id=str(meta.get("chapter_id") or ""),
+                payload={
+                    "resource_type": body.resource_type,
+                    "title": title,
+                    "resource_id": record.id,
+                    "verified": gen_meta.get("verified"),
+                    "safety_passed": gen_meta.get("status") != "draft",
+                    "agent_logs": gen_meta.get("agent_logs", []),
+                    "module_key": body.module_key,
+                    "topic": body.topic,
+                },
+            )
+        except Exception:
+            pass
+        return _resource_item(record)
+
+    async def generate_resource_fallback(
+        self,
+        db: Session,
+        user: User,
+        body: ResourceGenerateRequest,
+        *,
+        fallback_reason: str,
+        emit: Callable[[dict], Awaitable[None]] | None = None,
+        pipeline_ctx: PipelineContext | None = None,
+    ) -> GeneratedResourceItem:
+        row = db.get(StudentProfile, user.id)
+        profile_block = _format_profile_block(row, db=db, user_id=user.id)
+        title, content, gen_meta = await fallback_resource_workflow.run(
+            body.resource_type,
+            topic=body.topic,
+            profile_block=profile_block,
+            module_key=body.module_key,
+            focus_hint=body.focus_hint,
+            fallback_reason=fallback_reason,
+            emit=emit,
+            pipeline_ctx=pipeline_ctx,
+        )
+        agent_name = TEMPLATE_FALLBACK_AGENT
+        meta = {
+            "topic": body.topic,
+            "module_key": body.module_key,
+            "agent_logs": gen_meta.get("agent_logs", []),
+            **gen_meta,
+        }
+        record = GeneratedResource(
+            user_id=user.id,
+            resource_type=body.resource_type,
+            agent_name=agent_name,
+            title=title,
+            content=content,
+            meta=meta,
+        )
+        db.add(record)
+        db.commit()
+        db.refresh(record)
         return _resource_item(record)
 
     def list_resources(self, db: Session, user: User) -> list[GeneratedResourceItem]:
@@ -610,6 +1025,7 @@ class Orchestrator:
         module_key: str,
         focus_hint: str,
         pipeline_ctx: PipelineContext,
+        fallback_reason: str | None = None,
     ) -> tuple[ResourceType, list[dict], GeneratedResourceItem | None, Exception | None]:
         """单阶段资源任务。并行阶段使用独立 Session，避免共享请求级 Session 并发 commit。"""
         from core.database import SessionLocal
@@ -630,14 +1046,45 @@ class Orchestrator:
             local_user = local_db.get(User, user.id)
             if local_user is None:
                 return resource_type, events, None, ValueError("用户不存在")
-            item = await self.generate_resource(
-                local_db,
-                local_user,
-                req,
-                emit=capture,
-                pipeline_ctx=pipeline_ctx,
-            )
-            return resource_type, events, item, None
+            if fallback_reason:
+                item = await self.generate_resource_fallback(
+                    local_db,
+                    local_user,
+                    req,
+                    fallback_reason=fallback_reason,
+                    emit=capture,
+                    pipeline_ctx=pipeline_ctx,
+                )
+                return resource_type, events, item, None
+            try:
+                item = await self.generate_resource(
+                    local_db,
+                    local_user,
+                    req,
+                    emit=capture,
+                    pipeline_ctx=pipeline_ctx,
+                )
+                return resource_type, events, item, None
+            except Exception as exc:
+                local_db.rollback()
+                if is_llm_related_error(exc):
+                    from fastapi import HTTPException
+
+                    reason = (
+                        str(exc.detail)[:240]
+                        if isinstance(exc, HTTPException)
+                        else str(exc)[:240]
+                    )
+                    item = await self.generate_resource_fallback(
+                        local_db,
+                        local_user,
+                        req,
+                        fallback_reason=reason or "LLM 调用失败",
+                        emit=capture,
+                        pipeline_ctx=pipeline_ctx,
+                    )
+                    return resource_type, events, item, None
+                return resource_type, events, None, exc
         except Exception as exc:
             local_db.rollback()
             return resource_type, events, None, exc
@@ -674,6 +1121,32 @@ class Orchestrator:
         emitted_collab_count = 0
         emitted_agent_log_count = 0
         reused_count = 0
+        batch_fallback_reason = llm_unavailable_reason()
+
+        yield _sse({
+            "type": "progress",
+            "step": 0,
+            "total": total,
+            "percent": 0,
+        })
+
+        if batch_fallback_reason:
+            yield _sse({
+                "type": "workflow",
+                "stage": "llm_check",
+                "agent": "Orchestrator",
+                "status": "skipped",
+                "detail": batch_fallback_reason,
+                "percent": 0,
+            })
+            yield _sse({
+                "type": "workflow",
+                "stage": "fallback_mode",
+                "agent": TEMPLATE_FALLBACK_AGENT,
+                "status": "running",
+                "detail": "检测到 LLM 不可用，切换课程知识库模板生成",
+                "percent": 0,
+            })
 
         profile_row = db.get(StudentProfile, user.id)
         existing_rows = (
@@ -716,7 +1189,7 @@ class Orchestrator:
                     module_key=module_key,
                     focus_hint=focus_hint,
                 )
-                if skip and existing is not None:
+                if skip and existing is not None and not batch_fallback_reason:
                     item = _resource_item(existing)
                     meta_dict = dict(item.meta or {})
                     meta_dict["reused"] = True
@@ -738,6 +1211,7 @@ class Orchestrator:
                     module_key=module_key,
                     focus_hint=focus_hint,
                     pipeline_ctx=pipe_ctx,
+                    fallback_reason=batch_fallback_reason,
                 )
                 for rtype in to_generate
             ]
@@ -826,6 +1300,7 @@ class Orchestrator:
                 yield _sse({
                     "type": "resource",
                     "resource": item.model_dump(),
+                    "verification": item.verification or (item.meta or {}).get("verification"),
                     "percent": pct,
                     "agent_logs": (item.meta or {}).get("agent_logs", []),
                 })
@@ -837,6 +1312,8 @@ class Orchestrator:
             "partial_failure": bool(phase_errors),
             "errors": phase_errors or None,
             "reused_count": reused_count,
+            "fallback_mode": bool(batch_fallback_reason),
+            "fallback_reason": batch_fallback_reason,
         })
 
 
@@ -859,14 +1336,17 @@ def _path_plan_response(row: LearningPathPlan) -> LearningPathPlanResponse:
 
 
 def _resource_item(row: GeneratedResource) -> GeneratedResourceItem:
+    meta = dict(row.meta or {})
+    verification = meta.get("verification")
     return GeneratedResourceItem(
         id=row.id,
         resource_type=row.resource_type,
         agent_name=row.agent_name,
         title=row.title,
         content=row.content,
-        meta=row.meta or {},
+        meta=meta,
         created_at=row.created_at.isoformat() if row.created_at else "",
+        verification=verification if isinstance(verification, dict) else None,
     )
 
 

@@ -7,13 +7,19 @@ import { fetchProblems, type ProblemListItem } from '@/api/oj'
 const route = useRoute()
 const router = useRouter()
 const loading = ref(true)
+const listEmpty = ref(false)
 const list = ref<ProblemListItem[]>([])
 const q = ref((route.query.q as string) || '')
 
 async function load() {
   loading.value = true
+  listEmpty.value = false
   try {
     list.value = await fetchProblems(q.value.trim() || undefined)
+    listEmpty.value = list.value.length === 0
+  } catch {
+    list.value = []
+    listEmpty.value = true
   } finally {
     loading.value = false
   }
@@ -96,6 +102,13 @@ function diffTag(d: string) {
         </template>
       </el-table-column>
     </el-table>
+
+    <el-empty
+      v-if="!loading && listEmpty"
+      description="暂无题目。若后端离线，请确认 frontend/public/oj/bundle.json 可访问"
+    >
+      <el-button type="primary" plain @click="load">重新加载</el-button>
+    </el-empty>
   </div>
 </template>
 

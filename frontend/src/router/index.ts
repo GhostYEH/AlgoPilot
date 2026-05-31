@@ -65,6 +65,12 @@ const router = createRouter({
           meta: { title: '多智能体工作台' },
         },
         {
+          path: 'a3-demo',
+          name: 'a3-demo',
+          component: () => import('@/views/A3DemoDashboard.vue'),
+          meta: { title: '比赛演示', public: true },
+        },
+        {
           path: 'help',
           name: 'help',
           component: () => import('@/views/HelpCenterView.vue'),

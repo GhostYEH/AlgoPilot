@@ -1,0 +1,31 @@
+id: heap-priority-queue
+name: 堆与优先队列
+course_id: data_structures_algorithms
+chapter_id: ch13-heap-union-find
+description: 二叉堆操作与 TopK；单调栈衔接 Next Greater；强调堆维护与下标栈语义。
+prerequisites: [ch05-tree-binary-tree]
+triggers:
+  keywords: [堆, 优先队列, TopK, 单调栈, next greater]
+  module_keys: [monotonic-stack]
+  chapter_ids: [ch13-heap-union-find]
+  oj_verdicts: [WA]
+  error_patterns: [堆顶, 下沉, 上浮]
+  min_consecutive_failures: 2
+common_mistakes:
+  - text: 堆化方向搞反（大根/小根）。
+    severity: medium
+resource_strategy:
+  default: 图示 heapify 与栈单调性。
+hint_policy:
+  forbid_full_solution: true
+  levels:
+    - level: 1
+      policy: 问「需要最大值还是第 K 大？」
+trace_focus: [堆数组下标, 栈内下标]
+evaluation_rules:
+  - rule_id: heap-role
+    description: 能说明为何用堆而非排序。
+    weight: 1.0
+    pass_threshold: 60
+recommended_resources: [document, exercises]
+recommended_problems: [next-greater-element]

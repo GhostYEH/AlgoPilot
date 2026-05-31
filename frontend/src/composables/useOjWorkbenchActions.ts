@@ -1,4 +1,4 @@
-import { ref, type Ref, watch } from 'vue'
+import { computed, ref, type Ref, watch } from 'vue'
 import type { Router } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
@@ -17,8 +17,6 @@ import {
   type Verdict,
 } from '@/api/oj'
 import type { AiDiagnoseResponse, TraceBugDiagnoseResponse, TraceResponse } from '@/types/codeTrace'
-import { evaluateOjStruggle } from '@/api/orchestrator'
-import { buildLearningOverview } from '@/utils/learningOverview'
 import { isLoggedIn } from '@/stores/auth'
 import { showJudgeResultMessage } from '@/utils/ojErrors'
 import { recordOjPractice } from '@/utils/ojPracticeHistory'
@@ -27,11 +25,15 @@ import {
   diagnosisBootstrapLines,
   systemLine,
   traceBootstrapLines,
-  linesFromAgentLogs,
+  linesFromEventLogs,
   type AgentConsoleLine,
 } from '@/utils/agentConsole'
 import { useLearningPathPlan } from '@/composables/useLearningPathPlan'
+import { useLearningPathStore } from '@/stores/pinia/learningPath'
 import { usePersonaUi } from '@/composables/usePersonaUiProvider'
+import { useOjStruggleIntervention } from '@/composables/useOjStruggleIntervention'
+import { getConsecutiveFailures } from '@/utils/ojStruggleSession'
+import type { OjStruggleEvaluationResult } from '@/api/orchestrator'
 
 export function useOjWorkbenchActions(options: {
   slug: Ref<string>
@@ -53,28 +55,12 @@ export function useOjWorkbenchActions(options: {
   const tracing = ref(false)
   const narrating = ref(false)
   const diagnosing = ref(false)
-  /** 一键可视化诊断（Trace + AI 破案）进行中 */
   const visualTraceDiagnosing = ref(false)
   const traceSplitOpen = ref(false)
-  /** 发起 trace 时快照的源码，避免分屏重挂载后行号与编辑器内容错位 */
   const traceSourceCode = ref('')
   const agentConsoleLines = ref<AgentConsoleLine[]>([])
-  const consecutiveFailures = ref(0)
-  const { loadPlan } = useLearningPathPlan()
-
-  function recordVerdict(verdict: Verdict | undefined) {
-    if (!verdict || verdict === 'AC') {
-      consecutiveFailures.value = 0
-      if (verdict === 'AC') {
-        recordOjPractice(options.slug.value, verdict)
-      }
-      return
-    }
-    recordOjPractice(options.slug.value, verdict)
-    if (verdict === 'WA' || verdict === 'RE' || verdict === 'TLE' || verdict === 'CE') {
-      consecutiveFailures.value += 1
-    }
-  }
+  const { loadPlan, recordExternalReplan } = useLearningPathPlan()
+  const pathStore = useLearningPathStore()
 
   function inferErrorPattern(res: JudgeResponse | null): string {
     const msg = res?.cases?.find((c) => c.verdict !== 'AC')?.message ?? ''
@@ -94,42 +80,68 @@ export function useOjWorkbenchActions(options: {
     return title || slug
   }
 
-  async function maybeTriggerStruggleReplan(verdict: Verdict | undefined) {
-    if (!isLoggedIn.value || consecutiveFailures.value < 3) return
-    if (!verdict || verdict === 'AC') return
-    const overview = buildLearningOverview()
-    try {
-      const evalRes = await evaluateOjStruggle({
-        module_key: '',
-        problem_slug: options.slug.value,
-        knowledge_point: inferKnowledgePoint(),
-        verdict,
-        consecutive_failures: consecutiveFailures.value,
-        error_pattern: inferErrorPattern(options.result.value),
-        overall_percent: overview.overallPercent,
-        modules: overview.rows.map((r) => ({
-          key: r.key,
-          label: r.label,
-          phase: r.phase,
-          available: r.available,
-          percent: r.percent,
-          done_count: r.doneCount,
-          total_count: r.totalCount,
-        })),
-      })
-      agentConsoleLines.value = [
-        ...diagnosisBootstrapLines(),
-        ...linesFromAgentLogs(evalRes.agent_logs),
-      ]
-      if (evalRes.path_updated) {
-        await loadPlan()
-        ElMessage.success(
-          `PlannerAgent 已插入巩固关卡：${evalRes.remediation_label || evalRes.remediation_module_key}`,
-        )
-      }
-    } catch {
-      /* 降级路径失败不阻断诊断 */
+  function inferModuleKey(): string {
+    const slug = options.slug.value
+    const title = options.problem.value?.title ?? ''
+    const pairs: [string, string][] = [
+      ['dp', 'dp'],
+      ['linked', 'linked-list'],
+      ['list', 'linked-list'],
+      ['tree', 'binary-tree'],
+      ['graph', 'graph'],
+      ['greedy', 'greedy'],
+      ['stack', 'monotonic-stack'],
+      ['hash', 'hash-table'],
+    ]
+    for (const [hint, key] of pairs) {
+      if (slug.includes(hint) || title.includes(hint)) return key
     }
+    return ''
+  }
+
+  async function onStruggleComplete(evalRes: OjStruggleEvaluationResult) {
+    if (!evalRes.path_updated) return
+    const beforeKeys = [...(pathStore.plan?.ordered_keys ?? [])]
+    const beforeSteps = pathStore.plan?.steps ?? []
+    await loadPlan()
+    await recordExternalReplan(
+      beforeKeys,
+      {
+        trigger: 'oj_struggle',
+        triggerLabel: 'OJ 连续受挫自动干预',
+        evidence: [
+          `连续 ${evalRes.consecutive_failures} 次未通过`,
+          evalRes.remediation_label ? `巩固关卡：${evalRes.remediation_label}` : '',
+          evalRes.plan_summary,
+          inferErrorPattern(options.result.value)
+            ? `错因模式：${inferErrorPattern(options.result.value)}`
+            : '',
+        ].filter(Boolean),
+      },
+      beforeSteps,
+    )
+    ElMessage.success(
+      `PlannerAgent 已插入巩固关卡：${evalRes.remediation_label || evalRes.remediation_module_key}`,
+    )
+  }
+
+  const consecutiveFailures = computed(() => getConsecutiveFailures(options.slug.value))
+
+  const { struggleView, onVerdictRecorded, resetStruggleForSlug } = useOjStruggleIntervention({
+    slug: options.slug,
+    result: options.result,
+    inferErrorPattern,
+    inferKnowledgePoint,
+    inferModuleKey,
+    onAgentLogs: (lines) => {
+      agentConsoleLines.value = lines
+    },
+    onStruggleComplete,
+  })
+
+  function recordVerdict(verdict: Verdict | undefined) {
+    if (!verdict) return
+    recordOjPractice(options.slug.value, verdict)
   }
 
   function closeTraceSplit() {
@@ -138,8 +150,8 @@ export function useOjWorkbenchActions(options: {
 
   watch(options.slug, () => {
     traceSplitOpen.value = false
-    consecutiveFailures.value = 0
     agentConsoleLines.value = []
+    resetStruggleForSlug(options.slug.value)
   })
 
   async function ensureApiOnline(): Promise<boolean> {
@@ -175,7 +187,7 @@ export function useOjWorkbenchActions(options: {
       )
       showJudgeResultMessage(options.result.value, 'run')
       recordVerdict(options.result.value?.verdict)
-      void maybeTriggerStruggleReplan(options.result.value?.verdict)
+      onVerdictRecorded(options.result.value?.verdict)
     } catch {
       /* judgeClient 拦截器已提示 */
     } finally {
@@ -208,7 +220,10 @@ export function useOjWorkbenchActions(options: {
       )
       showJudgeResultMessage(options.result.value, 'submit')
       recordVerdict(options.result.value?.verdict)
-      void maybeTriggerStruggleReplan(options.result.value?.verdict)
+      if (options.result.value?.event_logs?.length) {
+        agentConsoleLines.value = linesFromEventLogs(options.result.value.event_logs)
+      }
+      onVerdictRecorded(options.result.value?.verdict)
     } catch {
       /* judgeClient 拦截器已提示 */
     } finally {
@@ -384,7 +399,7 @@ export function useOjWorkbenchActions(options: {
       if (res.trace?.steps?.length) traceSplitOpen.value = true
       const verdict = options.result.value?.verdict ?? 'WA'
       recordVerdict(verdict)
-      await maybeTriggerStruggleReplan(verdict)
+      onVerdictRecorded(verdict)
       ElMessage.success('AI 诊断完成：已生成边界测例与可视化回放')
     } catch {
       ElMessage.warning('AI 诊断失败，请检查 SPARK_API_PASSWORD 与判题服务')
@@ -412,5 +427,6 @@ export function useOjWorkbenchActions(options: {
     refreshTraceCaps,
     agentConsoleLines,
     consecutiveFailures,
+    struggleView,
   }
 }

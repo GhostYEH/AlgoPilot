@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   ArrowRight,
   CopyDocument,
+  MagicStick,
   TrendCharts,
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -23,6 +24,7 @@ import LearnSectionBody from '@/components/learning/LearnSectionBody.vue'
 import ModuleGameEntry from '@/components/learning/ModuleGameEntry.vue'
 import SelectableLearnText from '@/components/learning/SelectableLearnText.vue'
 import SectionDirectoryAside from '@/components/learning/SectionDirectoryAside.vue'
+import RecommendedResourcesPanel from '@/components/learning/RecommendedResourcesPanel.vue'
 import { useProvideAiTutorFromPanel } from '@/composables/useProvideAiTutorFromPanel'
 
 const props = defineProps<{
@@ -104,6 +106,13 @@ function selectSection(id: string) {
 
 function goHome() {
   router.push({ name: 'home' })
+}
+
+function goGenerateResources() {
+  router.push({
+    name: 'resources',
+    query: { topic: '图论 BFS DFS ch06-graph' },
+  })
 }
 
 function setSectionDone(done: boolean | string | number) {
@@ -222,6 +231,17 @@ watch(
         <div class="hero-tags">
           <el-tag type="info" effect="plain" size="small">{{ config.chapterTag }}</el-tag>
           <el-tag type="success" effect="plain" size="small">共 {{ config.sectionCount }} 节</el-tag>
+          <el-tag v-if="moduleKey === 'graph'" type="warning" effect="plain" size="small">
+            skill: graph-bfs-dfs
+          </el-tag>
+        </div>
+        <div v-if="moduleKey === 'graph'" class="hero-actions">
+          <el-button type="primary" plain size="small" :icon="MagicStick" @click="goGenerateResources">
+            生成个性化资源
+          </el-button>
+          <el-button size="small" @click="router.push({ name: 'agent-workbench' })">
+            多智能体工作台
+          </el-button>
         </div>
       </div>
     </div>
@@ -400,6 +420,13 @@ watch(
         </div>
       </div>
 
+      <RecommendedResourcesPanel
+        v-if="moduleKey === 'graph' && isLoggedIn"
+        class="graph-rec-panel"
+        module-key="graph"
+        title="图论 · 个性化资源推荐（ch06-graph / graph-bfs-dfs）"
+      />
+
       <AiTutorPanel
         ref="aiTutorRef"
         :module-key="moduleKey"
@@ -441,7 +468,9 @@ watch(
 .ms-anim-fade-enter-active,
 .ms-anim-fade-leave-active,
 .ll-anim-fade-enter-active,
-.ll-anim-fade-leave-active {
+.ll-anim-fade-leave-active,
+.graph-anim-fade-enter-active,
+.graph-anim-fade-leave-active {
   transition:
     opacity 0.22s ease,
     transform 0.22s ease;
@@ -460,8 +489,21 @@ watch(
 .ms-anim-fade-enter-from,
 .ms-anim-fade-leave-to,
 .ll-anim-fade-enter-from,
-.ll-anim-fade-leave-to {
+.ll-anim-fade-leave-to,
+.graph-anim-fade-enter-from,
+.graph-anim-fade-leave-to {
   opacity: 0;
   transform: translateY(6px);
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.graph-rec-panel {
+  margin-top: 16px;
 }
 </style>

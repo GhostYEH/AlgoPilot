@@ -77,6 +77,10 @@ class EvaluationAgent:
         if trend:
             suggestions.insert(0, trend)
 
+        skill_cards = self._schema_skill_summaries(
+            self._safe_recommend_weak([m.key for m in weak], profile_block=profile_block)
+        )
+
         return LearningEvaluationResponse(
             agent_name=self.name,
             overall_score=overall_score,
@@ -85,6 +89,7 @@ class EvaluationAgent:
             suggestions=suggestions,
             narrative=narrative,
             push_strategy=push_strategy,
+            recommended_skill_cards=skill_cards,
         )
 
     def build_snapshot(self, response: LearningEvaluationResponse) -> dict:
@@ -149,13 +154,25 @@ class EvaluationAgent:
         verdict: str,
         consecutive_failures: int,
         error_pattern: str,
-    ) -> tuple[bool, str, str, list[dict]]:
+        recent_trace_summary: str = "",
+    ) -> tuple[bool, str, str, list[dict], list]:
         """
         检测 OJ 连续受挫并生成 Planner 联动信号。
-        返回：(是否触发降级, 巩固模块 key, 巩固标签, agent_logs)
+        返回：(是否触发降级, 巩固模块 key, 巩固标签, agent_logs, 推荐技能卡)
         """
         struggle = consecutive_failures >= 3 and verdict in ("WA", "RE", "TLE", "CE")
         logs: list[dict] = []
+
+        skill_cards = self._schema_skill_summaries(
+            self._recommend_skills_for_struggle(
+                module_key=module_key,
+                knowledge_point=knowledge_point,
+                verdict=verdict,
+                error_pattern=error_pattern,
+                consecutive_failures=consecutive_failures,
+                recent_trace_summary=recent_trace_summary,
+            )
+        )
 
         if not struggle:
             logs.append(
@@ -166,7 +183,7 @@ class EvaluationAgent:
                     "status": "done",
                 }
             )
-            return False, "", "", logs
+            return False, "", "", logs, skill_cards
 
         from services.agents.learning_path import LearningPathAgent
 
@@ -208,7 +225,57 @@ class EvaluationAgent:
                 "status": "done",
             }
         )
-        return True, rem_key, rem_label, logs
+        if skill_cards:
+            logs.append(
+                {
+                    "agent": "SkillRouter",
+                    "action": "推荐技能卡",
+                    "detail": "、".join(s.name for s in skill_cards[:3]),
+                    "status": "done",
+                }
+            )
+        return True, rem_key, rem_label, logs, skill_cards
+
+    @staticmethod
+    def _safe_recommend_weak(weak_keys: list[str], *, profile_block: str = "") -> list:
+        try:
+            from services.skills.recommend import recommend_for_weak_modules
+
+            return recommend_for_weak_modules(weak_keys, profile_block=profile_block)
+        except Exception:
+            return []
+
+    @staticmethod
+    def _schema_skill_summaries(cards: list) -> list:
+        from schemas.skills import SkillCardSummary
+
+        return [SkillCardSummary.model_validate(c.model_dump()) for c in cards]
+
+    def _recommend_skills_for_struggle(
+        self,
+        *,
+        module_key: str,
+        knowledge_point: str,
+        verdict: str,
+        error_pattern: str,
+        consecutive_failures: int,
+        recent_trace_summary: str = "",
+    ) -> list:
+        if consecutive_failures < 2 and not error_pattern:
+            return []
+        try:
+            from services.skills.recommend import recommend_skill_cards
+
+            return recommend_skill_cards(
+                module_key=module_key,
+                knowledge_point=knowledge_point,
+                oj_verdict=verdict,
+                error_pattern=error_pattern,
+                consecutive_failures=consecutive_failures,
+                trace_summary=recent_trace_summary,
+            )
+        except Exception:
+            return []  # services.skills.models.SkillCardSummary
 
 
 def _mastery_score(

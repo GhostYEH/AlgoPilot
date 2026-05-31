@@ -9,6 +9,7 @@ const prefetchByPath: Record<string, () => Promise<unknown>> = {
   '/practice': () => import('@/views/practice/PracticeListView.vue'),
   '/my-learning': () => import('@/views/MyLearningView.vue'),
   '/agent-workbench': () => import('@/views/AgentWorkbenchView.vue'),
+  '/a3-demo': () => import('@/views/A3DemoDashboard.vue'),
   '/help': () => import('@/views/HelpCenterView.vue'),
   '/learn/array': () => import('@/views/learn/ArrayModuleView.vue'),
   '/learn/hash-table': () => import('@/views/learn/HashTableModuleView.vue'),
@@ -21,6 +22,7 @@ const prefetchByPath: Record<string, () => Promise<unknown>> = {
   '/learn/greedy': () => import('@/views/learn/GenericModuleLearnView.vue'),
   '/learn/dp': () => import('@/views/learn/GenericModuleLearnView.vue'),
   '/learn/monotonic-stack': () => import('@/views/learn/GenericModuleLearnView.vue'),
+  '/learn/graph': () => import('@/views/learn/GenericModuleLearnView.vue'),
 }
 
 const prefetched = new Set<string>()

@@ -30,6 +30,7 @@ import LearningModuleBarChart from '@/components/learning/LearningModuleBarChart
 import LearningModuleRadar from '@/components/learning/LearningModuleRadar.vue'
 import LearningActivityHeatmap from '@/components/learning/LearningActivityHeatmap.vue'
 import LearningEvaluationPanel from '@/components/learning/LearningEvaluationPanel.vue'
+import MasteryEvaluationCard from '@/components/learning/MasteryEvaluationCard.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -314,6 +315,7 @@ function onTabChange(name: string | number) {
       </el-tab-pane>
 
       <el-tab-pane label="效果评估" name="evaluation">
+        <MasteryEvaluationCard />
         <LearningEvaluationPanel />
       </el-tab-pane>
 

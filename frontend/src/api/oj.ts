@@ -85,6 +85,8 @@ export interface JudgeResponse {
   total: number
   cases: CaseResult[]
   compile_error: string | null
+  event_id?: string | null
+  event_logs?: Array<{ agent: string; action: string; detail?: string; status?: string }>
 }
 
 export type OjLanguage = 'python' | 'cpp'

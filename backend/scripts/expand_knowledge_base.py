@@ -115,6 +115,66 @@ SYNONYM_NOTE = {
     "hash-table": ["哈希", "map", "dict"],
     "dp": ["动态规划", "DP"],
     "two-pointers": ["双指针", "对撞指针", "快慢指针"],
+    "graph": ["BFS", "DFS", "邻接表", "邻接矩阵", "visited", "ch06-graph", "graph-bfs-dfs"],
+}
+
+# 图论模块：与 ch06-graph、graph-bfs-dfs SkillCard、OJ Trace 对齐的专用切片
+GRAPH_CHUNK_BODIES: dict[str, str] = {
+    "concept": (
+        "【图论·概念】图 G=(V,E) 是《数据结构与算法》核心结构，含顶点集与边集；"
+        "需区分有向/无向、加权/无权。稀疏图用邻接表（遍历邻接点 O(deg)），"
+        "稠密图可用邻接矩阵 O(1) 查边。BFS 用队列按层扩展，适合无权最短路层数；"
+        "DFS 用栈或递归深入，适合连通分量、环检测与回溯前置。"
+        "先修栈队列与二叉树遍历；平台 ch06-graph 学习页与 SkillCard graph-bfs-dfs 联动，"
+        "OJ Trace 展示 queue 与 visited 快照。模块 key=graph，教学辅助不直接给出可提交完整答案。"
+    ),
+    "example": (
+        "【图论·例题】典型分层：入门网格连通（岛屿数量，坐标 (r,c) 建模为结点）、"
+        "标准图遍历（BFS 层数/DFS 连通块）、综合拓扑排序与环检测（课程表）。"
+        "读题先判「无权最短路/层数」→BFS，「连通块/路径存在/环」→DFS 或并查集。"
+        "平台建议思路+伪代码+复杂度；网格题注意四连通 dr/dc 方向数组。"
+        "勿虚构 LeetCode 四位题号；可描述题型名称。结合 lab-05-graph-bfs-dfs 与 OJ Trace 手推访问序。"
+    ),
+    "common_error": (
+        "【图论·易错点】①BFS 未在入队前标记 visited，同一结点重复入队导致 TLE；"
+        "②DFS 递归前未标记 visited，重复扩展子树；③有向图只加单向边致路径不可达；"
+        "④混淆 BFS 层数与 DFS 深度作为无权最短路答案；⑤网格题方向数组越界或八/四连通写错；"
+        "⑥邻接表建无向图时重复加边致度数翻倍。调试：手画 6 顶点图对比 BFS/DFS 序，"
+        "用 Trace 观察 queue 队首与 visited 集合；与 graph-bfs-dfs SkillCard 常见错误清单一致。"
+    ),
+    "code_template": (
+        "【图论·模板】邻接表建图：graph = defaultdict(list)；graph[u].append(v)。"
+        "BFS 骨架：from collections import deque\n"
+        "def bfs(start):\n"
+        "    q = deque([start]); visited = {start}\n"
+        "    while q:\n"
+        "        u = q.popleft()  # Trace 展示队首\n"
+        "        for v in graph[u]:\n"
+        "            if v not in visited:\n"
+        "                visited.add(v); q.append(v)  # 入队前标记 visited\n"
+        "DFS：def dfs(u): visited.add(u); ... 递归邻居。禁止粘贴完整 OJ 可提交答案。"
+        "复杂度：BFS/DFS O(V+E)。网格图 V=行*列，E≈4V。"
+    ),
+    "complexity": (
+        "【图论·复杂度】令 V 为顶点数、E 为边数。邻接表空间 O(V+E)，邻接矩阵 O(V²)。"
+        "BFS/DFS 各访问边与点各一次，时间 O(V+E)；无权最短路 BFS 层扩展正确。"
+        "稠密图 |E|≈V² 时矩阵可行；稀疏图 |E|≈V 优先邻接表。"
+        "网格 n×m 建模为 V=nm 结点、E≈4nm 边。拓扑排序 O(V+E)。"
+        "生成内容若写 BFS O(1) 须说明按边遍历；visited 集合均摊 O(1) 查重。"
+    ),
+    "pattern": (
+        "【图论·模式】信号词：「最少步数/层数/无权最短路」→BFS；"
+        "「连通分量/岛屿/能否到达」→DFS 或并查集；「依赖/先修课程」→拓扑排序；"
+        "「网格四连通」→坐标转结点 ID。先判 n,m 规模选邻接表；学完 stack-queue 与 binary-tree 再学 graph。"
+        "平台路径 Agent 按依赖排序；OJ 受挫时 SkillCard graph-bfs-dfs 触发 Trace 辅导。"
+        "模块 key=graph，打卡 ch06-graph 与 lab-05-graph-bfs-dfs。"
+    ),
+    "review": (
+        "【图论·复习】自测：口述邻接表/矩阵区别、手写 BFS/DFS 访问序、说明 visited 置 true 时机、"
+        "讲一道网格或拓扑题。间隔复习：第 1 天概念+手画 6 顶点图，第 3 天混合 BFS/DFS 题，"
+        "第 7 天限时 OJ。薄弱点含图论时资源库优先生成 Trace 动画与 graph-bfs-dfs 题单；"
+        "校验 Agent 对照 ch06-graph 知识库；掌握度纳入 mastery 评估。"
+    ),
 }
 
 
@@ -124,7 +184,10 @@ def build_chunks() -> list[dict]:
         extra_kw = SYNONYM_NOTE.get(mk, [])
         for suffix, title_suffix, body_fn in CHUNK_SPECS:
             cid = f"{mk}-{suffix}"
-            body = body_fn(mk, ml)
+            if mk == "graph" and suffix in GRAPH_CHUNK_BODIES:
+                body = GRAPH_CHUNK_BODIES[suffix]
+            else:
+                body = body_fn(mk, ml)
             # 填充到约 320–600 字
             while len(body) < 320:
                 body += (
@@ -154,7 +217,7 @@ def build_chunks() -> list[dict]:
             "keywords": ["数据结构", "算法", "大一", "计科", "学习路径", "多智能体"],
             "content": (
                 "本平台面向大一计算机专业《数据结构与算法》课程，主线模块顺序建议："
-                "数组→链表→哈希表→字符串→双指针→栈与队列→二叉树→回溯→贪心→动态规划→单调栈→图论（规划中）。"
+                "数组→链表→哈希表→字符串→双指针→栈与队列→二叉树→回溯→贪心→动态规划→单调栈→图论。"
                 "多智能体编排采用 DAG：知识库检索→角色 Agent 生成→ContentVerifier 校验→安全过滤→落库；"
                 "校验未通过标为草稿。知识库切片按模块组织，检索使用 BM25 与同义词扩展（如 BST→二叉搜索树）。"
                 "学习路径 Agent 在模块依赖 DAG 上做拓扑校验，启发式规划为主、LLM 润色为辅。"

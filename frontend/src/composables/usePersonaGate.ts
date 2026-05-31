@@ -26,5 +26,6 @@ export const ONBOARDING_ALLOWED_ROUTE_NAMES = new Set([
   'learning-path',
   'home',
   'help',
+  'a3-demo',
   'stl-playground',
 ])

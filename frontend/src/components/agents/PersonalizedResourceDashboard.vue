@@ -1,10 +1,6 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import mermaid from 'mermaid'
+import { computed, defineAsyncComponent, nextTick, onMounted, ref, watch } from 'vue'
 import type { GeneratedResource } from '@/api/orchestrator'
-import CodeEditor from '@/components/oj/CodeEditor.vue'
-import TraceSequenceViz from '@/components/oj/trace/TraceSequenceViz.vue'
-import TraceAssociativeViz from '@/components/oj/trace/TraceAssociativeViz.vue'
 import DomainStructurePanels from '@/components/resources/DomainStructurePanels.vue'
 import SafetyValidationPanel from '@/components/resources/SafetyValidationPanel.vue'
 import {
@@ -23,6 +19,18 @@ import {
   sequenceItems,
   sequenceViewHint,
 } from '@/utils/traceProtocol'
+
+const CodeEditor = defineAsyncComponent(() => import('@/components/oj/CodeEditor.vue'))
+const TraceSequenceViz = defineAsyncComponent(
+  () => import('@/components/oj/trace/TraceSequenceViz.vue'),
+)
+const TraceAssociativeViz = defineAsyncComponent(
+  () => import('@/components/oj/trace/TraceAssociativeViz.vue'),
+)
+
+type MermaidApi = typeof import('mermaid').default
+let mermaidApi: MermaidApi | null = null
+let mermaidRenderSeq = 0
 
 const props = defineProps<{
   resources: GeneratedResource[]
@@ -101,9 +109,9 @@ const mermaidSrc = computed(() => {
     try {
       const data = JSON.parse(c) as { root?: string; nodes?: Array<{ label: string }> }
       const labels = [data.root, ...(data.nodes?.map((n) => n.label) ?? [])].filter(Boolean)
-      return `flowchart TD\n  root["${labels[0] ?? '主题'}"]\n${labels
+      return `flowchart TD\n  root["${escapeMermaidLabel(String(labels[0] ?? '主题'))}"]\n${labels
         .slice(1, 8)
-        .map((l, i) => `  n${i}["${l}"] --> root`)
+        .map((l, i) => `  n${i}["${escapeMermaidLabel(String(l))}"] --> root`)
         .join('\n')}`
     } catch {
       return c
@@ -112,19 +120,44 @@ const mermaidSrc = computed(() => {
   return c
 })
 
+async function loadMermaid() {
+  if (!mermaidApi) {
+    mermaidApi = (await import('mermaid')).default
+    mermaidApi.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose' })
+  }
+  return mermaidApi
+}
+
+function escapeMermaidLabel(value: string) {
+  return String(value).replaceAll('\\', '\\\\').replaceAll('"', '\\"')
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+}
+
 async function renderMermaid() {
+  const renderSeq = ++mermaidRenderSeq
   mermaidError.value = ''
   if (tab.value !== 'mindmap' || !mermaidSrc.value) return
   await nextTick()
   const host = mermaidHost.value
   if (!host) return
   try {
-    mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose' })
-    const { svg } = await mermaid.render(`mmd-${Date.now()}`, mermaidSrc.value)
+    const mermaid = await loadMermaid()
+    if (renderSeq !== mermaidRenderSeq || tab.value !== 'mindmap') return
+    const { svg } = await mermaid.render(`mmd-${Date.now()}-${renderSeq}`, mermaidSrc.value)
+    if (renderSeq !== mermaidRenderSeq || tab.value !== 'mindmap') return
     host.innerHTML = svg
   } catch (e) {
+    if (renderSeq !== mermaidRenderSeq) return
     mermaidError.value = e instanceof Error ? e.message : 'Mermaid 渲染失败'
-    host.innerHTML = `<pre class="mermaid-fallback">${mermaidSrc.value}</pre>`
+    host.innerHTML = `<pre class="mermaid-fallback">${escapeHtml(mermaidSrc.value)}</pre>`
   }
 }
 
@@ -324,6 +357,8 @@ async function playVideoTtsPreview() {
     audio.onended = () => URL.revokeObjectURL(url)
     audio.onerror = () => URL.revokeObjectURL(url)
     await audio.play()
+  } catch {
+    /* ElMessage 已在 synthesizeTtsAudio 内展示；脚本分镜仍可阅读 */
   } finally {
     ttsLoading.value = false
   }
@@ -352,7 +387,7 @@ async function playVideoTtsPreview() {
 
     <div class="dash-panel">
       <!-- 自适应教案 -->
-      <article v-show="tab === 'document'" class="panel-card panel-card--doc">
+      <article v-if="tab === 'document'" class="panel-card panel-card--doc">
         <header class="panel-head">
           <h3>自适应教案</h3>
           <span v-if="current" class="panel-meta">{{ current.agent_name }}</span>
@@ -375,7 +410,7 @@ async function playVideoTtsPreview() {
       </article>
 
       <!-- 知识思维导图 -->
-      <article v-show="tab === 'mindmap'" class="panel-card panel-card--graph">
+      <article v-if="tab === 'mindmap'" class="panel-card panel-card--graph">
         <header class="panel-head">
           <h3>知识思维导图</h3>
           <span class="panel-meta">GraphAgent · Mermaid</span>
@@ -386,7 +421,7 @@ async function playVideoTtsPreview() {
       </article>
 
       <!-- 个性化自测题 -->
-      <article v-show="tab === 'exercises'" class="panel-card panel-card--quiz">
+      <article v-if="tab === 'exercises'" class="panel-card panel-card--quiz">
         <header class="panel-head">
           <h3>个性化自测题</h3>
           <span class="panel-meta">QuizAgent · 3 题精练</span>
@@ -420,7 +455,7 @@ async function playVideoTtsPreview() {
       </article>
 
       <!-- 剧情实操沙盒 -->
-      <article v-show="tab === 'code_case'" class="panel-card panel-card--scenario">
+      <article v-if="tab === 'code_case'" class="panel-card panel-card--scenario">
         <header class="panel-head">
           <h3>剧情实操沙盒</h3>
           <span class="panel-meta">ScenarioAgent</span>
@@ -456,7 +491,7 @@ async function playVideoTtsPreview() {
       </article>
 
       <!-- 执行轨迹回放 -->
-      <article v-show="tab === 'trace_animation'" class="panel-card panel-card--trace">
+      <article v-if="tab === 'trace_animation'" class="panel-card panel-card--trace">
         <header class="panel-head">
           <h3>执行轨迹回放</h3>
           <span class="panel-meta">TraceAgent · trace_viz</span>
@@ -500,7 +535,7 @@ async function playVideoTtsPreview() {
       </article>
 
       <!-- PPT 胶片预览 -->
-      <article v-show="tab === 'ppt'" class="panel-card panel-card--ppt">
+      <article v-if="tab === 'ppt'" class="panel-card panel-card--ppt">
         <header class="panel-head">
           <h3>{{ pptPayload?.deck_title ?? 'PPT 胶片预览' }}</h3>
           <span class="panel-meta">PptAgent · {{ pptPayload?.design_style ?? 'JSON Preview' }}</span>
@@ -525,10 +560,10 @@ async function playVideoTtsPreview() {
       </article>
 
       <!-- 教学短视频分镜脚本 -->
-      <article v-show="tab === 'video_script'" class="panel-card panel-card--video">
+      <article v-if="tab === 'video_script'" class="panel-card panel-card--video">
         <header class="panel-head">
           <h3>{{ videoPayload?.title ?? '60 秒教学短视频脚本' }}</h3>
-          <span class="panel-meta">VideoScriptAgent · iFlytek TTS Ready</span>
+          <span class="panel-meta">VideoScriptAgent · 分镜脚本（TTS 可选）</span>
         </header>
         <div v-if="videoPayload?.scenes?.length" class="video-script">
           <div class="tts-preview">
@@ -562,7 +597,7 @@ async function playVideoTtsPreview() {
       </article>
 
       <!-- 分层拓展阅读 -->
-      <article v-show="tab === 'reading'" class="panel-card panel-card--reading">
+      <article v-if="tab === 'reading'" class="panel-card panel-card--reading">
         <header class="panel-head">
           <h3>分层拓展阅读</h3>
           <span class="panel-meta">ReadingAgent · 基础 / 进阶 / 挑战</span>

@@ -1,0 +1,101 @@
+id: graph-bfs-dfs
+name: 图的 BFS 与 DFS
+course_id: data_structures_algorithms
+chapter_id: ch06-graph
+description: |
+  约束图论入门辅导：区分 BFS（无权最短路层数）与 DFS（深度探索/连通性），
+  强调 visited 防重复入队、邻接表建图与网格图坐标建模。生成内容须含队列/栈
+  角色说明，Trace 优先展示 queue 与 visited 变化。
+prerequisites:
+  - ch05-tree-binary-tree
+  - ch03-stack-queue
+triggers:
+  keywords:
+    - 图
+    - 图论
+    - BFS
+    - 广度优先
+    - DFS
+    - 深度优先
+    - 岛屿
+    - 连通
+    - 拓扑
+  module_keys:
+    - graph
+  chapter_ids:
+    - ch06-graph
+  oj_verdicts:
+    - WA
+    - TLE
+    - RE
+  error_patterns:
+    - 重复入队
+    - visited
+    - 未访问
+    - 邻接
+    - 方向
+    - 网格
+  min_consecutive_failures: 2
+common_mistakes:
+  - text: BFS 未标记 visited 导致同一结点重复入队，TLE。
+    severity: high
+    detector_hint: 队列长度异常增长
+  - text: 网格题四连通/八连通方向数组写错或越界。
+    severity: high
+    detector_hint: Trace 坐标跳到网格外
+  - text: 有向图只加单向边，BFS 层数不符合题意。
+    severity: medium
+    detector_hint: 样例路径单向不可达
+  - text: 混淆 BFS 层数与 DFS 深度作为「最短路」答案。
+    severity: medium
+    detector_hint: 无权图却用 DFS 计数距离
+  - text: 邻接表建图时重复添加无向边两次未去重（部分题 WA）。
+    severity: low
+    detector_hint: 边权或度数翻倍
+resource_strategy:
+  default: 先建模（顶点/边），再写 BFS/DFS 模板，附 6 顶点手画示例。
+  document: 对比 BFS/DFS 适用场景表；含 queue/stack 伪代码各 10 行内。
+  mindmap: 根「图遍历」，枝 BFS 最短路 / DFS 连通 / 网格建模。
+  exercises: 1 道选择（选 BFS 或 DFS）+ 1 道手排访问序。
+  code_case: 邻接表建图 + BFS 骨架，TODO 标记 visited 与入队位置。
+  trace_animation: 必须展示 queue 内容与 visited 集合（或网格染色）。
+  ppt: BFS 层次扩展示意图 + 岛屿题网格染色。
+hint_policy:
+  max_code_lines: 15
+  forbid_full_solution: true
+  socratic: true
+  escalation_after_failures: 2
+  levels:
+    - level: 1
+      policy: 问「这是无权最短路还是找连通块？」引导选 BFS 或 DFS。
+    - level: 2
+      policy: 提示检查 visited 何时置 true（入队/出队）而不给完整模板。
+    - level: 3
+      policy: 网格题只提示方向数组 dr/dc，不贴完整循环。
+    - level: 4
+      policy: 可给 BFS 10 行骨架，缺 visited 与邻接遍历两处 TODO。
+trace_focus:
+  - 队列队首元素与层数 level
+  - visited 标记时机
+  - 网格 (r,c) 入队顺序
+evaluation_rules:
+  - rule_id: model-graph
+    description: 能说明顶点、边如何对应题输入。
+    weight: 0.3
+    pass_threshold: 65
+  - rule_id: bfs-order
+    description: 手算 BFS 访问序与层数正确。
+    weight: 0.35
+    pass_threshold: 70
+  - rule_id: visited-discipline
+    description: 代码中 visited 逻辑无重复扩展。
+    weight: 0.35
+    pass_threshold: 70
+recommended_resources:
+  - document
+  - mindmap
+  - trace_animation
+  - exercises
+recommended_problems:
+  - number-of-islands
+  - course-schedule-topological

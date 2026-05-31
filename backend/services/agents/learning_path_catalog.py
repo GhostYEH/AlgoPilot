@@ -22,7 +22,7 @@ MODULE_CATALOG: list[ModuleCatalogItem] = [
     {"key": "greedy", "label": "贪心算法", "phase": "advanced", "available": True},
     {"key": "dp", "label": "动态规划", "phase": "advanced", "available": True},
     {"key": "monotonic-stack", "label": "单调栈", "phase": "advanced", "available": True},
-    {"key": "graph", "label": "图论", "phase": "advanced", "available": False},
+    {"key": "graph", "label": "图论", "phase": "advanced", "available": True},
 ]
 
 VALID_MODULE_KEYS = {m["key"] for m in MODULE_CATALOG}
@@ -49,7 +49,7 @@ MODULE_DEPENDENCIES: dict[str, list[str]] = {
     "greedy": ["binary-tree"],
     "dp": ["greedy", "backtracking"],
     "monotonic-stack": ["stack-queue"],
-    "graph": ["binary-tree", "dp"],
+    "graph": ["stack-queue", "binary-tree"],
 }
 
 PHASE_RANK = {"foundation": 0, "technique": 1, "tree": 2, "advanced": 3}
@@ -73,6 +73,31 @@ DEFAULT_REMEDIATION = {
     "label": "数组基础巩固",
     "reason": "降级：检测到连续作答失败，插入基础巩固关卡",
 }
+
+
+def _merge_course_into_module_dependencies() -> dict[str, list[str]]:
+    """将 course_manifest 章节先修合并进模块 DAG（不删除原有边）。"""
+    merged = {k: list(v) for k, v in MODULE_DEPENDENCIES.items()}
+    try:
+        from services.knowledge.course_loader import (
+            load_manifest,
+            module_dependency_edges_from_course,
+        )
+
+        manifest = load_manifest()
+        for mk, pres in module_dependency_edges_from_course(manifest).items():
+            if mk not in merged:
+                merged[mk] = []
+            for p in pres:
+                if p in VALID_MODULE_KEYS and p not in merged[mk]:
+                    merged[mk].append(p)
+    except Exception:
+        pass
+    return merged
+
+
+# 路径规划使用的模块先修（手工 DAG + 课程 manifest 合并）
+MODULE_DEPENDENCIES_RESOLVED: dict[str, list[str]] = _merge_course_into_module_dependencies()
 
 
 def lookup_remediation(knowledge_point: str, module_key: str = "") -> dict[str, str]:

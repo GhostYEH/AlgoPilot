@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Grid, Reading, FolderOpened, User, QuestionFilled, Cpu, Moon, Sunny } from '@element-plus/icons-vue'
+import { Grid, Reading, FolderOpened, User, QuestionFilled, Cpu, Moon, Sunny, Trophy } from '@element-plus/icons-vue'
 import { useTheme } from '@/composables/useTheme'
 import { providePersonaUi } from '@/composables/usePersonaUiProvider'
 import { ALGORITHM_MODULES, MODULE_ROUTE_NAMES } from '@/constants/modules'
@@ -107,6 +107,10 @@ function onLogout() {
         <el-menu-item index="/my-learning" @mouseenter="prefetchRoute('/my-learning')">
           <el-icon><User /></el-icon>
           <span>我的学习</span>
+        </el-menu-item>
+        <el-menu-item index="/a3-demo" @mouseenter="prefetchRoute('/a3-demo')">
+          <el-icon><Trophy /></el-icon>
+          <span>比赛演示</span>
         </el-menu-item>
         <el-menu-item index="/help" @mouseenter="prefetchRoute('/help')">
           <el-icon><QuestionFilled /></el-icon>
@@ -263,12 +267,6 @@ function onLogout() {
   box-sizing: border-box;
   position: relative;
   overflow-x: clip;
-}
-
-/* OJ / 学习页刷题：两侧提示负边距外延，允许横向滚动而非裁切 */
-.app-main:has(.practice-problem-page),
-.app-main:has(.oj-practice-shell--outside) {
-  overflow-x: auto;
 }
 
 /* 首页：禁止外层滚动，仅右侧内容区滚动 */

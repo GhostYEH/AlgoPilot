@@ -17,6 +17,7 @@ import { useLearningPathPlan } from '@/composables/useLearningPathPlan'
 import { invalidatePersonaCache } from '@/composables/usePersonaGate'
 import { usePersonaStore } from '@/stores/pinia/persona'
 import PersonaRadarChart from '@/components/persona/PersonaRadarChart.vue'
+import PersonaEvidenceChain from '@/components/persona/PersonaEvidenceChain.vue'
 
 interface UiMsg {
   id: number
@@ -36,6 +37,8 @@ const syncing = ref(false)
 const messages = ref<UiMsg[]>([])
 const listRef = ref<HTMLElement | null>(null)
 const profile = ref<PersonaProfile | null>(null)
+const profileLoading = ref(false)
+const profileError = ref(false)
 const { replan: replanPath } = useLearningPathPlan()
 const personaStore = usePersonaStore()
 let msgId = 0
@@ -43,6 +46,8 @@ const profileUpdateHintShown = ref(false)
 const showRadar = ref(false)
 const icebreakerDone = ref(false)
 const autoFlowRunning = ref(false)
+const personaFallbackMode = ref(false)
+const personaFallbackReason = ref('')
 
 const emit = defineEmits<{
   profileReady: [profile: PersonaProfile]
@@ -64,6 +69,8 @@ function scrollBottom() {
 }
 
 async function loadProfile() {
+  profileLoading.value = true
+  profileError.value = false
   try {
     profile.value = await fetchPersonaProfile()
     if (profile.value) personaStore.setProfile(profile.value)
@@ -71,8 +78,13 @@ async function loadProfile() {
       showRadar.value = true
       icebreakerDone.value = true
     }
+    personaFallbackMode.value = !!profile.value?.fallback
+    personaFallbackReason.value = profile.value?.fallback_reason ?? ''
   } catch {
     profile.value = null
+    profileError.value = true
+  } finally {
+    profileLoading.value = false
   }
 }
 
@@ -136,6 +148,10 @@ async function send() {
           if (row) row.content += chunk
           scrollBottom()
         },
+        onDone(_full, meta) {
+          personaFallbackMode.value = !!meta?.fallback
+          personaFallbackReason.value = meta?.fallback_reason ?? ''
+        },
       },
     )
   } finally {
@@ -159,12 +175,14 @@ async function autoCompleteProfileFlow() {
     )
     const { profile: p } = await syncPersonaFromStored()
     profile.value = p
+    personaFallbackMode.value = !!p.fallback
+    personaFallbackReason.value = p.fallback_reason ?? ''
     showRadar.value = true
     invalidatePersonaCache()
     emit('profileReady', p)
     ElMessage.success('六维画像已生成，雷达图已更新')
     try {
-      await replanPath()
+      await replanPath({ trigger: 'persona', triggerLabel: '画像更新后重排' })
       ElMessage.success('PlannerAgent 已根据画像生成千人千面学习路径')
     } catch {
       ElMessage.warning('路径规划稍后可在「学习路径」页重试')
@@ -191,6 +209,8 @@ async function onSyncProfile() {
   try {
     const { profile: p, message } = await syncPersonaFromStored()
     profile.value = p
+    personaFallbackMode.value = !!p.fallback
+    personaFallbackReason.value = p.fallback_reason ?? ''
     showRadar.value = true
     invalidatePersonaCache()
     emit('profileReady', p)
@@ -201,7 +221,7 @@ async function onSyncProfile() {
         '重排学习路径',
         { confirmButtonText: '重排', cancelButtonText: '稍后' },
       )
-      await replanPath()
+      await replanPath({ trigger: 'persona', triggerLabel: '画像更新后重排' })
       ElMessage.success('学习路径已根据新画像重排')
     } catch {
       /* 用户取消或路径规划失败 */
@@ -226,6 +246,19 @@ const dimensionEntries = (dims: PersonaDimensions) =>
 <template>
   <div class="persona-layout">
     <div class="persona-chat">
+      <el-alert
+        v-if="personaFallbackMode || profile?.fallback"
+        type="warning"
+        :closable="false"
+        show-icon
+        class="fallback-banner"
+        title="当前为离线画像引导模式"
+        :description="
+          personaFallbackReason ||
+          profile?.fallback_reason ||
+          '未连接大模型，正在使用 TemplatePersonaFallbackAgent 规则模板追问，非 AI 深度分析。'
+        "
+      />
       <div ref="listRef" class="chat-list">
         <p v-if="messages.length === 0" class="chat-empty">
           与<strong>学习画像 Agent</strong>对话，描述你的专业、目标与薄弱点，无需填表。
@@ -236,7 +269,7 @@ const dimensionEntries = (dims: PersonaDimensions) =>
           class="chat-row"
           :class="m.role === 'user' ? 'chat-row--user' : 'chat-row--bot'"
         >
-          <span class="chat-role">{{ m.role === 'user' ? '你' : '画像 Agent' }}</span>
+          <span class="chat-role">{{ m.role === 'user' ? '你' : (personaFallbackMode || profile?.fallback ? '离线引导' : '画像 Agent') }}</span>
           <div
             v-if="m.role === 'assistant'"
             class="chat-bubble ai-md-body"
@@ -318,6 +351,14 @@ const dimensionEntries = (dims: PersonaDimensions) =>
       </p>
       <p v-if="profile?.updated_at" class="dims-time">更新于 {{ profile.updated_at }}</p>
     </aside>
+
+    <PersonaEvidenceChain
+      class="persona-evidence-full"
+      :profile="profile"
+      :loading="profileLoading"
+      :error="profileError"
+      @retry="loadProfile"
+    />
   </div>
 </template>
 
@@ -327,6 +368,10 @@ const dimensionEntries = (dims: PersonaDimensions) =>
   grid-template-columns: 1fr 280px;
   gap: 16px;
   min-height: 420px;
+}
+
+.persona-evidence-full {
+  grid-column: 1 / -1;
 }
 
 @media (max-width: 900px) {
@@ -343,6 +388,10 @@ const dimensionEntries = (dims: PersonaDimensions) =>
   border-radius: var(--alp-radius-card);
   padding: 12px;
   background: var(--alp-bg-soft-block);
+}
+
+.fallback-banner {
+  margin-bottom: 4px;
 }
 
 .chat-list {

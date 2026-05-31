@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import OjWorkbench from '@/components/oj/OjWorkbench.vue'
-import OjDsHintCard from '@/components/oj/OjDsHintCard.vue'
-import OjCodeHintCard from '@/components/oj/OjCodeHintCard.vue'
 import OjTraceSplitView from '@/components/oj/OjTraceSplitView.vue'
 import type { JudgeResponse, ProblemDetail } from '@/api/oj'
+import type { OjStruggleInterventionView } from '@/composables/useOjStruggleIntervention'
 
 defineProps<{
   problem: ProblemDetail
@@ -21,8 +20,8 @@ defineProps<{
   traceBugDiagnosis?: import('@/types/codeTrace').TraceBugDiagnoseResponse | null
   apiOnline: boolean
   traceCpp?: boolean
-  hintsOutside?: boolean
   agentConsoleLines?: import('@/utils/agentConsole').AgentConsoleLine[]
+  struggleView?: OjStruggleInterventionView | null
 }>()
 
 const code = defineModel<string>({ required: true })
@@ -45,16 +44,9 @@ const emit = defineEmits<{
     <div
       class="oj-practice-shell"
       :class="{
-        'oj-practice-shell--outside': hintsOutside && !traceSplitOpen,
         'oj-practice-shell--behind': traceSplitOpen,
       }"
     >
-      <OjDsHintCard
-        v-show="!traceSplitOpen"
-        class="oj-practice-side oj-practice-side--ds"
-        :problem="problem"
-        :language="language"
-      />
       <OjWorkbench
         v-if="!traceSplitOpen"
         v-model="code"
@@ -71,19 +63,13 @@ const emit = defineEmits<{
         :api-online="apiOnline"
         :trace-cpp="traceCpp"
         :agent-console-lines="agentConsoleLines"
+        :struggle-view="struggleView"
         @run="emit('run')"
         @submit="emit('submit')"
         @reset="emit('reset')"
         @trace="emit('trace')"
         @diagnose="emit('diagnose')"
         @visual-trace-diagnose="emit('visualTraceDiagnose')"
-      />
-      <OjCodeHintCard
-        v-show="!traceSplitOpen"
-        class="oj-practice-side oj-practice-side--hint"
-        :problem="problem"
-        :language="language"
-        :user-code="code"
       />
     </div>
 
@@ -135,14 +121,7 @@ const emit = defineEmits<{
 }
 
 .oj-practice-shell {
-  --oj-side-width: 220px;
-  --oj-side-gap: 16px;
-  --oj-sticky-top: calc(var(--alp-header-height, 60px) + 16px);
   position: relative;
-  display: grid;
-  grid-template-columns: var(--oj-side-width) minmax(0, 1fr) var(--oj-side-width);
-  gap: var(--oj-side-gap);
-  align-items: start;
   width: 100%;
   min-height: 520px;
   box-sizing: border-box;
@@ -155,126 +134,12 @@ const emit = defineEmits<{
   pointer-events: none;
 }
 
-.oj-practice-shell--outside {
-  --oj-outside-pad: 0px;
-  width: 100%;
-  max-width: none;
-  margin-left: 0;
-  margin-right: 0;
-  padding-left: 0;
-  padding-right: 0;
-  grid-template-columns: var(--oj-side-width) minmax(0, 1fr) var(--oj-side-width);
-}
-
 .oj-practice-center {
   min-width: 0;
   width: 100%;
-  grid-column: 2;
 }
 
 .oj-practice-center--split {
   height: 100%;
-}
-
-.oj-practice-shell--outside .oj-practice-side--ds {
-  grid-column: 1;
-  justify-self: start;
-}
-
-.oj-practice-shell--outside .oj-practice-side--hint {
-  grid-column: 3;
-  justify-self: end;
-}
-
-.oj-practice-side {
-  width: var(--oj-side-width);
-  min-width: var(--oj-side-width);
-  max-width: var(--oj-side-width);
-  display: flex;
-  flex-direction: column;
-  position: sticky;
-  top: var(--oj-sticky-top);
-  align-self: start;
-  max-height: calc(100vh - var(--oj-sticky-top) - 24px);
-  flex-shrink: 0;
-}
-
-.oj-practice-side :deep(.oj-agent-card) {
-  flex: 1;
-  min-height: 0;
-  max-height: inherit;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.oj-practice-side :deep(.el-card__body) {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.oj-practice-side :deep(.oj-agent-body) {
-  flex: 1;
-  min-height: 80px;
-  max-height: none;
-  overflow-y: auto;
-}
-
-@media (min-width: 1400px) {
-  .oj-practice-shell {
-    --oj-side-width: 240px;
-  }
-}
-
-@media (min-width: 1600px) {
-  .oj-practice-shell {
-    --oj-side-width: min(248px, var(--alp-aside-width, 248px));
-  }
-}
-
-@media (max-width: 1199px) {
-  .oj-practice-shell {
-    --oj-side-width: 200px;
-  }
-}
-
-@media (max-width: 1399px) {
-  .oj-practice-shell,
-  .oj-practice-shell--outside {
-    width: 100%;
-    margin-left: 0;
-    margin-right: 0;
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
-  }
-
-  .oj-practice-center,
-  .oj-practice-shell--outside .oj-practice-side--ds,
-  .oj-practice-shell--outside .oj-practice-center,
-  .oj-practice-shell--outside .oj-practice-side--hint {
-    grid-column: 1;
-  }
-
-  .oj-practice-side {
-    position: static;
-    max-height: none;
-  }
-
-  .oj-practice-side :deep(.oj-agent-card) {
-    max-height: none;
-  }
-
-  .oj-practice-side :deep(.oj-agent-body) {
-    max-height: 200px;
-  }
-}
-
-@media (max-width: 600px) {
-  .oj-practice-side {
-    width: 100%;
-    min-width: 0;
-    max-width: none;
-  }
 }
 </style>

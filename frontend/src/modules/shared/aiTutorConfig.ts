@@ -117,6 +117,17 @@ export const AI_TUTOR_MODULE_META: Record<string, AiTutorModuleMeta> = {
       theory: ['单调栈里元素是单调增还是减由什么决定？', '「下一个更大元素」为什么用栈？'],
     },
   },
+  graph: {
+    moduleKey: 'graph',
+    moduleTitle: '图论学习模块',
+    chapterTag: '图论篇 · ch06-graph',
+    sectionQuickQuestions: {
+      theory: ['有向图和无向图在建图时有什么区别？', '网格题怎么映射成图结点？'],
+      bfs: ['BFS 为什么要在入队时 mark visited？', 'BFS 和层序遍历二叉树有什么相同点？'],
+      dfs: ['DFS 递归和显式栈写法怎么对应？', '什么时候需要外层 for 再 dfs？'],
+      pitfalls: ['BFS 用栈、DFS 用队列会怎样？', '连通分量遗漏通常是什么写法导致的？'],
+    },
+  },
 }
 
 export function getAiTutorMeta(moduleKey: string): AiTutorModuleMeta | undefined {

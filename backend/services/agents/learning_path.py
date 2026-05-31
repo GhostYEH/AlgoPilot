@@ -11,7 +11,7 @@ from services.knowledge.concept_clusters import concept_clusters
 from services.agents.learning_path_catalog import (
     DEFAULT_ORDER,
     MODULE_CATALOG,
-    MODULE_DEPENDENCIES,
+    MODULE_DEPENDENCIES_RESOLVED as MODULE_DEPENDENCIES,
     PHASE_RANK,
     VALID_MODULE_KEYS,
     lookup_remediation,
@@ -75,8 +75,14 @@ class LearningPathAgent(BaseAgent):
         request: LearningPathReplanRequest,
         dimension_scores: dict[str, int] | None = None,
         remediation_before: str | None = None,
+        mastery_by_chapter: dict[str, int] | None = None,
     ) -> dict:
-        base = _heuristic_plan(profile_block, request, dimension_scores or {})
+        base = _heuristic_plan(
+            profile_block,
+            request,
+            dimension_scores or {},
+            mastery_by_chapter=mastery_by_chapter or {},
+        )
         ordered = _topo_sort_keys(base["ordered_keys"])
         base["ordered_keys"] = ordered
         base["steps"] = _rebuild_steps(ordered, base["steps"], request, dimension_scores or {})
@@ -273,6 +279,8 @@ def _heuristic_plan(
     profile_block: str,
     request: LearningPathReplanRequest,
     scores: dict[str, int],
+    *,
+    mastery_by_chapter: dict[str, int] | None = None,
 ) -> dict:
     progress_map = {m.key: m for m in request.modules}
     weak_keys = _extract_weak_keys(profile_block)
@@ -282,6 +290,18 @@ def _heuristic_plan(
     advanced_mode = kb >= 8 and coding >= 7
     module_clusters = _module_cluster_map()
     weak_clusters = {module_clusters.get(wk, "") for wk in weak_keys} - {""}
+    mastery_map = mastery_by_chapter or {}
+    low_mastery_modules: set[str] = set()
+    try:
+        from services.knowledge.course_loader import chapter_id_for_module, load_manifest
+
+        manifest = load_manifest()
+        for key in progress_map:
+            cid = chapter_id_for_module(manifest, key)
+            if cid and mastery_map.get(cid, 100) < 45:
+                low_mastery_modules.add(key)
+    except Exception:
+        pass
 
     def score(key: str) -> tuple[int, int, int, int, int]:
         m = progress_map.get(key)
@@ -291,10 +311,13 @@ def _heuristic_plan(
         )
         weak_bonus = 0 if key in weak_keys else 1
         cluster_bonus = 0 if module_clusters.get(key, "") in weak_clusters else 1
+        mastery_penalty = 0 if key not in low_mastery_modules else -30
         if pct >= 100:
-            return (3, 100, phase_rank, DEFAULT_ORDER.index(key), cluster_bonus)
+            return (3, 100 + mastery_penalty, phase_rank, DEFAULT_ORDER.index(key), cluster_bonus)
         if pct > 0:
-            return (0, pct, phase_rank * 10 + weak_bonus, DEFAULT_ORDER.index(key), cluster_bonus)
+            return (0, pct + mastery_penalty, phase_rank * 10 + weak_bonus, DEFAULT_ORDER.index(key), cluster_bonus)
+        if key in low_mastery_modules:
+            return (0, 20, phase_rank, DEFAULT_ORDER.index(key), cluster_bonus)
         if beginner_mode and phase_rank > 1:
             return (2, 80, phase_rank + 5, DEFAULT_ORDER.index(key), cluster_bonus)
         if advanced_mode and phase_rank == 0 and key in ("array", "linked-list"):
@@ -349,8 +372,14 @@ def _default_reason(
         return "已完成，可复习巩固"
     if m and m.percent > 0:
         return "进行中，建议优先推进"
-    if key == "graph":
+    catalog_item = next((c for c in MODULE_CATALOG if c["key"] == key), None)
+    if catalog_item and not catalog_item["available"]:
         return "课程规划中"
+    if key == "graph":
+        return (
+            "图是《数据结构与算法》中的核心结构，"
+            "建议在掌握栈、队列和树后学习 BFS/DFS、连通性与最短路径基础。"
+        )
     if beginner and key in ("array", "linked-list", "stack-queue"):
         return "基础薄弱，优先夯实"
     if advanced and key in ("array", "linked-list"):

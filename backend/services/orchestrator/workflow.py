@@ -71,23 +71,83 @@ class ResourceGenerationWorkflow:
         )
         await _emit("rag_retrieve", "KnowledgeRetriever", "running", "BM25 匹配知识库")
         query = f"{topic} {focus_hint} {module_key}".strip()
-        chunks = retriever.search(query, module_key=module_key, top_k=5)
+        chapter_id = ""
+        try:
+            from services.knowledge.course_loader import chapter_id_for_module, load_manifest
+
+            chapter_id = chapter_id_for_module(load_manifest(), module_key) or ""
+        except Exception:
+            pass
+        chunks = retriever.search(
+            query,
+            module_key=module_key,
+            course_id="data_structures_algorithms",
+            chapter_id=chapter_id,
+            top_k=5,
+        )
+        from services.knowledge.retriever import primary_course_context
+
+        course_ctx = primary_course_context(chunks)
         ctx.log("KnowledgeRetriever", "retrieve", f"命中 {len(chunks)} 条", resource_type=resource_type)
         await _emit("rag_retrieve", "KnowledgeRetriever", "done", f"命中 {len(chunks)} 条")
+
+        skill_route_score = 0.0
+        skill_route_reasons: list[str] = []
+        skill_focus = ""
+        matched_skill_card = None
+        try:
+            from services.skills.recommend import build_route_request
+            from services.skills.skill_context import format_skill_prompt_block
+            from services.skills.skill_router import get_skill_router
+
+            route_req = build_route_request(
+                module_key=module_key,
+                topic=topic,
+                profile_block=profile_block,
+                user_query=focus_hint,
+            )
+            route_req.chapter_id = course_ctx.get("chapter_id") or route_req.chapter_id
+            route_result = get_skill_router().route(route_req)
+            if route_result.skill_card:
+                matched_skill_card = route_result.skill_card
+                skill_focus = format_skill_prompt_block(
+                    matched_skill_card, resource_type=resource_type
+                )
+                if route_result.matches:
+                    skill_route_score = route_result.matches[0].score
+                    skill_route_reasons = list(route_result.matches[0].reasons)
+                ctx.log(
+                    "SkillRouter",
+                    "match",
+                    f"{matched_skill_card.id} · {matched_skill_card.name}",
+                    resource_type=resource_type,
+                )
+                await _emit(
+                    "skill_route",
+                    "SkillRouter",
+                    "done",
+                    f"命中技能卡 {matched_skill_card.id}",
+                )
+        except Exception:
+            pass
 
         revised_hint = ""
         title = ""
         content = ""
         gen_meta: dict = {}
         passed = False
+        verify_skipped = False
+        verifier_structured = None
+        retry_count = 0
+        course_id = course_ctx.get("course_id") or "data_structures_algorithms"
+        chapter_id_final = course_ctx.get("chapter_id") or chapter_id
 
         for attempt in range(1, MAX_VERIFY_RETRIES + 2):
             collab = ctx.agent_hints_block()
-            hint = focus_hint
+            hint_parts = [p for p in (focus_hint, skill_focus, collab) if p]
+            hint = "\n\n".join(hint_parts)
             if revised_hint:
-                hint = f"{focus_hint}；校验修订：{revised_hint}".strip("；")
-            if collab:
-                hint = (hint + "\n" + collab).strip() if hint else collab
+                hint = (hint + f"\n\n校验修订：{revised_hint}").strip()
 
             await _emit(
                 "agent_generate",
@@ -114,17 +174,20 @@ class ResourceGenerationWorkflow:
 
             if resource_type in _SKIP_VERIFY_TYPES:
                 passed = True
+                verify_skipped = True
                 gen_meta["verified"] = True
                 gen_meta["verify_attempts"] = 0
-                gen_meta["knowledge_refs"] = []
+                gen_meta["knowledge_refs"] = [c["id"] for c in chunks]
+                verifier_structured = None
                 ctx.log("TraceAgent", "trace_record", gen_meta.get("trace_verdict", "done"), resource_type=resource_type)
                 await _emit("content_verify", "ContentVerifierAgent", "skipped", "轨迹资源跳过文本校验")
                 break
 
             await _emit("content_verify", "ContentVerifierAgent", "running")
-            passed, content, citation_ids, revised_hint = await verifier_agent.verify(
+            passed, content, citation_ids, revised_hint, verifier_structured = await verifier_agent.verify(
                 content, chunks, topic=topic
             )
+            retry_count = attempt - 1
             gen_meta["knowledge_refs"] = citation_ids
             gen_meta["verified"] = passed
             gen_meta["verify_attempts"] = attempt
@@ -156,9 +219,10 @@ class ResourceGenerationWorkflow:
         gen_meta["collaboration_log"] = list(ctx.collaboration_log)
 
         await _emit("safety_filter", "SafetyAgent", "running")
-        safe_text, safety_logs, passed_safety = safety_agent.audit(
-            content, resource_type=resource_type
-        )
+        safety_structured = safety_agent.audit_structured(content, resource_type=resource_type)
+        safe_text = safety_structured.text or content
+        passed_safety = safety_structured.passed
+        safety_logs = safety_structured.logs
         for entry in safety_logs:
             ctx.log(
                 entry["agent"],
@@ -168,6 +232,7 @@ class ResourceGenerationWorkflow:
                 status=entry.get("status", "done"),
             )
             gen_meta.setdefault("agent_logs", []).append(entry)
+
         if not passed_safety:
             await _emit(
                 "safety_filter",
@@ -175,9 +240,14 @@ class ResourceGenerationWorkflow:
                 "error",
                 safety_logs[-1].get("detail", "") if safety_logs else "审查未通过",
             )
-            raise ValueError(
-                safety_logs[-1].get("detail", "") if safety_logs else "内容未通过安全审查"
-            )
+            gen_meta["status"] = "draft"
+            gen_meta["draft_reason"] = safety_logs[-1].get("detail", "") if safety_logs else "内容未通过安全审查"
+            safe_text = (content[:2000] + "\n\n> ⚠️ 内容未通过安全审查，已标记为草稿供人工复核。") if content else ""
+        elif passed:
+            gen_meta["status"] = "published"
+        else:
+            gen_meta["status"] = "draft"
+
         gen_meta["safety_warnings"] = [
             w
             for entry in safety_logs
@@ -185,12 +255,60 @@ class ResourceGenerationWorkflow:
             for w in [entry.get("detail", "")]
             if w
         ]
+        gen_meta["safety_warnings"].extend(safety_structured.hallucination_warnings)
+
+        from services.verification.builder import (
+            build_verification_result,
+            chunks_to_grounded,
+            verification_for_skipped_type,
+        )
+
+        if verify_skipped:
+            verification = verification_for_skipped_type(
+                resource_type,
+                course_id=course_id,
+                chapter_id=chapter_id_final,
+                chunks=chunks,
+                trace_verdict=str(gen_meta.get("trace_verdict") or ""),
+            )
+            verification.safety_status = safety_structured.status  # type: ignore[assignment]
+            if not passed_safety:
+                verification.final_decision = "blocked"
+                verification.risk_label = "安全警告"
+        else:
+            v_status = verifier_structured.status if verifier_structured else "warning"
+            if passed and v_status != "passed":
+                v_status = "passed"
+            verification = build_verification_result(
+                resource_type=resource_type,
+                course_id=course_id,
+                chapter_id=chapter_id_final,
+                verifier_status=v_status,  # type: ignore[arg-type]
+                safety_status=safety_structured.status,  # type: ignore[arg-type]
+                grounded_chunks=chunks_to_grounded(chunks),
+                hallucination_risks=list(
+                    (verifier_structured.hallucination_risks if verifier_structured else [])
+                    + safety_structured.hallucination_warnings
+                ),
+                unsupported_claims=list(verifier_structured.unsupported_claims if verifier_structured else []),
+                sensitive_risks=list(safety_structured.sensitive_risks),
+                prompt_injection_risks=list(safety_structured.prompt_injection_risks),
+                retry_count=retry_count,
+                final_decision=gen_meta.get("status", "draft") if passed_safety else "blocked",
+            )
+            if gen_meta.get("status") == "published" and passed_safety:
+                verification.final_decision = "publish"
+
+        gen_meta["verification"] = verification.to_meta_dict()
         gen_meta["safety_panel"] = {
-            "shield": "green" if passed and passed_safety else "yellow",
+            "shield": "green"
+            if verification.final_decision == "publish"
+            else ("red" if verification.final_decision == "blocked" else "yellow"),
             "knowledge_source": _source_label(gen_meta.get("knowledge_refs") or [], module_key),
-            "complexity_verified": bool(passed),
-            "sensitive_filter_passed": bool(passed_safety),
+            "complexity_verified": verification.verifier_status == "passed",
+            "sensitive_filter_passed": verification.safety_status != "failed",
             "agents": ["ContentVerifierAgent", "SafetyAgent"],
+            "verification": verification.to_meta_dict(),
             "oj_sandbox": {
                 "time_limit": "Python trace 8s / OJ 题目级限时",
                 "memory_limit": "题目级内存限制",
@@ -199,13 +317,24 @@ class ResourceGenerationWorkflow:
             },
         }
         gen_meta["agent_logs"] = list(ctx.agent_logs)
+        gen_meta["course_id"] = course_id
+        gen_meta["chapter_id"] = chapter_id_final
+        gen_meta["knowledge_chunk_ids"] = [c["id"] for c in chunks]
+        if matched_skill_card:
+            from services.skills.skill_context import skill_card_meta_payload
+
+            gen_meta["skill_card"] = skill_card_meta_payload(
+                matched_skill_card,
+                score=skill_route_score,
+                reasons=skill_route_reasons,
+            )
         await _emit(
             "safety_filter",
             "SafetyAgent",
-            "done",
-            safety_logs[-1].get("detail", "") if safety_logs else "审查通过",
+            "done" if passed_safety else "warn",
+            safety_logs[-1].get("detail", "") if safety_logs else "审查完成",
         )
-        await _emit("persist", "Orchestrator", "done" if passed else "warn", gen_meta.get("status", ""))
+        await _emit("persist", "Orchestrator", "done" if gen_meta.get("status") == "published" else "warn", gen_meta.get("status", ""))
 
         return title, safe_text, gen_meta
 

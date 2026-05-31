@@ -4,8 +4,10 @@ import asyncio
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from api.deps import get_current_user
+from api.deps import get_current_user, get_optional_user
+from core.database import get_db
 from models.db_models import User
+from sqlalchemy.orm import Session
 from schemas.oj import (
     AiComplexityReport,
     AiDiagnoseRequest,
@@ -26,6 +28,7 @@ from schemas.oj import (
     TraceVarSnapshot,
 )
 from services.oj.problem_store import ProblemNotFoundError, get_cases, get_problem, get_public_problem, list_problems
+from services.oj.tutoring_pipeline import apply_oj_tutoring
 from services.oj.cpp_runner import run_cases_cpp, _find_gpp
 from services.oj.cpp_trace_runner import _find_gdb, gdb_available, run_trace_cpp, run_trace_cpp_stdio
 from services.oj.trace_step_narration import generate_step_narration
@@ -66,9 +69,17 @@ def api_list_problems(q: str | None = Query(None, description="按标题或 slug
     items = []
     for p in list_problems(q=q):
         slug = p["slug"]
+        course_id = p.get("course_id", "data_structures_algorithms")
+        chapter_id = p.get("chapter_id", "")
+        module_key = p.get("module_key", "")
+        skill_id = p.get("skill_id", "")
         try:
             detail = get_public_problem(slug)
             ready = detail["ready"]
+            course_id = detail.get("course_id", course_id)
+            chapter_id = detail.get("chapter_id", chapter_id)
+            module_key = detail.get("module_key", module_key)
+            skill_id = detail.get("skill_id", skill_id)
         except ProblemNotFoundError:
             ready = False
         items.append(
@@ -78,6 +89,10 @@ def api_list_problems(q: str | None = Query(None, description="按标题或 slug
                 lc_id=p.get("lc_id", 0),
                 difficulty=p.get("difficulty", "medium"),
                 ready=ready,
+                course_id=course_id,
+                chapter_id=chapter_id,
+                module_key=module_key,
+                skill_id=skill_id,
             )
         )
     return items
@@ -101,9 +116,48 @@ def api_submit(
     slug: str,
     body: JudgeRequest,
     user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
-    _ = user
-    return _judge(slug, body, mode="submit")
+    resp = _judge(slug, body, mode="submit")
+    event_logs: list[dict[str, str]] = []
+    event_id: str | None = None
+    try:
+        from services.events.event_bus import event_bus
+
+        message = resp.cases[0].message if resp.cases else ""
+        payload = {
+            "problem_slug": slug,
+            "verdict": resp.verdict,
+            "message": message,
+            "error_pattern": message[:200] if message else resp.verdict,
+        }
+        if resp.verdict == "AC":
+            pub = event_bus.publish(
+                db,
+                event_type="on_oj_submission_accepted",
+                user_id=user.id,
+                payload=payload,
+            )
+        else:
+            pub = event_bus.publish(
+                db,
+                event_type="on_oj_submission_failed",
+                user_id=user.id,
+                payload=payload,
+            )
+        event_id = pub.event.event_id
+        event_logs = [log.model_dump() for log in pub.event.agent_logs]
+    except Exception:
+        pass
+    return JudgeResponse(
+        verdict=resp.verdict,
+        passed=resp.passed,
+        total=resp.total,
+        cases=resp.cases,
+        compile_error=resp.compile_error,
+        event_id=event_id,
+        event_logs=event_logs,
+    )
 
 
 def _pick_trace_case(cases: list[dict]) -> dict:
@@ -327,7 +381,12 @@ def _judge_single_case(
 
 
 @router.post("/problems/{slug}/diagnose", response_model=TraceBugDiagnoseResponse)
-async def api_trace_bug_diagnose(slug: str, body: TraceBugDiagnoseRequest):
+async def api_trace_bug_diagnose(
+    slug: str,
+    body: TraceBugDiagnoseRequest,
+    user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+):
     """
     AI 轨迹诊断：基于已有 trace steps 压缩投喂 LLM，定位 bug 起源步。
     适用于 WA / TLE 等场景下用户已生成可视化轨迹。
@@ -350,11 +409,45 @@ async def api_trace_bug_diagnose(slug: str, body: TraceBugDiagnoseRequest):
         for s in body.steps
     ]
     result = await diagnose_trace_bug(description, body.code, steps_raw)
-    return TraceBugDiagnoseResponse(**result)
+    tutoring = apply_oj_tutoring(
+        db,
+        user,
+        slug=slug,
+        problem=problem,
+        bug_step_index=int(result.get("bug_step_index") or 0),
+        diagnosis_title=str(result.get("diagnosis_title") or ""),
+        detailed_analysis=str(result.get("detailed_analysis") or ""),
+        judge_verdict="WA",
+        code=body.code,
+    )
+    if user:
+        try:
+            from services.events.event_bus import event_bus
+
+            event_bus.publish(
+                db,
+                event_type="on_trace_diagnosed",
+                user_id=user.id,
+                payload={
+                    "problem_slug": slug,
+                    "diagnosis": result,
+                    "source": "trace_bug",
+                    "memory_written": True,
+                    "memory_event_id": tutoring.memory_event_id,
+                },
+            )
+        except Exception:
+            pass
+    return TraceBugDiagnoseResponse(**result, tutoring=tutoring)
 
 
 @router.post("/problems/{slug}/ai/diagnose", response_model=AiDiagnoseResponse)
-async def api_ai_diagnose(slug: str, body: AiDiagnoseRequest):
+async def api_ai_diagnose(
+    slug: str,
+    body: AiDiagnoseRequest,
+    user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+):
     """
     AI 深度诊断：生成边界测例 → 判题验证 → 可视化追踪 → 破案式旁白 → 复杂度报告。
     """
@@ -491,7 +584,31 @@ async def api_ai_diagnose(slug: str, body: AiDiagnoseRequest):
             f"下方可视化回放展示程序在该测例上的执行过程。"
         )
 
-    return AiDiagnoseResponse(
+    bug_step_index = 0
+    diagnosis_title = summary_text[:40]
+    detailed_analysis = summary_text
+    for n in merged:
+        if n.get("critical"):
+            bug_step_index = int(n.get("step_index", 0))
+            diagnosis_title = str(n.get("text", ""))[:40]
+            detailed_analysis = " ".join(x.get("text", "") for x in merged[:5])[:500] or summary_text
+            break
+
+    tutoring = apply_oj_tutoring(
+        db,
+        user,
+        slug=slug,
+        problem=problem,
+        bug_step_index=bug_step_index,
+        diagnosis_title=diagnosis_title,
+        detailed_analysis=detailed_analysis,
+        edge_category=str(edge.get("category") or ""),
+        edge_verdict=edge_verdict,
+        judge_verdict=body.judge_verdict or edge_verdict,
+        code=body.code,
+    )
+
+    response = AiDiagnoseResponse(
         edge_case=AiEdgeCaseInfo(
             reason=str(edge.get("reason") or ""),
             category=str(edge.get("category") or "edge"),
@@ -504,7 +621,33 @@ async def api_ai_diagnose(slug: str, body: AiDiagnoseRequest):
         trace=trace_resp,
         complexity=AiComplexityReport(**complexity_raw),
         summary=summary_text,
+        tutoring=tutoring,
     )
+    if user:
+        try:
+            from services.events.event_bus import event_bus
+
+            diag_payload = {
+                "bug_step_index": bug_step_index,
+                "diagnosis_title": diagnosis_title,
+                "detailed_analysis": detailed_analysis,
+                "source": "ai_diagnose",
+            }
+            event_bus.publish(
+                db,
+                event_type="on_trace_diagnosed",
+                user_id=user.id,
+                payload={
+                    "problem_slug": slug,
+                    "diagnosis": diag_payload,
+                    "edge_category": str(edge.get("category") or ""),
+                    "memory_written": True,
+                    "memory_event_id": tutoring.memory_event_id,
+                },
+            )
+        except Exception:
+            pass
+    return response
 
 
 @router.post("/problems/{slug}/trace/narrate", response_model=TraceResponse)

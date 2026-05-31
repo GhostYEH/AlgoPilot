@@ -67,6 +67,17 @@ class PersonaChatRequest(BaseModel):
     history: list[ChatHistoryItem] = Field(default_factory=list, max_length=30)
 
 
+class LearningEvidenceBrief(BaseModel):
+    id: int = 0
+    event_type: str = ""
+    event_label: str = ""
+    problem_slug: str = ""
+    skill_id: str = ""
+    chapter_id: str = ""
+    summary: str = ""
+    at: str | None = None
+
+
 class PersonaProfileResponse(BaseModel):
     summary: str = ""
     dimensions: PersonaDimensions
@@ -83,8 +94,26 @@ class PersonaProfileResponse(BaseModel):
         default_factory=list,
         description="仍待补全的维度 key",
     )
+    dimension_evidence: dict[str, list[str]] = Field(
+        default_factory=dict,
+        description="各画像维度对应的学习记忆证据摘录",
+    )
+    update_reason: str = Field(
+        default="",
+        description="最近一次画像/记忆更新原因",
+    )
+    recent_evidence: list[LearningEvidenceBrief] = Field(
+        default_factory=list,
+        description="最近 3 条学习证据",
+    )
+    fallback: bool = Field(default=False, description="是否为离线模板画像模式")
+    fallback_reason: str = Field(default="", description="降级原因")
+    generated_by: str = Field(default="", description="画像生成 Agent 标识")
 
 
 class PersonaSyncResponse(BaseModel):
     profile: PersonaProfileResponse
     message: str = "画像已更新"
+    fallback: bool = False
+    fallback_reason: str = ""
+    generated_by: str = ""

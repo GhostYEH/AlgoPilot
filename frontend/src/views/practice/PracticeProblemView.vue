@@ -40,6 +40,7 @@ const {
   onAiDiagnose,
   onVisualTraceDiagnose,
   agentConsoleLines,
+  struggleView,
 } = useOjWorkbenchActions({
   slug,
   code,
@@ -103,7 +104,6 @@ function resetCode() {
       v-if="problem"
       v-model="code"
       v-model:language="language"
-      hints-outside
       :problem="problem"
       :running="running"
       :submitting="submitting"
@@ -120,6 +120,7 @@ function resetCode() {
       :api-online="apiOnline"
       :trace-cpp="traceCpp"
       :agent-console-lines="agentConsoleLines"
+      :struggle-view="struggleView"
       @run="onRun"
       @submit="onSubmit"
       @trace="onTrace"
@@ -144,13 +145,6 @@ function resetCode() {
   min-width: 0;
 }
 
-.practice-problem-page :deep(.oj-practice-layout) {
-  margin-left: calc(-1 * var(--alp-layout-padding-x, 16px));
-  margin-right: calc(-1 * var(--alp-layout-padding-x, 16px));
-  width: calc(100% + 2 * var(--alp-layout-padding-x, 16px));
-  max-width: none;
-}
-
 .head {
   margin-bottom: 12px;
 }
@@ -159,12 +153,6 @@ function resetCode() {
   .practice-problem-page {
     padding-left: 12px;
     padding-right: 12px;
-  }
-
-  .practice-problem-page :deep(.oj-practice-layout) {
-    width: 100%;
-    margin-left: 0;
-    margin-right: 0;
   }
 }
 </style>

@@ -93,6 +93,14 @@ class ResourceGenerateRequest(BaseModel):
     focus_hint: str = Field(default="", max_length=500)
 
 
+class ResourceGenerateAllRequest(BaseModel):
+    """批量 generate-all：无需指定 resource_type。"""
+
+    topic: str = Field(default="数据结构与算法", max_length=200)
+    module_key: str = Field(default="", max_length=64)
+    focus_hint: str = Field(default="", max_length=500)
+
+
 class GeneratedResourceItem(BaseModel):
     id: int
     resource_type: str
@@ -101,6 +109,10 @@ class GeneratedResourceItem(BaseModel):
     content: str
     meta: dict = Field(default_factory=dict)
     created_at: str
+    verification: dict | None = Field(
+        default=None,
+        description="防幻觉与内容安全校验证据（与 meta.verification 同步）",
+    )
 
 
 class ResourceGenerateResponse(BaseModel):
