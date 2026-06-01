@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Grid, Reading, FolderOpened, User, QuestionFilled, Cpu, Moon, Sunny, Trophy } from '@element-plus/icons-vue'
+import { Grid, Reading, FolderOpened, User, QuestionFilled, Cpu, Moon, Sunny, Trophy, ArrowDown } from '@element-plus/icons-vue'
 import { useTheme } from '@/composables/useTheme'
 import { providePersonaUi } from '@/composables/usePersonaUiProvider'
 import { ALGORITHM_MODULES, MODULE_ROUTE_NAMES } from '@/constants/modules'
 import { recordModuleVisit } from '@/utils/learningBookmarks'
 import { isLoggedIn, getUser, logout } from '@/stores/auth'
 import PageTransition from '@/components/layout/PageTransition.vue'
+import LearningQuickPanel from '@/components/layout/LearningQuickPanel.vue'
 import { prefetchRoute } from '@/router/prefetch'
 
 const route = useRoute()
@@ -32,7 +33,6 @@ watch(
   { immediate: true },
 )
 
-/** 顶部菜单与路由 path 对齐（子路由相对父级 /） */
 const activeMenu = computed(() => {
   const p = route.path
   if (p === '/' || p === '') return '/'
@@ -60,6 +60,8 @@ function onLogout() {
   logout()
   router.push({ name: 'home' })
 }
+
+const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
 </script>
 
 <template>
@@ -104,10 +106,30 @@ function onLogout() {
         >
           <span>多智能体</span>
         </el-menu-item>
-        <el-menu-item index="/my-learning" @mouseenter="prefetchRoute('/my-learning')">
-          <el-icon><User /></el-icon>
-          <span>我的学习</span>
-        </el-menu-item>
+
+        <el-dropdown
+          trigger="hover"
+          placement="bottom-start"
+          :popper-class="isMyLearningActive ? 'nav-dropdown nav-dropdown--active' : 'nav-dropdown'"
+          @mouseenter="prefetchRoute('/my-learning')"
+        >
+          <div
+            class="nav-dropdown-trigger"
+            :class="{ 'is-active': isMyLearningActive }"
+            role="button"
+            tabindex="0"
+          >
+            <el-icon><User /></el-icon>
+            <span>我的学习</span>
+            <el-icon class="arrow-icon"><ArrowDown /></el-icon>
+          </div>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <LearningQuickPanel />
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+
         <el-menu-item index="/a3-demo" @mouseenter="prefetchRoute('/a3-demo')">
           <el-icon><Trophy /></el-icon>
           <span>比赛演示</span>
@@ -220,6 +242,8 @@ function onLogout() {
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
+  display: flex;
+  align-items: center;
 }
 
 .header-menu::-webkit-scrollbar {
@@ -235,6 +259,51 @@ function onLogout() {
   color: var(--alp-color-primary) !important;
   border-bottom-color: var(--alp-color-primary) !important;
   background: transparent !important;
+}
+
+.nav-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 20px;
+  height: var(--alp-header-height, 60px);
+  font-weight: 500;
+  color: var(--alp-color-text);
+  cursor: pointer;
+  transition: color 0.2s;
+  position: relative;
+}
+
+.nav-dropdown-trigger::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 20px;
+  right: 20px;
+  height: 2px;
+  background: transparent;
+  transition: background 0.2s;
+}
+
+.nav-dropdown-trigger.is-active {
+  color: var(--alp-color-primary);
+}
+
+.nav-dropdown-trigger.is-active::after {
+  background: var(--alp-color-primary);
+}
+
+.nav-dropdown-trigger:hover {
+  color: var(--alp-color-primary);
+}
+
+.arrow-icon {
+  font-size: 10px;
+  transition: transform 0.2s;
+}
+
+.nav-dropdown-trigger:hover .arrow-icon {
+  transform: rotate(180deg);
 }
 
 .header-actions {
@@ -269,7 +338,6 @@ function onLogout() {
   overflow-x: clip;
 }
 
-/* 首页：禁止外层滚动，仅右侧内容区滚动 */
 .app-main:has(.home-layout) {
   overflow: hidden;
   height: calc(100vh - var(--alp-header-height, 60px));
@@ -302,6 +370,10 @@ function onLogout() {
   .header-menu :deep(.el-menu-item span) {
     display: none;
   }
+
+  .nav-dropdown-trigger span {
+    display: none;
+  }
 }
 
 @media (max-width: 600px) {
@@ -331,6 +403,10 @@ function onLogout() {
     padding: 0 10px;
   }
 
+  .nav-dropdown-trigger {
+    padding: 0 10px;
+  }
+
   .header-actions {
     gap: 6px;
   }
@@ -339,5 +415,23 @@ function onLogout() {
     padding-left: 9px;
     padding-right: 9px;
   }
+}
+</style>
+
+<style>
+.nav-dropdown {
+  padding: 8px 0;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.nav-dropdown .el-dropdown-menu__item {
+  padding: 0;
+  line-height: normal;
+}
+
+.nav-dropdown--active {
+  /* active state marker */
 }
 </style>

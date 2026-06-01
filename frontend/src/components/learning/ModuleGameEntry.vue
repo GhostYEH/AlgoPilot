@@ -2,7 +2,12 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Trophy, VideoPlay, ArrowRight } from '@element-plus/icons-vue'
-import { getDetectiveGame, getModuleGame, type ModuleGameMeta } from '@/modules/games/gameRegistry'
+import {
+  getDetectiveGame,
+  getModuleGame,
+  getModuleGameLevelForSection,
+  type ModuleGameMeta,
+} from '@/modules/games/gameRegistry'
 import { clearedCount } from '@/modules/games/gameProgress'
 
 const props = withDefaults(
@@ -19,6 +24,9 @@ const route = useRoute()
 const levelClearedTick = ref(0)
 
 const moduleGame = computed(() => getModuleGame(props.moduleKey))
+const chapterLevel = computed(() =>
+  getModuleGameLevelForSection(props.moduleKey, props.sectionId),
+)
 const showDetective = computed(
   () =>
     props.variant === 'detective-only' ||
@@ -38,8 +46,14 @@ function goPlay(game: ModuleGameMeta) {
   const query: Record<string, string> = {}
   if (props.moduleKey && game.moduleKey !== '_global') {
     query.from = props.moduleKey
+    const level = chapterLevel.value
+    if (level && game.levels.some((lv) => lv.id === level.id)) {
+      query.level = level.id
+    }
     if (typeof route.query.section === 'string') {
       query.section = route.query.section
+    } else if (props.sectionId) {
+      query.section = props.sectionId
     }
   }
   if (props.variant === 'detective-only') {
@@ -61,6 +75,9 @@ function goPlay(game: ModuleGameMeta) {
           <h3 class="alp-game-panel__title">互动小游戏 · {{ moduleGame.title }}</h3>
           <p class="alp-game-panel__tagline">
             {{ moduleGame.tagline }} — 点击进入独立闯关页面
+          </p>
+          <p v-if="chapterLevel" class="alp-game-panel__tagline">
+            本章推荐关卡：{{ chapterLevel.title }} · {{ chapterLevel.goal }}
           </p>
         </div>
         <span class="alp-game-stars">{{ '★'.repeat(moduleGame.stars) }}{{ '☆'.repeat(3 - moduleGame.stars) }}</span>

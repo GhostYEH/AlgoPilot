@@ -125,7 +125,8 @@ python backend/scripts/seed_a3_demo_data.py
 | `services/agents/` | 各 Agent |
 | `services/orchestrator/` | 工作流编排 |
 | `services/oj/` | 判题、Trace、AI 诊断 |
-| `knowledge_base/` | 课程知识库 |
+| `knowledge/courses/` | 课程级知识库（`data_structures_algorithms/` 等） |
+| `knowledge_base/` | 检索切片产物（`chunks.json`、`syllabus.json`） |
 | `data/` | SQLite（勿提交） |
 
 ## 后续扩展（可选）

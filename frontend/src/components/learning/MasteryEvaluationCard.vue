@@ -6,6 +6,8 @@ import {
   fetchMasteryReport,
   recalculateMastery,
   MASTERY_LEVEL_LABELS,
+  MASTERY_TREND_LABELS,
+  CONFIDENCE_LEVEL_LABELS,
   type MasteryOverview,
   type MasteryReport,
 } from '@/api/mastery'
@@ -32,6 +34,20 @@ const topChapters = computed(() => {
 const primaryReport = computed<MasteryReport | null>(
   () => overview.value?.report ?? overview.value?.chapters?.[0] ?? null,
 )
+
+const trendTagType = computed(() => {
+  const trend = primaryReport.value?.mastery_trend ?? 'stable'
+  if (trend === 'rising') return 'success'
+  if (trend === 'falling') return 'danger'
+  return 'info'
+})
+
+const confidenceTagType = computed(() => {
+  const level = primaryReport.value?.confidence_level ?? 'low'
+  if (level === 'high') return 'success'
+  if (level === 'medium') return 'warning'
+  return 'info'
+})
 
 function buildPayload() {
   const o = buildLearningOverview()
@@ -106,6 +122,29 @@ defineExpose({ reload: () => loadReport(true) })
           {{ primaryReport.path_adjustment_suggestion }}
         </p>
       </div>
+
+      <div v-if="primaryReport" class="bkt-lite-row">
+        <div class="bkt-lite-item">
+          <span class="bkt-label">掌握概率</span>
+          <strong class="bkt-prob">{{ (primaryReport.mastery_probability * 100).toFixed(0) }}%</strong>
+        </div>
+        <div class="bkt-lite-item">
+          <span class="bkt-label">趋势</span>
+          <el-tag :type="trendTagType" size="small">
+            {{ MASTERY_TREND_LABELS[primaryReport.mastery_trend] }}
+          </el-tag>
+        </div>
+        <div class="bkt-lite-item">
+          <span class="bkt-label">置信度</span>
+          <el-tag :type="confidenceTagType" size="small">
+            {{ CONFIDENCE_LEVEL_LABELS[primaryReport.confidence_level] }}
+          </el-tag>
+        </div>
+      </div>
+
+      <p v-if="primaryReport?.probability_explanation" class="prob-explanation">
+        {{ primaryReport.probability_explanation }}
+      </p>
 
       <div v-if="topChapters.length" class="section">
         <h4>章节掌握度</h4>
@@ -216,6 +255,39 @@ defineExpose({ reload: () => loadReport(true) })
   font-size: 13px;
   color: var(--alp-color-muted);
   line-height: 1.5;
+}
+
+.bkt-lite-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  background: var(--alp-bg-soft-block);
+  border-radius: 8px;
+}
+
+.bkt-lite-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bkt-label {
+  font-size: 12px;
+  color: var(--alp-color-muted);
+}
+
+.bkt-prob {
+  font-size: 18px;
+  color: var(--alp-color-primary);
+}
+
+.prob-explanation {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--alp-color-muted);
+  line-height: 1.6;
 }
 
 .section {

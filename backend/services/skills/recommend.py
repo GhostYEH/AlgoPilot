@@ -20,6 +20,8 @@ _MODULE_TOPIC_HINT: dict[str, str] = {
     "string": "字符串 滑动窗口",
     "two-pointers": "双指针",
     "monotonic-stack": "单调栈",
+    "heap": "堆 优先队列",
+    "union-find": "并查集 连通分量",
 }
 
 

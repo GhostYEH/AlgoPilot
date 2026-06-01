@@ -2,9 +2,13 @@
 import { computed } from 'vue'
 import { Collection, Compass, Document, TrendCharts } from '@element-plus/icons-vue'
 import type { OjTutoringPayload } from '@/types/codeTrace'
+import InterventionReceiptCard from '@/components/oj/InterventionReceiptCard.vue'
 
 const props = defineProps<{
   tutoring: OjTutoringPayload | null | undefined
+  verdict?: string
+  consecutiveFailures?: number
+  problemSlug?: string
 }>()
 
 const hasTutoring = computed(() => Boolean(props.tutoring))
@@ -152,6 +156,13 @@ const resourceTypeLabel: Record<string, string> = {
         {{ tutoring.path_adjustment_hint }}
       </p>
     </div>
+
+    <InterventionReceiptCard
+      :tutoring="tutoring"
+      :verdict="verdict"
+      :consecutive-failures="consecutiveFailures"
+      :problem-slug="problemSlug"
+    />
   </section>
 </template>
 

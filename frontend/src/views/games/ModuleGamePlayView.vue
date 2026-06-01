@@ -83,7 +83,13 @@ function onLevelCleared() {
     levelTitle: lv?.title,
     moduleKey: g.moduleKey,
   })
-  if (isNew) ElMessage.success('关卡通过！已保存到学习记录')
+  if (isNew) {
+    if (isLoggedIn.value) {
+      ElMessage.success('关卡通过！本次游戏结果已写入学习记忆，并用于更新掌握度评估。')
+    } else {
+      ElMessage.warning('关卡通过！登录后可同步学习记录，用于更新掌握度评估。')
+    }
+  }
   levelClearedTick.value++
   const idx = g.levels.findIndex((l) => l.id === lid)
   if (idx >= 0 && idx < g.levels.length - 1) {

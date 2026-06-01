@@ -19,6 +19,7 @@ _EVENT_LABELS: dict[str, str] = {
     "quiz_complete": "练习测验完成",
     "section_done": "小节学习完成",
     "skill_recommended": "推荐技能卡",
+    "gamified_practice_complete": "游戏化练习完成",
 }
 
 _MODULE_TO_CHAPTER: dict[str, str] = {
@@ -296,3 +297,48 @@ def _infer_pattern_from_diagnosis(analysis: str, edge_category: str) -> str:
     if "循环" in text or "死循环" in text:
         return "循环未收敛或逻辑未推进"
     return "逻辑偏离题意"
+
+
+def record_gamified_practice(
+    db: Session,
+    user_id: int,
+    *,
+    game_id: str,
+    level: str,
+    module_key: str = "",
+    success: bool = True,
+    score: int = 0,
+    attempts: int = 1,
+    time_spent_seconds: int = 0,
+    evidence_text: str = "",
+) -> MemoryEventRecord:
+    chapter_id = resolve_chapter_id(module_key)
+    skill_id = resolve_skill_id_for_context(
+        module_key=module_key,
+        topic=game_id,
+    )
+    delta = 1 if success else 0
+    svc = MemoryService(db)
+    return svc.record_event(
+        user_id,
+        MemoryEventInput(
+            event_type="gamified_practice_complete",
+            course_id="data_structures_algorithms",
+            chapter_id=chapter_id,
+            skill_id=skill_id,
+            problem_slug=f"game:{game_id}:{level}",
+            trace_summary=(evidence_text or f"游戏 {game_id} 关卡 {level} {'通关' if success else '未通关'}")[:2000],
+            mastery_delta=delta,
+            evidence_json={
+                "game_id": game_id,
+                "level": level,
+                "module_key": module_key,
+                "success": success,
+                "score": score,
+                "attempts": attempts,
+                "time_spent_seconds": time_spent_seconds,
+                "evidence_text": evidence_text,
+                "persona_dimension": "knowledge_base",
+            },
+        ),
+    )

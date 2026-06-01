@@ -24,6 +24,7 @@ AlgoPilot 面向高校 **《数据结构与算法》** 课程：学生通过自�
 [赛题适配](#-赛题适配说明) ·
 [课程场景](#-课程场景说明) ·
 [演示闭环](#-比赛演示闭环) ·
+[竞赛材料](#-竞赛材料) ·
 [快速开始](#-快速开始-quick-start) ·
 [智能体拓扑](#-多智能体集群角色分工与协同) ·
 [课程实操与 Trace](#-课程实操案例与智能辅导trace-engine) ·
@@ -103,6 +104,18 @@ flowchart LR
 
 ---
 
+## 📂 竞赛材料
+
+竞赛相关文档集中在 [`docs/competition/`](docs/competition/) 目录：
+
+| 文件 | 说明 |
+|------|------|
+| [`Algo Pilot A3 中国软件杯项目书初稿.docx`](docs/competition/Algo%20Pilot%20A3%20%E4%B8%AD%E5%9B%BD%E8%BD%AF%E4%BB%B6%E6%9D%AF%E9%A1%B9%E7%9B%AE%E4%B9%A6%E5%88%9D%E7%A8%BF.docx) | 中国软件杯 A3 赛道项目书初稿 |
+
+> 技术文档索引仍保留在 [`backend/docs/competition/README.md`](backend/docs/competition/README.md)。
+
+---
+
 ## ✨ 核心能力一览
 
 | 能力域 | 关键实现（代码落点） |
@@ -111,7 +124,7 @@ flowchart LR
 | **DAG 学习路径** | `LearningPathAgent` 拓扑排序 + 画像分数 + `prerequisites` / 阶段难度 |
 | **多模态资源** | `CORE_RESOURCE_PIPELINE` 八类资源；RAG → 生成 ⇄ 校验 → `SafetyAgent` |
 | **学情自适应** | `EvaluationAgent`；连续 3 次 WA/RE/TLE/CE 可经 `oj-struggle` 建议插入巩固节点（见演示闭环说明） |
-| **内容安全** | C++ 静态危险调用拦截 + `SafetyAgent` 审查；`SafetyValidationPanel` 可视化 |
+| **内容安全** | C++ 静态危险调用拦截（编译前正则扫描，非运行时沙箱）+ `SafetyAgent` 审查；`SafetyValidationPanel` 可视化 |
 | **课程实操与 Trace** | 课内 OJ + `trace_runner` / `gdb_stl_extract` → 动画与 `OjDiagnosisAgent` |
 
 ---
@@ -181,7 +194,7 @@ flowchart LR
 | 🔍 | `KnowledgeRetriever` | **Okapi BM25** + 同义词扩展。 |
 | ✅ | `ContentVerifierAgent` | 对照知识库校验，失败回流重试（最多 2 次）。 |
 
-**C++ 提交安全**：`check_cpp_security()` 静态拦截危险系统调用（`utils/security.py`）。**Docker 进程隔离为可选部署项**（见 `backend/docs/OJ.md` 规划说明）。
+**C++ 提交安全**：`check_cpp_security()` 在编译前以正则扫描拦截危险系统调用（`utils/security.py`），属于静态防线而非运行时沙箱。详细安全边界、已知限制与生产部署建议见 [`backend/docs/OJ_SECURITY.md`](backend/docs/OJ_SECURITY.md)。
 
 ---
 
@@ -261,7 +274,7 @@ Trace Engine 支撑 **《数据结构与算法》课内编程实践**：学生�
 
 团队在 AlgoPilot 开发过程中使用「讯飞星火智能编程助手（iFlyCode）」辅助完成样板代码、单测草拟、Bug 排查建议、Agent Prompt 与文档润色；所有产出经人工审阅与测试后纳入版本管理。
 
-竞赛文档索引：`backend/docs/competition/README.md`。
+竞赛文档索引：`docs/competition/`（项目书初稿等材料）；技术文档详见 `backend/docs/competition/README.md`。
 
 ---
 
@@ -280,7 +293,7 @@ docker compose up --build
 | 前端（Nginx） | http://localhost:8080 |
 | 后端 API | http://localhost:9000/api/health |
 
-> 大模型 Key 通过 `backend/.env` 配置；未配置时课内 OJ / Trace / 静态浏览可用，画像与资源生成需 API。
+> 大模型 Key 通过 `backend/.env` 配置；无 Key 时画像与资源生成进入模板/规则降级（不返回 503），OJ / Trace / 路径规划仍可用；配置 Key 后生成质量更高。
 
 ### 一键启动（Windows 本地开发）
 
@@ -363,10 +376,13 @@ A3/
 ├── README.md
 ├── DEPLOY.md
 ├── start.bat
+├── docs/
+│   └── competition/           # 竞赛材料（项目书等）
 ├── backend/
 │   ├── main.py
 │   ├── api/                    # orchestrator · oj · auth …
-│   ├── knowledge_base/         # syllabus · chunks · chapters
+│   ├── knowledge/courses/     # 课程级知识库（data_structures_algorithms/ 等）
+│   ├── knowledge_base/         # 检索切片产物（syllabus · chunks）
 │   ├── services/
 │   │   ├── agents/
 │   │   ├── orchestrator/
@@ -387,7 +403,9 @@ A3/
 
 ## 📄 许可与声明
 
-根目录暂未附带开源许可证文件；若需二次分发请联系作者或维护方确认授权方式。
+- 本项目采用 **AlgoPilot Competition Evaluation License**（保留权利 + 比赛评审许可），详见 [LICENSE](./LICENSE)。
+- 本项目为第十五届中国软件杯 A3 赛道参赛作品，详见 [NOTICE.md](./NOTICE.md)。
+- 第三方开源组件及 AI 工具声明详见 [THIRD_PARTY_LICENSES.md](./THIRD_PARTY_LICENSES.md)。
 
 ---
 

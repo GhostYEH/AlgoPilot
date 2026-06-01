@@ -6,7 +6,7 @@ description: 并查集路径压缩与按秩合并；用于连通分量与 Kruska
 prerequisites: [ch06-graph]
 triggers:
   keywords: [并查集, union-find, 连通, 合并集合]
-  module_keys: [graph, monotonic-stack]
+  module_keys: [union-find, graph, monotonic-stack]
   chapter_ids: [ch13-heap-union-find]
   oj_verdicts: [WA, TLE]
   error_patterns: [父节点, 路径压缩, 连通]

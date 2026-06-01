@@ -6,7 +6,7 @@ description: 二叉堆操作与 TopK；单调栈衔接 Next Greater；强调堆�
 prerequisites: [ch05-tree-binary-tree]
 triggers:
   keywords: [堆, 优先队列, TopK, 单调栈, next greater]
-  module_keys: [monotonic-stack]
+  module_keys: [heap, monotonic-stack]
   chapter_ids: [ch13-heap-union-find]
   oj_verdicts: [WA]
   error_patterns: [堆顶, 下沉, 上浮]

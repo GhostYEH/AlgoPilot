@@ -4,8 +4,6 @@ import { Refresh, VideoPlay, Upload, View, MagicStick } from '@element-plus/icon
 import CodeEditor from '@/components/oj/CodeEditor.vue'
 import OjAiDiagnosisPanel from '@/components/oj/OjAiDiagnosisPanel.vue'
 import OjStruggleInterventionPanel from '@/components/oj/OjStruggleInterventionPanel.vue'
-import OjDsHintCard from '@/components/oj/OjDsHintCard.vue'
-import OjCodeHintCard from '@/components/oj/OjCodeHintCard.vue'
 import AgentThinkingConsole from '@/components/agents/AgentThinkingConsole.vue'
 import type { OjStruggleInterventionView } from '@/composables/useOjStruggleIntervention'
 import type { AgentConsoleLine } from '@/utils/agentConsole'
@@ -135,12 +133,6 @@ function onReset() {
 
 <template>
   <div class="oj-workbench" :class="{ 'oj-workbench--trace-layout': traceLayout }">
-    <OjDsHintCard
-      v-show="!traceLayout"
-      class="oj-workbench-hint oj-workbench-hint--ds"
-      :problem="problem"
-      :language="language"
-    />
     <aside v-show="!traceLayout" class="oj-problem-pane">
       <header class="problem-header">
         <h2 class="problem-title">{{ problem.title }}</h2>
@@ -327,14 +319,6 @@ function onReset() {
       </div>
     </section>
 
-    <OjCodeHintCard
-      v-show="!traceLayout"
-      class="oj-workbench-hint oj-workbench-hint--code"
-      :problem="problem"
-      :language="language"
-      :user-code="code"
-    />
-
     <AgentThinkingConsole
       v-if="
         !traceLayout &&
@@ -361,9 +345,8 @@ function onReset() {
 
 <style scoped>
 .oj-workbench {
-  --oj-hint-width: 220px;
   display: grid;
-  grid-template-columns: var(--oj-hint-width) minmax(0, 38%) minmax(0, 62%) var(--oj-hint-width);
+  grid-template-columns: minmax(0, 38%) minmax(0, 62%);
   grid-template-rows: auto auto auto;
   min-height: 520px;
   width: 100%;
@@ -374,54 +357,8 @@ function onReset() {
   box-shadow: var(--alp-shadow-card);
 }
 
-.oj-workbench-hint {
-  grid-row: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  max-height: calc(100vh - var(--alp-header-height, 60px) - 40px);
-  overflow: hidden;
-  border-right: 1px solid var(--alp-color-border);
-  background: var(--alp-bg-surface-muted);
-}
-
-.oj-workbench-hint :deep(.oj-agent-card) {
-  flex: 1;
-  min-height: 0;
-  max-height: inherit;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-}
-
-.oj-workbench-hint :deep(.el-card__body) {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.oj-workbench-hint :deep(.oj-agent-body) {
-  flex: 1;
-  min-height: 80px;
-  max-height: none;
-  overflow-y: auto;
-}
-
-.oj-workbench-hint--ds {
-  grid-column: 1;
-}
-
-.oj-workbench-hint--code {
-  grid-column: 4;
-  border-right: none;
-  border-left: 1px solid var(--alp-color-border);
-}
-
 .oj-problem-pane {
-  grid-column: 2;
+  grid-column: 1;
   grid-row: 1;
   border-right: 1px solid var(--alp-color-border);
   display: flex;
@@ -430,7 +367,7 @@ function onReset() {
   background: var(--alp-bg-surface-muted);
 }
 .oj-code-pane {
-  grid-column: 3;
+  grid-column: 2;
   grid-row: 1;
   display: flex;
   flex-direction: column;
@@ -688,27 +625,13 @@ function onReset() {
 }
 @media (min-width: 1400px) {
   .oj-workbench {
-    --oj-hint-width: 240px;
+    grid-template-columns: minmax(0, 40%) minmax(0, 60%);
   }
 }
 
 @media (max-width: 1100px) {
   .oj-workbench {
     grid-template-columns: 1fr;
-  }
-
-  .oj-workbench-hint {
-    max-height: none;
-    border-right: none;
-    border-bottom: 1px solid var(--alp-color-border);
-  }
-
-  .oj-workbench-hint--code {
-    border-left: none;
-  }
-
-  .oj-workbench-hint :deep(.oj-agent-body) {
-    max-height: 200px;
   }
 
   .oj-problem-pane {

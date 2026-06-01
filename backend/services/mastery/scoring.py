@@ -1,11 +1,19 @@
-"""掌握度可解释评分：六维加权合成。"""
+"""掌握度可解释评分：六维加权合成 + BKT-lite 掌握概率层。
+
+BKT-lite 说明：
+  这是 small-sample explainable knowledge tracing，不是完整 IRT/BKT 参数估计。
+  仅基于现有 MasterySignals 做轻量修正，输出掌握概率、趋势和置信度，
+  保留原有六维加权 mastery_score 不变。
+"""
 
 from __future__ import annotations
 
 from services.mastery.models import (
+    ConfidenceLevel,
     MasteryComponentScore,
     MasteryEvidenceItem,
     MasterySignals,
+    MasteryTrend,
     mastery_level_from_score,
 )
 
@@ -98,6 +106,8 @@ def compute_component_scores(signals: MasterySignals) -> list[MasteryComponentSc
     if done > 0:
         res_comp = min(100.0, 40.0 + done * 18)
         note = f"资源/小节完成 {done} 次"
+        if signals.gamified_practice_count > 0:
+            note += f"（含游戏化练习 {signals.gamified_practice_count} 次）"
         available = True
     elif signals.module_percents:
         res_comp = sum(signals.module_percents.values()) / len(signals.module_percents)
@@ -183,3 +193,88 @@ def resolve_weak_strong_skills(
 
 def score_to_level(score: int) -> str:
     return mastery_level_from_score(score)
+
+
+def compute_bkt_lite(
+    mastery_score: int,
+    signals: MasterySignals,
+) -> tuple[float, MasteryTrend, ConfidenceLevel, str]:
+    """基于 mastery_score 与 MasterySignals 计算轻量 BKT-lite 掌握概率。
+
+    这是 small-sample explainable knowledge tracing，不是完整 IRT/BKT 参数估计。
+    返回 (mastery_probability, mastery_trend, confidence_level, probability_explanation)。
+    """
+    base_prob = mastery_score / 100.0
+
+    recent_err_count = len(set(signals.recent_fail_patterns))
+    older_err_count = len(set(signals.older_fail_patterns))
+    if older_err_count > 0 and recent_err_count < older_err_count:
+        err_red_component = older_err_count - recent_err_count
+    elif older_err_count == 0 and recent_err_count == 0:
+        err_red_component = None
+    else:
+        err_red_component = -recent_err_count
+
+    if err_red_component is not None and err_red_component > 0:
+        adjustment = min(0.08, err_red_component * 0.03)
+    elif err_red_component is not None and err_red_component < 0:
+        adjustment = max(-0.08, err_red_component * 0.03)
+    else:
+        adjustment = 0.0
+
+    probability = max(0.0, min(1.0, round(base_prob + adjustment, 3)))
+
+    pos = signals.positive_deltas
+    neg = signals.negative_deltas
+    if pos > neg + 2:
+        trend: MasteryTrend = "rising"
+    elif neg > pos + 2:
+        trend = "falling"
+    else:
+        trend = "stable"
+
+    evidence_sources: set[str] = set()
+    if signals.quiz_total > 0:
+        evidence_sources.add("quiz")
+    if signals.oj_failures > 0 or signals.oj_diagnoses > 0:
+        evidence_sources.add("oj")
+    if signals.resource_completions > 0 or signals.section_completions > 0:
+        evidence_sources.add("resource")
+    if signals.trace_with_hints > 0 or signals.oj_diagnoses > 0:
+        evidence_sources.add("trace")
+    if signals.self_report_score is not None:
+        evidence_sources.add("self_report")
+
+    total_evidence = signals.memory_event_count
+    if total_evidence >= 5 and len(evidence_sources) >= 3:
+        confidence: ConfidenceLevel = "high"
+    elif total_evidence >= 3 and len(evidence_sources) >= 2:
+        confidence = "medium"
+    else:
+        confidence = "low"
+
+    parts: list[str] = []
+    parts.append(f"掌握概率 {probability:.0%}（基于掌握度 {mastery_score} 分换算")
+    if adjustment > 0:
+        parts.append(f"，错因改善正向修正 +{adjustment:.1%}")
+    elif adjustment < 0:
+        parts.append(f"，近期错因偏多修正 {adjustment:.1%}")
+    parts.append("）")
+
+    if trend == "rising":
+        parts.append("学习趋势上升，近期正向事件明显多于受挫。")
+    elif trend == "falling":
+        parts.append("学习趋势下降，近期受挫事件较多，建议巩固基础。")
+    else:
+        parts.append("学习趋势平稳。")
+
+    if confidence == "high":
+        parts.append(f"评估置信度高（{total_evidence} 条证据，覆盖 {len(evidence_sources)} 类来源）。")
+    elif confidence == "medium":
+        parts.append(f"评估置信度中等（{total_evidence} 条证据，覆盖 {len(evidence_sources)} 类来源）。")
+    else:
+        parts.append("评估置信度低，数据不足，建议完成更多练习后重新评估。")
+
+    explanation = "".join(parts)
+
+    return probability, trend, confidence, explanation

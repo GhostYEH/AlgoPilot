@@ -19,6 +19,7 @@ from services.mastery.models import (
 )
 from services.mastery.scoring import (
     build_evidence_from_components,
+    compute_bkt_lite,
     compute_component_scores,
     compute_mastery_score,
     resolve_weak_strong_skills,
@@ -126,6 +127,9 @@ def extract_signals(
                 signals.quiz_correct += 1
         elif et == "evaluation_struggle":
             signals.struggle_events += 1
+        elif et == "gamified_practice_complete":
+            signals.gamified_practice_count += 1
+            signals.resource_completions += 1
 
         if mem.mastery_delta > 0:
             signals.positive_deltas += 1
@@ -140,7 +144,7 @@ def extract_signals(
 
         sid = mem.skill_id or ""
         if sid:
-            if mem.mastery_delta >= 0 and et in ("resource_complete", "quiz_complete", "section_done"):
+            if mem.mastery_delta >= 0 and et in ("resource_complete", "quiz_complete", "section_done", "gamified_practice_complete"):
                 signals.skill_success_counts[sid] = signals.skill_success_counts.get(sid, 0) + 1
             elif mem.mastery_delta < 0 or et in ("oj_submit_fail", "evaluation_struggle"):
                 signals.skill_fail_counts[sid] = signals.skill_fail_counts.get(sid, 0) + 1
@@ -194,6 +198,7 @@ def build_report(
     components = compute_component_scores(signals)
     score = compute_mastery_score(components)
     level = mastery_level_from_score(score)
+    probability, trend, confidence, prob_explanation = compute_bkt_lite(score, signals)
     names = _skill_name_map()
     weak, strong = resolve_weak_strong_skills(signals, skill_name_map=names)
 
@@ -223,6 +228,10 @@ def build_report(
         strong_skills=strong,
         evidence=evidence,
         component_scores=components,
+        mastery_probability=probability,
+        mastery_trend=trend,
+        confidence_level=confidence,
+        probability_explanation=prob_explanation,
         updated_at=_now_iso(),
     )
     report = mastery_agent.enrich_report(report, chapter_module_keys=module_keys)

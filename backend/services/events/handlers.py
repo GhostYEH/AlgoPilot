@@ -17,6 +17,7 @@ def register_handlers(bus: EventBus) -> None:
     bus.subscribe("on_path_adjusted", "PathLogPipeline", handle_path_adjusted)
     bus.subscribe("on_profile_updated", "ProfileLogPipeline", handle_profile_updated)
     bus.subscribe("on_quiz_completed", "QuizMemoryPipeline", handle_quiz_completed)
+    bus.subscribe("on_gamified_practice_completed", "GamifiedPracticePipeline", handle_gamified_practice_completed)
 
 
 def handle_oj_submission_failed(db: Session | None, event: LearningEvent) -> None:
@@ -298,3 +299,44 @@ def handle_quiz_completed(db: Session | None, event: LearningEvent) -> None:
         ),
     )
     event.log("StudentMemory", "quiz_complete", "测验完成记忆已写入", status="done")
+
+
+def handle_gamified_practice_completed(db: Session | None, event: LearningEvent) -> None:
+    if db is None:
+        event.log("StudentMemory", "gamified_practice", "无数据库会话，跳过写入", status="warn")
+        return
+    from services.memory.memory_service import record_gamified_practice
+
+    payload = event.payload
+    row = record_gamified_practice(
+        db,
+        event.user_id,
+        game_id=str(payload.get("game_id") or ""),
+        level=str(payload.get("level") or ""),
+        module_key=str(payload.get("module_key") or ""),
+        success=bool(payload.get("success", True)),
+        score=int(payload.get("score") or 0),
+        attempts=int(payload.get("attempts") or 1),
+        time_spent_seconds=int(payload.get("time_spent_seconds") or 0),
+        evidence_text=str(payload.get("evidence_text") or ""),
+    )
+    event.log(
+        "StudentMemory",
+        "gamified_practice_complete",
+        f"游戏化练习已写入 memory_id={row.id}",
+        status="done",
+    )
+    event.chapter_id = event.chapter_id or row.chapter_id
+    event.skill_id = event.skill_id or row.skill_id
+
+    try:
+        from services.mastery.mastery_service import MasteryService
+
+        MasteryService(db).recalculate(
+            event.user_id,
+            course_id=event.course_id,
+            chapter_id=event.chapter_id,
+        )
+        event.log("MasteryAgent", "recalculate", "游戏化练习触发掌握度重算", status="done")
+    except Exception as exc:
+        event.log("MasteryAgent", "recalculate", str(exc), status="warn")

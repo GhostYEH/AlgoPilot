@@ -8,6 +8,8 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 MasteryLevel = Literal["beginner", "improving", "competent", "advanced"]
+MasteryTrend = Literal["rising", "stable", "falling"]
+ConfidenceLevel = Literal["low", "medium", "high"]
 
 MASTERY_LEVEL_THRESHOLDS: list[tuple[int, MasteryLevel]] = [
     (80, "advanced"),
@@ -53,6 +55,10 @@ class MasteryReport(BaseModel):
     recommended_actions: list[str] = Field(default_factory=list)
     recommended_resources: list[MasteryResourceHint] = Field(default_factory=list)
     path_adjustment_suggestion: str = ""
+    mastery_probability: float = Field(ge=0.0, le=1.0, default=0.5)
+    mastery_trend: MasteryTrend = "stable"
+    confidence_level: ConfidenceLevel = "low"
+    probability_explanation: str = ""
     updated_at: str = ""
 
     @classmethod
@@ -122,6 +128,7 @@ class MasterySignals(BaseModel):
     module_percents: dict[str, int] = Field(default_factory=dict)
     self_report_score: float | None = None
     memory_event_count: int = 0
+    gamified_practice_count: int = 0
 
     model_config = {"extra": "allow"}
 

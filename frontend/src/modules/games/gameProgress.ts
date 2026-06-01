@@ -1,7 +1,7 @@
 import { getGameById } from './gameRegistry'
 import { schedulePushLearningProgress } from '@/utils/learningRemoteSync'
+import { isLoggedIn } from '@/stores/auth'
 
-/** 与 learningStorage 云端 payload 中的键名一致 */
 export const GAME_PROGRESS_PAYLOAD_KEY = 'alp_game_progress_v1'
 
 const LOCAL_STORAGE_KEY = GAME_PROGRESS_PAYLOAD_KEY
@@ -128,6 +128,38 @@ export function markLevelCleared(gameId: string, levelId: string, meta?: MarkLev
 
   save(s)
   schedulePushLearningProgress()
+
+  if (isLoggedIn.value) {
+    _pushGamePracticeToMemory(gameId, levelId, meta)
+  }
+}
+
+async function _pushGamePracticeToMemory(
+  gameId: string,
+  levelId: string,
+  meta?: MarkLevelMeta,
+) {
+  try {
+    const { recordGamePractice } = await import('@/api/memory')
+    const game = getGameById(gameId)
+    const moduleKey = meta?.moduleKey ?? game?.moduleKey ?? ''
+    await recordGamePractice({
+      event_type: 'gamified_practice_complete',
+      course_id: 'data_structures_algorithms',
+      chapter_id: '',
+      skill_id: '',
+      game_id: gameId,
+      level: levelId,
+      module_key: moduleKey,
+      success: true,
+      score: 0,
+      attempts: 1,
+      time_spent_seconds: 0,
+      evidence_text: `完成游戏 ${meta?.gameTitle ?? gameId} 关卡 ${meta?.levelTitle ?? levelId}`,
+    })
+  } catch {
+    /* 静默失败，不影响本地进度 */
+  }
 }
 
 export function clearedCount(gameId: string, total: number): number {

@@ -30,6 +30,7 @@ export const MODULE_GAME_MAP: Record<string, string> = {
   backtracking: 'backtrack-room',
   greedy: 'greedy-courier',
   dp: 'knapsack-lite',
+  graph: 'graph-explorer',
 }
 
 export const ALGO_DETECTIVE_GAME_ID = 'algo-detective'
@@ -46,6 +47,7 @@ const GAME_LOADERS: Record<string, () => Promise<Component>> = {
   'backtrack-room': () => import('./components/BacktrackRoomGame.vue'),
   'greedy-courier': () => import('./components/GreedyCourierGame.vue'),
   'knapsack-lite': () => import('./components/KnapsackLiteGame.vue'),
+  'graph-explorer': () => import('./components/GraphExplorerGame.vue'),
   'algo-detective': () => import('./components/AlgoDetectiveGame.vue'),
 }
 
@@ -192,6 +194,19 @@ export const ALL_GAMES: ModuleGameMeta[] = [
     loadComponent: GAME_LOADERS['knapsack-lite'],
   },
   {
+    id: 'graph-explorer',
+    moduleKey: 'graph',
+    title: '图岛探路员',
+    tagline: '在邻接表、BFS 队列与 DFS 回溯之间切换，练习图论核心操作',
+    stars: 2,
+    levels: [
+      { id: 'representation', title: '建图关', goal: '把边集转换成无向图邻接表' },
+      { id: 'bfs', title: '最短层序', goal: '用队列按层访问，找到 S 到 F 的最短步数' },
+      { id: 'dfs', title: '深搜回溯', goal: '沿一条路径递归探索，遇到死路正确回退' },
+    ],
+    loadComponent: GAME_LOADERS['graph-explorer'],
+  },
+  {
     id: ALGO_DETECTIVE_GAME_ID,
     moduleKey: '_global',
     title: '算法侦探',
@@ -207,6 +222,159 @@ export const ALL_GAMES: ModuleGameMeta[] = [
 ]
 
 const GAME_BY_ID = Object.fromEntries(ALL_GAMES.map((g) => [g.id, g]))
+
+const SECTION_GAME_LEVEL_MAP: Record<string, Record<string, string>> = {
+  array: {
+    theory: 'find',
+    'binary-search': 'lower',
+    'remove-element': 'find',
+    'sorted-squares': 'lower',
+    'min-subarray': 'lower',
+    spiral: 'rotated',
+    summary: 'rotated',
+  },
+  'linked-list': {
+    theory: 'reverse',
+    'remove-elements': 'delete',
+    'design-list': 'reverse',
+    reverse: 'reverse',
+    'swap-pairs': 'reverse',
+    'remove-nth-from-end': 'delete',
+    intersection: 'cycle',
+    cycle: 'cycle',
+    summary: 'cycle',
+  },
+  'hash-table': {
+    theory: 'basic',
+    'valid-anagram': 'basic',
+    intersection: 'chain',
+    'happy-number': 'chain',
+    'two-sum': 'chain',
+    'four-sum-ii': 'chain',
+    'ransom-note': 'basic',
+    'three-sum': 'chain',
+    'four-sum': 'rehash',
+    summary: 'rehash',
+  },
+  string: {
+    theory: 'palindrome',
+    'reverse-string': 'palindrome',
+    'reverse-string-ii': 'palindrome',
+    'replace-space': 'palindrome',
+    'reverse-words': 'palindrome',
+    'left-rotate': 'palindrome',
+    kmp: 'kmp-next',
+    'repeated-substring': 'kmp-next',
+    summary: 'kmp-next',
+  },
+  'two-pointers': {
+    theory: 'dedup',
+    'remove-element': 'dedup',
+    'reverse-string': 'sum',
+    'replace-space': 'dedup',
+    'reverse-words': 'dedup',
+    'reverse-list': 'cycle',
+    'remove-nth-from-end': 'cycle',
+    intersection: 'cycle',
+    cycle: 'cycle',
+    'three-sum': 'sum',
+    'four-sum': 'sum',
+    summary: 'sum',
+  },
+  'stack-queue': {
+    theory: 'stack',
+    'queue-by-stacks': 'dual-stack',
+    'stack-by-queues': 'queue',
+    'valid-parentheses': 'paren',
+    'remove-adjacent': 'stack',
+    'eval-rpn': 'stack',
+    'sliding-window-max': 'deque',
+    'top-k-frequent': 'queue',
+    summary: 'deque',
+  },
+  'monotonic-stack': {
+    theory: 'temp',
+    'daily-temperatures': 'temp',
+    'next-greater': 'temp',
+    'largest-rectangle': 'rect',
+    'trapping-rain': 'rect',
+    summary: 'rect',
+  },
+  'binary-tree': {
+    theory: 'traverse',
+    'traversal-recursive': 'traverse',
+    'traversal-iterative': 'traverse',
+    'unified-traversal': 'traverse',
+    'level-order': 'traverse',
+    'invert-tree': 'traverse',
+    'checkpoint-1': 'traverse',
+    'symmetric-tree': 'traverse',
+    'max-depth': 'path',
+    'min-depth': 'path',
+    'count-nodes': 'path',
+    'balanced-tree': 'path',
+    'all-paths': 'path',
+    'checkpoint-2': 'path',
+    'sum-left-leaves': 'path',
+    'find-bottom-left': 'path',
+    'path-sum': 'path',
+    'build-tree-in-post': 'traverse',
+    'maximum-binary-tree': 'traverse',
+    'checkpoint-3': 'traverse',
+    'merge-trees': 'traverse',
+    'bst-search': 'bst',
+    'validate-bst': 'bst',
+    'bst-min-diff': 'bst',
+    'bst-modes': 'bst',
+    'lowest-common-ancestor': 'path',
+    'checkpoint-4': 'bst',
+    'bst-lca': 'bst',
+    'bst-insert': 'bst',
+    'bst-delete': 'bst',
+    'bst-trim': 'bst',
+    'sorted-array-to-bst': 'bst',
+    'bst-to-greater-sum': 'bst',
+    summary: 'bst',
+  },
+  backtracking: {
+    theory: 'n4',
+    combinations: 'perm',
+    permutations: 'perm',
+    subsets: 'perm',
+    'n-queens': 'n4',
+    sudoku: 'n4',
+    'palindrome-partition': 'perm',
+    summary: 'n4',
+  },
+  greedy: {
+    theory: 'jump',
+    'assign-cookies': 'jump',
+    'non-overlapping-intervals': 'interval',
+    'jump-game': 'jump',
+    'gas-station': 'jump',
+    'stock-greedy': 'interval',
+    summary: 'interval',
+  },
+  dp: {
+    theory: 'stairs',
+    'five-steps': 'stairs',
+    'climbing-stairs': 'stairs',
+    'knapsack-01': 'knapsack',
+    'unbounded-knapsack': 'knapsack',
+    'coin-change': 'knapsack',
+    lis: 'rob',
+    summary: 'rob',
+  },
+  graph: {
+    theory: 'representation',
+    representation: 'representation',
+    bfs: 'bfs',
+    dfs: 'dfs',
+    pitfalls: 'dfs',
+    practice: 'bfs',
+    summary: 'dfs',
+  },
+}
 
 export function getGameById(id: string): ModuleGameMeta | undefined {
   return GAME_BY_ID[id]
@@ -241,6 +409,16 @@ export function getGameComponent(gameId: string): Component | undefined {
 export function getModuleGame(moduleKey: string): ModuleGameMeta | undefined {
   const gid = MODULE_GAME_MAP[moduleKey]
   return gid ? GAME_BY_ID[gid] : undefined
+}
+
+export function getModuleGameLevelForSection(
+  moduleKey: string,
+  sectionId?: string,
+): GameLevelMeta | undefined {
+  const game = getModuleGame(moduleKey)
+  if (!game) return undefined
+  const mappedLevelId = sectionId ? SECTION_GAME_LEVEL_MAP[moduleKey]?.[sectionId] : undefined
+  return game.levels.find((level) => level.id === mappedLevelId) ?? game.levels[0]
 }
 
 export function getDetectiveGame(): ModuleGameMeta {

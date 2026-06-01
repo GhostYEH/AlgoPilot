@@ -42,6 +42,7 @@ const feedback = ref('')
 const won = ref(false)
 const fail = ref(false)
 const guessCount = ref(0)
+const awaitingDecision = ref(false)
 
 watch(
   () => props.levelId,
@@ -54,6 +55,7 @@ watch(
     fail.value = false
     activeTool.value = 'L'
     guessCount.value = 0
+    awaitingDecision.value = false
     clearLog('关卡开始：设置 L/R 后猜 mid')
   },
   { immediate: true },
@@ -67,7 +69,7 @@ const pointers = computed(() => {
 
 const stepIndex = computed(() => {
   if (won.value) return 3
-  if (guessCount.value > 0) return 2
+  if (awaitingDecision.value || guessCount.value > 0) return 2
   if (mid.value >= 0 || activeTool.value !== 'L') return 1
   return 0
 })
@@ -116,53 +118,82 @@ function tryWinAt(m: number) {
 
 function guessMid() {
   activeTool.value = 'mid'
-  if (won.value || left.value > right.value) return
+  if (won.value || awaitingDecision.value || left.value > right.value) return
   const m = Math.floor((left.value + right.value) / 2)
   mid.value = m
   guessCount.value++
   const v = cfg.value.nums[m]!
+  awaitingDecision.value = true
+  fail.value = false
+  feedback.value =
+    props.levelId === 'rotated'
+      ? `mid=${m}，nums[mid]=${v}，nums[R]=${cfg.value.nums[right.value]}。请判断最小值在哪一半。`
+      : `mid=${m}，nums[mid]=${v}。请根据比较结果选择下一步。`
+  pushLog(`计算 mid=${m}，nums[mid]=${v}`)
+}
+
+function chooseDecision(decision: 'found' | 'discard-left' | 'discard-right' | 'keep-left') {
+  if (!awaitingDecision.value || won.value || mid.value < 0) return
+  const m = mid.value
+  const v = cfg.value.nums[m]!
   const n = cfg.value.nums
 
   if (props.levelId === 'rotated') {
-    if (left.value === right.value) {
-      tryWinAt(left.value)
+    const correct = n[m]! > n[right.value]! ? 'discard-left' : 'keep-left'
+    if (decision !== correct) {
+      fail.value = true
+      feedback.value = '旋转数组要比较 nums[mid] 与 nums[R]，判断最小值是否在右半。'
       return
     }
-    if (n[m]! > n[right.value]!) left.value = m + 1
+    if (decision === 'discard-left') left.value = m + 1
     else right.value = m
-    feedback.value = `mid=${m}，新区间 [${left.value},${right.value}]`
-    pushLog(`旋转二分 mid=${m}，收缩区间`)
+    awaitingDecision.value = false
     fail.value = false
+    feedback.value = `决策正确，新区间 [${left.value},${right.value}]`
+    pushLog(`旋转二分决策：${decision === 'discard-left' ? 'L=mid+1' : 'R=mid'}`)
     if (left.value === right.value) tryWinAt(left.value)
     return
   }
 
   if (props.levelId === 'lower') {
-    if (v < cfg.value.target) {
-      left.value = m + 1
-      feedback.value = `nums[${m}]=${v} < target，L→${left.value}`
-    } else {
-      right.value = m
-      feedback.value = `nums[${m}]=${v} ≥ target，R→${right.value}`
+    const correct = v < cfg.value.target ? 'discard-left' : 'keep-left'
+    if (decision !== correct) {
+      fail.value = true
+      feedback.value = 'lower_bound 中 nums[mid] ≥ target 时不能丢掉 mid，只能令 R=mid。'
+      return
     }
-    pushLog(`lower_bound mid=${m}，nums[mid]=${v}`)
+    if (decision === 'discard-left') left.value = m + 1
+    else right.value = m
+    awaitingDecision.value = false
     fail.value = false
-    if (v >= cfg.value.target && m === cfg.value.answer) tryWinAt(cfg.value.answer)
+    feedback.value =
+      decision === 'discard-left'
+        ? `nums[${m}]=${v} < target，L→${left.value}`
+        : `nums[${m}]=${v} ≥ target，R→${right.value}`
+    pushLog(`lower_bound 决策：${decision === 'discard-left' ? 'L=mid+1' : 'R=mid'}`)
+    if (left.value === right.value) tryWinAt(left.value)
     return
   }
 
-  if (v === cfg.value.target) {
+  const correct = v === cfg.value.target ? 'found' : v < cfg.value.target ? 'discard-left' : 'discard-right'
+  if (decision !== correct) {
+    fail.value = true
+    feedback.value = '请根据 nums[mid] 与 target 的大小关系决定丢弃哪一半。'
+    return
+  }
+  awaitingDecision.value = false
+  if (decision === 'found') {
     tryWinAt(m)
     return
   }
-  if (v < cfg.value.target) {
+  if (decision === 'discard-left') {
     left.value = m + 1
     feedback.value = `小了，L→${left.value}`
   } else {
     right.value = m - 1
     feedback.value = `大了，R→${right.value}`
   }
-  pushLog(`二分 mid=${m}，nums[mid]=${v}`)
+  pushLog(`二分决策：${decision === 'discard-left' ? 'L=mid+1' : 'R=mid-1'}`)
   fail.value = false
 }
 
@@ -175,6 +206,7 @@ function doReset() {
   fail.value = false
   guessCount.value = 0
   activeTool.value = 'L'
+  awaitingDecision.value = false
   clearLog('已重置')
 }
 </script>
@@ -210,9 +242,22 @@ function doReset() {
       />
     </div>
     <template #actions>
-      <el-button type="primary" size="large" :disabled="won" @click="guessMid">
-        猜 mid 并收缩
+      <el-button v-if="!awaitingDecision" type="primary" size="large" :disabled="won" @click="guessMid">
+        计算 mid
       </el-button>
+      <template v-else-if="levelId === 'rotated'">
+        <el-button type="primary" plain @click="chooseDecision('discard-left')">nums[mid] &gt; nums[R]，丢左半</el-button>
+        <el-button type="primary" plain @click="chooseDecision('keep-left')">nums[mid] ≤ nums[R]，保留左半</el-button>
+      </template>
+      <template v-else-if="levelId === 'lower'">
+        <el-button type="primary" plain @click="chooseDecision('discard-left')">nums[mid] &lt; target，丢左半</el-button>
+        <el-button type="primary" plain @click="chooseDecision('keep-left')">nums[mid] ≥ target，保留 mid</el-button>
+      </template>
+      <template v-else>
+        <el-button type="success" plain @click="chooseDecision('found')">命中 target</el-button>
+        <el-button type="primary" plain @click="chooseDecision('discard-left')">太小，丢左半</el-button>
+        <el-button type="primary" plain @click="chooseDecision('discard-right')">太大，丢右半</el-button>
+      </template>
     </template>
   </GamePlayShell>
 </template>

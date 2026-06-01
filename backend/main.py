@@ -21,6 +21,7 @@ from api.skills import router as skills_router
 from api.memory import router as memory_router
 from api.mastery import router as mastery_router
 from api.events import router as events_router
+from api.analytics import router as analytics_router
 from core.database import Base, engine
 
 
@@ -62,3 +63,4 @@ app.include_router(skills_router, prefix="/api")
 app.include_router(memory_router, prefix="/api")
 app.include_router(mastery_router, prefix="/api")
 app.include_router(events_router, prefix="/api")
+app.include_router(analytics_router, prefix="/api")

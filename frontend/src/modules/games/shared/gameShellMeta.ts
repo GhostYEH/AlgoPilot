@@ -11,6 +11,7 @@ export interface GameLevelShellMeta {
   lc: string
   concept: string
   invariant: string
+  rules?: string[]
   codeLines: GameCodeLine[]
   stateKeys: { key: string; label: string; color: string }[]
   footer: [string, string]
@@ -519,6 +520,80 @@ export const GAME_SHELL_META: Record<string, Record<string, GameLevelShellMeta>>
       stepCount: 2,
     },
   },
+  'graph-explorer': {
+    representation: {
+      badge: '邻接表建图',
+      lc: '图论基础',
+      concept: '边集转邻接表时，无向边 (u,v) 需要同时写入 adj[u] 和 adj[v]。',
+      invariant: '每处理一条无向边，两个端点的邻接表都必须同步更新。',
+      rules: [
+        '按当前提示处理边集中的一条边。',
+        '无向边必须先补 from→to，再补 to→from，缺任一方向都不能过关。',
+        '重复写入或写错端点会触发失败提示，本关要求邻接表完整且无重复。',
+      ],
+      codeLines: [
+        { text: 'for ([u, v] of edges) {', activeAtSteps: [0, 1, 2, 3, 4, 5] },
+        { text: '  adj[u].push(v);', activeAtSteps: [0, 2, 4] },
+        { text: '  adj[v].push(u);', activeAtSteps: [1, 3, 5] },
+        { text: '}', activeAtSteps: [5] },
+      ],
+      stateKeys: [
+        { key: 'edge', label: '当前边', color: '#38bdf8' },
+        { key: 'done', label: '已补方向', color: '#22c55e' },
+      ],
+      footer: ['建图先确认有向/无向', '图论篇 · 表示法'],
+      stepCount: 6,
+    },
+    bfs: {
+      badge: 'BFS 层序',
+      lc: '最短路基础',
+      concept: '无权图最短步数由 BFS 保证：队列先进先出，先访问的层距离更短。',
+      invariant: '队列中结点按距离非递减排列；首次访问即得到最短距离。',
+      rules: [
+        '每轮只能展开队头结点，不能跳过队列前面的结点。',
+        '点击队头的未访问邻居完成入队和距离更新。',
+        '队头所有邻居处理完后，点击“弹出队头”进入下一轮。',
+      ],
+      codeLines: [
+        { text: 'queue.push(start); dist[start]=0;', activeAtSteps: [0] },
+        { text: 'while (!queue.empty()) {', activeAtSteps: [0, 1, 2, 3, 4, 5] },
+        { text: '  u = queue.front();', activeAtSteps: [0, 1, 2, 3, 4, 5] },
+        { text: '  for (v in adj[u]) if (!seen[v])', activeAtSteps: [0, 1, 2, 3, 4] },
+        { text: '    seen[v]=true; dist[v]=dist[u]+1; push(v);', activeAtSteps: [0, 1, 2, 3, 4] },
+        { text: '  queue.pop();', activeAtSteps: [1, 3, 5] },
+        { text: '}', activeAtSteps: [5] },
+      ],
+      stateKeys: [
+        { key: 'queue', label: '队列', color: '#38bdf8' },
+        { key: 'dist', label: '目标距离', color: '#fbbf24' },
+      ],
+      footer: ['无权最短路：BFS 第一次到达', '图论篇 · BFS'],
+      stepCount: 6,
+    },
+    dfs: {
+      badge: 'DFS 回溯',
+      lc: '递归搜索',
+      concept: 'DFS 沿一条路径深入，遇到死路后回退到上一个分叉点继续尝试。',
+      invariant: 'path 表示递归栈；栈顶是当前正在探索的结点。',
+      rules: [
+        '只能从当前栈顶选择相邻且未访问的结点继续深入。',
+        '本关会先探索 S→B→D 死路，必须逐层回退到 S。',
+        '回退后再走 S→A→C→F，找到 F 才能通关。',
+      ],
+      codeLines: [
+        { text: 'path.push(u); seen[u]=true;', activeAtSteps: [0, 1, 2, 3] },
+        { text: 'if (u == target) return true;', activeAtSteps: [3] },
+        { text: 'for (v in adj[u]) if (!seen[v]) dfs(v);', activeAtSteps: [0, 1, 2] },
+        { text: 'path.pop();  // backtrack', activeAtSteps: [4] },
+      ],
+      stateKeys: [
+        { key: 'path', label: '递归栈', color: '#a78bfa' },
+        { key: 'seen', label: '已访问', color: '#22c55e' },
+      ],
+      footer: ['DFS 关键是进入与回退成对', '图论篇 · DFS'],
+      stepCount: 7,
+    },
+  },
   'algo-detective': {
     'dfs-queue': {
       badge: '结构侦探',
@@ -574,6 +649,7 @@ const GAME_TAGS: Record<string, string[]> = {
   'backtrack-room': ['回溯', '剪枝', '撤销'],
   'greedy-courier': ['贪心', '区间调度', '跳跃覆盖'],
   'knapsack-lite': ['0/1 背包', '线性 DP', '滚动数组'],
+  'graph-explorer': ['邻接表', 'BFS 队列', 'DFS 回溯'],
   'algo-detective': ['找 bug', '步骤审查', '概念辨析'],
 }
 

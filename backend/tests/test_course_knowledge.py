@@ -113,3 +113,30 @@ def test_chapter_metadata_on_chunks():
     assert hits
     assert all(h.get("course_id") == "data_structures_algorithms" for h in hits if h.get("course_id"))
     assert all(h.get("chapter_id") == "ch12-backtracking" for h in hits)
+
+
+def test_ch13_module_keys_consistent_with_title():
+    manifest = load_manifest("data_structures_algorithms")
+    ch13 = next(c for c in manifest["chapters"] if c["id"] == "ch13-heap-union-find")
+    title = ch13["title"]
+    module_keys = ch13.get("module_keys", [])
+
+    assert "单调栈" in title, f"ch13 标题应包含主学习模块「单调栈」，当前: {title}"
+    assert "monotonic-stack" in module_keys, f"ch13 module_keys 应包含 monotonic-stack，当前: {module_keys}"
+
+    aliases = manifest.get("module_key_aliases", {})
+    for mk in ("heap", "union-find"):
+        assert mk in aliases, f"module_key_aliases 缺少 {mk} 映射"
+        assert aliases[mk] == "ch13-heap-union-find", f"{mk} 应映射到 ch13-heap-union-find"
+
+    assert "堆" in title, f"ch13 标题应提及堆，当前: {title}"
+    assert "并查集" in title, f"ch13 标题应提及并查集，当前: {title}"
+
+    outcomes = ch13.get("learning_outcomes", [])
+    extended = [o for o in outcomes if "拓展阅读" in o]
+    assert len(extended) >= 2, f"ch13 学习目标中堆与并查集应标注为拓展阅读，当前: {outcomes}"
+
+    hooks = ch13.get("oj_trace_hooks", [])
+    assert any("拓展阅读" in h or "资源生成" in h for h in hooks), (
+        f"ch13 oj_trace_hooks 应说明堆与并查集为拓展阅读/资源生成内容，当前: {hooks}"
+    )

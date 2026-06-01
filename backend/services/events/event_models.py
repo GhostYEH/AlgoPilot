@@ -17,6 +17,7 @@ EventType = Literal[
     "on_trace_diagnosed",
     "on_mastery_recalculated",
     "on_path_adjusted",
+    "on_gamified_practice_completed",
 ]
 
 EventStatus = Literal["pending", "processing", "done", "partial", "failed"]

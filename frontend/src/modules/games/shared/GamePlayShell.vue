@@ -42,6 +42,16 @@ const progressText = computed(
   () => `步骤 ${Math.min(props.stepIndex + 1, totalSteps.value)} / ${totalSteps.value}`,
 )
 
+const displayedRules = computed(
+  () =>
+    props.meta.rules ?? [
+      '先阅读当前任务，再按高亮步骤或提示顺序操作。',
+      '每次操作都会同步更新状态面板、伪代码高亮和操作日志。',
+      '违反核心数据结构规则会触发失败提示；重置本关可重新挑战。',
+      '通关条件是完成目标状态，而不是只点到最后一个按钮。',
+    ],
+)
+
 function lineActive(line: GameCodeLine) {
   return isCodeLineActive(line, props.stepIndex)
 }
@@ -131,6 +141,13 @@ function lineActive(line: GameCodeLine) {
               <span class="game-shell__state-val">{{ stateValues[s.key] ?? '—' }}</span>
             </li>
           </ul>
+        </div>
+
+        <div class="game-shell__panel">
+          <h3 class="game-shell__panel-title">游戏规则</h3>
+          <ol class="game-shell__rules">
+            <li v-for="rule in displayedRules" :key="rule">{{ rule }}</li>
+          </ol>
         </div>
 
         <div class="game-shell__panel">
@@ -447,6 +464,20 @@ function lineActive(line: GameCodeLine) {
   margin: 0 0 8px;
   font-size: 12px;
   line-height: 1.6;
+  color: var(--alp-color-text);
+}
+
+.game-shell__rules {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.game-shell__rules li {
+  font-size: 12px;
+  line-height: 1.55;
   color: var(--alp-color-text);
 }
 

@@ -16,6 +16,7 @@ _DIMENSION_FOR_EVENT: dict[str, str] = {
     "quiz_complete": "knowledge_base",
     "section_done": "knowledge_base",
     "skill_recommended": "learning_goals",
+    "gamified_practice_complete": "knowledge_base",
 }
 
 

@@ -70,7 +70,10 @@ const edgeVerdictLabel = computed(() => {
         </p>
       </section>
 
-      <OjTutoringSection :tutoring="diagnosis.tutoring" />
+      <OjTutoringSection
+        :tutoring="diagnosis.tutoring"
+        :verdict="diagnosis.edge_verdict"
+      />
     </template>
   </div>
 </template>

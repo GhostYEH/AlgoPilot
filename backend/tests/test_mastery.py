@@ -13,8 +13,9 @@ from main import app
 from models.db_models import User
 from services.mastery.mastery_service import MasteryService, build_report
 from services.mastery.scoring import compute_component_scores, compute_mastery_score
+from services.mastery.scoring import compute_bkt_lite
 from services.mastery.models import MasterySignals
-from services.memory.memory_service import MemoryService
+from services.memory.memory_service import MemoryService, record_gamified_practice
 from services.memory.schemas import MemoryEventInput
 from utils.security import hash_password
 
@@ -110,6 +111,44 @@ def test_completion_raises_mastery(db: Session, test_user: User):
     assert report.mastery_level in ("improving", "competent", "advanced")
 
 
+def test_gamified_practice_increases_mastery(db: Session, test_user: User):
+    for _ in range(3):
+        record_gamified_practice(
+            db,
+            test_user.id,
+            game_id="binary-search",
+            level="find",
+            module_key="array",
+            success=True,
+            score=100,
+            attempts=1,
+            time_spent_seconds=30,
+        )
+    report = build_report(
+        db,
+        test_user.id,
+        chapter_id="ch02-linear-list",
+        persist=False,
+    )
+    assert report.mastery_score > 50
+    assert any("游戏化练习" in c.note for c in report.component_scores if c.key == "resource_completion")
+
+
+def test_gamified_practice_signals_count(db: Session, test_user: User):
+    record_gamified_practice(
+        db,
+        test_user.id,
+        game_id="knapsack-lite",
+        level="knapsack",
+        module_key="dp",
+        success=True,
+    )
+    from services.mastery.mastery_service import extract_signals
+    signals = extract_signals(db, test_user.id, course_id="data_structures_algorithms")
+    assert signals.gamified_practice_count >= 1
+    assert signals.resource_completions >= 1
+
+
 def test_scoring_formula_weights_sum():
     signals = MasterySignals(
         quiz_total=10,
@@ -167,5 +206,140 @@ def test_mastery_api_stable_structure():
             "evidence",
             "recommended_actions",
             "path_adjustment_suggestion",
+            "mastery_probability",
+            "mastery_trend",
+            "confidence_level",
+            "probability_explanation",
         ):
             assert key in rpt
+
+
+def test_bkt_lite_default_no_data():
+    signals = MasterySignals()
+    prob, trend, confidence, explanation = compute_bkt_lite(50, signals)
+    assert abs(prob - 0.5) < 0.01
+    assert confidence == "low"
+    assert trend == "stable"
+    assert "掌握概率" in explanation
+
+
+def test_bkt_lite_falling_trend():
+    signals = MasterySignals(
+        negative_deltas=6,
+        positive_deltas=1,
+        oj_failures=5,
+        recent_fail_patterns=["边界", "初始化", "递归"],
+        memory_event_count=7,
+    )
+    components = compute_component_scores(signals)
+    score = compute_mastery_score(components)
+    prob, trend, confidence, explanation = compute_bkt_lite(score, signals)
+    assert trend == "falling"
+    assert prob < 0.5
+    assert "下降" in explanation
+
+
+def test_bkt_lite_rising_trend():
+    signals = MasterySignals(
+        positive_deltas=8,
+        negative_deltas=1,
+        quiz_total=5,
+        quiz_correct=4,
+        resource_completions=3,
+        oj_diagnoses=2,
+        trace_with_hints=2,
+        self_report_score=75,
+        memory_event_count=10,
+        older_fail_patterns=["边界", "指针"],
+        recent_fail_patterns=[],
+    )
+    components = compute_component_scores(signals)
+    score = compute_mastery_score(components)
+    prob, trend, confidence, explanation = compute_bkt_lite(score, signals)
+    assert trend == "rising"
+    assert prob > 0.5
+    assert "上升" in explanation
+
+
+def test_bkt_lite_confidence_high():
+    signals = MasterySignals(
+        quiz_total=5,
+        quiz_correct=3,
+        oj_failures=1,
+        oj_diagnoses=2,
+        trace_with_hints=1,
+        resource_completions=4,
+        section_completions=2,
+        self_report_score=70,
+        positive_deltas=6,
+        memory_event_count=12,
+    )
+    components = compute_component_scores(signals)
+    score = compute_mastery_score(components)
+    prob, trend, confidence, explanation = compute_bkt_lite(score, signals)
+    assert confidence == "high"
+    assert "置信度高" in explanation
+
+
+def test_bkt_lite_confidence_low():
+    signals = MasterySignals(
+        quiz_total=1,
+        quiz_correct=1,
+        memory_event_count=1,
+    )
+    components = compute_component_scores(signals)
+    score = compute_mastery_score(components)
+    prob, trend, confidence, explanation = compute_bkt_lite(score, signals)
+    assert confidence == "low"
+    assert "置信度低" in explanation
+
+
+def test_bkt_lite_error_reduction_boosts_probability():
+    signals_no_improve = MasterySignals(
+        quiz_total=3,
+        quiz_correct=2,
+        memory_event_count=3,
+        recent_fail_patterns=["边界"],
+        older_fail_patterns=["边界"],
+    )
+    signals_improved = MasterySignals(
+        quiz_total=3,
+        quiz_correct=2,
+        memory_event_count=3,
+        recent_fail_patterns=[],
+        older_fail_patterns=["边界", "指针", "初始化"],
+    )
+    components_no = compute_component_scores(signals_no_improve)
+    score_no = compute_mastery_score(components_no)
+    prob_no, _, _, _ = compute_bkt_lite(score_no, signals_no_improve)
+
+    components_yes = compute_component_scores(signals_improved)
+    score_yes = compute_mastery_score(components_yes)
+    prob_yes, _, _, _ = compute_bkt_lite(score_yes, signals_improved)
+
+    assert prob_yes >= prob_no
+
+
+def test_bkt_lite_report_fields_populated(db: Session, test_user: User):
+    svc = MemoryService(db)
+    for _ in range(3):
+        svc.record_event(
+            test_user.id,
+            MemoryEventInput(
+                event_type="resource_complete",
+                chapter_id="ch05-tree-binary-tree",
+                skill_id="tree-traversal",
+                mastery_delta=1,
+            ),
+        )
+    report = build_report(
+        db,
+        test_user.id,
+        chapter_id="ch05-tree-binary-tree",
+        persist=False,
+    )
+    assert 0.0 <= report.mastery_probability <= 1.0
+    assert report.mastery_trend in ("rising", "stable", "falling")
+    assert report.confidence_level in ("low", "medium", "high")
+    assert report.probability_explanation
+    assert report.mastery_score > 50

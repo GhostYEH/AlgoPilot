@@ -34,6 +34,8 @@ module_key_aliases:
   dp: ch11-dynamic-programming
   backtracking: ch12-backtracking
   monotonic-stack: ch13-heap-union-find
+  heap: ch13-heap-union-find
+  union-find: ch13-heap-union-find
 
 chapters:
   - id: ch01-introduction-complexity
@@ -231,13 +233,13 @@ chapters:
       - 回溯 Trace 展示 path 与 used 标记的回退瞬间
 
   - id: ch13-heap-union-find
-    title: 堆与并查集
+    title: 堆、并查集与单调栈拓展
     difficulty: 进阶
     prerequisites: [ch05-tree-binary-tree, ch06-graph]
     module_keys: [monotonic-stack]
     learning_outcomes:
-      - 理解二叉堆与优先队列操作复杂度
-      - 掌握并查集路径压缩与按秩合并
+      - 理解二叉堆与优先队列操作复杂度（拓展阅读）
+      - 掌握并查集路径压缩与按秩合并（拓展阅读）
       - 认识单调栈解决 Next Greater Element 类问题
     resource_types: [document, exercises, reading]
     recommended_problems:
@@ -245,6 +247,7 @@ chapters:
       - kth-largest-element
     oj_trace_hooks:
       - 单调栈题 Trace 展示栈内下标与值单调性
+      - 堆与并查集作为拓展阅读与资源生成内容，无独立学习页；堆操作可用 sequence 视图展示数组堆化过程，并查集可用 parent 数组变化演示路径压缩
 
   - id: ch14-comprehensive-project
     title: 综合项目与课程总结

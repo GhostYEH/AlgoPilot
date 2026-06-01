@@ -38,10 +38,11 @@
 ## 5. 后端自检（可选，1 分钟）
 
 ```bash
+curl http://localhost:9000/api/a3/health
 py -3 -m pytest backend/tests -q
 ```
 
-期望：**70 passed**
+期望：health 返回 `status: ok`；pytest 以当前 CI / pytest 输出为准（不写死通过数）。
 
 ## 6. 前端构建自检（可选）
 

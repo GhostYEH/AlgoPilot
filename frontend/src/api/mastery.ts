@@ -1,6 +1,8 @@
 import request from '@/utils/request'
 
 export type MasteryLevel = 'beginner' | 'improving' | 'competent' | 'advanced'
+export type MasteryTrend = 'rising' | 'stable' | 'falling'
+export type ConfidenceLevel = 'low' | 'medium' | 'high'
 
 export interface MasteryEvidenceItem {
   source: string
@@ -38,6 +40,10 @@ export interface MasteryReport {
   recommended_actions: string[]
   recommended_resources: MasteryResourceHint[]
   path_adjustment_suggestion: string
+  mastery_probability: number
+  mastery_trend: MasteryTrend
+  confidence_level: ConfidenceLevel
+  probability_explanation: string
   updated_at: string
 }
 
@@ -55,6 +61,18 @@ export const MASTERY_LEVEL_LABELS: Record<MasteryLevel, string> = {
   improving: '提升中',
   competent: '达标',
   advanced: '优秀',
+}
+
+export const MASTERY_TREND_LABELS: Record<MasteryTrend, string> = {
+  rising: '上升',
+  stable: '平稳',
+  falling: '下降',
+}
+
+export const CONFIDENCE_LEVEL_LABELS: Record<ConfidenceLevel, string> = {
+  low: '低',
+  medium: '中',
+  high: '高',
 }
 
 export async function fetchMasteryReport(params?: {

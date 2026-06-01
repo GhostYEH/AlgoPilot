@@ -132,6 +132,27 @@ const LEVEL_META: Record<
 const steps = computed(() => LEVEL_STEPS[props.levelId] ?? LEVEL_STEPS.reverse)
 const currentStep = computed(() => steps.value[stepIndex.value])
 const meta = computed(() => LEVEL_META[props.levelId] ?? LEVEL_META.reverse)
+const rules = computed(() => {
+  if (props.levelId === 'reverse') {
+    return [
+      '必须先让 cur 指向待处理结点，pre 明确为 null 或已反转链头。',
+      '每次“反转一步”都要遵守：保存 next、改 cur.next、移动 pre/cur。',
+      '不能跳过中间结点；全部结点处理完且 cur 为 null 才算通关。',
+    ]
+  }
+  if (props.levelId === 'delete') {
+    return [
+      '先放置 dummy，再让 cur 停在待删结点的前驱位置。',
+      '只能用“跳过 cur”完成删除，不能直接点击目标结点抹除。',
+      '删除后链表必须保持剩余结点原有顺序。',
+    ]
+  }
+  return [
+    'slow 每轮只能走一步，fast 每轮只能走两步。',
+    '按 slow/fast 的交替步骤操作，不能直接拖到相遇点。',
+    '只有在两指针真实相遇时才能判定有环。',
+  ]
+})
 
 const pointers = computed(() => {
   const p: Record<string, number | null> = {}
@@ -528,6 +549,13 @@ const needsActionBtn = computed(() =>
         </div>
 
         <div class="ll-panel ll-panel--concept">
+          <h3 class="ll-panel__title">游戏规则</h3>
+          <ol class="ll-rules">
+            <li v-for="rule in rules" :key="rule">{{ rule }}</li>
+          </ol>
+        </div>
+
+        <div class="ll-panel ll-panel--concept">
           <h3 class="ll-panel__title">算法要点</h3>
           <p class="ll-concept">{{ meta.concept }}</p>
           <p class="ll-invariant">
@@ -870,6 +898,20 @@ const needsActionBtn = computed(() =>
   margin: 0 0 8px;
   font-size: 12px;
   line-height: 1.6;
+  color: var(--alp-color-text);
+}
+
+.ll-rules {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ll-rules li {
+  font-size: 12px;
+  line-height: 1.55;
   color: var(--alp-color-text);
 }
 

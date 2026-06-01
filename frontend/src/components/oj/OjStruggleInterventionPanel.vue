@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { Collection, Guide, TrendCharts, Warning } from '@element-plus/icons-vue'
 import type { OjStruggleInterventionView } from '@/composables/useOjStruggleIntervention'
+import InterventionReceiptCard from '@/components/oj/InterventionReceiptCard.vue'
 
 const props = defineProps<{
   state: OjStruggleInterventionView | null
@@ -116,6 +117,12 @@ const errorSummary = computed(() => {
         <el-icon><TrendCharts /></el-icon>
         {{ state.result.plan_summary }}
       </p>
+
+      <InterventionReceiptCard
+        :struggle="state.result"
+        :consecutive-failures="state.consecutiveFailures"
+        :verdict="state.errorPattern ? 'WA' : undefined"
+      />
     </template>
   </section>
 </template>

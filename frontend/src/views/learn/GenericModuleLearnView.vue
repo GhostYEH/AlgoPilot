@@ -20,6 +20,8 @@ import { schedulePushLearningProgress } from '@/utils/learningRemoteSync'
 import { schedulePersonaLearningPatch } from '@/utils/personaLearningSync'
 import AiTutorPanel from '@/components/learning/AiTutorPanel.vue'
 import InlineOjPractice from '@/components/oj/InlineOjPractice.vue'
+import OjDsHintCard from '@/components/oj/OjDsHintCard.vue'
+import OjCodeHintCard from '@/components/oj/OjCodeHintCard.vue'
 import LearnSectionBody from '@/components/learning/LearnSectionBody.vue'
 import ModuleGameEntry from '@/components/learning/ModuleGameEntry.vue'
 import SelectableLearnText from '@/components/learning/SelectableLearnText.vue'
@@ -35,6 +37,7 @@ const router = useRouter()
 const route = useRoute()
 
 const aiTutorRef = ref<InstanceType<typeof AiTutorPanel> | null>(null)
+const inlineOjRef = ref<InstanceType<typeof InlineOjPractice> | null>(null)
 useProvideAiTutorFromPanel(aiTutorRef)
 
 const config = computed<ModuleLearnConfig | undefined>(() => getModuleLearnConfig(props.moduleKey))
@@ -400,9 +403,29 @@ watch(
 
         <section v-if="current?.main" class="inline-oj-zone">
           <el-divider content-position="left">
-            <span class="divider-label">主刷题 · 在线练习</span>
+            <span class="divider-label">刷题 · 在线练习</span>
           </el-divider>
-          <InlineOjPractice :main="current.main" :related="current.related" />
+          <div class="inline-oj-layout">
+            <OjDsHintCard
+              v-if="inlineOjRef?.problem"
+              class="inline-oj-hint inline-oj-hint--ds"
+              :problem="inlineOjRef.problem"
+              :language="inlineOjRef.language"
+            />
+            <InlineOjPractice
+              ref="inlineOjRef"
+              :main="current.main"
+              :related="current.related"
+              class="inline-oj-center"
+            />
+            <OjCodeHintCard
+              v-if="inlineOjRef?.problem"
+              class="inline-oj-hint inline-oj-hint--code"
+              :problem="inlineOjRef.problem"
+              :language="inlineOjRef.language"
+              :user-code="inlineOjRef.code ?? ''"
+            />
+          </div>
         </section>
 
         <div v-if="current" class="pager">
@@ -505,5 +528,56 @@ watch(
 
 .graph-rec-panel {
   margin-top: 16px;
+}
+
+.inline-oj-zone {
+  margin-top: 16px;
+}
+
+.inline-oj-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr 220px;
+  gap: 16px;
+  width: 100%;
+}
+
+.inline-oj-hint {
+  max-height: calc(100vh - var(--alp-header-height, 60px) - 120px);
+  overflow: hidden;
+}
+
+.inline-oj-hint :deep(.oj-agent-card) {
+  height: 100%;
+  max-height: inherit;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.inline-oj-hint :deep(.el-card__body) {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.inline-oj-hint :deep(.oj-agent-body) {
+  flex: 1;
+  min-height: 80px;
+  max-height: none;
+  overflow-y: auto;
+}
+
+.inline-oj-center {
+  min-width: 0;
+}
+
+@media (max-width: 1100px) {
+  .inline-oj-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .inline-oj-hint {
+    max-height: 280px;
+  }
 }
 </style>

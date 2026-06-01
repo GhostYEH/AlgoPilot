@@ -1,11 +1,11 @@
-# 第 13 章 堆与并查集
+# 第 13 章 堆、并查集与单调栈拓展
 
-**chapter_id**: `ch13-heap-union-find` · **module_keys**: `monotonic-stack`
+**chapter_id**: `ch13-heap-union-find` · **module_keys**: `monotonic-stack`（堆与并查集为拓展阅读与资源生成内容）
 
 ## 学习目标
 
-- 理解二叉堆与优先队列的插入、删除堆顶复杂度。
-- 掌握并查集 `find/union` 及路径压缩。
+- 理解二叉堆与优先队列的插入、删除堆顶复杂度（拓展阅读）。
+- 掌握并查集 `find/union` 及路径压缩（拓展阅读）。
 - 认识单调栈解决 Next Greater Element 类问题。
 
 ## 核心概念

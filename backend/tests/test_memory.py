@@ -13,6 +13,7 @@ from main import app
 from models.db_models import StudentProfile, User
 from services.memory.memory_service import (
     MemoryService,
+    record_gamified_practice,
     record_oj_diagnosis,
     record_oj_submit_failure,
 )
@@ -152,3 +153,74 @@ def test_memory_api_write_and_summary():
     assert "dimension_evidence" in pdata
     assert "update_reason" in pdata
     assert "recent_evidence" in pdata
+
+
+def test_gamified_practice_complete_writes_memory(db: Session, test_user: User):
+    row = record_gamified_practice(
+        db,
+        test_user.id,
+        game_id="binary-search",
+        level="find",
+        module_key="array",
+        success=True,
+        score=100,
+        attempts=1,
+        time_spent_seconds=30,
+        evidence_text="完成游戏 夹逼寻宝 关卡 找目标",
+    )
+    assert row.id > 0
+    assert row.event_type == "gamified_practice_complete"
+    assert row.problem_slug == "game:binary-search:find"
+    assert row.mastery_delta == 1
+    assert row.evidence_json["game_id"] == "binary-search"
+    assert row.evidence_json["level"] == "find"
+    assert row.evidence_json["success"] is True
+    assert row.evidence_json["score"] == 100
+    assert row.evidence_json["attempts"] == 1
+    assert row.evidence_json["time_spent_seconds"] == 30
+    assert row.evidence_json["persona_dimension"] == "knowledge_base"
+
+    recent = MemoryService(db).list_recent(test_user.id, limit=5)
+    assert any(r.event_type == "gamified_practice_complete" for r in recent)
+
+
+def test_gamified_practice_api_write():
+    client = TestClient(app)
+    uname = f"gameuser_{uuid.uuid4().hex[:8]}"
+    reg = client.post(
+        "/api/auth/register",
+        json={"username": uname, "password": "secret123", "email": f"{uname}@example.com"},
+    )
+    assert reg.status_code == 200
+    token = reg.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    created = client.post(
+        "/api/memory/events",
+        headers=headers,
+        json={
+            "event_type": "gamified_practice_complete",
+            "course_id": "data_structures_algorithms",
+            "chapter_id": "ch02-linear-list",
+            "problem_slug": "game:binary-search:find",
+            "trace_summary": "完成游戏 夹逼寻宝 关卡 找目标",
+            "mastery_delta": 1,
+            "evidence_json": {
+                "game_id": "binary-search",
+                "level": "find",
+                "module_key": "array",
+                "success": True,
+                "score": 100,
+                "attempts": 1,
+                "time_spent_seconds": 30,
+                "persona_dimension": "knowledge_base",
+            },
+        },
+    )
+    assert created.status_code == 200
+    assert created.json()["event"]["event_type"] == "gamified_practice_complete"
+
+    summary = client.get("/api/memory/summary", headers=headers)
+    assert summary.status_code == 200
+    body = summary.json()
+    assert body["recent_count"] >= 1

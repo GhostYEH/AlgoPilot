@@ -1,20 +1,12 @@
 <script setup lang="ts">
 import { computed, ref, toRef, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import TracePlaybackControl from '@/components/oj/trace/TracePlaybackControl.vue'
 import {
-  DArrowLeft,
-  DArrowRight,
   ChatLineRound,
   MagicStick,
-  VideoPause,
-  VideoPlay,
-  RefreshRight,
 } from '@element-plus/icons-vue'
 import { traceBugDiagnose, type OjLanguage } from '@/api/oj'
-import {
-  TRACE_PLAYBACK_SPEEDS,
-  type TracePlaybackSpeed,
-} from '@/composables/useCodeTracePlayback'
 import SteppedAnimShell from '@/components/learning/SteppedAnimShell.vue'
 import GameArrayBoard from '@/modules/games/shared/GameArrayBoard.vue'
 import TraceMatrixGrid from '@/components/oj/trace/TraceMatrixGrid.vue'
@@ -44,8 +36,8 @@ type MatrixVarItem =
     }
 import { diffLinkedList, mergeLinkedListScene } from '@/utils/traceLinkedList'
 import { parseDpCursor } from '@/utils/traceMatrix'
-import { usePrefersReducedMotion } from '@/composables/usePrefersReducedMotion'
 import TraceSlidingWindowScene from '@/components/oj/trace/TraceSlidingWindowScene.vue'
+import { useTraceHighlightLine } from '@/composables/useTraceHighlight'
 import TraceHashLookupScene from '@/components/oj/trace/TraceHashLookupScene.vue'
 import TraceDictPanel from '@/components/oj/trace/TraceDictPanel.vue'
 import TraceSequenceViz from '@/components/oj/trace/TraceSequenceViz.vue'
@@ -61,7 +53,6 @@ import TraceQueueScene from '@/components/oj/trace/TraceQueueScene.vue'
 import { buildStackScene } from '@/utils/traceStack'
 import TraceStackScene from '@/components/oj/trace/TraceStackScene.vue'
 import TraceMemoryLayout from '@/components/oj/trace/TraceMemoryLayout.vue'
-import { useTraceHighlightLine } from '@/composables/useTraceHighlight'
 import { extractMemorySlots, diffMemorySlotIds, hasMemoryLayout } from '@/utils/traceMemory'
 import {
   buildLevelOrderTreeInference,
@@ -193,7 +184,6 @@ function onDiagnosisCardClick() {
   if (!effectiveDiagnosis.value) return
   focusBugStep(effectiveDiagnosis.value.bug_step_index)
 }
-const { prefersReducedMotion } = usePrefersReducedMotion()
 const traceHighlightLine = useTraceHighlightLine()
 
 const codeLines = computed(() => (props.traceSourceCode ?? props.userCode).split('\n'))
@@ -859,46 +849,28 @@ const showNarrateBtn = computed(
         </div>
       </div>
 
-      <div
-        class="trace-playback-bar"
-        :class="{ 'trace-playback-bar--split': splitMode }"
-        role="group"
-        aria-label="回放控制"
-      >
-        <el-button-group size="small">
-          <el-button :icon="playing ? VideoPause : VideoPlay" @click="togglePlay">
-            {{ playing ? '暂停' : prefersReducedMotion ? '步进' : '播放' }}
-          </el-button>
-          <el-button :icon="DArrowLeft" @click="prev">上一步</el-button>
-          <el-button :icon="DArrowRight" @click="next">下一步</el-button>
-          <el-button :icon="RefreshRight" @click="reset">重置</el-button>
-        </el-button-group>
+      <TracePlaybackControl
+        :frame="frame"
+        :max-frame="maxFrame"
+        :playing="playing"
+        :playback-speed="playbackSpeed"
+        :bug-step-index="bugStepIndex"
+        :split-mode="splitMode"
+        :has-trace="hasTrace"
+        @toggle-play="togglePlay"
+        @next="next"
+        @prev="prev"
+        @reset="reset"
+        @jump-to-frame="jumpToFrame"
+        @set-playback-speed="setPlaybackSpeed"
+      />
 
-        <div class="trace-speed" aria-label="播放速度">
-          <span class="trace-speed-label">速度</span>
-          <el-radio-group
-            :model-value="playbackSpeed"
-            size="small"
-            @update:model-value="setPlaybackSpeed($event as TracePlaybackSpeed)"
-          >
-            <el-radio-button
-              v-for="s in TRACE_PLAYBACK_SPEEDS"
-              :key="s"
-              :value="s"
-            >
-              {{ s }}×
-            </el-radio-button>
-          </el-radio-group>
-        </div>
-
-        <span class="trace-frame-meta">步 {{ frame + 1 }} / {{ maxFrame + 1 }}</span>
-
+      <div class="trace-aux-btns">
         <el-button
           v-if="showNarrateBtn"
           size="small"
           :icon="ChatLineRound"
           :loading="narrating"
-          class="trace-narrate-btn"
           @click="emit('narrate')"
         >
           生成 AI 旁白
@@ -1121,6 +1093,14 @@ const showNarrateBtn = computed(
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.12);
 }
 
+.trace-aux-btns {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
 @media (max-width: 720px) {
   .trace-split-body {
     grid-template-columns: 1fr;
@@ -1294,41 +1274,6 @@ const showNarrateBtn = computed(
   margin: 0;
 }
 
-.trace-playback-bar {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px 14px;
-  margin-top: 12px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: var(--alp-bg-soft-block);
-  border: 1px solid var(--alp-color-border);
-}
-
-.trace-speed {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.trace-speed-label {
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-  white-space: nowrap;
-}
-
-.trace-frame-meta {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--el-text-color-regular);
-  font-variant-numeric: tabular-nums;
-}
-
-.trace-narrate-btn {
-  margin-left: auto;
-}
-
 .trace-diagnose-btn {
   margin-left: 4px;
   border-color: color-mix(in srgb, var(--el-color-danger) 55%, transparent) !important;
@@ -1425,9 +1370,9 @@ const showNarrateBtn = computed(
 }
 
 @media (max-width: 720px) {
-  .trace-narrate-btn {
-    margin-left: 0;
-    width: 100%;
+  .trace-aux-btns {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 

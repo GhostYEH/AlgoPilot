@@ -32,6 +32,12 @@ const apiOnline = ref(false)
 const traceCpp = ref(false)
 const language = ref<'python' | 'cpp'>('cpp')
 
+defineExpose({
+  problem,
+  language,
+  code,
+})
+
 const {
   running,
   submitting,
