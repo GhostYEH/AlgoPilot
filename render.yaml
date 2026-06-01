@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: algopilot-backend
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRE_MINUTES
+        value: 10080
+      - key: DATABASE_URL
+        value: sqlite:////app/data/alp_learning.db
+      - key: SPARK_API_PASSWORD
+        sync: false
+      - key: SPARK_MODEL
+        value: lite
+    disk:
+      name: backend-data
+      mountPath: /app/data
+      sizeGB: 1
