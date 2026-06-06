@@ -61,7 +61,7 @@ _DIMENSION_LABELS = {
     "coding_ability": "代码实操能力",
     "learning_goals": "学习目标",
     "error_preference": "易错点偏好",
-    "grit_level": "抗挫折心理能力",
+    "grit_level": "抗挫折心理",
 }
 
 
@@ -77,29 +77,19 @@ class PersonaAgent(BaseAgent):
         profile_summary: str = "",
         existing_dims: PersonaDimensions | None = None,
     ) -> list[dict[str, str]]:
-        msgs: list[dict[str, str]] = [{"role": "system", "content": PERSONA_SYSTEM}]
+        # 星火 API 仅允许一条 system 消息，需合并所有系统指令
+        system_parts: list[str] = [PERSONA_SYSTEM]
         if profile_summary:
-            msgs.append(
-                {"role": "system", "content": f"当前已保存的画像摘要：{profile_summary}"}
-            )
+            system_parts.append(f"当前已保存的画像摘要：{profile_summary}")
         if existing_dims:
             missing = _missing_dimension_keys(existing_dims)
             if missing:
                 labels = "、".join(_DIMENSION_LABELS[k] for k in missing)
-                msgs.append(
-                    {
-                        "role": "system",
-                        "content": f"待补全维度（请优先追问）：{labels}",
-                    }
-                )
+                system_parts.append(f"待补全维度（请优先追问）：{labels}")
             filled = [k for k in PROFILE_DIMENSION_KEYS if not _is_empty(getattr(existing_dims, k))]
             if filled:
-                msgs.append(
-                    {
-                        "role": "system",
-                        "content": "已有维度：" + "、".join(_DIMENSION_LABELS[k] for k in filled),
-                    }
-                )
+                system_parts.append("已有维度：" + "、".join(_DIMENSION_LABELS[k] for k in filled))
+        msgs: list[dict[str, str]] = [{"role": "system", "content": "\n\n".join(system_parts)}]
         for item in history[-30:]:
             msgs.append({"role": item.role, "content": item.content})
         msgs.append({"role": "user", "content": message})

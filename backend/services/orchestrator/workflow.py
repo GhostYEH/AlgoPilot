@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Awaitable, Callable
+from datetime import datetime, timezone
 from typing import Any
 
 from schemas.resources import ResourceType
@@ -48,7 +50,15 @@ class ResourceGenerationWorkflow:
         role_agent = get_role_agent(resource_type)
         ctx = pipeline_ctx or PipelineContext()
 
-        async def _emit(stage: str, agent: str, status: str, detail: str = "") -> None:
+        async def _emit(
+            stage: str,
+            agent: str,
+            status: str,
+            detail: str = "",
+            *,
+            retry_count: int | None = None,
+            severity: str = "info",
+        ) -> None:
             if emit:
                 await emit(
                     {
@@ -58,6 +68,14 @@ class ResourceGenerationWorkflow:
                         "status": status,
                         "resource_type": resource_type,
                         "detail": detail,
+                        "event_type": stage,
+                        "agent_id": agent,
+                        "agent_name": agent,
+                        "message": detail,
+                        "progress": None,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "retry_count": retry_count,
+                        "severity": severity,
                     }
                 )
 
@@ -202,13 +220,15 @@ class ResourceGenerationWorkflow:
                 "ContentVerifierAgent",
                 "warn",
                 revised_hint or "校验未通过",
+                retry_count=attempt - 1,
+                severity="warn",
             )
             if attempt > MAX_VERIFY_RETRIES:
                 gen_meta["status"] = "draft"
                 gen_meta["draft_reason"] = revised_hint or "未通过知识库校验"
                 break
             ctx.log(role_agent_id, "retry", revised_hint, role=role_agent.role, resource_type=resource_type, status="retry")
-            await _emit("agent_generate", role_agent_id, "retry", revised_hint)
+            await _emit("agent_generate", role_agent_id, "retry", revised_hint, retry_count=attempt - 1, severity="warn")
 
         if passed:
             gen_meta["status"] = "published"
@@ -239,6 +259,7 @@ class ResourceGenerationWorkflow:
                 "SafetyAgent",
                 "error",
                 safety_logs[-1].get("detail", "") if safety_logs else "审查未通过",
+                severity="error",
             )
             gen_meta["status"] = "draft"
             gen_meta["draft_reason"] = safety_logs[-1].get("detail", "") if safety_logs else "内容未通过安全审查"
@@ -320,6 +341,17 @@ class ResourceGenerationWorkflow:
         gen_meta["course_id"] = course_id
         gen_meta["chapter_id"] = chapter_id_final
         gen_meta["knowledge_chunk_ids"] = [c["id"] for c in chunks]
+        gen_meta["_evidence_version"] = 1
+        gen_meta["_content_hash"] = hashlib.sha256(safe_text.encode()).hexdigest()[:16] if safe_text else ""
+
+        from services.evidence.builder import build_evidence_from_meta
+        gen_meta["evidence"] = build_evidence_from_meta(
+            resource_id=0,
+            agent_name=role_agent_id,
+            meta={**gen_meta, "_content_for_hash": safe_text},
+            created_at="",
+            profile_summary="",
+        ).model_dump()
         if matched_skill_card:
             from services.skills.skill_context import skill_card_meta_payload
 
@@ -333,8 +365,15 @@ class ResourceGenerationWorkflow:
             "SafetyAgent",
             "done" if passed_safety else "warn",
             safety_logs[-1].get("detail", "") if safety_logs else "审查完成",
+            severity="info" if passed_safety else "warn",
         )
-        await _emit("persist", "Orchestrator", "done" if gen_meta.get("status") == "published" else "warn", gen_meta.get("status", ""))
+        await _emit(
+            "persist",
+            "Orchestrator",
+            "done" if gen_meta.get("status") == "published" else "warn",
+            gen_meta.get("status", ""),
+            severity="info" if gen_meta.get("status") == "published" else "warn",
+        )
 
         return title, safe_text, gen_meta
 

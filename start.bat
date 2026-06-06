@@ -8,7 +8,7 @@ set "ROOT=%cd%"
 set "BACKEND=%ROOT%\backend"
 set "FRONTEND=%ROOT%\frontend"
 set "BACKEND_PORT=9000"
-set "FRONTEND_URL=http://127.0.0.1:5273/"
+set "FRONTEND_URL=http://127.0.0.1:5173/"
 set "SKIP_BACKEND=0"
 set "CURL_OPTS=-sf --connect-timeout 2 --max-time 5"
 

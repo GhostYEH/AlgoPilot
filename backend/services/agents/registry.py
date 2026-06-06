@@ -29,7 +29,7 @@ AGENT_REGISTRY: list[AgentMeta] = [
     {
         "id": "GraphAgent",
         "display_name": "GraphAgent",
-        "role": "拓扑专家 · Mermaid 知识图谱",
+        "role": "拓扑专家 · 知识思维导图",
         "layer": "resource",
     },
     {
@@ -48,18 +48,6 @@ AGENT_REGISTRY: list[AgentMeta] = [
         "id": "TraceAgent",
         "display_name": "TraceAgent",
         "role": "动画总导演 · 执行轨迹动画",
-        "layer": "resource",
-    },
-    {
-        "id": "PptAgent",
-        "display_name": "PptAgent",
-        "role": "核心知识胶片导演 · PPT 大纲页面预览",
-        "layer": "resource",
-    },
-    {
-        "id": "VideoScriptAgent",
-        "display_name": "VideoScriptAgent",
-        "role": "教学短视频分镜导演 · 60 秒脚本 + TTS 试听文案",
         "layer": "resource",
     },
     {
@@ -109,8 +97,6 @@ RESOURCE_TYPE_TO_AGENT: dict[str, str] = {
     "exercises": "QuizAgent",
     "code_case": "ScenarioAgent",
     "trace_animation": "TraceAgent",
-    "ppt": "PptAgent",
-    "video_script": "VideoScriptAgent",
     "reading": "ReadingAgent",
 }
 

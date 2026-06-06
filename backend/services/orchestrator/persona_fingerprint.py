@@ -26,7 +26,6 @@ RESOURCE_PERSONA_KEYS: dict[ResourceType, tuple[str, ...]] = {
     "code_case": ("cognitive_style", "grit", "error_preference", "coding_ability"),
     "trace_animation": ("coding_ability", "cognitive_style", "error_preference"),
     "reading": ("knowledge_base", "learning_goals"),
-    "video_script": ("coding_ability", "cognitive_style"),
 }
 
 FPS_STORAGE_KEY = "_resource_generation_fps"

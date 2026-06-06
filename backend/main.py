@@ -4,9 +4,41 @@
 """
 
 from contextlib import asynccontextmanager
+import logging
+import runpy
+import sys
+from pathlib import Path
+
+
+def _handle_exec_script() -> None:
+    """PyInstaller 打包后 sys.executable 指向 AlgoPilot.exe，
+    子进程无法直接用它执行 Python 脚本。通过 --exec-script 参数
+    让打包后的 exe 充当 Python 解释器运行指定脚本。"""
+    if len(sys.argv) >= 3 and sys.argv[1] == "--exec-script":
+        script_path = sys.argv[2]
+        extra_args = sys.argv[3:]
+        # 将脚本所在目录加入 sys.path，确保同目录模块可被 import
+        script_dir = str(Path(script_path).resolve().parent)
+        if script_dir not in sys.path:
+            sys.path.insert(0, script_dir)
+        sys.argv = [script_path, *extra_args]
+        try:
+            runpy.run_path(script_path, run_name="__main__")
+        except SystemExit:
+            raise
+        except Exception as e:
+            print(f"[exec-script error] {e}", file=sys.stderr)
+            sys.exit(1)
+        sys.exit(0)
+
+
+# 在模块加载最早期处理 --exec-script，避免启动 FastAPI
+_handle_exec_script()
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from api.ai_tutor import router as ai_tutor_router
 from api.tts import router as tts_router
@@ -22,11 +54,40 @@ from api.memory import router as memory_router
 from api.mastery import router as mastery_router
 from api.events import router as events_router
 from api.analytics import router as analytics_router
+from api.teacher_dashboard import router as teacher_dashboard_router
+from core.config import settings
 from core.database import Base, engine
+
+_logger = logging.getLogger(__name__)
+
+_INSECURE_JWT_SECRETS = frozenset({
+    "dev-change-me-use-long-random-string",
+    "changeme",
+    "secret",
+    "jwt-secret",
+    "test",
+})
+
+
+def _check_jwt_secret() -> None:
+    """在应用启动前校验 JWT_SECRET，生产环境拒绝不安全默认值。"""
+    if settings.jwt_secret not in _INSECURE_JWT_SECRETS:
+        return
+    if settings.is_production:
+        _logger.critical(
+            "JWT_SECRET 使用了不安全的默认值且检测到生产环境，拒绝启动。"
+            "请在 .env 中设置一个长随机字符串。"
+        )
+        sys.exit(1)
+    _logger.warning(
+        "JWT_SECRET 使用了不安全的默认值，仅限本地开发使用，请勿部署到生产环境。"
+    )
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    _check_jwt_secret()
+
     import models.db_models  # noqa: F401 — 注册 ORM 元数据
 
     Base.metadata.create_all(bind=engine)
@@ -37,7 +98,7 @@ app = FastAPI(title="算法智能学习平台 API", version="0.2.0", lifespan=li
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origin_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -57,3 +118,35 @@ app.include_router(memory_router, prefix="/api")
 app.include_router(mastery_router, prefix="/api")
 app.include_router(events_router, prefix="/api")
 app.include_router(analytics_router, prefix="/api")
+app.include_router(teacher_dashboard_router, prefix="/api")
+
+# --- 内嵌前端静态文件（打包部署时使用） ---
+_FRONTEND_DIR: Path | None = None
+if getattr(sys, "frozen", False):
+    # PyInstaller 打包后：_internal/frontend/ 目录
+    _FRONTEND_DIR = Path(sys.executable).parent / "_internal" / "frontend"
+else:
+    # 开发模式：项目根目录 frontend/dist
+    _FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+
+if _FRONTEND_DIR and _FRONTEND_DIR.is_dir() and (_FRONTEND_DIR / "index.html").exists():
+    app.mount("/assets", StaticFiles(directory=str(_FRONTEND_DIR / "assets")), name="static-assets")
+
+    @app.get("/{full_path:path}")
+    async def _serve_spa(full_path: str):
+        """SPA fallback：非 /api 路径和非静态文件均返回 index.html；
+        以 /api 开头但不匹配任何已注册路由的路径返回 404 JSON。"""
+        if full_path and full_path.startswith("api"):
+            from fastapi.responses import JSONResponse
+            return JSONResponse({"detail": "Not Found"}, status_code=404)
+        if full_path:
+            candidate = _FRONTEND_DIR / full_path
+            if candidate.is_file():
+                return FileResponse(str(candidate))
+        return FileResponse(str(_FRONTEND_DIR / "index.html"))
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=8000)

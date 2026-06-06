@@ -6,7 +6,6 @@ import json
 import re
 import shutil
 import subprocess
-import sys
 import tempfile
 import textwrap
 from dataclasses import dataclass
@@ -16,6 +15,7 @@ from typing import Any, Literal
 from services.oj.runner import LIST_NODE_HELPERS, _detect_helpers
 from services.oj.trace_steps_filter import filter_meaningful_steps
 from services.oj.trace_line_refine import refine_trace_step_lines
+from utils import python_exec_args
 
 TraceVerdict = Literal["OK", "RE", "TLE", "CE"]
 MAX_TRACE_STEPS = 200
@@ -296,7 +296,7 @@ def run_trace_stdio(
 
     try:
         proc = subprocess.run(
-            [sys.executable, str(path)],
+            python_exec_args(str(path)),
             capture_output=True,
             text=True,
             timeout=max(1, time_limit_ms / 1000),
@@ -407,7 +407,7 @@ def run_trace(
 
     try:
         proc = subprocess.run(
-            [sys.executable, str(path)],
+            python_exec_args(str(path)),
             capture_output=True,
             text=True,
             timeout=max(1, time_limit_ms / 1000),

@@ -55,7 +55,10 @@ function focusPanel() {
 
 async function sendMessage(text?: string) {
   const content = (text ?? input.value).trim()
-  if (!content || loading.value || !props.section) return
+  if (!content || loading.value || !props.section) {
+    console.warn('[AiTutorPanel] sendMessage early return', { content: !!content, loading: loading.value, section: !!props.section })
+    return
+  }
 
   input.value = ''
   messages.value.push({ id: ++msgId, role: 'user', content })

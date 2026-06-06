@@ -20,6 +20,7 @@ const props = defineProps<{
 const router = useRouter()
 const items = ref<GeneratedResource[]>([])
 const loading = ref(false)
+const expandedExplain = ref<Set<number>>(new Set())
 
 async function load() {
   if (!isLoggedIn.value) {
@@ -48,6 +49,14 @@ function openResource(r: GeneratedResource) {
 
 function typeLabel(type: string) {
   return RESOURCE_TYPE_META[type]?.label ?? type
+}
+
+function toggleExplain(id: number) {
+  if (expandedExplain.value.has(id)) {
+    expandedExplain.value.delete(id)
+  } else {
+    expandedExplain.value.add(id)
+  }
 }
 </script>
 
@@ -90,6 +99,22 @@ function typeLabel(type: string) {
               {{ verificationDisplayTag(r.meta ?? {}).riskLabel }}
             </el-tag>
             <span v-if="r.meta?.chapter_id" class="chapter">{{ r.meta.chapter_id }}</span>
+          </div>
+          <div v-if="r.explain" class="rec-explain">
+            <el-tag
+              size="small"
+              type="warning"
+              effect="light"
+              class="explain-tag"
+              @click.stop="toggleExplain(r.id)"
+            >
+              💡 推荐原因
+            </el-tag>
+            <transition name="explain-fade">
+              <p v-if="expandedExplain.has(r.id)" class="explain-text" @click.stop>
+                {{ r.explain }}
+              </p>
+            </transition>
           </div>
         </div>
       </div>
@@ -161,5 +186,47 @@ function typeLabel(type: string) {
 .agent {
   font-size: 11px;
   color: var(--alp-color-muted);
+}
+
+.rec-explain {
+  margin-top: 6px;
+}
+
+.explain-tag {
+  cursor: pointer;
+  font-size: 11px;
+  transition: opacity 0.15s;
+}
+
+.explain-tag:hover {
+  opacity: 0.85;
+}
+
+.explain-text {
+  margin: 6px 0 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--el-color-warning-light-9) 60%, transparent);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--alp-color-text);
+}
+
+.explain-fade-enter-active,
+.explain-fade-leave-active {
+  transition: all 0.2s ease;
+}
+
+.explain-fade-enter-from,
+.explain-fade-leave-to {
+  opacity: 0;
+  max-height: 0;
+  margin-top: 0;
+}
+
+.explain-fade-enter-to,
+.explain-fade-leave-from {
+  opacity: 1;
+  max-height: 120px;
 }
 </style>

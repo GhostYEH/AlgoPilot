@@ -190,3 +190,33 @@ export interface TraceBugDiagnoseResponse {
   source?: string
   tutoring?: OjTutoringPayload | null
 }
+
+export interface VarChangeItem {
+  step_index: number
+  line: number
+  variable_name: string
+  before: string
+  after: string
+}
+
+export interface TraceStepBrief {
+  step_index: number
+  line: number
+  changed_vars: string[]
+  var_summary: Record<string, string>
+  is_error_step: boolean
+}
+
+export interface TraceDiagnosisReport {
+  error_type: string
+  failed_test_point: string
+  key_variable_changes: VarChangeItem[]
+  error_step: TraceStepBrief | null
+  possible_cause: string
+  fix_suggestion: string
+  recommended_resources: RecommendedResourceHint[]
+  path_rearrange_triggered: boolean
+  trace_steps: TraceStepBrief[]
+  source: string
+  tutoring?: OjTutoringPayload | null
+}

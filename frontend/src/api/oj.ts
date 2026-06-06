@@ -279,6 +279,23 @@ export async function aiDiagnose(
   return data
 }
 
+export async function fetchTraceReport(
+  slug: string,
+  payload: {
+    code: string
+    language: OjLanguage
+    judge_verdict?: string
+    failed_cases?: CaseResult[]
+  },
+) {
+  const { data } = await judgeClient.post<import('@/types/codeTrace').TraceDiagnosisReport>(
+    `/api/oj/problems/${encodeURIComponent(slug)}/trace-report`,
+    payload,
+    { timeout: 120000 },
+  )
+  return data
+}
+
 export async function fetchOjCapabilities(): Promise<OjCapabilities> {
   try {
     await ojReadClient.get('/api/health', { timeout: 3000 })

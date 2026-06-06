@@ -67,6 +67,14 @@ const errorSummary = computed(() => {
     <template v-else-if="state.result">
       <p v-if="errorSummary" class="struggle-summary">{{ errorSummary }}</p>
 
+      <div v-if="state.pathAdjustSuggested" class="struggle-path-alert">
+        <el-icon><Guide /></el-icon>
+        <span>检测到连续受挫，已建议插入巩固节点。</span>
+        <template v-if="state.result.remediation_label">
+          优先巩固「{{ state.result.remediation_label }}」
+        </template>
+      </div>
+
       <div
         v-if="state.result.remediation_label || state.result.remediation_module_key"
         class="struggle-block"
@@ -249,5 +257,26 @@ const errorSummary = computed(() => {
 
 .path-hint {
   color: var(--el-color-warning);
+}
+
+.struggle-path-alert {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  background: color-mix(in srgb, var(--el-color-warning) 12%, var(--alp-bg-surface));
+  border: 1px solid color-mix(in srgb, var(--el-color-warning) 40%, var(--alp-color-border));
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--el-color-warning);
+  animation: struggle-path-pulse 1.5s ease-in-out 2;
+}
+
+@keyframes struggle-path-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--el-color-warning) 25%, transparent); }
 }
 </style>

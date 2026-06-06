@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -78,7 +78,7 @@ def apply_learning_patch(
         prev = dims.get("knowledge_base") or "待补充"
         if _is_pending(prev):
             dims["knowledge_base"] = f"已完成小节：{'、'.join(labels)}"
-        elif not any(l in prev for l in labels):
+        elif not any(lbl in prev for lbl in labels):
             dims["knowledge_base"] = f"{prev}；近期完成：{'、'.join(labels[-3:])}"
 
     oj_events = [s for s in body.signals if s.event_type == "oj_submit"]
@@ -241,11 +241,11 @@ def apply_oj_diagnosis_patch(
             "module_key": module_key,
             "mastery_delta": mastery_delta,
             "affected_dimensions": affected,
-            "at": datetime.utcnow().isoformat(),
+            "at": datetime.now(timezone.utc).isoformat(),
         }
 
         row.dimensions = payload
-        row.updated_at = datetime.utcnow()
+        row.updated_at = datetime.now(timezone.utc)
         db.commit()
         db.refresh(row)
         return OjPersonaPatchResult(updated=True, summary=summary_line)

@@ -3,13 +3,14 @@ import { computed, defineAsyncComponent, nextTick, onMounted, ref, watch } from 
 import type { GeneratedResource } from '@/api/orchestrator'
 import DomainStructurePanels from '@/components/resources/DomainStructurePanels.vue'
 import SafetyValidationPanel from '@/components/resources/SafetyValidationPanel.vue'
+import TrustEvidenceDrawer from '@/components/resources/TrustEvidenceDrawer.vue'
 import {
   looksLikeUnparsedDomainJson,
   parseDomainStructureContent,
 } from '@/utils/domainStructureContent'
+import { normalizeMindmapSource } from '@/utils/mermaidMindmap'
 import { renderAiReplyHtml } from '@/utils/renderAiReply'
 import { CORE_RESOURCE_TAB_META } from '@/utils/agentConsole'
-import { synthesizeTtsAudio } from '@/api/tts'
 import type { TraceStep, TraceVarSnapshot } from '@/types/codeTrace'
 import {
   associativeEntries,
@@ -104,20 +105,7 @@ const docHtml = computed(() => {
 const mermaidSrc = computed(() => {
   const r = resourceMap.value.get('mindmap')
   if (!r) return ''
-  const c = r.content.trim()
-  if (c.startsWith('{')) {
-    try {
-      const data = JSON.parse(c) as { root?: string; nodes?: Array<{ label: string }> }
-      const labels = [data.root, ...(data.nodes?.map((n) => n.label) ?? [])].filter(Boolean)
-      return `flowchart TD\n  root["${escapeMermaidLabel(String(labels[0] ?? '主题'))}"]\n${labels
-        .slice(1, 8)
-        .map((l, i) => `  n${i}["${escapeMermaidLabel(String(l))}"] --> root`)
-        .join('\n')}`
-    } catch {
-      return c
-    }
-  }
-  return c
+  return normalizeMindmapSource(r.content)
 })
 
 async function loadMermaid() {
@@ -128,36 +116,28 @@ async function loadMermaid() {
   return mermaidApi
 }
 
-function escapeMermaidLabel(value: string) {
-  return String(value).replaceAll('\\', '\\\\').replaceAll('"', '\\"')
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;')
-}
-
 async function renderMermaid() {
   const renderSeq = ++mermaidRenderSeq
   mermaidError.value = ''
+  const host = mermaidHost.value
+  if (host) host.innerHTML = ''
   if (tab.value !== 'mindmap' || !mermaidSrc.value) return
   await nextTick()
-  const host = mermaidHost.value
-  if (!host) return
+  const currentHost = mermaidHost.value
+  if (!currentHost) return
   try {
     const mermaid = await loadMermaid()
     if (renderSeq !== mermaidRenderSeq || tab.value !== 'mindmap') return
+    const parsed = await mermaid.parse(mermaidSrc.value, { suppressErrors: true })
+    if (parsed === false) throw new Error('Mermaid 语法校验失败')
     const { svg } = await mermaid.render(`mmd-${Date.now()}-${renderSeq}`, mermaidSrc.value)
     if (renderSeq !== mermaidRenderSeq || tab.value !== 'mindmap') return
-    host.innerHTML = svg
+    if (svg.includes('Syntax error in text')) throw new Error('Mermaid 语法校验失败')
+    currentHost.innerHTML = svg
   } catch (e) {
     if (renderSeq !== mermaidRenderSeq) return
     mermaidError.value = e instanceof Error ? e.message : 'Mermaid 渲染失败'
-    host.innerHTML = `<pre class="mermaid-fallback">${escapeHtml(mermaidSrc.value)}</pre>`
+    currentHost.innerHTML = '<div class="mermaid-placeholder">思维导图暂不可渲染</div>'
   }
 }
 
@@ -174,23 +154,64 @@ interface QuizQ {
   difficulty?: string
 }
 
+function robustJsonParse(text: string): unknown | null {
+  let cleaned = text.trim()
+  const kbIdx = cleaned.indexOf('---**依据知识库**')
+  if (kbIdx >= 0) cleaned = cleaned.slice(0, kbIdx)
+  cleaned = cleaned.split('\n').filter(line => !line.includes('course:')).join('\n').trim()
+  const fence = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/i)
+  if (fence?.[1]) cleaned = fence[1].trim()
+  try {
+    return JSON.parse(cleaned)
+  } catch {
+    const start = cleaned.indexOf('{')
+    if (start < 0) return null
+    let depth = 0
+    let inStr = false
+    let esc = false
+    for (let i = start; i < cleaned.length; i++) {
+      const ch = cleaned[i]
+      if (esc) { esc = false; continue }
+      if (ch === '\\' && inStr) { esc = true; continue }
+      if (ch === '"') { inStr = !inStr; continue }
+      if (inStr) continue
+      if (ch === '{' || ch === '[') depth++
+      else if (ch === '}' || ch === ']') {
+        depth--
+        if (depth === 0) {
+          try { return JSON.parse(cleaned.slice(start, i + 1)) } catch { return null }
+        }
+      }
+    }
+  }
+  return null
+}
+
 const quizQuestions = computed((): QuizQ[] => {
   const r = resourceMap.value.get('exercises')
   if (!r) return []
-  try {
-    const data = JSON.parse(r.content) as { questions?: QuizQ[] }
-    return data.questions ?? []
-  } catch {
-    return []
-  }
+  const data = robustJsonParse(r.content) as { questions?: QuizQ[] } | null
+  if (!data || !Array.isArray(data.questions)) return []
+  return data.questions
 })
 
 const quizAnswers = ref<Record<number, string>>({})
 const quizRevealed = ref<Record<number, boolean>>({})
+const quizSubmitted = ref(false)
 
 function revealHint(i: number) {
   quizRevealed.value = { ...quizRevealed.value, [i]: true }
 }
+
+function resetQuiz() {
+  quizAnswers.value = {}
+  quizRevealed.value = {}
+  quizSubmitted.value = false
+}
+
+const quizAnsweredCount = computed(() => {
+  return quizQuestions.value.filter((_, i) => quizAnswers.value[i]?.trim()).length
+})
 
 // --- Scenario（旧版 Markdown 兼容）---
 const scenarioLegacy = computed(() => {
@@ -241,11 +262,8 @@ interface TracePayload {
 const tracePayload = computed((): TracePayload | null => {
   const r = resourceMap.value.get('trace_animation')
   if (!r) return null
-  try {
-    return JSON.parse(r.content) as TracePayload
-  } catch {
-    return null
-  }
+  const data = robustJsonParse(r.content) as TracePayload | null
+  return data
 })
 
 const traceStepIndex = ref(0)
@@ -286,53 +304,11 @@ const tracePrevSnap = computed((): TraceVarSnapshot | null => {
 const traceIsSequence = computed(() => traceSnap.value && isSequenceSnapshot(traceSnap.value))
 const traceIsAssociative = computed(() => traceSnap.value && isAssociativeSnapshot(traceSnap.value))
 
-interface PptSlide {
-  title: string
-  subtitle?: string
-  layout?: string
-  bullets?: string[]
-  visual_hint?: string
-  speaker_note?: string
-}
-
-interface VideoScene {
-  time_range: string
-  visual: string
-  voiceover: string
-  animation_focus: string
-}
-
 interface ReadingLevel {
   level: string
   fit_for?: string
   items?: Array<{ title: string; type?: string; why?: string; task?: string }>
 }
-
-const pptPayload = computed(() => {
-  const r = resourceMap.value.get('ppt')
-  if (!r) return null
-  try {
-    return JSON.parse(r.content) as { deck_title?: string; design_style?: string; slides?: PptSlide[] }
-  } catch {
-    return null
-  }
-})
-
-const videoPayload = computed(() => {
-  const r = resourceMap.value.get('video_script')
-  if (!r) return null
-  try {
-    return JSON.parse(r.content) as {
-      title?: string
-      duration_seconds?: number
-      cognitive_style?: string
-      tts_preview_text?: string
-      scenes?: VideoScene[]
-    }
-  } catch {
-    return null
-  }
-})
 
 const readingPayload = computed(() => {
   const r = resourceMap.value.get('reading')
@@ -344,23 +320,13 @@ const readingPayload = computed(() => {
   }
 })
 
-const ttsLoading = ref(false)
+const evidenceVisible = ref(false)
+const evidenceResource = ref<GeneratedResource | null>(null)
 
-async function playVideoTtsPreview() {
-  const text = videoPayload.value?.tts_preview_text?.trim()
-  if (!text) return
-  ttsLoading.value = true
-  try {
-    const blob = await synthesizeTtsAudio({ text })
-    const url = URL.createObjectURL(blob)
-    const audio = new Audio(url)
-    audio.onended = () => URL.revokeObjectURL(url)
-    audio.onerror = () => URL.revokeObjectURL(url)
-    await audio.play()
-  } catch {
-    /* ElMessage 已在 synthesizeTtsAudio 内展示；脚本分镜仍可阅读 */
-  } finally {
-    ttsLoading.value = false
+function openEvidence() {
+  if (current.value) {
+    evidenceResource.value = current.value
+    evidenceVisible.value = true
   }
 }
 </script>
@@ -413,29 +379,42 @@ async function playVideoTtsPreview() {
       <article v-if="tab === 'mindmap'" class="panel-card panel-card--graph">
         <header class="panel-head">
           <h3>知识思维导图</h3>
-          <span class="panel-meta">GraphAgent · Mermaid</span>
+          <span class="panel-meta">GraphAgent · 思维导图</span>
         </header>
         <div ref="mermaidHost" class="mermaid-host" />
         <p v-if="mermaidError" class="mermaid-err">{{ mermaidError }}</p>
-        <el-empty v-if="!mermaidSrc" description="等待 GraphAgent 输出 Mermaid 拓扑" />
+        <el-empty v-if="!mermaidSrc" description="等待 GraphAgent 输出思维导图" />
       </article>
 
       <!-- 个性化自测题 -->
       <article v-if="tab === 'exercises'" class="panel-card panel-card--quiz">
         <header class="panel-head">
           <h3>个性化自测题</h3>
-          <span class="panel-meta">QuizAgent · 3 题精练</span>
+          <span class="panel-meta">QuizAgent · 5 题精练</span>
         </header>
         <div v-if="quizQuestions.length" class="quiz-grid">
+          <div class="quiz-toolbar">
+            <span class="quiz-progress">已答 {{ quizAnsweredCount }} / {{ quizQuestions.length }} 题</span>
+            <div class="quiz-toolbar-actions">
+              <el-button v-if="!quizSubmitted" type="primary" size="small" :disabled="quizAnsweredCount === 0" @click="quizSubmitted = true">
+                提交答案
+              </el-button>
+              <el-button v-else size="small" @click="resetQuiz">
+                重新作答
+              </el-button>
+            </div>
+          </div>
           <div v-for="(q, i) in quizQuestions" :key="i" class="quiz-card">
             <div class="quiz-head">
               <span class="quiz-badge">{{ q.type === 'choice' ? '选择题' : '填空题' }}</span>
               <span class="quiz-diff">{{ q.difficulty ?? 'medium' }}</span>
+              <span v-if="q.focus" class="quiz-focus-tag">考查：{{ q.focus }}</span>
             </div>
             <p class="quiz-stem">{{ i + 1 }}. {{ q.stem }}</p>
             <el-radio-group
               v-if="q.type === 'choice' && q.options?.length"
               v-model="quizAnswers[i]"
+              :disabled="quizSubmitted"
               class="quiz-options"
             >
               <el-radio v-for="(opt, j) in q.options" :key="j" :value="opt">{{ opt }}</el-radio>
@@ -443,15 +422,15 @@ async function playVideoTtsPreview() {
             <el-input
               v-else-if="q.type === 'fill'"
               v-model="quizAnswers[i]"
+              :disabled="quizSubmitted"
               placeholder="输入你的答案"
               class="quiz-fill"
             />
             <el-button link type="primary" size="small" @click="revealHint(i)">查看提示</el-button>
             <p v-if="quizRevealed[i] && q.hint" class="quiz-hint">💡 {{ q.hint }}</p>
-            <p v-if="q.focus" class="quiz-focus">考查：{{ q.focus }}</p>
           </div>
         </div>
-        <el-empty v-else description="QuizAgent 将根据易错点生成 3 道练习题" />
+        <el-empty v-else description="QuizAgent 将根据易错点生成 5 道练习题" />
       </article>
 
       <!-- 剧情实操沙盒 -->
@@ -534,68 +513,6 @@ async function playVideoTtsPreview() {
         <el-empty v-else description="TraceAgent 将录制标准题解并逐步回放" />
       </article>
 
-      <!-- PPT 胶片预览 -->
-      <article v-if="tab === 'ppt'" class="panel-card panel-card--ppt">
-        <header class="panel-head">
-          <h3>{{ pptPayload?.deck_title ?? 'PPT 胶片预览' }}</h3>
-          <span class="panel-meta">PptAgent · {{ pptPayload?.design_style ?? 'JSON Preview' }}</span>
-        </header>
-        <el-carousel v-if="pptPayload?.slides?.length" height="280px" indicator-position="outside">
-          <el-carousel-item v-for="(slide, i) in pptPayload.slides" :key="i">
-            <section class="ppt-slide">
-              <span class="ppt-page">Slide {{ i + 1 }} · {{ slide.layout ?? 'concept' }}</span>
-              <h4>{{ slide.title }}</h4>
-              <p v-if="slide.subtitle" class="ppt-subtitle">{{ slide.subtitle }}</p>
-              <ul>
-                <li v-for="(b, j) in slide.bullets ?? []" :key="j">{{ b }}</li>
-              </ul>
-              <div class="ppt-note">
-                <span>{{ slide.visual_hint }}</span>
-                <small>{{ slide.speaker_note }}</small>
-              </div>
-            </section>
-          </el-carousel-item>
-        </el-carousel>
-        <el-empty v-else description="PptAgent 将输出可轮播展示的核心知识胶片" />
-      </article>
-
-      <!-- 教学短视频分镜脚本 -->
-      <article v-if="tab === 'video_script'" class="panel-card panel-card--video">
-        <header class="panel-head">
-          <h3>{{ videoPayload?.title ?? '60 秒教学短视频脚本' }}</h3>
-          <span class="panel-meta">VideoScriptAgent · 分镜脚本（TTS 可选）</span>
-        </header>
-        <div v-if="videoPayload?.scenes?.length" class="video-script">
-          <div class="tts-preview">
-            <div>
-              <strong>科大讯飞 TTS 试听文案</strong>
-              <p>{{ videoPayload.tts_preview_text }}</p>
-            </div>
-            <el-button
-              type="primary"
-              plain
-              :loading="ttsLoading"
-              :disabled="!videoPayload.tts_preview_text"
-              @click="playVideoTtsPreview"
-            >
-              试听
-            </el-button>
-          </div>
-          <div class="scene-grid">
-            <div v-for="(scene, i) in videoPayload.scenes" :key="i" class="scene-card">
-              <span class="scene-time">{{ scene.time_range }}</span>
-              <h4>画面</h4>
-              <p>{{ scene.visual }}</p>
-              <h4>旁白</h4>
-              <p>{{ scene.voiceover }}</p>
-              <h4>动画重点</h4>
-              <p>{{ scene.animation_focus }}</p>
-            </div>
-          </div>
-        </div>
-        <el-empty v-else description="VideoScriptAgent 将根据认知风格生成 60 秒分镜脚本" />
-      </article>
-
       <!-- 分层拓展阅读 -->
       <article v-if="tab === 'reading'" class="panel-card panel-card--reading">
         <header class="panel-head">
@@ -622,6 +539,15 @@ async function playVideoTtsPreview() {
       v-if="current"
       :meta="current.meta"
       :resource-type="current.resource_type"
+    />
+    <div v-if="current" class="evidence-trigger">
+      <el-button type="primary" plain size="small" @click="openEvidence">
+        🔗 可信证据链
+      </el-button>
+    </div>
+    <TrustEvidenceDrawer
+      v-model:visible="evidenceVisible"
+      :resource="evidenceResource"
     />
   </div>
 </template>
@@ -753,10 +679,11 @@ async function playVideoTtsPreview() {
 }
 
 .mermaid-host {
-  min-height: 240px;
+  min-height: 320px;
   display: flex;
   justify-content: center;
-  padding: 16px;
+  align-items: center;
+  padding: 24px;
   border-radius: 12px;
   background: #0f172a;
   overflow: auto;
@@ -765,6 +692,23 @@ async function playVideoTtsPreview() {
 .mermaid-host :deep(svg) {
   max-width: 100%;
   height: auto;
+  min-height: 280px;
+}
+
+.mermaid-host :deep(.node rect),
+.mermaid-host :deep(.node circle),
+.mermaid-host :deep(.node polygon),
+.mermaid-host :deep(.node ellipse) {
+  stroke-width: 2px;
+}
+
+.mermaid-host :deep(.edgePath .path) {
+  stroke-width: 2px;
+}
+
+.mermaid-host :deep(.mermaid-placeholder) {
+  color: #94a3b8;
+  font-size: 13px;
 }
 
 .mermaid-err {
@@ -777,6 +721,33 @@ async function playVideoTtsPreview() {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.quiz-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--alp-bg-soft-block);
+  border: 1px solid var(--alp-color-border);
+}
+
+.quiz-progress {
+  font-size: 13px;
+  color: var(--alp-color-primary);
+  font-weight: 500;
+}
+
+.quiz-toolbar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.quiz-focus-tag {
+  font-size: 10px;
+  color: var(--alp-color-primary);
+  margin-left: auto;
 }
 
 .quiz-card {
@@ -910,76 +881,18 @@ async function playVideoTtsPreview() {
   max-height: 180px;
 }
 
-.ppt-slide {
-  height: 100%;
-  padding: 22px 26px;
-  border-radius: 12px;
-  background:
-    linear-gradient(135deg, color-mix(in srgb, #06b6d4 18%, transparent), transparent 48%),
-    color-mix(in srgb, var(--alp-bg-soft-block) 78%, transparent);
-  border: 1px solid color-mix(in srgb, #06b6d4 32%, var(--alp-color-border));
-}
-
-.ppt-page,
-.scene-time {
-  font-size: 11px;
-  color: var(--alp-color-primary);
-  font-family: ui-monospace, monospace;
-}
-
-.ppt-slide h4 {
-  margin: 12px 0 6px;
-  font-size: 24px;
-}
-
-.ppt-subtitle,
 .reading-goal {
   margin: 0 0 12px;
   color: var(--alp-color-muted);
 }
 
-.ppt-slide ul {
-  margin: 14px 0;
-  padding-left: 18px;
-  line-height: 1.8;
-}
-
-.ppt-note {
-  display: grid;
-  gap: 4px;
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid var(--alp-color-border);
-  font-size: 12px;
-  color: var(--alp-color-muted);
-}
-
-.tts-preview {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px;
-  margin-bottom: 14px;
-  border-radius: 10px;
-  border: 1px solid color-mix(in srgb, #ec4899 32%, var(--alp-color-border));
-  background: color-mix(in srgb, #ec4899 8%, var(--alp-bg-soft-block));
-}
-
-.tts-preview p {
-  margin: 6px 0 0;
-  color: var(--alp-color-muted);
-  line-height: 1.6;
-}
-
-.scene-grid,
 .reading-levels {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
 }
 
-.scene-card,
+
 .reading-level {
   padding: 14px;
   border-radius: 10px;
@@ -987,14 +900,12 @@ async function playVideoTtsPreview() {
   background: var(--alp-bg-soft-block);
 }
 
-.scene-card h4,
 .reading-level h4 {
   margin: 10px 0 4px;
   color: var(--alp-color-primary);
   font-size: 13px;
 }
 
-.scene-card p,
 .reading-fit,
 .reading-item p {
   margin: 0 0 8px;
@@ -1018,5 +929,11 @@ async function playVideoTtsPreview() {
 .reading-item small {
   color: var(--alp-color-muted);
   font-size: 11px;
+}
+
+.evidence-trigger {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

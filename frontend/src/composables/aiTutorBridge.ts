@@ -22,5 +22,5 @@ export function formatSelectionQuestion(selectedText: string): string {
   const maxQuote = 360
   let quote = selectedText.trim().replace(/\s+/g, ' ')
   if (quote.length > maxQuote) quote = `${quote.slice(0, maxQuote)}…`
-  return `我在学习当前小节时，对下面这句话不太理解，请结合本节内容用通俗的话解释一下，并举例说明（若合适）：\n\n「${quote}」`
+  return `请给我解释一下这句话：${quote}`
 }

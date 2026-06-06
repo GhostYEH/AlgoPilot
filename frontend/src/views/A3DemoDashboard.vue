@@ -1,38 +1,48 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   ArrowRight,
   Connection,
   DataAnalysis,
-  FolderOpened,
   Lock,
   Promotion,
-  Reading,
   RefreshRight,
-  VideoPlay,
   Warning,
 } from '@element-plus/icons-vue'
 import AgentThinkingConsole from '@/components/agents/AgentThinkingConsole.vue'
-import MasteryEvaluationCard from '@/components/learning/MasteryEvaluationCard.vue'
 import {
-  fetchLearningPathPlan,
   fetchPersonaProfile,
+  fetchLearningPathPlan,
   fetchResources,
+  fetchRecommendedResources,
   RESOURCE_TYPE_META,
+  PROFILE_DIMENSION_LABELS,
   type GeneratedResource,
+  type PersonaDimensions,
+  type PersonaProfile,
 } from '@/api/orchestrator'
-import { fetchMasteryReport } from '@/api/mastery'
+import { fetchMasteryReport, MASTERY_LEVEL_LABELS, type MasteryOverview } from '@/api/mastery'
 import { fetchRecentEvents } from '@/api/events'
 import { fetchA3Health, fetchSystemHealth, type A3Health, type ReadinessLevel, type SystemHealth } from '@/api/health'
 import { isLoggedIn } from '@/stores/auth'
 import {
-  A3_COURSE_CHAPTERS,
-  A3_DEMO_STEPS,
-  A3_FEATURES,
   A3_POSITIONING,
+  A3_SUBTITLE,
+  A3_DEMO_STEPS,
   A3_SHOWCASE_AGENTS,
+  A3_ALL_AGENTS,
+  A3_COURSE_CHAPTERS,
   MOCK_VERIFICATION_SUMMARY,
+  MOCK_PERSONA_DIMENSIONS,
+  MOCK_PERSONA_OVERALL_CONFIDENCE,
+  MOCK_OJ_TRACE,
+  MOCK_LEARNING_EVAL,
+  MOCK_RECOMMENDED_RESOURCES,
+  type PersonaDimensionScore,
+  type OjTraceDemoData,
+  type LearningEvalDemoData,
+  type RecommendedResourceDemo,
 } from '@/constants/a3Demo'
 import {
   AGENT_ICONS,
@@ -50,46 +60,6 @@ const loadError = ref('')
 const systemHealth = ref<SystemHealth | null>(null)
 const a3Health = ref<A3Health | null>(null)
 
-const A3_HEALTH_LABELS: { key: keyof A3Health; label: string }[] = [
-  { key: 'course_knowledge_ready', label: '课程知识库' },
-  { key: 'profile_chat_ready', label: '画像对话' },
-  { key: 'persona_patch_ready', label: '画像 Patch' },
-  { key: 'skill_cards_ready', label: 'SkillCard' },
-  { key: 'resource_generation_ready', label: '资源生成' },
-  { key: 'verifier_ready', label: 'Verifier' },
-  { key: 'safety_ready', label: 'Safety' },
-  { key: 'oj_trace_ready', label: 'OJ Trace' },
-  { key: 'student_memory_ready', label: 'StudentMemory' },
-  { key: 'mastery_ready', label: 'Mastery' },
-  { key: 'learning_path_ready', label: 'LearningPath' },
-  { key: 'event_bus_ready', label: 'EventBus' },
-  { key: 'llm_configured', label: 'LLM 已配置' },
-  { key: 'tts_configured', label: 'TTS 已配置' },
-]
-
-const READINESS_LEVEL_META: Record<
-  ReadinessLevel,
-  { label: string; tagType: 'danger' | 'warning' | 'success' | 'primary' }
-> = {
-  blocked: { label: '阻断 · 不宜演示', tagType: 'danger' },
-  risky: { label: '有风险 · 谨慎录屏', tagType: 'warning' },
-  ready: { label: '可演示', tagType: 'success' },
-  excellent: { label: '最佳状态', tagType: 'primary' },
-}
-
-const readinessMeta = computed(() => {
-  const level = a3Health.value?.readiness_level ?? 'blocked'
-  return READINESS_LEVEL_META[level]
-})
-
-const readinessProgressStatus = computed(() => {
-  const score = a3Health.value?.readiness_score ?? 0
-  if (score >= 90) return 'success'
-  if (score >= 75) return ''
-  if (score >= 50) return 'warning'
-  return 'exception'
-})
-
 const mockFlags = ref({
   persona: false,
   path: false,
@@ -97,17 +67,24 @@ const mockFlags = ref({
   mastery: false,
   events: false,
   verification: false,
+  recommendations: false,
 })
 
 const usingMock = computed(() => Object.values(mockFlags.value).some(Boolean))
 
 const personaSummary = ref('')
+const personaDimensions = ref<PersonaDimensionScore[]>([...MOCK_PERSONA_DIMENSIONS])
+const personaConfidence = ref(MOCK_PERSONA_OVERALL_CONFIDENCE)
 const pathSummary = ref('')
 const resources = ref<GeneratedResource[]>([])
+const recommendedResources = ref<RecommendedResourceDemo[]>([...MOCK_RECOMMENDED_RESOURCES])
 const consoleLines = ref<AgentConsoleLine[]>([])
 const verificationStats = ref({ ...MOCK_VERIFICATION_SUMMARY })
 const masteryScore = ref<number | null>(null)
 const masteryLevel = ref('')
+const masteryOverview = ref<MasteryOverview | null>(null)
+const ojTraceData = ref<OjTraceDemoData>({ ...MOCK_OJ_TRACE })
+const learningEvalData = ref<LearningEvalDemoData>({ ...MOCK_LEARNING_EVAL })
 
 const MOCK_PERSONA =
   '大一计科学生，视觉型学习者；链表与指针操作偏弱，动态规划刚入门；目标为期末算法课 85 分以上。'
@@ -120,8 +97,6 @@ const resourcePreviewTypes = [
   'exercises',
   'code_case',
   'trace_animation',
-  'ppt',
-  'video_script',
   'reading',
 ] as const
 
@@ -133,15 +108,6 @@ const previewByType = computed(() => {
   return map
 })
 
-const closedLoop = [
-  '对话式画像',
-  '个性化路径',
-  '多智能体资源',
-  '智能辅导',
-  '效果评估',
-  '动态调整',
-]
-
 const demoHints = computed(() => {
   const hints = [...(systemHealth.value?.demo_hints ?? [])]
   for (const w of a3Health.value?.warnings ?? []) {
@@ -150,12 +116,77 @@ const demoHints = computed(() => {
   return hints
 })
 
-const a3HealthActions = computed(() => a3Health.value?.recommended_actions ?? [])
+const autoStepTimer = ref<ReturnType<typeof setInterval> | null>(null)
+
+function startAutoStep() {
+  stopAutoStep()
+  autoStepTimer.value = setInterval(() => {
+    activeStep.value = (activeStep.value + 1) % A3_DEMO_STEPS.length
+  }, 4000)
+}
+
+function stopAutoStep() {
+  if (autoStepTimer.value) {
+    clearInterval(autoStepTimer.value)
+    autoStepTimer.value = null
+  }
+}
 
 function goStep(idx: number) {
   activeStep.value = idx
+  stopAutoStep()
+  startAutoStep()
   const step = A3_DEMO_STEPS[idx]
-  if (step?.route) void router.push(step.route)
+  if (step?.route) void router.push(step.route as { name: string })
+}
+
+const CONFIDENCE_LABELS: Record<string, string> = { low: '低', medium: '中', high: '高' }
+const CONFIDENCE_COLORS: Record<string, string> = { low: '#f59e0b', medium: '#38bdf8', high: '#10b981' }
+
+const PUSH_STRATEGY_LABELS: Record<string, string> = {
+  consolidate: '巩固优先',
+  advance: '推进优先',
+  review: '回退复习',
+  maintain: '保持节奏',
+}
+
+function radarPoints(dimensions: PersonaDimensionScore[], cx: number, cy: number, r: number): string {
+  const n = dimensions.length
+  return dimensions
+    .map((d, i) => {
+      const angle = (Math.PI * 2 * i) / n - Math.PI / 2
+      const ratio = d.score / 100
+      const x = cx + r * ratio * Math.cos(angle)
+      const y = cy + r * ratio * Math.sin(angle)
+      return `${x},${y}`
+    })
+    .join(' ')
+}
+
+function radarAxes(dimensions: PersonaDimensionScore[], cx: number, cy: number, r: number) {
+  const n = dimensions.length
+  return dimensions.map((d, i) => {
+    const angle = (Math.PI * 2 * i) / n - Math.PI / 2
+    const x = cx + r * Math.cos(angle)
+    const y = cy + r * Math.sin(angle)
+    const labelX = cx + (r + 18) * Math.cos(angle)
+    const labelY = cy + (r + 18) * Math.sin(angle)
+    return { x2: x, y2: y, labelX, labelY, label: d.label, score: d.score, confidence: d.confidence }
+  })
+}
+
+function radarGridRings(cx: number, cy: number, r: number, n: number, sides: number) {
+  const rings = []
+  for (let ring = 1; ring <= n; ring++) {
+    const ratio = ring / n
+    const points: string[] = []
+    for (let i = 0; i < sides; i++) {
+      const angle = (Math.PI * 2 * i) / sides - Math.PI / 2
+      points.push(`${cx + r * ratio * Math.cos(angle)},${cy + r * ratio * Math.sin(angle)}`)
+    }
+    rings.push(points.join(' '))
+  }
+  return rings
 }
 
 function buildDemoConsoleLines(): AgentConsoleLine[] {
@@ -247,9 +278,31 @@ function aggregateVerification(items: GeneratedResource[]) {
   }
 }
 
+function mapPersonaToDimensions(profile: PersonaProfile): PersonaDimensionScore[] {
+  const dims = profile.dimensions
+  const scores = profile.dimension_scores ?? {}
+  const conf = profile.dimension_confidence ?? {}
+  const keys: (keyof PersonaDimensions)[] = [
+    'knowledge_base',
+    'cognitive_style',
+    'coding_ability',
+    'learning_goals',
+    'error_preference',
+    'grit_level',
+  ]
+  return keys.map((key) => ({
+    key,
+    label: PROFILE_DIMENSION_LABELS[key],
+    score: scores[key] != null ? Number(scores[key]) : 50,
+    confidence: (conf[key] as 'low' | 'medium' | 'high') ?? 'medium',
+  }))
+}
+
 function applyFieldFallbacks() {
   if (!personaSummary.value) {
     personaSummary.value = MOCK_PERSONA
+    personaDimensions.value = [...MOCK_PERSONA_DIMENSIONS]
+    personaConfidence.value = MOCK_PERSONA_OVERALL_CONFIDENCE
     mockFlags.value.persona = true
   }
   if (!pathSummary.value) {
@@ -288,6 +341,7 @@ async function loadDashboard() {
     mastery: false,
     events: false,
     verification: false,
+    recommendations: false,
   }
   personaSummary.value = ''
   pathSummary.value = ''
@@ -295,6 +349,7 @@ async function loadDashboard() {
   consoleLines.value = []
   masteryScore.value = null
   masteryLevel.value = ''
+  masteryOverview.value = null
   verificationStats.value = { ...MOCK_VERIFICATION_SUMMARY }
 
   systemHealth.value = await fetchSystemHealth()
@@ -306,6 +361,14 @@ async function loadDashboard() {
     try {
       const profile = await fetchPersonaProfile()
       if (profile.summary) personaSummary.value = profile.summary
+      if (profile.dimensions) {
+        personaDimensions.value = mapPersonaToDimensions(profile)
+        if (profile.dimension_confidence) {
+          const confValues = Object.values(profile.dimension_confidence)
+          const highCount = confValues.filter((v) => v === 'high').length
+          personaConfidence.value = highCount / confValues.length
+        }
+      }
     } catch {
       apiErrors += 1
     }
@@ -327,9 +390,29 @@ async function loadDashboard() {
     }
     try {
       const mastery = await fetchMasteryReport()
+      masteryOverview.value = mastery
       if (mastery.overall_score != null) {
         masteryScore.value = mastery.overall_score
         masteryLevel.value = mastery.overall_level
+      }
+      if (mastery.report) {
+        learningEvalData.value = {
+          overallScore: mastery.overall_score,
+          level: mastery.overall_level,
+          levelLabel: MASTERY_LEVEL_LABELS[mastery.overall_level],
+          trend: mastery.report.mastery_trend,
+          trendLabel: mastery.report.mastery_trend === 'rising' ? '上升' : mastery.report.mastery_trend === 'falling' ? '下降' : '平稳',
+          confidence: mastery.report.confidence_level,
+          dimensions: mastery.report.component_scores.map((c) => ({
+            key: c.key,
+            label: c.label,
+            score: c.score,
+          })),
+          weakSkills: mastery.report.weak_skills,
+          pushStrategy: 'consolidate',
+          pathAdjustment: mastery.report.path_adjustment_suggestion,
+          suggestedReplan: mastery.report.path_adjustment_suggestion.length > 0,
+        }
       }
     } catch {
       apiErrors += 1
@@ -346,6 +429,22 @@ async function loadDashboard() {
     } catch {
       apiErrors += 1
     }
+    try {
+      const recItems = await fetchRecommendedResources({ limit: 5 })
+      if (recItems.length) {
+        recommendedResources.value = recItems.map((r, i) => ({
+          id: r.id,
+          title: r.title,
+          resourceType: r.resource_type,
+          agentName: r.agent_name,
+          chapterId: String(r.meta?.chapter_id ?? ''),
+          reason: String(r.meta?.recommendation_reason ?? '基于画像与学习路径推荐'),
+          verified: r.meta?.verified === true,
+        }))
+      }
+    } catch {
+      mockFlags.value.recommendations = true
+    }
     if (apiErrors >= 3) {
       loadError.value = '部分后端接口暂不可用，已用演示数据补全空白区块'
     }
@@ -355,7 +454,14 @@ async function loadDashboard() {
   loading.value = false
 }
 
-onMounted(loadDashboard)
+onMounted(() => {
+  void loadDashboard()
+  startAutoStep()
+})
+
+onUnmounted(() => {
+  stopAutoStep()
+})
 </script>
 
 <template>
@@ -382,96 +488,21 @@ onMounted(loadDashboard)
       <ul class="hint-list">
         <li v-for="(h, i) in demoHints" :key="i">{{ h }}</li>
       </ul>
-      <ul v-if="a3HealthActions.length" class="hint-list action-list">
-        <li v-for="(a, i) in a3HealthActions" :key="`a-${i}`"><strong>建议：</strong>{{ a }}</li>
-      </ul>
     </el-alert>
 
-    <!-- A3 核心流程自检 -->
-    <section v-if="a3Health" class="section health-section">
-      <h2 class="section-title">A3 演示可用性</h2>
-      <div class="readiness-panel">
-        <div class="readiness-score-block">
-          <el-progress
-            type="dashboard"
-            :percentage="a3Health.readiness_score"
-            :status="readinessProgressStatus || undefined"
-            :width="120"
-          />
-          <div class="readiness-score-text">
-            <el-tag :type="readinessMeta.tagType" effect="dark" round>
-              {{ readinessMeta.label }}
-            </el-tag>
-            <p class="readiness-score-caption">演示可用性评分</p>
-          </div>
-        </div>
-        <div class="readiness-details">
-          <el-alert
-            v-if="a3Health.blockers.length"
-            type="error"
-            :closable="false"
-            show-icon
-            title="阻断项（需先修复）"
-            class="readiness-alert"
-          >
-            <ul class="hint-list">
-              <li v-for="(b, i) in a3Health.blockers" :key="`b-${i}`">{{ b }}</li>
-            </ul>
-          </el-alert>
-          <el-alert
-            v-if="a3Health.warnings.length"
-            type="warning"
-            :closable="false"
-            show-icon
-            title="风险项"
-            class="readiness-alert"
-          >
-            <ul class="hint-list">
-              <li v-for="(w, i) in a3Health.warnings" :key="`w-${i}`">{{ w }}</li>
-            </ul>
-          </el-alert>
-          <p v-if="a3Health.demo_path_recommendation" class="demo-path-rec">
-            <strong>推荐演示路径：</strong>{{ a3Health.demo_path_recommendation }}
-          </p>
-        </div>
-      </div>
-
-      <h3 class="subsection-title">子系统状态</h3>
-      <div class="health-grid">
-        <div v-for="item in A3_HEALTH_LABELS" :key="item.key" class="health-chip">
-          <span>{{ item.label }}</span>
-          <el-tag
-            :type="a3Health[item.key] ? 'success' : 'warning'"
-            size="small"
-            effect="plain"
-          >
-            {{ a3Health[item.key] ? '就绪' : '待修复' }}
-          </el-tag>
-        </div>
-      </div>
-    </section>
-    <!-- Hero -->
+    <!-- ===== 1. Hero 区 ===== -->
     <section class="hero">
       <div class="hero-glow" aria-hidden="true" />
       <div class="hero-inner">
         <el-tag type="primary" effect="dark" round class="hero-badge">中国软件杯 A3 · 比赛演示</el-tag>
         <h1 class="hero-title">{{ A3_POSITIONING }}</h1>
-        <p class="hero-sub">
-          完整闭环：对话式画像 → 个性化路径 → 多智能体资源生成 → 智能辅导 → 学习效果评估 → 动态调整
-        </p>
-        <div class="loop-pills">
-          <span v-for="(label, i) in closedLoop" :key="label" class="loop-pill">
-            {{ label }}
-            <el-icon v-if="i < closedLoop.length - 1"><ArrowRight /></el-icon>
-          </span>
-        </div>
+        <p class="hero-sub">{{ A3_SUBTITLE }}</p>
         <div class="hero-actions">
           <el-button type="primary" size="large" round @click="goStep(0)">
             <el-icon><Promotion /></el-icon>
             开始 7 分钟演示
           </el-button>
           <el-button size="large" round @click="router.push({ name: 'agent-workbench' })">
-            <el-icon><FolderOpened /></el-icon>
             多智能体工作台
           </el-button>
         </div>
@@ -482,181 +513,359 @@ onMounted(loadDashboard)
       </div>
     </section>
 
-    <!-- 赛题功能完成度 -->
+    <!-- ===== 2. 闭环流程图 ===== -->
     <section class="section">
-      <h2 class="section-title">赛题功能完成度</h2>
-      <div class="feature-grid">
-        <div v-for="f in A3_FEATURES" :key="f.key" class="feature-card">
-          <span class="feature-icon">{{ f.icon }}</span>
-          <div>
-            <strong>{{ f.title }}</strong>
-            <p>{{ f.desc }}</p>
+      <h2 class="section-title">完整闭环流程</h2>
+      <div class="loop-flow">
+        <template v-for="(step, i) in A3_DEMO_STEPS" :key="step.key">
+          <div
+            class="loop-node"
+            :class="{ active: activeStep === i, done: activeStep > i }"
+            @click="goStep(i)"
+          >
+            <span class="loop-node-icon">{{ step.icon }}</span>
+            <span class="loop-node-label">{{ step.title }}</span>
+            <span class="loop-node-desc">{{ step.desc }}</span>
           </div>
-          <el-tag type="success" size="small" effect="plain">已实现</el-tag>
+          <div v-if="i < A3_DEMO_STEPS.length - 1" class="loop-arrow">
+            <svg width="32" height="16" viewBox="0 0 32 16">
+              <line x1="0" y1="8" x2="24" y2="8" stroke="currentColor" stroke-width="2" />
+              <polygon points="24,3 32,8 24,13" fill="currentColor" />
+            </svg>
+          </div>
+        </template>
+        <div class="loop-arrow loop-arrow-return">
+          <svg width="32" height="32" viewBox="0 0 32 32">
+            <path d="M28,28 L4,28 L4,4 L12,4" stroke="currentColor" stroke-width="2" fill="none" />
+            <polygon points="8,4 16,4 12,0" fill="currentColor" />
+          </svg>
+          <span class="return-label">自适应</span>
         </div>
       </div>
     </section>
 
-    <!-- 一键演示 Stepper -->
-    <section class="section stepper-section">
-      <h2 class="section-title">
-        <el-icon><VideoPlay /></el-icon>
-        一键演示流程（7 分钟）
-      </h2>
-      <el-steps :active="activeStep" align-center finish-status="success" class="demo-steps">
-        <el-step
-          v-for="(s, i) in A3_DEMO_STEPS"
-          :key="i"
-          :title="s.title"
-          :description="s.desc"
-          @click="goStep(i)"
-        />
-      </el-steps>
-      <p class="context-snippet">
-        <span v-if="personaSummary">
-          <strong>画像摘要：</strong>{{ personaSummary.slice(0, 80) }}…
-          <el-tag v-if="mockFlags.persona" size="small" type="warning" effect="plain">演示</el-tag>
-        </span>
-        <span v-if="pathSummary">
-          <strong>路径策略：</strong>{{ pathSummary.slice(0, 80) }}…
-          <el-tag v-if="mockFlags.path" size="small" type="warning" effect="plain">演示</el-tag>
-        </span>
-      </p>
+    <!-- ===== 3. 六维画像卡片 ===== -->
+    <section class="section">
+      <h2 class="section-title">六维学生画像</h2>
+      <div class="persona-panel">
+        <div class="radar-wrap">
+          <svg
+            :width="280"
+            :height="280"
+            :viewBox="`0 0 280 280`"
+            class="radar-svg"
+          >
+            <g v-for="(ring, ri) in radarGridRings(140, 140, 100, 4, personaDimensions.length)" :key="ri">
+              <polygon :points="ring" fill="none" stroke="var(--alp-color-border)" stroke-width="0.8" />
+            </g>
+            <line
+              v-for="ax in radarAxes(personaDimensions, 140, 140, 100)"
+              :key="ax.label"
+              x1="140" y1="140"
+              :x2="ax.x2" :y2="ax.y2"
+              stroke="var(--alp-color-border)"
+              stroke-width="0.6"
+            />
+            <polygon
+              :points="radarPoints(personaDimensions, 140, 140, 100)"
+              fill="rgba(56, 189, 248, 0.18)"
+              stroke="var(--alp-color-primary)"
+              stroke-width="2"
+            />
+            <circle
+              v-for="(d, di) in personaDimensions"
+              :key="'dot-' + di"
+              :cx="140 + 100 * (d.score / 100) * Math.cos((Math.PI * 2 * di) / personaDimensions.length - Math.PI / 2)"
+              :cy="140 + 100 * (d.score / 100) * Math.sin((Math.PI * 2 * di) / personaDimensions.length - Math.PI / 2)"
+              r="4"
+              :fill="CONFIDENCE_COLORS[d.confidence]"
+            />
+            <text
+              v-for="(ax, ai) in radarAxes(personaDimensions, 140, 140, 100)"
+              :key="'lbl-' + ai"
+              :x="ax.labelX"
+              :y="ax.labelY"
+              text-anchor="middle"
+              dominant-baseline="central"
+              fill="var(--alp-color-text)"
+              font-size="11"
+              font-weight="600"
+            >{{ ax.label }}</text>
+          </svg>
+        </div>
+        <div class="persona-details">
+          <div class="persona-summary-text">
+            <strong>画像摘要</strong>
+            <p>{{ personaSummary }}</p>
+            <el-tag v-if="mockFlags.persona" size="small" type="warning" effect="plain">演示数据</el-tag>
+          </div>
+          <div class="dimension-bars">
+            <div v-for="dim in personaDimensions" :key="dim.key" class="dim-bar-row">
+              <span class="dim-label">{{ dim.label }}</span>
+              <el-progress
+                :percentage="dim.score"
+                :stroke-width="10"
+                :color="CONFIDENCE_COLORS[dim.confidence]"
+                class="dim-progress"
+              />
+              <el-tag size="small" effect="plain" :type="dim.confidence === 'high' ? 'success' : dim.confidence === 'medium' ? 'warning' : 'danger'">
+                置信度 {{ CONFIDENCE_LABELS[dim.confidence] }}
+              </el-tag>
+            </div>
+          </div>
+          <div class="confidence-overall">
+            <span>画像整体置信度</span>
+            <strong>{{ (personaConfidence * 100).toFixed(0) }}%</strong>
+            <el-progress
+              :percentage="personaConfidence * 100"
+              :stroke-width="8"
+              :show-text="false"
+              class="confidence-progress"
+            />
+          </div>
+        </div>
+      </div>
     </section>
 
-    <!-- 多智能体 + 日志 -->
-    <el-row :gutter="16" class="section">
-      <el-col :xs="24" :lg="14">
-        <section class="panel">
-          <h2 class="section-title">
-            <el-icon><Connection /></el-icon>
-            多智能体协作
-          </h2>
+    <!-- ===== 4. Agent 协同状态区 ===== -->
+    <section class="section">
+      <h2 class="section-title">
+        <el-icon><Connection /></el-icon>
+        多智能体协同状态
+      </h2>
+      <el-row :gutter="16">
+        <el-col :xs="24" :lg="14">
           <div class="agent-grid">
-            <div v-for="a in A3_SHOWCASE_AGENTS" :key="a.id" class="agent-chip">
-              <span class="agent-icon">{{ AGENT_ICONS[a.id] ?? '🤖' }}</span>
-              <div>
-                <strong>{{ a.id }}</strong>
-                <small>{{ a.role }}</small>
+            <div v-for="a in A3_SHOWCASE_AGENTS" :key="a.id" class="agent-card">
+              <div class="agent-card-head">
+                <span class="agent-icon">{{ AGENT_ICONS[a.id] ?? '🤖' }}</span>
+                <div class="agent-card-info">
+                  <strong>{{ a.id }}</strong>
+                  <small>{{ a.role }}</small>
+                </div>
+                <el-tag
+                  :type="a.status === 'done' ? 'success' : a.status === 'running' ? 'warning' : a.status === 'error' ? 'danger' : 'info'"
+                  size="small"
+                  effect="plain"
+                >
+                  {{ a.status === 'done' ? '已完成' : a.status === 'running' ? '运行中' : a.status === 'error' ? '异常' : '空闲' }}
+                </el-tag>
               </div>
-              <el-tag size="small" effect="plain">{{ a.layer }}</el-tag>
+              <div class="agent-card-body">
+                <span v-if="a.resourceType" class="agent-resource-type">
+                  资源类型：{{ RESOURCE_TYPE_META[a.resourceType]?.label ?? a.resourceType }}
+                </span>
+                <span class="agent-recent-log">{{ a.recentLog }}</span>
+              </div>
             </div>
           </div>
-        </section>
+        </el-col>
+        <el-col :xs="24" :lg="10">
+          <section class="panel console-panel">
+            <h3 class="subsection-title">Agent 执行日志</h3>
+            <AgentThinkingConsole
+              :lines="consoleLines"
+              :active="loading"
+              mode="resource"
+              title="A3 Demo Terminal"
+              subtitle="EventBus · multi-agent synergy"
+            />
+          </section>
+        </el-col>
+      </el-row>
+    </section>
 
-        <section class="panel">
-          <h2 class="section-title">
-            <el-icon><Reading /></el-icon>
-            《数据结构与算法》课程知识库
-          </h2>
-          <div class="chapter-grid">
-            <div v-for="ch in A3_COURSE_CHAPTERS" :key="ch.id" class="chapter-card">
-              <span class="ch-id">{{ ch.id.replace('ch', '').slice(0, 2) }}</span>
-              <strong>{{ ch.title }}</strong>
-              <el-tag size="small" effect="plain">{{ ch.difficulty }}</el-tag>
-            </div>
-          </div>
-        </section>
-      </el-col>
-
-      <el-col :xs="24" :lg="10">
-        <section class="panel console-panel">
-          <h2 class="section-title">Agent 执行日志</h2>
-          <AgentThinkingConsole
-            :lines="consoleLines"
-            :active="loading"
-            mode="resource"
-            title="A3 Demo Terminal"
-            subtitle="EventBus · multi-agent synergy"
-          />
-        </section>
-      </el-col>
-    </el-row>
-
-    <!-- 资源成果预览 -->
-    <section class="section panel">
-      <h2 class="section-title">多模态资源生成成果</h2>
-      <div class="resource-grid">
-        <div
-          v-for="type in resourcePreviewTypes"
-          :key="type"
-          class="resource-tile"
-          :style="{ '--accent': RESOURCE_TYPE_META[type]?.color ?? '#64748b' }"
-          @click="router.push({ name: 'resources' })"
-        >
-          <span class="res-type">{{ RESOURCE_TYPE_META[type]?.label ?? type }}</span>
-          <span class="res-agent">{{ RESOURCE_TYPE_META[type]?.agentName }}</span>
-          <template v-if="previewByType.get(type)">
-            <p class="res-title">{{ previewByType.get(type)!.title }}</p>
+    <!-- ===== 5. 推荐资源区 ===== -->
+    <section class="section">
+      <h2 class="section-title">个性化推荐资源</h2>
+      <div class="rec-grid">
+        <div v-for="r in recommendedResources" :key="r.id" class="rec-card">
+          <div class="rec-card-head">
+            <span
+              class="rec-type-dot"
+              :style="{ background: RESOURCE_TYPE_META[r.resourceType]?.color ?? '#64748b' }"
+            />
+            <strong class="rec-title">{{ r.title }}</strong>
             <el-tag
               size="small"
               effect="plain"
-              :type="verificationDisplayTag(previewByType.get(type)!.meta).type"
+              :type="r.verified ? 'success' : 'warning'"
             >
-              {{ verificationDisplayTag(previewByType.get(type)!.meta).riskLabel }}
+              {{ r.verified ? '已校验' : '待校验' }}
             </el-tag>
-          </template>
-          <el-tag v-else size="small" type="info" effect="plain">待生成</el-tag>
+          </div>
+          <div class="rec-card-meta">
+            <span>{{ RESOURCE_TYPE_META[r.resourceType]?.label ?? r.resourceType }}</span>
+            <span>·</span>
+            <span>{{ r.agentName }}</span>
+          </div>
+          <div class="rec-reason">
+            <strong>为什么推荐给你：</strong>
+            <p>{{ r.reason }}</p>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- 评估 + 安全 -->
-    <el-row :gutter="16" class="section">
-      <el-col :xs="24" :lg="14">
-        <MasteryEvaluationCard v-if="isLoggedIn" />
-        <el-card v-else shadow="never" class="eval-fallback">
-          <div class="eval-fallback-head">
-            <el-icon><DataAnalysis /></el-icon>
-            <span>MasteryAgent · 学习效果评估</span>
-            <el-tag type="warning" size="small" effect="plain">演示数据</el-tag>
-          </div>
-          <div class="eval-score-row">
-            总掌握度 <strong>{{ masteryScore ?? 58 }}</strong>
-            <el-tag size="small">{{ masteryLevel || 'improving' }}</el-tag>
-          </div>
-          <p>薄弱技能：链表指针操作、DP 状态设计</p>
-          <p>下一步：完成 ch02 巩固练习 → 重算掌握度 → 路径 Agent 解锁下一章</p>
-          <el-button type="primary" plain size="small" @click="router.push({ name: 'login' })">
-            登录查看真实评估
-          </el-button>
-        </el-card>
-      </el-col>
-      <el-col :xs="24" :lg="10">
-        <el-card shadow="never" class="safety-card">
-          <div class="safety-card-head">
-            <el-icon><Lock /></el-icon>
-            <span>防幻觉与安全状态</span>
-            <el-tag v-if="usingMock" size="small" type="warning" effect="plain">演示数据</el-tag>
-          </div>
-          <div class="safety-stats">
-            <div class="stat">
-              <strong>{{ verificationStats.passed }}</strong>
-              <span>校验通过</span>
+    <!-- ===== 6. OJ Trace 诊断区 ===== -->
+    <section class="section">
+      <h2 class="section-title">OJ Trace 诊断</h2>
+      <div class="oj-trace-panel">
+        <el-row :gutter="16">
+          <el-col :xs="24" :lg="12">
+            <div class="oj-error-card">
+              <div class="oj-error-head">
+                <el-tag type="danger" effect="dark" size="small">{{ ojTraceData.verdict }}</el-tag>
+                <strong>{{ ojTraceData.problemTitle }}</strong>
+                <el-tag size="small" effect="plain">{{ ojTraceData.language }}</el-tag>
+              </div>
+              <div class="oj-error-type">
+                <span>错误类型：</span>
+                <el-tag type="danger" effect="plain" size="small">{{ ojTraceData.errorType }}</el-tag>
+              </div>
+              <div class="oj-failed-case">
+                <strong>失败用例：</strong>
+                <code>{{ ojTraceData.failedCase }}</code>
+              </div>
+              <pre class="oj-code-block"><code>{{ ojTraceData.errorCode }}</code></pre>
             </div>
-            <div class="stat warn">
-              <strong>{{ verificationStats.warning }}</strong>
-              <span>告警</span>
+          </el-col>
+          <el-col :xs="24" :lg="12">
+            <div class="oj-trace-steps">
+              <h4>Trace 步骤摘要</h4>
+              <div class="trace-step-list">
+                <div
+                  v-for="(step, si) in ojTraceData.traceSteps"
+                  :key="si"
+                  class="trace-step"
+                  :class="{ bug: step.isBug }"
+                >
+                  <span class="trace-step-line">L{{ step.line }}</span>
+                  <span class="trace-step-desc">{{ step.desc }}</span>
+                  <el-tag v-if="step.isBug" type="danger" size="small" effect="dark">Bug</el-tag>
+                </div>
+              </div>
             </div>
-            <div class="stat">
-              <strong>{{ verificationStats.evidenceTotal }}</strong>
-              <span>引用片段</span>
+            <div class="oj-ai-diagnosis">
+              <h4>AI 诊断建议</h4>
+              <div class="diagnosis-content">
+                <p>{{ ojTraceData.aiDiagnosis }}</p>
+              </div>
+              <div class="diagnosis-fix">
+                <strong>修复建议：</strong>
+                <p>{{ ojTraceData.suggestedFix }}</p>
+              </div>
             </div>
-          </div>
-          <p class="risk-line">
-            风险标签：<el-tag size="small" effect="plain">{{ verificationStats.riskLabel }}</el-tag>
-          </p>
-          <ul class="safety-list">
-            <li>ContentVerifierAgent：题号 / 复杂度 / 章节引用规则快检 + LLM 对照</li>
-            <li>SafetyAgent：敏感词 · Prompt 注入 · 学术幻觉预警</li>
-            <li>trace_animation 跳过文本校验，Safety 仍审查并记录 skip_reason</li>
-          </ul>
-          <el-button plain size="small" @click="router.push({ name: 'resources' })">
-            查看资源校验证据
-          </el-button>
-        </el-card>
-      </el-col>
-    </el-row>
+          </el-col>
+        </el-row>
+      </div>
+    </section>
+
+    <!-- ===== 7. 学习评估区 ===== -->
+    <section class="section">
+      <h2 class="section-title">
+        <el-icon><DataAnalysis /></el-icon>
+        学习效果评估
+      </h2>
+      <div class="eval-panel">
+        <el-row :gutter="16">
+          <el-col :xs="24" :lg="14">
+            <div class="eval-main-card">
+              <div class="eval-score-block">
+                <div class="eval-score-big">
+                  <span class="eval-label">总掌握度</span>
+                  <strong class="eval-score-num">{{ learningEvalData.overallScore }}</strong>
+                  <el-tag
+                    :type="learningEvalData.level === 'advanced' ? 'success' : learningEvalData.level === 'competent' ? 'primary' : learningEvalData.level === 'improving' ? 'warning' : 'danger'"
+                    size="small"
+                  >
+                    {{ learningEvalData.levelLabel }}
+                  </el-tag>
+                </div>
+                <div class="eval-meta-row">
+                  <div class="eval-meta-item">
+                    <span class="meta-label">趋势</span>
+                    <el-tag
+                      :type="learningEvalData.trend === 'rising' ? 'success' : learningEvalData.trend === 'falling' ? 'danger' : 'info'"
+                      size="small"
+                    >
+                      {{ learningEvalData.trendLabel }}
+                    </el-tag>
+                  </div>
+                  <div class="eval-meta-item">
+                    <span class="meta-label">置信度</span>
+                    <el-tag
+                      :type="learningEvalData.confidence === 'high' ? 'success' : learningEvalData.confidence === 'medium' ? 'warning' : 'info'"
+                      size="small"
+                    >
+                      {{ CONFIDENCE_LABELS[learningEvalData.confidence] ?? learningEvalData.confidence }}
+                    </el-tag>
+                  </div>
+                </div>
+              </div>
+              <div class="eval-dimensions">
+                <h4>多维评分</h4>
+                <div class="eval-dim-grid">
+                  <div v-for="dim in learningEvalData.dimensions" :key="dim.key" class="eval-dim-item">
+                    <span class="dim-name">{{ dim.label }}</span>
+                    <el-progress
+                      :percentage="dim.score"
+                      :stroke-width="8"
+                      :status="dim.score >= 60 ? 'success' : dim.score < 40 ? 'exception' : undefined"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div v-if="learningEvalData.weakSkills.length" class="eval-weak">
+                <h4>薄弱技能</h4>
+                <el-space wrap>
+                  <el-tag v-for="s in learningEvalData.weakSkills" :key="s" type="danger" effect="plain" size="small">
+                    {{ s }}
+                  </el-tag>
+                </el-space>
+              </div>
+            </div>
+          </el-col>
+          <el-col :xs="24" :lg="10">
+            <div class="eval-strategy-card">
+              <div class="strategy-head">
+                <strong>Push Strategy</strong>
+                <el-tag type="primary" effect="plain" size="small">
+                  {{ PUSH_STRATEGY_LABELS[learningEvalData.pushStrategy] ?? learningEvalData.pushStrategy }}
+                </el-tag>
+              </div>
+              <p class="strategy-desc">{{ learningEvalData.pathAdjustment }}</p>
+              <div v-if="learningEvalData.suggestedReplan" class="replan-action">
+                <el-button type="primary" plain size="small" @click="router.push({ name: 'learning-path' })">
+                  建议重排路径
+                </el-button>
+              </div>
+            </div>
+            <div class="safety-mini-card">
+              <div class="safety-mini-head">
+                <el-icon><Lock /></el-icon>
+                <span>防幻觉与安全</span>
+              </div>
+              <div class="safety-mini-stats">
+                <div class="s-stat">
+                  <strong>{{ verificationStats.passed }}</strong>
+                  <span>校验通过</span>
+                </div>
+                <div class="s-stat warn">
+                  <strong>{{ verificationStats.warning }}</strong>
+                  <span>告警</span>
+                </div>
+                <div class="s-stat">
+                  <strong>{{ verificationStats.evidenceTotal }}</strong>
+                  <span>引用片段</span>
+                </div>
+              </div>
+              <el-tag size="small" effect="plain">{{ verificationStats.riskLabel }}</el-tag>
+            </div>
+          </el-col>
+        </el-row>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -710,8 +919,8 @@ onMounted(loadDashboard)
 }
 
 .hero-title {
-  margin: 0 0 12px;
-  font-size: clamp(1.25rem, 2.5vw, 1.65rem);
+  margin: 0 0 8px;
+  font-size: clamp(1.15rem, 2.2vw, 1.5rem);
   line-height: 1.35;
   font-weight: 700;
   color: var(--alp-color-text);
@@ -719,29 +928,11 @@ onMounted(loadDashboard)
 
 .hero-sub {
   margin: 0 0 16px;
-  color: var(--alp-color-muted);
-  font-size: 14px;
+  color: var(--alp-color-primary);
+  font-size: 15px;
   line-height: 1.6;
-  max-width: 920px;
-}
-
-.loop-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 20px;
-}
-
-.loop-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--alp-bg-surface) 85%, transparent);
-  border: 1px solid var(--alp-color-border);
-  font-size: 12px;
-  color: var(--alp-color-text);
+  font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
 .hero-actions {
@@ -770,16 +961,23 @@ onMounted(loadDashboard)
 }
 
 .section {
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .section-title {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0 0 14px;
+  margin: 0 0 16px;
   font-size: 16px;
   font-weight: 600;
+}
+
+.subsection-title {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--alp-color-text);
 }
 
 .panel {
@@ -790,294 +988,609 @@ onMounted(loadDashboard)
   margin-bottom: 16px;
 }
 
-.feature-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
-}
-
-.readiness-panel {
+/* ===== 闭环流程图 ===== */
+.loop-flow {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 20px;
-  align-items: flex-start;
-  margin-bottom: 16px;
-}
-
-.readiness-score-block {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-shrink: 0;
-}
-
-.readiness-score-text {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.readiness-score-caption {
-  margin: 0;
-  font-size: 12px;
-  color: var(--alp-color-muted);
-}
-
-.readiness-details {
-  flex: 1;
-  min-width: 260px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.readiness-alert {
-  margin: 0;
-}
-
-.demo-path-rec {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.55;
-  color: var(--alp-color-text);
-}
-
-.subsection-title {
-  margin: 0 0 10px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--alp-color-text);
-}
-
-.health-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 10px;
-}
-
-.health-chip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: var(--el-fill-color-light);
-  font-size: 13px;
-}
-
-.action-list {
-  margin-top: 8px;
-}
-
-.feature-card {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 12px;
-  align-items: start;
-  padding: 14px;
-  border-radius: 10px;
-  border: 1px solid var(--alp-color-border);
+  gap: 0;
+  padding: 20px 16px;
   background: var(--alp-bg-soft-block);
+  border: 1px solid var(--alp-color-border);
+  border-radius: var(--alp-radius-card, 12px);
+  position: relative;
 }
 
-.feature-icon {
-  font-size: 28px;
+.loop-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 2px solid var(--alp-color-border);
+  background: var(--alp-bg-surface);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 110px;
+  text-align: center;
+}
+
+.loop-node:hover {
+  border-color: var(--alp-color-primary);
+  transform: translateY(-2px);
+}
+
+.loop-node.active {
+  border-color: var(--alp-color-primary);
+  background: color-mix(in srgb, var(--alp-color-primary) 12%, var(--alp-bg-surface));
+  box-shadow: 0 0 16px color-mix(in srgb, var(--alp-color-primary) 25%, transparent);
+}
+
+.loop-node.done {
+  border-color: #10b981;
+  opacity: 0.85;
+}
+
+.loop-node-icon {
+  font-size: 24px;
   line-height: 1;
 }
 
-.feature-card p {
-  margin: 4px 0 0;
-  font-size: 12px;
+.loop-node-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--alp-color-text);
+}
+
+.loop-node-desc {
+  font-size: 10px;
+  color: var(--alp-color-muted);
+  line-height: 1.3;
+}
+
+.loop-arrow {
+  color: var(--alp-color-muted);
+  flex-shrink: 0;
+  padding: 0 4px;
+}
+
+.loop-arrow-return {
+  position: absolute;
+  right: 16px;
+  bottom: -4px;
+  color: var(--alp-color-primary);
+  opacity: 0.6;
+}
+
+.return-label {
+  font-size: 10px;
+  color: var(--alp-color-primary);
+  position: absolute;
+  bottom: -14px;
+  right: 0;
+}
+
+/* ===== 六维画像 ===== */
+.persona-panel {
+  display: flex;
+  gap: 24px;
+  padding: 20px;
+  background: var(--alp-bg-soft-block);
+  border: 1px solid var(--alp-color-border);
+  border-radius: var(--alp-radius-card, 12px);
+}
+
+.radar-wrap {
+  flex-shrink: 0;
+}
+
+.radar-svg {
+  display: block;
+}
+
+.persona-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.persona-summary-text strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.persona-summary-text p {
+  margin: 0 0 6px;
+  font-size: 13px;
   color: var(--alp-color-muted);
   line-height: 1.5;
 }
 
-.demo-steps {
-  cursor: pointer;
-  margin-bottom: 12px;
-}
-
-.demo-steps :deep(.el-step__title) {
-  font-size: 13px;
-}
-
-.context-snippet {
+.dimension-bars {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--alp-color-muted);
-  margin: 0;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: var(--alp-bg-soft-block);
-  border: 1px dashed var(--alp-color-border);
-}
-
-.agent-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 10px;
 }
 
-.agent-chip {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 8px;
+.dim-bar-row {
+  display: flex;
   align-items: center;
-  padding: 10px;
-  border-radius: 8px;
+  gap: 10px;
+}
+
+.dim-label {
+  width: 72px;
+  font-size: 12px;
+  color: var(--alp-color-text);
+  flex-shrink: 0;
+}
+
+.dim-progress {
+  flex: 1;
+}
+
+.confidence-overall {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
   background: var(--alp-bg-surface);
+  border-radius: 8px;
   border: 1px solid var(--alp-color-border);
 }
 
-.agent-icon {
-  font-size: 22px;
+.confidence-overall span {
+  font-size: 12px;
+  color: var(--alp-color-muted);
 }
 
-.agent-chip strong {
+.confidence-overall strong {
+  font-size: 18px;
+  color: var(--alp-color-primary);
+}
+
+.confidence-progress {
+  flex: 1;
+}
+
+/* ===== Agent 协同 ===== */
+.agent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.agent-card {
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--alp-bg-surface);
+  border: 1px solid var(--alp-color-border);
+  transition: border-color 0.15s;
+}
+
+.agent-card:hover {
+  border-color: var(--alp-color-primary);
+}
+
+.agent-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.agent-icon {
+  font-size: 20px;
+}
+
+.agent-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.agent-card-info strong {
   display: block;
   font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.agent-chip small {
+.agent-card-info small {
   color: var(--alp-color-muted);
   font-size: 11px;
 }
 
-.chapter-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 8px;
-}
-
-.chapter-card {
-  padding: 10px;
-  border-radius: 8px;
-  background: var(--alp-bg-surface);
-  border: 1px solid var(--alp-color-border);
+.agent-card-body {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.ch-id {
-  font-size: 10px;
-  color: var(--alp-color-primary);
-  font-weight: 600;
-}
-
-.console-panel :deep(.agent-terminal) {
-  min-height: 320px;
-}
-
-.resource-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 10px;
-}
-
-.resource-tile {
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid var(--alp-color-border);
-  background: var(--alp-bg-surface);
-  cursor: pointer;
-  transition: border-color 0.15s, transform 0.15s;
-  border-top: 3px solid var(--accent);
-}
-
-.resource-tile:hover {
-  border-color: var(--accent);
-  transform: translateY(-2px);
-}
-
-.res-type {
-  display: block;
-  font-weight: 600;
-  font-size: 13px;
-}
-
-.res-agent {
+.agent-resource-type {
   font-size: 11px;
   color: var(--alp-color-muted);
 }
 
-.res-title {
-  margin: 6px 0;
+.agent-recent-log {
   font-size: 11px;
-  line-height: 1.4;
   color: var(--alp-color-text);
+  line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-.eval-fallback,
-.safety-card {
+.console-panel :deep(.agent-terminal) {
+  min-height: 320px;
+}
+
+/* ===== 推荐资源 ===== */
+.rec-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.rec-card {
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--alp-bg-surface);
+  border: 1px solid var(--alp-color-border);
+  border-top: 3px solid var(--alp-color-primary);
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.rec-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--alp-color-primary);
+}
+
+.rec-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.rec-type-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.rec-title {
+  flex: 1;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rec-card-meta {
+  display: flex;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--alp-color-muted);
+  margin-bottom: 10px;
+}
+
+.rec-reason {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.rec-reason strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--alp-color-primary);
+  font-size: 11px;
+}
+
+.rec-reason p {
+  margin: 0;
+  color: var(--alp-color-muted);
+}
+
+/* ===== OJ Trace ===== */
+.oj-trace-panel {
+  padding: 20px;
+  background: var(--alp-bg-soft-block);
   border: 1px solid var(--alp-color-border);
   border-radius: var(--alp-radius-card, 12px);
 }
 
-.eval-fallback-head,
-.safety-card-head {
+.oj-error-card {
+  padding: 14px;
+  background: var(--alp-bg-surface);
+  border: 1px solid var(--alp-color-border);
+  border-radius: 10px;
+  border-left: 3px solid #ef4444;
+}
+
+.oj-error-head {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-weight: 600;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.oj-error-type {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--alp-color-text);
+}
+
+.oj-failed-case {
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: var(--alp-color-muted);
+}
+
+.oj-failed-case code {
+  background: var(--alp-bg-code-ish);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #f59e0b;
+}
+
+.oj-code-block {
+  margin: 0;
+  padding: 12px;
+  background: var(--alp-bg-code-ish);
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--alp-color-text);
+  font-family: 'Fira Code', 'JetBrains Mono', monospace;
+}
+
+.oj-trace-steps {
+  padding: 14px;
+  background: var(--alp-bg-surface);
+  border: 1px solid var(--alp-color-border);
+  border-radius: 10px;
   margin-bottom: 12px;
 }
 
-.eval-score-row {
+.oj-trace-steps h4 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.trace-step-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.trace-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  background: var(--alp-bg-soft-block);
+  border: 1px solid transparent;
+}
+
+.trace-step.bug {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.trace-step-line {
+  font-family: 'Fira Code', monospace;
+  font-size: 11px;
+  color: var(--alp-color-primary);
+  font-weight: 600;
+  min-width: 28px;
+}
+
+.trace-step-desc {
+  flex: 1;
+  color: var(--alp-color-text);
+}
+
+.oj-ai-diagnosis {
+  padding: 14px;
+  background: var(--alp-bg-surface);
+  border: 1px solid var(--alp-color-border);
+  border-radius: 10px;
+  border-left: 3px solid #10b981;
+}
+
+.oj-ai-diagnosis h4 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.diagnosis-content p {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--alp-color-text);
+}
+
+.diagnosis-fix {
+  font-size: 12px;
+}
+
+.diagnosis-fix strong {
+  color: #10b981;
+}
+
+.diagnosis-fix p {
+  margin: 4px 0 0;
+  color: var(--alp-color-muted);
+  line-height: 1.5;
+}
+
+/* ===== 学习评估 ===== */
+.eval-panel {
+  padding: 20px;
+  background: var(--alp-bg-soft-block);
+  border: 1px solid var(--alp-color-border);
+  border-radius: var(--alp-radius-card, 12px);
+}
+
+.eval-main-card {
+  padding: 18px;
+  background: var(--alp-bg-surface);
+  border: 1px solid var(--alp-color-border);
+  border-radius: 10px;
+}
+
+.eval-score-block {
+  margin-bottom: 16px;
+}
+
+.eval-score-big {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
-.eval-score-row strong {
-  font-size: 32px;
+.eval-label {
+  font-size: 14px;
+  color: var(--alp-color-muted);
+}
+
+.eval-score-num {
+  font-size: 36px;
   color: var(--alp-color-primary);
 }
 
-.safety-stats {
+.eval-meta-row {
   display: flex;
   gap: 16px;
-  margin-bottom: 12px;
 }
 
-.stat {
+.eval-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.meta-label {
+  font-size: 12px;
+  color: var(--alp-color-muted);
+}
+
+.eval-dimensions h4,
+.eval-weak h4 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.eval-dim-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.eval-dim-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dim-name {
+  width: 64px;
+  font-size: 12px;
+  color: var(--alp-color-muted);
+  flex-shrink: 0;
+}
+
+.eval-weak {
+  margin-top: 14px;
+}
+
+.eval-strategy-card {
+  padding: 16px;
+  background: var(--alp-bg-surface);
+  border: 1px solid var(--alp-color-border);
+  border-radius: 10px;
+  margin-bottom: 12px;
+  border-left: 3px solid var(--alp-color-primary);
+}
+
+.strategy-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.strategy-desc {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--alp-color-muted);
+  line-height: 1.6;
+}
+
+.replan-action {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.safety-mini-card {
+  padding: 14px;
+  background: var(--alp-bg-surface);
+  border: 1px solid var(--alp-color-border);
+  border-radius: 10px;
+}
+
+.safety-mini-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.safety-mini-stats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.s-stat {
   text-align: center;
 }
 
-.stat strong {
+.s-stat strong {
   display: block;
-  font-size: 24px;
+  font-size: 20px;
   color: var(--alp-color-primary);
 }
 
-.stat span {
+.s-stat span {
   font-size: 11px;
   color: var(--alp-color-muted);
 }
 
-.stat.warn strong {
+.s-stat.warn strong {
   color: #f59e0b;
-}
-
-.risk-line {
-  font-size: 13px;
-  margin: 0 0 10px;
-}
-
-.safety-list {
-  margin: 0 0 12px;
-  padding-left: 18px;
-  font-size: 12px;
-  color: var(--alp-color-muted);
-  line-height: 1.6;
 }
 
 @media (max-width: 768px) {
@@ -1085,8 +1598,33 @@ onMounted(loadDashboard)
     padding: 20px 16px;
   }
 
-  .loop-pill .el-icon {
+  .persona-panel {
+    flex-direction: column;
+  }
+
+  .loop-flow {
+    justify-content: center;
+  }
+
+  .loop-arrow svg {
+    width: 20px;
+    height: 10px;
+  }
+
+  .loop-arrow-return {
     display: none;
+  }
+
+  .agent-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rec-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .eval-dim-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

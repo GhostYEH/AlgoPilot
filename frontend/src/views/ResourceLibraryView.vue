@@ -12,7 +12,6 @@ import {
   Reading,
   Monitor,
   VideoCamera,
-  DataBoard,
   Box,
   CircleCheck,
   Clock,
@@ -33,6 +32,7 @@ import { usePersonaUi } from '@/composables/usePersonaUiProvider'
 import { fuzzyFilter } from '@/utils/fuzzySearch'
 import ResourceContentPreview from '@/components/resources/ResourceContentPreview.vue'
 import SafetyValidationPanel from '@/components/resources/SafetyValidationPanel.vue'
+import TrustEvidenceDrawer from '@/components/resources/TrustEvidenceDrawer.vue'
 
 const personaUi = usePersonaUi()
 const showWorkflowDetail = computed(() => personaUi.value.graphDetail !== 'minimal')
@@ -44,8 +44,6 @@ const TYPE_ICONS: Record<string, Component> = {
   reading: Reading,
   code_case: Monitor,
   trace_animation: VideoCamera,
-  ppt: DataBoard,
-  video_script: VideoCamera,
 }
 
 const route = useRoute()
@@ -68,6 +66,14 @@ const filterVerified = ref('')
 const page = ref(1)
 const pageSize = ref(8)
 const batchFallbackNotice = ref('')
+
+const evidenceVisible = ref(false)
+const evidenceResource = ref<GeneratedResource | null>(null)
+
+function openEvidence(r: GeneratedResource) {
+  evidenceResource.value = r
+  evidenceVisible.value = true
+}
 
 const activeResource = computed(() =>
   resources.value.find((r) => r.id === activeId.value) ?? null,
@@ -279,6 +285,12 @@ function openResource(r: GeneratedResource) {
 
 function verifyTag(meta: Record<string, unknown>) {
   return resourceVerifyTag(meta)
+}
+
+function humanizeRefs(refs: string[]): string {
+  return refs
+    .map((r) => r.split(':').pop() || r)
+    .join('、')
 }
 </script>
 
@@ -492,8 +504,16 @@ function verifyTag(meta: Record<string, unknown>) {
                   </el-tag>
                 </div>
                 <span class="res-title">{{ r.title }}</span>
+                <span v-if="r.explain" class="res-explain">💡 {{ r.explain }}</span>
                 <span class="res-time">{{ r.created_at }}</span>
                 <div class="res-actions" @click.stop>
+                  <el-button
+                    link
+                    type="primary"
+                    @click="openEvidence(r)"
+                  >
+                    🔗 证据
+                  </el-button>
                   <el-button
                     link
                     :type="r.meta?.favorited ? 'warning' : 'default'"
@@ -542,10 +562,19 @@ function verifyTag(meta: Record<string, unknown>) {
                 :content="activeResource.content"
                 :meta="activeResource.meta"
               />
+              <div v-if="activeResource.explain" class="preview-explain">
+                <span class="preview-explain-label">💡 推荐原因</span>
+                <p class="preview-explain-text">{{ activeResource.explain }}</p>
+              </div>
               <SafetyValidationPanel
                 :meta="activeResource.meta"
                 :resource-type="activeResource.resource_type"
               />
+              <div class="preview-evidence-row">
+                <el-button type="primary" plain size="small" @click="openEvidence(activeResource!)">
+                  🔗 可信证据链
+                </el-button>
+              </div>
               <p
                 v-if="
                   Array.isArray(activeResource.meta?.knowledge_refs) &&
@@ -553,7 +582,7 @@ function verifyTag(meta: Record<string, unknown>) {
                 "
                 class="refs"
               >
-                知识库依据：{{ (activeResource.meta.knowledge_refs as string[]).join('、') }}
+                知识库依据：{{ humanizeRefs(activeResource.meta.knowledge_refs as string[]) }}
               </p>
             </el-card>
             <div v-else class="preview-placeholder">
@@ -564,6 +593,10 @@ function verifyTag(meta: Record<string, unknown>) {
         </el-row>
       </div>
     </el-card>
+    <TrustEvidenceDrawer
+      v-model:visible="evidenceVisible"
+      :resource="evidenceResource"
+    />
   </div>
 </template>
 
@@ -958,6 +991,14 @@ function verifyTag(meta: Record<string, unknown>) {
   line-height: 1.4;
 }
 
+.res-explain {
+  display: block;
+  font-size: 11px;
+  color: var(--el-color-warning-dark-2, #b45309);
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
 .res-time {
   font-size: 10px;
   color: var(--alp-color-muted);
@@ -1016,11 +1057,40 @@ function verifyTag(meta: Record<string, unknown>) {
   width: 100%;
 }
 
+.preview-explain {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--el-color-warning-light-9) 60%, transparent);
+  border: 1px solid color-mix(in srgb, var(--el-color-warning-light-7) 50%, transparent);
+}
+
+.preview-explain-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--el-color-warning-dark-2, #b45309);
+  margin-bottom: 4px;
+}
+
+.preview-explain-text {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--alp-color-text);
+}
+
 .refs {
   margin-top: 12px;
   font-size: 11px;
   color: var(--alp-color-muted);
   padding-top: 10px;
   border-top: 1px solid var(--alp-color-border);
+}
+
+.preview-evidence-row {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

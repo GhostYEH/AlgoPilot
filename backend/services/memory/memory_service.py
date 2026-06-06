@@ -12,9 +12,11 @@ from services.memory.schemas import MemoryEventInput, MemoryEventRecord
 
 _EVENT_LABELS: dict[str, str] = {
     "oj_submit_fail": "OJ 提交未通过",
+    "oj_submit_success": "OJ 提交通过",
     "oj_diagnosis": "AI 深度诊断",
     "trace_diagnosis": "Trace 轨迹诊断",
     "evaluation_struggle": "连续作答受挫",
+    "path_adjusted": "路径动态重排",
     "resource_complete": "资源学习完成",
     "quiz_complete": "练习测验完成",
     "section_done": "小节学习完成",

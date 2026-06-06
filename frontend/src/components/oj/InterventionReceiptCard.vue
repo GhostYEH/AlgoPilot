@@ -99,8 +99,6 @@ const RESOURCE_TYPE_LABEL: Record<string, string> = {
   exercises: '变式题单',
   code_case: '代码沙盒',
   trace_animation: 'Trace 动画',
-  ppt: 'PPT 胶片',
-  video_script: '短视频脚本',
   reading: '拓展阅读',
 }
 

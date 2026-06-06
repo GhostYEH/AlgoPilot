@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import functools
 
 from schemas.learning_path import LearningPathReplanRequest, ModuleProgressInput
 from services.agents.base import BaseAgent
@@ -256,6 +257,7 @@ def _extract_weak_keys(profile_block: str) -> set[str]:
     return keys
 
 
+@functools.lru_cache(maxsize=1)
 def _module_cluster_map() -> dict[str, str]:
     """module_key -> 知识簇 id（概念图社区发现）。"""
     clusters = concept_clusters()

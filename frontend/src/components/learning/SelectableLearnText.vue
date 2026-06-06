@@ -125,11 +125,16 @@ function onScroll() {
 
 function onAsk() {
   if (!bridge) {
+    console.warn('[SelectableLearnText] bridge is null, cannot ask')
     hidePopover()
     return
   }
-  if (!popover.value.text || bridge.loading) return
+  if (!popover.value.text || bridge.loading) {
+    console.warn('[SelectableLearnText] onAsk early return', { text: popover.value.text, loading: bridge.loading })
+    return
+  }
   const q = formatSelectionQuestion(popover.value.text)
+  console.log('[SelectableLearnText] asking:', q)
   bridge.ask(q)
   hidePopover()
   window.getSelection()?.removeAllRanges()

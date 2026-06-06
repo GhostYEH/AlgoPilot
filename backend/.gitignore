@@ -8,3 +8,5 @@ dist/
 build/
 data/
 *.db
+scripts/_*.txt
+scripts/_*.cpp

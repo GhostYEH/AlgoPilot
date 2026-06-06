@@ -1,11 +1,16 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import DomainStructurePanels from '@/components/resources/DomainStructurePanels.vue'
 import {
   looksLikeUnparsedDomainJson,
   parseDomainStructureContent,
 } from '@/utils/domainStructureContent'
+import { normalizeMindmapSource } from '@/utils/mermaidMindmap'
 import { renderAiReplyHtml } from '@/utils/renderAiReply'
+
+type MermaidApi = typeof import('mermaid').default
+let mermaidApi: MermaidApi | null = null
+let mermaidRenderSeq = 0
 
 const props = defineProps<{
   resourceType: string
@@ -13,15 +18,47 @@ const props = defineProps<{
   meta?: Record<string, unknown>
 }>()
 
+const mermaidHost = ref<HTMLElement | null>(null)
+const mermaidError = ref('')
+
+function robustJsonParse(text: string): unknown | null {
+  let cleaned = text.trim()
+  const kbIdx = cleaned.indexOf('---**依据知识库**')
+  if (kbIdx >= 0) cleaned = cleaned.slice(0, kbIdx)
+  cleaned = cleaned.split('\n').filter(line => !line.includes('course:')).join('\n').trim()
+  const fence = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/i)
+  if (fence?.[1]) cleaned = fence[1].trim()
+  try {
+    return JSON.parse(cleaned)
+  } catch {
+    const start = cleaned.indexOf('{')
+    if (start < 0) return null
+    let depth = 0
+    let inStr = false
+    let esc = false
+    for (let i = start; i < cleaned.length; i++) {
+      const ch = cleaned[i]
+      if (esc) { esc = false; continue }
+      if (ch === '\\' && inStr) { esc = true; continue }
+      if (ch === '"') { inStr = !inStr; continue }
+      if (inStr) continue
+      if (ch === '{' || ch === '[') depth++
+      else if (ch === '}' || ch === ']') {
+        depth--
+        if (depth === 0) {
+          try { return JSON.parse(cleaned.slice(start, i + 1)) } catch { return null }
+        }
+      }
+    }
+  }
+  return null
+}
+
 const parsed = computed(() => {
   if (props.resourceType === 'document' || props.resourceType === 'code_case') {
     return null
   }
-  try {
-    return JSON.parse(props.content) as Record<string, unknown>
-  } catch {
-    return null
-  }
+  return robustJsonParse(props.content) as Record<string, unknown> | null
 })
 
 const isQuiz = computed(
@@ -30,12 +67,11 @@ const isQuiz = computed(
 const isMindmap = computed(
   () => props.resourceType === 'mindmap' || props.meta?.format === 'mindmap_json',
 )
-const isPpt = computed(() => props.resourceType === 'ppt' || props.meta?.format === 'ppt_preview_json')
-const isVideo = computed(
-  () => props.resourceType === 'video_script' || props.meta?.format === 'video_script_json',
-)
 const isReading = computed(
   () => props.resourceType === 'reading' || props.meta?.format === 'leveled_reading_json',
+)
+const isTrace = computed(
+  () => props.resourceType === 'trace_animation' || props.meta?.format === 'trace_json',
 )
 const domainStructure = computed(() => parseDomainStructureContent(props.content))
 const isDocOrScenario = computed(
@@ -59,22 +95,140 @@ const legacyMarkdown = computed(
 const domainStructureMode = computed((): 'document' | 'scenario' =>
   props.resourceType === 'code_case' ? 'scenario' : 'document',
 )
+
+const mermaidSrc = computed(() => {
+  if (!isMindmap.value) return ''
+  return normalizeMindmapSource(props.content)
+})
+
+async function loadMermaid() {
+  if (!mermaidApi) {
+    mermaidApi = (await import('mermaid')).default
+    mermaidApi.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose' })
+  }
+  return mermaidApi
+}
+
+async function renderMermaid() {
+  const renderSeq = ++mermaidRenderSeq
+  mermaidError.value = ''
+  const host = mermaidHost.value
+  if (host) host.innerHTML = ''
+  if (!isMindmap.value || !mermaidSrc.value) return
+  await nextTick()
+  const currentHost = mermaidHost.value
+  if (!currentHost) return
+  try {
+    const mermaid = await loadMermaid()
+    if (renderSeq !== mermaidRenderSeq) return
+    const parsed = await mermaid.parse(mermaidSrc.value, { suppressErrors: true })
+    if (parsed === false) throw new Error('Mermaid 语法校验失败')
+    const { svg } = await mermaid.render(`mmd-preview-${Date.now()}-${renderSeq}`, mermaidSrc.value)
+    if (renderSeq !== mermaidRenderSeq) return
+    if (svg.includes('Syntax error in text')) throw new Error('Mermaid 语法校验失败')
+    currentHost.innerHTML = svg
+  } catch (e) {
+    if (renderSeq !== mermaidRenderSeq) return
+    mermaidError.value = e instanceof Error ? e.message : 'Mermaid 渲染失败'
+    currentHost.innerHTML = '<div class="mindmap-placeholder">思维导图暂不可渲染</div>'
+  }
+}
+
+watch([mermaidSrc], () => void renderMermaid(), { flush: 'post' })
+onMounted(() => void renderMermaid())
+
+interface QuizQ {
+  type: string
+  stem: string
+  options?: string[]
+  hint?: string
+  focus?: string
+  difficulty?: string
+}
+
+const quizQuestions = computed((): QuizQ[] => {
+  if (!parsed.value || !Array.isArray((parsed.value as Record<string, unknown>).questions)) return []
+  return (parsed.value as { questions: QuizQ[] }).questions
+})
+
+const quizAnswers = reactive<Record<number, string>>({})
+const quizRevealed = reactive<Record<number, boolean>>({})
+const quizSubmitted = ref(false)
+
+function revealHint(i: number) {
+  quizRevealed[i] = true
+}
+
+function submitQuiz() {
+  quizSubmitted.value = true
+}
+
+function resetQuiz() {
+  Object.keys(quizAnswers).forEach(k => delete quizAnswers[Number(k)])
+  Object.keys(quizRevealed).forEach(k => delete quizRevealed[Number(k)])
+  quizSubmitted.value = false
+}
+
+const answeredCount = computed(() => {
+  return quizQuestions.value.filter((_, i) => quizAnswers[i]?.trim()).length
+})
 </script>
 
 <template>
-  <div v-if="isQuiz && parsed?.questions" class="quiz-preview">
+  <div v-if="isQuiz && quizQuestions.length" class="quiz-preview">
+    <div class="quiz-toolbar">
+      <span class="quiz-progress">已答 {{ answeredCount }} / {{ quizQuestions.length }} 题</span>
+      <div class="quiz-toolbar-actions">
+        <el-button v-if="!quizSubmitted" type="primary" size="small" :disabled="answeredCount === 0" @click="submitQuiz">
+          提交答案
+        </el-button>
+        <el-button v-else size="small" @click="resetQuiz">
+          重新作答
+        </el-button>
+      </div>
+    </div>
     <div
-      v-for="(q, i) in (parsed.questions as Array<Record<string, string>>)"
+      v-for="(q, i) in quizQuestions"
       :key="i"
       class="quiz-item"
+      :class="{ 'quiz-item--answered': quizAnswers[i]?.trim(), 'quiz-item--submitted': quizSubmitted }"
     >
-      <div class="quiz-type">{{ q.type || '题目' }}</div>
-      <strong>{{ i + 1 }}. {{ q.stem }}</strong>
-      <ul v-if="Array.isArray(q.options) && q.options.length">
-        <li v-for="(o, j) in q.options" :key="j">{{ o }}</li>
-      </ul>
-      <p v-if="q.hint" class="hint">提示：{{ q.hint }}</p>
+      <div class="quiz-head">
+        <span class="quiz-badge">{{ q.type === 'choice' ? '选择题' : '填空题' }}</span>
+        <span class="quiz-diff">{{ q.difficulty ?? 'medium' }}</span>
+        <span v-if="q.focus" class="quiz-focus-tag">考查：{{ q.focus }}</span>
+      </div>
+      <p class="quiz-stem">{{ i + 1 }}. {{ q.stem }}</p>
+
+      <el-radio-group
+        v-if="q.type === 'choice' && q.options?.length"
+        v-model="quizAnswers[i]"
+        :disabled="quizSubmitted"
+        class="quiz-options"
+      >
+        <el-radio v-for="(opt, j) in q.options" :key="j" :value="opt" class="quiz-option">
+          <span class="quiz-option-label">{{ String.fromCharCode(65 + j) }}.</span> {{ opt }}
+        </el-radio>
+      </el-radio-group>
+
+      <el-input
+        v-else-if="q.type === 'fill'"
+        v-model="quizAnswers[i]"
+        :disabled="quizSubmitted"
+        placeholder="输入你的答案"
+        class="quiz-fill"
+      />
+
+      <div class="quiz-actions">
+        <el-button link type="primary" size="small" @click="revealHint(i)">查看提示</el-button>
+      </div>
+      <p v-if="quizRevealed[i] && q.hint" class="quiz-hint">💡 {{ q.hint }}</p>
     </div>
+  </div>
+
+  <div v-else-if="isMindmap && mermaidSrc" class="mindmap-preview">
+    <div ref="mermaidHost" class="mindmap-mermaid-host" />
+    <p v-if="mermaidError" class="mindmap-err">{{ mermaidError }}</p>
   </div>
 
   <div v-else-if="isMindmap && parsed" class="mindmap-json">
@@ -87,44 +241,39 @@ const domainStructureMode = computed((): 'document' | 'scenario' =>
     <pre class="raw-json">{{ props.content }}</pre>
   </div>
 
+  <div v-else-if="isTrace && parsed" class="trace-preview">
+    <h3 v-if="parsed.title">{{ parsed.title }}</h3>
+    <p v-if="parsed.narration_hint" class="trace-narration">{{ parsed.narration_hint }}</p>
+    <div v-if="parsed.code" class="trace-code-block">
+      <div class="trace-code-header">源代码</div>
+      <pre class="trace-code"><code>{{ parsed.code }}</code></pre>
+    </div>
+    <div class="trace-io-row">
+      <div v-if="parsed.stdin" class="trace-io-item">
+        <span class="trace-io-label">输入</span>
+        <code>{{ parsed.stdin }}</code>
+      </div>
+      <div v-if="parsed.stdout" class="trace-io-item">
+        <span class="trace-io-label">期望输出</span>
+        <code>{{ parsed.stdout }}</code>
+      </div>
+    </div>
+    <el-alert
+      v-if="meta?.placeholder"
+      type="info"
+      :closable="false"
+      show-icon
+      title="占位示例"
+      description="此为模板占位动画，配置 LLM 后可生成真实题解轨迹。"
+      class="trace-placeholder-notice"
+    />
+  </div>
+
   <DomainStructurePanels
     v-else-if="isDomainStructure"
     :content="content"
     :mode="domainStructureMode"
   />
-
-  <div v-else-if="isPpt && parsed?.slides" class="ppt-preview">
-    <h3>{{ parsed.deck_title }}</h3>
-    <p class="muted">{{ parsed.design_style }}</p>
-    <div
-      v-for="(slide, i) in (parsed.slides as Array<Record<string, unknown>>)"
-      :key="i"
-      class="ppt-card"
-    >
-      <span>Slide {{ i + 1 }} · {{ slide.layout }}</span>
-      <strong>{{ slide.title }}</strong>
-      <p v-if="slide.subtitle">{{ slide.subtitle }}</p>
-      <ul v-if="Array.isArray(slide.bullets)">
-        <li v-for="(b, j) in slide.bullets" :key="j">{{ b }}</li>
-      </ul>
-      <small>{{ slide.visual_hint }} · {{ slide.speaker_note }}</small>
-    </div>
-  </div>
-
-  <div v-else-if="isVideo && parsed?.scenes" class="video-preview">
-    <h3>{{ parsed.title }}</h3>
-    <p class="muted">TTS 试听文案：{{ parsed.tts_preview_text }}</p>
-    <div
-      v-for="(scene, i) in (parsed.scenes as Array<Record<string, string>>)"
-      :key="i"
-      class="scene-card"
-    >
-      <span>{{ scene.time_range }}</span>
-      <p><strong>画面：</strong>{{ scene.visual }}</p>
-      <p><strong>旁白：</strong>{{ scene.voiceover }}</p>
-      <p><strong>动画重点：</strong>{{ scene.animation_focus }}</p>
-    </div>
-  </div>
 
   <div v-else-if="isReading && parsed?.levels" class="reading-preview">
     <h3>分层拓展阅读</h3>
@@ -168,23 +317,157 @@ const domainStructureMode = computed((): 'document' | 'scenario' =>
 </template>
 
 <style scoped>
-.quiz-item {
-  margin-bottom: 14px;
-  padding: 10px;
-  border: 1px solid var(--alp-color-border);
-  border-radius: 8px;
+.quiz-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.quiz-type {
+.quiz-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--alp-bg-soft-block);
+  border: 1px solid var(--alp-color-border);
+}
+
+.quiz-progress {
+  font-size: 13px;
+  color: var(--alp-color-primary);
+  font-weight: 500;
+}
+
+.quiz-toolbar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.quiz-item {
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid var(--alp-color-border);
+  background: color-mix(in srgb, var(--alp-bg-soft-block) 60%, transparent);
+  transition: border-color 0.25s;
+}
+
+.quiz-item--answered {
+  border-color: color-mix(in srgb, var(--alp-color-primary) 40%, transparent);
+}
+
+.quiz-item--submitted {
+  opacity: 0.85;
+}
+
+.quiz-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.quiz-badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--alp-color-primary) 15%, transparent);
+  color: var(--alp-color-primary);
+  font-weight: 500;
+}
+
+.quiz-diff {
+  font-size: 10px;
+  color: var(--alp-color-muted);
+}
+
+.quiz-focus-tag {
   font-size: 10px;
   color: var(--alp-color-primary);
-  margin-bottom: 4px;
+  margin-left: auto;
 }
 
-.hint {
-  font-size: 12px;
+.quiz-stem {
+  margin: 0 0 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.quiz-option {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.quiz-option:hover {
+  background: color-mix(in srgb, var(--alp-color-primary) 8%, transparent);
+}
+
+.quiz-option-label {
+  font-weight: 600;
+  margin-right: 4px;
+  color: var(--alp-color-primary);
+}
+
+.quiz-fill {
+  margin-bottom: 10px;
+  max-width: 400px;
+}
+
+.quiz-actions {
+  margin-top: 4px;
+}
+
+.quiz-hint {
+  font-size: 13px;
   color: var(--alp-color-muted);
-  margin: 6px 0 0;
+  margin: 8px 0 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--el-color-warning-light-9) 40%, transparent);
+}
+
+.mindmap-preview {
+  min-height: 280px;
+}
+
+.mindmap-mermaid-host {
+  min-height: 280px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  border-radius: 12px;
+  background: #0f172a;
+  overflow: auto;
+}
+
+.mindmap-mermaid-host :deep(svg) {
+  max-width: 100%;
+  height: auto;
+  min-height: 240px;
+}
+
+.mindmap-mermaid-host :deep(.mindmap-placeholder) {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.mindmap-err {
+  color: #f87171;
+  font-size: 12px;
+  margin-top: 8px;
 }
 
 .mindmap-json .muted {
@@ -207,8 +490,6 @@ const domainStructureMode = computed((): 'document' | 'scenario' =>
   font-size: 14px;
 }
 
-.ppt-card,
-.scene-card,
 .reading-level {
   margin-bottom: 12px;
   padding: 12px;
@@ -217,8 +498,6 @@ const domainStructureMode = computed((): 'document' | 'scenario' =>
   background: var(--alp-bg-soft-block);
 }
 
-.ppt-card span,
-.scene-card span,
 .reading-item span,
 .reading-item small,
 .muted {
@@ -226,13 +505,11 @@ const domainStructureMode = computed((): 'document' | 'scenario' =>
   font-size: 12px;
 }
 
-.ppt-card strong,
 .reading-item strong {
   display: block;
   margin: 6px 0;
 }
 
-.scene-card p,
 .reading-item p {
   margin: 6px 0;
   line-height: 1.55;
@@ -247,5 +524,77 @@ const domainStructureMode = computed((): 'document' | 'scenario' =>
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid var(--alp-color-border);
+}
+
+.trace-preview h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.trace-narration {
+  color: var(--alp-color-primary);
+  font-size: 13px;
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--alp-color-primary-soft);
+}
+
+.trace-code-block {
+  margin-bottom: 12px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--alp-color-border);
+}
+
+.trace-code-header {
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--alp-color-muted);
+  background: var(--alp-bg-soft-block);
+  border-bottom: 1px solid var(--alp-color-border);
+}
+
+.trace-code {
+  margin: 0;
+  padding: 12px;
+  font-size: 13px;
+  line-height: 1.55;
+  background: var(--alp-bg-code-ish);
+  overflow-x: auto;
+}
+
+.trace-io-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.trace-io-item {
+  flex: 1;
+  min-width: 160px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--alp-color-border);
+  background: var(--alp-bg-soft-block);
+}
+
+.trace-io-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--alp-color-muted);
+  margin-bottom: 4px;
+}
+
+.trace-io-item code {
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.trace-placeholder-notice {
+  margin-top: 12px;
 }
 </style>

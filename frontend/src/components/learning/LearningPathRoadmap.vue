@@ -253,6 +253,8 @@ const selectedHint = computed(() => MODULE_PATH_HINTS[selectedKey.value])
 
 const selectedStepReason = computed(() => stepMap.value.get(selectedKey.value)?.reason)
 
+const selectedStepExplain = computed(() => stepMap.value.get(selectedKey.value)?.explain)
+
 
 
 const phases = computed(() => {
@@ -730,9 +732,10 @@ async function onReplan() {
                 </button>
 
                 <span v-if="stepMap.get(row.key)?.reason" class="node-reason">
-
                   {{ stepMap.get(row.key)?.reason }}
-
+                </span>
+                <span v-if="stepMap.get(row.key)?.explain" class="node-explain">
+                  💡 {{ stepMap.get(row.key)?.explain }}
                 </span>
 
                 <span v-if="row.hasProgressData" class="node-pct">{{ row.percent }}%</span>
@@ -778,10 +781,13 @@ async function onReplan() {
 
 
           <p v-if="selectedStepReason" class="detail-agent-reason">
-
             <strong>路径 Agent：</strong>{{ selectedStepReason }}
-
           </p>
+
+          <div v-if="selectedStepExplain" class="detail-explain">
+            <span class="detail-explain-label">💡 推荐原因</span>
+            <p class="detail-explain-text">{{ selectedStepExplain }}</p>
+          </div>
 
 
 
@@ -1476,6 +1482,21 @@ async function onReplan() {
 }
 
 
+.node-explain {
+
+  display: block;
+
+  font-size: 10px;
+
+  color: var(--el-color-warning-dark-2, #b45309);
+
+  line-height: 1.3;
+
+  margin: 1px 0 2px;
+
+}
+
+
 
 .node-title-btn:hover {
 
@@ -1588,6 +1609,49 @@ async function onReplan() {
   font-size: 12px;
 
   line-height: 1.5;
+
+  color: var(--alp-color-text);
+
+}
+
+
+.detail-explain {
+
+  margin: 0 0 12px;
+
+  padding: 8px 10px;
+
+  border-radius: 8px;
+
+  background: color-mix(in srgb, var(--el-color-warning-light-9) 60%, transparent);
+
+  border: 1px solid color-mix(in srgb, var(--el-color-warning-light-7) 50%, transparent);
+
+}
+
+
+.detail-explain-label {
+
+  display: block;
+
+  font-size: 11px;
+
+  font-weight: 600;
+
+  color: var(--el-color-warning-dark-2, #b45309);
+
+  margin-bottom: 4px;
+
+}
+
+
+.detail-explain-text {
+
+  margin: 0;
+
+  font-size: 12px;
+
+  line-height: 1.55;
 
   color: var(--alp-color-text);
 

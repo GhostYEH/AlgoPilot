@@ -116,41 +116,6 @@ _MOCK_TRACE = json.dumps(
     ensure_ascii=False,
 )
 
-_MOCK_PPT = json.dumps(
-    {
-        "deck_title": "栈核心知识胶片",
-        "design_style": "图解优先",
-        "slides": [
-            {
-                "title": "栈的 LIFO 规则",
-                "subtitle": "后进先出",
-                "layout": "concept",
-                "bullets": ["push 入栈", "pop 出栈", "空栈需判定"],
-                "visual_hint": "竖向容器图",
-                "speaker_note": "强调只能从栈顶操作。",
-            }
-        ],
-    },
-    ensure_ascii=False,
-)
-
-_MOCK_VIDEO = json.dumps(
-    {
-        "title": "60 秒理解栈",
-        "duration_seconds": 60,
-        "cognitive_style": "图解",
-        "tts_preview_text": "观察栈顶元素如何变化，先入栈再出栈。",
-        "scenes": [
-            {
-                "time_range": "0-10s",
-                "visual": "标题卡片",
-                "voiceover": "栈是后进先出结构。",
-                "animation_focus": "栈顶高亮",
-            }
-        ],
-    },
-    ensure_ascii=False,
-)
 
 _MOCK_READING = json.dumps(
     {
@@ -181,8 +146,6 @@ _MOCK_BY_TYPE: dict[str, str] = {
     "exercises": _MOCK_EXERCISES,
     "code_case": _MOCK_SCENARIO,
     "trace_animation": _MOCK_TRACE,
-    "ppt": _MOCK_PPT,
-    "video_script": _MOCK_VIDEO,
     "reading": _MOCK_READING,
 }
 

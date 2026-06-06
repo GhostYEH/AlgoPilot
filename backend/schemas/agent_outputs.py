@@ -21,8 +21,12 @@ class QuizQuestion(StrictModel):
 
     @model_validator(mode="after")
     def ensure_choice_options(self) -> QuizQuestion:
-        if self.type == "choice" and len(self.options) < 2:
-            self.options = ["A", "B", "C", "D"]
+        if self.type == "choice" and len(self.options) < 4:
+            self.options = list(self.options) + [
+                f"选项{chr(65 + i)}" for i in range(len(self.options), 4)
+            ]
+        if self.type == "fill":
+            self.options = []
         return self
 
 

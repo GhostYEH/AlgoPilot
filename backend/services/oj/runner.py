@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import subprocess
-import sys
 import tempfile
 import textwrap
 from dataclasses import dataclass
@@ -10,6 +9,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from services.oj.compare import values_equal
+from utils import python_exec_args
 
 Verdict = Literal["AC", "WA", "TLE", "RE", "CE"]
 
@@ -264,7 +264,7 @@ def run_cases(
 
         try:
             proc = subprocess.run(
-                [sys.executable, str(path)],
+                python_exec_args(str(path)),
                 capture_output=True,
                 text=True,
                 timeout=max(1, time_limit_ms / 1000),

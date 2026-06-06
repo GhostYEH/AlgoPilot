@@ -18,10 +18,13 @@ defineProps<{
   trace?: import('@/types/codeTrace').TraceResponse | null
   diagnosis?: import('@/types/codeTrace').AiDiagnoseResponse | null
   traceBugDiagnosis?: import('@/types/codeTrace').TraceBugDiagnoseResponse | null
+  traceReport?: import('@/types/codeTrace').TraceDiagnosisReport | null
+  traceReportLoading?: boolean
   apiOnline: boolean
   traceCpp?: boolean
   agentConsoleLines?: import('@/utils/agentConsole').AgentConsoleLine[]
   struggleView?: OjStruggleInterventionView | null
+  consecutiveFailures?: number
 }>()
 
 const code = defineModel<string>({ required: true })
@@ -60,10 +63,13 @@ const emit = defineEmits<{
         :visual-trace-diagnosing="visualTraceDiagnosing"
         :result="result"
         :diagnosis="diagnosis"
+        :trace-report="traceReport"
+        :trace-report-loading="traceReportLoading"
         :api-online="apiOnline"
         :trace-cpp="traceCpp"
         :agent-console-lines="agentConsoleLines"
         :struggle-view="struggleView"
+        :consecutive-failures="consecutiveFailures"
         @run="emit('run')"
         @submit="emit('submit')"
         @reset="emit('reset')"

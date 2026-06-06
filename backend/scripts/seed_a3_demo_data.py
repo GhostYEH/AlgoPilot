@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -70,6 +71,8 @@ COURSE_ID = "data_structures_algorithms"
 DP_CHAPTER_ID = "ch11-dynamic-programming"
 GRAPH_CHAPTER_ID = "ch06-graph"
 LINKED_LIST_CHAPTER_ID = "ch02-linear-list"
+STACK_QUEUE_CHAPTER_ID = "ch03-stack-queue"
+BINARY_TREE_CHAPTER_ID = "ch05-tree-binary-tree"
 
 _PROFILE_TEMPLATE_PATH = (
     BACKEND_ROOT / "knowledge_base" / "student_profiles" / "oj_struggling.json"
@@ -77,9 +80,21 @@ _PROFILE_TEMPLATE_PATH = (
 
 _DEMO_RESOURCES: list[tuple[str, str, str]] = [
     ("document", "动态规划状态设计与转移方程", "dp"),
+    ("mindmap", "图论 BFS 与 DFS 知识图谱", "graph"),
     ("exercises", "链表指针与边界练习", "linked-list"),
-    ("mindmap", "图论 BFS 与 DFS 入门", "graph"),
+    ("code_case", "栈与队列实操案例", "stack-queue"),
+    ("trace_animation", "二叉树遍历轨迹动画", "binary-tree"),
+    ("reading", "图论算法拓展阅读", "graph"),
 ]
+
+_MODULE_TO_CHAPTER_ID: dict[str, str] = {
+    "dp": DP_CHAPTER_ID,
+    "graph": GRAPH_CHAPTER_ID,
+    "linked-list": LINKED_LIST_CHAPTER_ID,
+    "stack-queue": STACK_QUEUE_CHAPTER_ID,
+    "binary-tree": BINARY_TREE_CHAPTER_ID,
+    "array": LINKED_LIST_CHAPTER_ID,
+}
 
 
 @dataclass
@@ -93,6 +108,8 @@ class SeedResult:
     mastery_score: int
     recommended_next_route: str
     next_module_key: str
+    evaluation_count: int = 0
+    replan_count: int = 0
     password: str = DEMO_PASSWORD
 
     def as_dict(self) -> dict[str, object]:
@@ -106,6 +123,8 @@ class SeedResult:
             "mastery_score": self.mastery_score,
             "recommended_next_route": self.recommended_next_route,
             "next_module_key": self.next_module_key,
+            "evaluation_count": self.evaluation_count,
+            "replan_count": self.replan_count,
             "password": self.password,
             "demo": True,
             "source": DEMO_SEED_SOURCE,
@@ -181,6 +200,25 @@ def clear_demo_seed_artifacts(db: Session, user_id: int) -> tuple[int, int]:
             db.delete(row)
             res_deleted += 1
 
+    profile_row = db.get(StudentProfile, user_id)
+    if profile_row is not None and profile_row.dimensions:
+        payload = dict(profile_row.dimensions)
+        hist = list(payload.get("_evaluation_history") or [])
+        cleaned = [
+            h for h in hist
+            if not (isinstance(h, dict) and (h.get("source") == DEMO_SEED_SOURCE or h.get("demo") is True))
+        ]
+        if len(cleaned) != len(hist):
+            payload["_evaluation_history"] = cleaned
+            profile_row.dimensions = payload
+
+    plan_row = db.get(LearningPathPlan, user_id)
+    if plan_row is not None and plan_row.progress_snapshot:
+        snap = dict(plan_row.progress_snapshot)
+        if snap.get("replan_triggered_by_evaluation") is True and snap.get("demo") is True:
+            snap.pop("replan_triggered_by_evaluation", None)
+            plan_row.progress_snapshot = snap
+
     db.commit()
     return mem_deleted, res_deleted
 
@@ -223,7 +261,10 @@ def seed_persona(db: Session, user: User) -> StudentProfile:
     if row is None:
         row = StudentProfile(user_id=user.id)
         db.add(row)
-    row.summary = str(template.get("summary") or "A3 演示：OJ 连续受挫，需降级巩固")
+    row.summary = str(
+        template.get("summary")
+        or "A3 演示学生：知识基础偏弱、视觉化学习偏好明显，OJ 连续受挫后需要降级巩固与 Trace 辅导。"
+    )
     row.dimensions = payload
     row.chat_history = chat_history
     row.updated_at = datetime.now(timezone.utc)
@@ -321,6 +362,120 @@ def seed_memories(db: Session, user_id: int) -> int:
             ),
         )
 
+    svc.record_event(
+        user_id,
+        MemoryEventInput(
+            course_id=COURSE_ID,
+            chapter_id=LINKED_LIST_CHAPTER_ID,
+            skill_id="linear-list-operation",
+            problem_slug="valid-parentheses",
+            event_type="oj_submit_success",
+            observed_error_pattern="",
+            trace_summary="AC：使用栈维护左括号，遇到右括号时检查栈顶匹配关系。",
+            successful_hint="先处理空栈边界，再维护循环不变量：栈中只保存尚未匹配的左括号。",
+            mastery_delta=1,
+            evidence_json={
+                "verdict": "AC",
+                "module_key": "stack-queue",
+                "persona_dimension": "coding_ability",
+                **marker,
+            },
+        ),
+    )
+
+    svc.record_event(
+        user_id,
+        MemoryEventInput(
+            course_id=COURSE_ID,
+            chapter_id=DP_CHAPTER_ID,
+            skill_id="dp-state-design",
+            problem_slug="climbing-stairs",
+            event_type="oj_submit_success",
+            observed_error_pattern="",
+            trace_summary="AC：正确写出 dp[i]=dp[i-1]+dp[i-2]，边界 dp[1]=1, dp[2]=2。",
+            successful_hint="从最小子问题开始填表，先确认边界再写转移。",
+            mastery_delta=1,
+            evidence_json={
+                "verdict": "AC",
+                "module_key": "dp",
+                "persona_dimension": "coding_ability",
+                **marker,
+            },
+        ),
+    )
+
+    svc.record_event(
+        user_id,
+        MemoryEventInput(
+            course_id=COURSE_ID,
+            chapter_id=DP_CHAPTER_ID,
+            skill_id="dp-state-design",
+            event_type="trace_diagnosis",
+            trace_summary="Trace 诊断：dp-grid-0 在 step 3 处状态转移遗漏边界初始化，dp[0] 未设为 1。",
+            successful_hint="检查 dp 数组初始化，确保 dp[0]=1 作为递推起点。",
+            mastery_delta=0,
+            evidence_json={
+                "module_key": "dp",
+                "diagnosis_source": "trace",
+                **marker,
+            },
+        ),
+    )
+
+    svc.record_event(
+        user_id,
+        MemoryEventInput(
+            course_id=COURSE_ID,
+            chapter_id=DP_CHAPTER_ID,
+            skill_id="dp-state-design",
+            event_type="resource_complete",
+            trace_summary="完成资源：动态规划状态设计与转移方程（document）",
+            successful_hint="状态转移方程的边界条件是关键",
+            mastery_delta=1,
+            evidence_json={
+                "resource_type": "document",
+                "module_key": "dp",
+                **marker,
+            },
+        ),
+    )
+
+    svc.record_event(
+        user_id,
+        MemoryEventInput(
+            course_id=COURSE_ID,
+            chapter_id=GRAPH_CHAPTER_ID,
+            skill_id="graph-bfs-dfs",
+            event_type="resource_complete",
+            trace_summary="完成资源：图论 BFS 与 DFS 知识图谱（mindmap）",
+            successful_hint="BFS 用队列逐层扩展，DFS 用栈/递归深入",
+            mastery_delta=1,
+            evidence_json={
+                "resource_type": "mindmap",
+                "module_key": "graph",
+                **marker,
+            },
+        ),
+    )
+
+    svc.record_event(
+        user_id,
+        MemoryEventInput(
+            course_id=COURSE_ID,
+            chapter_id=LINKED_LIST_CHAPTER_ID,
+            skill_id="linear-list-operation",
+            event_type="resource_complete",
+            trace_summary="完成资源：链表指针与边界练习（exercises）",
+            successful_hint="画图跟踪指针变化是链表题的核心技巧",
+            mastery_delta=1,
+            evidence_json={
+                "resource_type": "exercises",
+                "module_key": "linked-list",
+                **marker,
+            },
+        ),
+    )
+
     record_evaluation_struggle(
         db,
         user_id,
@@ -332,6 +487,25 @@ def seed_memories(db: Session, user_id: int) -> int:
         skill_ids=["dp-state-design"],
     )
     _tag_latest_memory(db, user_id, marker)
+
+    svc.record_event(
+        user_id,
+        MemoryEventInput(
+            course_id=COURSE_ID,
+            chapter_id=DP_CHAPTER_ID,
+            skill_id="dp-state-design",
+            event_type="path_adjusted",
+            observed_error_pattern="EvaluationAgent 检测到 DP 连续受挫后触发路径重排",
+            trace_summary="LearningPathAgent 已在 dp 前插入 array 降级巩固节点。",
+            mastery_delta=0,
+            evidence_json={
+                "module_key": "dp",
+                "remediation_module_key": "array",
+                "trigger": "evaluation",
+                **marker,
+            },
+        ),
+    )
 
     return len(
         [
@@ -445,15 +619,18 @@ def seed_resources(db: Session, user: User) -> int:
     created = 0
 
     for resource_type, topic, module_key in _DEMO_RESOURCES:
-        chunks = retriever.search(topic, module_key=module_key, top_k=5)
-        title, content, meta = generate_fallback_resource(
-            resource_type,  # type: ignore[arg-type]
-            topic=topic,
-            profile_block=profile_block,
-            module_key=module_key,
-            chunks=chunks,
-            fallback_reason=fallback_reason,
-        )
+        try:
+            chunks = retriever.search(topic, module_key=module_key, top_k=5)
+            title, content, meta = generate_fallback_resource(
+                resource_type,  # type: ignore[arg-type]
+                topic=topic,
+                profile_block=profile_block,
+                module_key=module_key,
+                chunks=chunks,
+                fallback_reason=fallback_reason,
+            )
+        except Exception:
+            continue
         meta.update(
             {
                 "demo": True,
@@ -464,7 +641,7 @@ def seed_resources(db: Session, user: User) -> int:
         )
         verification = build_verification_result(
             resource_type=resource_type,
-            chapter_id=DP_CHAPTER_ID if module_key == "dp" else "",
+            chapter_id=_MODULE_TO_CHAPTER_ID.get(module_key, ""),
             grounded_chunks=chunks_to_grounded(chunks),
             verifier_status="passed",
             safety_status="passed",
@@ -487,6 +664,46 @@ def seed_resources(db: Session, user: User) -> int:
     return created
 
 
+def seed_evaluation_snapshot(db: Session, user: User) -> int:
+    profile_row = db.get(StudentProfile, user.id)
+    if profile_row is None:
+        return 0
+    payload = dict(profile_row.dimensions or {})
+    hist = list(payload.get("_evaluation_history") or [])
+    snapshot = {
+        "at": datetime.now(timezone.utc).isoformat(),
+        "overall_score": 38,
+        "dimensions": {
+            "mastery": 30,
+            "consistency": 35,
+            "practice": 40,
+            "resource_usage": 48,
+        },
+        "weak_module_keys": ["dp", "graph"],
+        "narrative": "DP 与图论掌握度偏低，建议先巩固数组与链表基础再回攻进阶模块。",
+        "push_strategy": "优先推送 document + exercises 类资源，暂停 trace_animation 推送直到基础稳固。",
+        **_demo_marker(),
+    }
+    hist.append(snapshot)
+    hist = hist[-10:]
+    payload["_evaluation_history"] = hist
+    profile_row.dimensions = payload
+    db.commit()
+    return 1
+
+
+def seed_replan_record(db: Session, user: User) -> int:
+    plan_row = db.get(LearningPathPlan, user.id)
+    if plan_row is None:
+        return 0
+    snap = dict(plan_row.progress_snapshot or {})
+    snap["replan_triggered_by_evaluation"] = True
+    snap.update(_demo_marker())
+    plan_row.progress_snapshot = snap
+    db.commit()
+    return 1
+
+
 def _recommended_route(next_module_key: str | None) -> str:
     if next_module_key == "array":
         return "/learning-path"
@@ -507,6 +724,8 @@ def run_seed(db: Session) -> SeedResult:
     path_row = seed_learning_path(db, user)
     seed_learning_progress(db, user.id)
     resources_count = seed_resources(db, user)
+    evaluation_count = seed_evaluation_snapshot(db, user)
+    replan_count = seed_replan_record(db, user)
 
     next_key = path_row.next_module_key or "array"
     return SeedResult(
@@ -519,6 +738,8 @@ def run_seed(db: Session) -> SeedResult:
         mastery_score=mastery_score,
         recommended_next_route=_recommended_route(next_key),
         next_module_key=next_key,
+        evaluation_count=evaluation_count,
+        replan_count=replan_count,
     )
 
 
@@ -531,6 +752,17 @@ def _print_result(result: SeedResult) -> None:
     print(f"  username: {DEMO_USERNAME}")
     print(f"  password: {DEMO_PASSWORD}")
     print(f"  推荐入口: {result.recommended_next_route}")
+    print(f"  评估快照数: {result.evaluation_count}")
+    print(f"  重排记录数: {result.replan_count}")
+
+
+def _seed_enabled() -> bool:
+    return os.getenv("ALGO_DEMO_SEED_ENABLED", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
 
 
 def main() -> int:
@@ -538,10 +770,15 @@ def main() -> int:
     parser.add_argument(
         "--force",
         action="store_true",
-        help="兼容参数：当前脚本默认幂等更新 demo 用户",
+        help="绕过 ALGO_DEMO_SEED_ENABLED 检查，仅用于本地临时演示。",
     )
     args = parser.parse_args()
-    _ = args.force
+    if not args.force and not _seed_enabled():
+        print(
+            "Demo seed 默认关闭。请设置 ALGO_DEMO_SEED_ENABLED=1 后重试，"
+            "或在本地演示环境使用 --force。"
+        )
+        return 2
 
     db = SessionLocal()
     try:

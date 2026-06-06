@@ -11,6 +11,8 @@ export { useAuthStore } from '@/stores/pinia/auth'
 
 export const isLoggedIn = computed(() => useAuthStore().isLoggedIn)
 
+export const isTeacher = computed(() => useAuthStore().isTeacher)
+
 export function getToken() {
   return useAuthStore().getToken()
 }

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Awaitable, Callable
 from typing import Any
 
@@ -87,6 +88,7 @@ class FallbackResourceWorkflow:
             topic=topic,
             profile_block=profile_block,
             module_key=module_key,
+            focus_hint=focus_hint,
             chunks=chunks,
             fallback_reason=fallback_reason,
         )
@@ -193,6 +195,20 @@ class FallbackResourceWorkflow:
         gen_meta["chapter_id"] = chapter_id_final
         gen_meta["collaboration_log"] = list(ctx.collaboration_log)
         gen_meta["agent_logs"] = list(ctx.agent_logs)
+        gen_meta["_evidence_version"] = 1
+        gen_meta["_content_hash"] = hashlib.sha256(safe_text.encode()).hexdigest()[:16] if safe_text else ""
+        gen_meta["fallback"] = True
+        gen_meta["fallback_reason"] = fallback_reason
+        gen_meta["generated_by"] = GENERATED_BY
+
+        from services.evidence.builder import build_evidence_from_meta
+        gen_meta["evidence"] = build_evidence_from_meta(
+            resource_id=0,
+            agent_name=GENERATED_BY,
+            meta={**gen_meta, "_content_for_hash": safe_text},
+            created_at="",
+            profile_summary="",
+        ).model_dump()
         ctx.update_from_resource(resource_type, safe_text)
         await _emit("persist", "Orchestrator", "done", gen_meta.get("status", ""))
         return title, safe_text, gen_meta

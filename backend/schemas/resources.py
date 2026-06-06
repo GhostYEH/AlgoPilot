@@ -8,8 +8,6 @@ ResourceType = Literal[
     "exercises",
     "code_case",
     "trace_animation",
-    "ppt",
-    "video_script",
     "reading",
 ]
 
@@ -22,7 +20,7 @@ RESOURCE_AGENT_META: dict[str, dict[str, str]] = {
     },
     "mindmap": {
         "agent_name": "GraphAgent",
-        "label": "知识图谱",
+        "label": "知识思维导图",
         "role": "拓扑专家",
     },
     "exercises": {
@@ -40,16 +38,6 @@ RESOURCE_AGENT_META: dict[str, dict[str, str]] = {
         "label": "轨迹动画",
         "role": "动画总导演",
     },
-    "ppt": {
-        "agent_name": "PptAgent",
-        "label": "PPT 胶片预览",
-        "role": "核心知识胶片导演",
-    },
-    "video_script": {
-        "agent_name": "VideoScriptAgent",
-        "label": "60 秒短视频脚本",
-        "role": "教学短视频分镜导演",
-    },
     "reading": {
         "agent_name": "ReadingAgent",
         "label": "分层拓展阅读",
@@ -57,15 +45,13 @@ RESOURCE_AGENT_META: dict[str, dict[str, str]] = {
     },
 }
 
-# 批量生成流水线（赛题展示视角：已有 5 类 + PPT/短视频/拓展阅读）
+# 批量生成流水线
 CORE_RESOURCE_PIPELINE: list[ResourceType] = [
     "document",
     "mindmap",
     "exercises",
     "code_case",
     "trace_animation",
-    "ppt",
-    "video_script",
     "reading",
 ]
 
@@ -73,7 +59,7 @@ PARALLEL_PHASES: list[list[ResourceType]] = [
     ["document"],
     ["mindmap", "exercises"],
     ["code_case"],
-    ["trace_animation", "ppt", "video_script", "reading"],
+    ["trace_animation", "reading"],
 ]
 
 
@@ -112,6 +98,10 @@ class GeneratedResourceItem(BaseModel):
     verification: dict | None = Field(
         default=None,
         description="防幻觉与内容安全校验证据（与 meta.verification 同步）",
+    )
+    explain: str = Field(
+        default="",
+        description="个性化推荐理由，结合画像维度、掌握度、OJ 表现等生成",
     )
 
 

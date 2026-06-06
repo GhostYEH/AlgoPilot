@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from collections.abc import AsyncIterator, Awaitable, Callable
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -51,6 +52,8 @@ from services.agents.template_fallback import (
 from services.orchestrator.fallback_workflow import fallback_resource_workflow
 from services.orchestrator.workflow import resource_workflow
 from services.safety.content_filter import content_filter
+
+logger = logging.getLogger(__name__)
 
 _persona = PersonaAgent()
 _tutor = TutorAgent()
@@ -123,7 +126,7 @@ def _profile_to_response(
                 for x in build_recent_evidence_items(db, user_id, limit=3)
             ]
         except Exception:
-            pass
+            logger.warning("构建画像证据链失败", exc_info=True)
     elif recent_raw:
         from schemas.persona import LearningEvidenceBrief
 
@@ -163,7 +166,7 @@ def _format_profile_block(
             "coding_ability": "代码实操能力",
             "learning_goals": "学习目标",
             "error_preference": "易错点偏好",
-            "grit_level": "抗挫折心理能力",
+            "grit_level": "抗挫折心理",
         }
         for key, label in labels.items():
             val = dims.get(key, "")
@@ -182,7 +185,7 @@ def _format_profile_block(
 
             return append_memory_to_profile_block(db, user_id, base)
         except Exception:
-            pass
+            logger.warning("追加学习记忆到画像块失败", exc_info=True)
     return base
 
 
@@ -302,10 +305,11 @@ class Orchestrator:
             )
             payload["_recent_evidence"] = build_recent_evidence_items(db, user.id, limit=3)
         except Exception:
+            logger.warning("构建随学随新证据失败", exc_info=True)
             payload["_update_reason"] = "随学随新：学习行为已同步至画像"
         row.summary = summary
         row.dimensions = payload
-        row.updated_at = datetime.utcnow()
+        row.updated_at = datetime.now(timezone.utc)
         db.commit()
         db.refresh(row)
         return _profile_to_response(row, db=db, user_id=user.id)
@@ -397,7 +401,7 @@ class Orchestrator:
                 payload["_recent_evidence"] = [x.model_dump() for x in recent_evidence]
         row.dimensions = payload
         row.chat_history = [{"role": h.role, "content": h.content} for h in history[-30:]]
-        row.updated_at = datetime.utcnow()
+        row.updated_at = datetime.now(timezone.utc)
         db.commit()
         db.refresh(row)
         return _profile_to_response(row, db=db, user_id=user.id)
@@ -456,13 +460,10 @@ class Orchestrator:
             "  ORCH --> RAG[KnowledgeRetriever]\n"
             "  RAG --> CONCEPT[ConceptAgent<br/>讲解文档]\n"
             "  CONCEPT -.摘要.-> GRAPH[GraphAgent<br/>Mermaid图谱]\n"
-            "  CONCEPT -.摘要.-> QUIZ[QuizAgent<br/>3道练习题]\n"
+            "  CONCEPT -.摘要.-> QUIZ[QuizAgent<br/>5道练习题]\n"
             "  QUIZ -.易错点.-> SCENARIO[ScenarioAgent<br/>剧本沙盒]\n"
             "  SCENARIO -.TODO框架.-> TRACE[TraceAgent<br/>轨迹动画JSON]\n"
-            "  CONCEPT -.核心提炼.-> PPT[PptAgent<br/>PPT胶片预览]\n"
-            "  CONCEPT -.认知风格.-> VIDEO[VideoScriptAgent<br/>60秒短视频脚本]\n"
             "  CONCEPT -.拓展方向.-> READ[ReadingAgent<br/>三层拓展阅读]\n"
-            "  VIDEO --> TTS[科大讯飞 TTS<br/>讲解音频试听]\n"
             "  CONCEPT --> VERIFY{ContentVerifier}\n"
             "  GRAPH --> VERIFY\n"
             "  QUIZ --> VERIFY\n"
@@ -525,7 +526,7 @@ class Orchestrator:
         row = db.get(LearningPathPlan, user.id)
         if row is None:
             return None
-        return _path_plan_response(row)
+        return _path_plan_response(row, db=db)
 
     async def replan_learning_path(
         self,
@@ -544,7 +545,7 @@ class Orchestrator:
 
             mastery_by_chapter = get_cached_mastery_by_chapter(db, user.id)
         except Exception:
-            pass
+            logger.warning("获取掌握度缓存失败", exc_info=True)
         plan_data = await _path.plan(
             profile_block=profile_block,
             request=body,
@@ -567,7 +568,7 @@ class Orchestrator:
             "modules": [m.model_dump() for m in body.modules],
             "remediation_inserted": bool(plan_data.get("remediation_inserted")),
         }
-        row.updated_at = datetime.utcnow()
+        row.updated_at = datetime.now(timezone.utc)
         db.commit()
         db.refresh(row)
         try:
@@ -584,8 +585,8 @@ class Orchestrator:
                 },
             )
         except Exception:
-            pass
-        return _path_plan_response(row)
+            logger.warning("发布路径调整事件失败", exc_info=True)
+        return _path_plan_response(row, db=db, profile_row=profile_row, mastery_by_chapter=mastery_by_chapter)
 
     async def evaluate_oj_struggle(
         self,
@@ -605,7 +606,7 @@ class Orchestrator:
 
                 chapter_id = chapter_id_for_module(load_manifest(course_id), body.module_key) or ""
             except Exception:
-                pass
+                logger.warning("获取章节ID失败", exc_info=True)
 
         error_pattern = (body.error_pattern or "").strip()
         error_pattern_label = ERROR_TYPE_LABELS.get(error_pattern, error_pattern or body.verdict)
@@ -652,7 +653,7 @@ class Orchestrator:
             memory_recorded = True
             memory_event_id = mem.id
         except Exception:
-            pass
+            logger.warning("记录受挫学习记忆失败", exc_info=True)
 
         mastery_updated = False
         mastery_update_summary = ""
@@ -680,7 +681,7 @@ class Orchestrator:
             if isinstance(path_adj, dict) and path_adj.get("reason"):
                 path_adjustment_suggestion = str(path_adj["reason"])
         except Exception:
-            pass
+            logger.warning("发布掌握度重算事件失败", exc_info=True)
 
         try:
             from services.mastery.mastery_service import MasteryService
@@ -700,7 +701,7 @@ class Orchestrator:
                 if overview.report.path_adjustment_suggestion:
                     path_adjustment_suggestion = overview.report.path_adjustment_suggestion
         except Exception:
-            pass
+            logger.warning("掌握度重算失败", exc_info=True)
 
         skill_id = body.skill_id or (skill_cards[0].id if skill_cards else "")
         recommended_resources = _recommended_resources(skill_id, body.module_key, chapter_id)
@@ -726,7 +727,7 @@ class Orchestrator:
                         description=card.description,
                     )
             except Exception:
-                pass
+                logger.warning("获取技能卡详情失败", exc_info=True)
 
         if struggle and rem_label and not path_adjustment_suggestion:
             path_adjustment_suggestion = f"LearningPathAgent：优先巩固「{rem_label}」"
@@ -832,7 +833,7 @@ class Orchestrator:
                 },
             )
         except Exception:
-            pass
+            logger.warning("发布资源生成事件失败", exc_info=True)
         return _resource_item(record)
 
     async def generate_resource_fallback(
@@ -896,6 +897,11 @@ class Orchestrator:
         limit: int = 6,
     ) -> list[GeneratedResourceItem]:
         """基于画像薄弱点、路径下一步与模块匹配推送资源。"""
+        from services.agents.explain_engine import (
+            build_explain_context,
+            generate_resource_explain,
+        )
+
         profile_row = db.get(StudentProfile, user.id)
         path_row = db.get(LearningPathPlan, user.id)
         weak_hint = ""
@@ -907,6 +913,14 @@ class Orchestrator:
         target_key = module_key
         if not target_key and path_row and path_row.next_module_key:
             target_key = path_row.next_module_key
+
+        mastery_by_chapter: dict[str, int] = {}
+        try:
+            from services.mastery.mastery_service import get_cached_mastery_by_chapter
+
+            mastery_by_chapter = get_cached_mastery_by_chapter(db, user.id)
+        except Exception:
+            logger.warning("获取掌握度缓存（资源推荐）失败", exc_info=True)
 
         rows = (
             db.query(GeneratedResource)
@@ -924,8 +938,6 @@ class Orchestrator:
             "mindmap",
             "code_case",
             "trace_animation",
-            "ppt",
-            "video_script",
             "reading",
         ]
 
@@ -948,7 +960,21 @@ class Orchestrator:
             return s
 
         ranked = sorted(rows, key=score, reverse=True)[:limit]
-        return [_resource_item(r) for r in ranked]
+        items = [_resource_item(r) for r in ranked]
+
+        for item in items:
+            res_mk = str((item.meta or {}).get("module_key", "")) or target_key
+            ctx = build_explain_context(
+                profile_row=profile_row,
+                path_row=path_row,
+                module_key=res_mk,
+                resource_type=item.resource_type,
+                is_next_module=(res_mk == (path_row.next_module_key if path_row else None)),
+                mastery_by_chapter=mastery_by_chapter,
+            )
+            item.explain = generate_resource_explain(ctx)
+
+        return items
 
     async def generate_resource_stream(
         self,
@@ -1106,7 +1132,7 @@ class Orchestrator:
           Phase 1: document            ← 无依赖
           Phase 2: mindmap + exercises ← 并行，均只依赖 document
           Phase 3: code_case           ← 依赖 exercises
-          Phase 4: trace_animation + ppt + video_script + reading ← 展示型资源并行
+          Phase 4: trace_animation + reading ← 展示型资源并行
 
         asyncio 协作式调度保证：
           PipelineContext 的 log() / update_from_resource() 均为纯同步方法，
@@ -1125,6 +1151,11 @@ class Orchestrator:
 
         yield _sse({
             "type": "progress",
+            "event_type": "accepted",
+            "agent_id": "Orchestrator",
+            "agent_name": "Orchestrator",
+            "message": "Orchestrator 已接收任务",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "step": 0,
             "total": total,
             "percent": 0,
@@ -1138,6 +1169,12 @@ class Orchestrator:
                 "status": "skipped",
                 "detail": batch_fallback_reason,
                 "percent": 0,
+                "event_type": "llm_check",
+                "agent_id": "Orchestrator",
+                "agent_name": "Orchestrator",
+                "message": batch_fallback_reason,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "severity": "warn",
             })
             yield _sse({
                 "type": "workflow",
@@ -1146,6 +1183,12 @@ class Orchestrator:
                 "status": "running",
                 "detail": "检测到 LLM 不可用，切换课程知识库模板生成",
                 "percent": 0,
+                "event_type": "fallback_mode",
+                "agent_id": TEMPLATE_FALLBACK_AGENT,
+                "agent_name": TEMPLATE_FALLBACK_AGENT,
+                "message": "检测到 LLM 不可用，切换课程知识库模板生成",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "severity": "warn",
             })
 
         profile_row = db.get(StudentProfile, user.id)
@@ -1218,7 +1261,19 @@ class Orchestrator:
 
             raw_results: list = []
             if is_parallel and len(coros) > 1:
-                raw_results = await asyncio.gather(*coros, return_exceptions=True)
+                gather_task = asyncio.ensure_future(asyncio.gather(*coros, return_exceptions=True))
+                while not gather_task.done():
+                    done, _ = await asyncio.wait({gather_task}, timeout=2.5)
+                    if done:
+                        break
+                    yield _sse({
+                        "type": "heartbeat",
+                        "event_type": "heartbeat",
+                        "message": "Agent 正在生成中…",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "percent": int(completed / total * 100),
+                    })
+                raw_results = gather_task.result()
             elif len(coros) == 1:
                 raw_results = [await coros[0]]
             elif len(coros) == 0:
@@ -1274,6 +1329,13 @@ class Orchestrator:
                         "error": str(error)[:300],
                     })
                     for ev in events:
+                        if ev.get("type") == "workflow":
+                            ev.setdefault("event_type", ev.get("stage", ""))
+                            ev.setdefault("agent_id", ev.get("agent", ""))
+                            ev.setdefault("agent_name", ev.get("agent", ""))
+                            ev.setdefault("message", ev.get("detail", ""))
+                            ev.setdefault("timestamp", datetime.now(timezone.utc).isoformat())
+                            ev.setdefault("severity", "info")
                         yield _sse(ev)
                     yield _sse({
                         "type": "error",
@@ -1286,6 +1348,12 @@ class Orchestrator:
                 for ev in events:
                     if ev.get("type") == "workflow":
                         ev["percent"] = pct
+                        ev.setdefault("event_type", ev.get("stage", ""))
+                        ev.setdefault("agent_id", ev.get("agent", ""))
+                        ev.setdefault("agent_name", ev.get("agent", ""))
+                        ev.setdefault("message", ev.get("detail", ""))
+                        ev.setdefault("timestamp", datetime.now(timezone.utc).isoformat())
+                        ev.setdefault("severity", "info")
                     yield _sse(ev)
 
                 new_collab = pipe_ctx.collaboration_log[emitted_collab_count:]
@@ -1317,17 +1385,59 @@ class Orchestrator:
         })
 
 
-def _path_plan_response(row: LearningPathPlan) -> LearningPathPlanResponse:
+def _path_plan_response(
+    row: LearningPathPlan,
+    *,
+    db: Session | None = None,
+    profile_row=None,
+    mastery_by_chapter: dict[str, int] | None = None,
+) -> LearningPathPlanResponse:
+    from services.agents.explain_engine import (
+        build_explain_context,
+        generate_path_step_explain,
+    )
+
     steps = [PathStepItem.model_validate(s) for s in (row.steps or [])]
     snapshot = row.progress_snapshot or {}
     remediation = bool(snapshot.get("remediation_inserted")) or any(
         s.is_remediation for s in steps
     )
+    next_key = row.next_module_key
+
+    if profile_row is None and db is not None:
+        try:
+            from models.db_models import StudentProfile
+
+            profile_row = db.get(StudentProfile, row.user_id)
+        except Exception:
+            logger.warning("获取画像行失败", exc_info=True)
+            profile_row = None
+
+    if mastery_by_chapter is None and db is not None:
+        try:
+            from services.mastery.mastery_service import get_cached_mastery_by_chapter
+
+            mastery_by_chapter = get_cached_mastery_by_chapter(db, row.user_id)
+        except Exception:
+            logger.warning("获取掌握度缓存（路径响应）失败", exc_info=True)
+            mastery_by_chapter = {}
+
+    for step in steps:
+        ctx = build_explain_context(
+            profile_row=profile_row,
+            module_key=step.module_key,
+            prerequisites=step.prerequisites,
+            is_remediation=step.is_remediation,
+            is_next_module=(step.module_key == next_key),
+            mastery_by_chapter=mastery_by_chapter,
+        )
+        step.explain = generate_path_step_explain(ctx)
+
     return LearningPathPlanResponse(
         agent_name="PlannerAgent",
         summary=row.summary or "",
         rationale=row.rationale or "",
-        next_module_key=row.next_module_key,
+        next_module_key=next_key,
         ordered_keys=list(row.ordered_keys or []),
         steps=steps,
         updated_at=row.updated_at.isoformat() if row.updated_at else None,

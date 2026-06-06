@@ -22,14 +22,23 @@ onMounted(() => {
   })
 })
 
+const _PENDING_VALUES = new Set(['待补充', '暂无', '未知'])
+
+const _LOW_MARKERS = ['零基础', '不会', '薄弱', '初学', '入门', '不太', '较差', '很少', '几乎没']
+const _HIGH_MARKERS = ['熟练', '扎实', '较强', '独立', '竞赛', 'ACM', '蓝桥', '能写', '较好', '深入']
+
 function scoreFor(key: keyof PersonaDimensions): number {
   const s = props.scores?.[key]
-  if (typeof s === 'number' && s >= 1) {
-    return Math.min(100, Math.round(s * 10))
+  if (typeof s === 'number' && s >= 1 && s <= 10) {
+    return Math.round(s * 10)
   }
   const t = (props.dimensions[key] || '').trim()
-  if (!t || t === '待补充') return 28
-  return Math.min(95, 40 + Math.min(t.length, 80))
+  if (!t || _PENDING_VALUES.has(t)) return 40
+  let score = 5
+  for (const m of _LOW_MARKERS) { if (t.includes(m)) score -= 1 }
+  for (const m of _HIGH_MARKERS) { if (t.includes(m)) score += 1 }
+  if (t.length > 80) score += 1
+  return Math.min(100, Math.max(10, Math.round(score * 10)))
 }
 
 const points = computed(() => {

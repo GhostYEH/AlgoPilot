@@ -204,3 +204,40 @@ class TraceBugDiagnoseResponse(BaseModel):
     detailed_analysis: str
     source: str = "llm"
     tutoring: OjTutoringPayload | None = None
+
+
+class VarChangeItem(BaseModel):
+    step_index: int
+    line: int
+    variable_name: str
+    before: str = ""
+    after: str = ""
+
+
+class TraceStepBrief(BaseModel):
+    step_index: int
+    line: int
+    changed_vars: list[str] = Field(default_factory=list)
+    var_summary: dict[str, str] = Field(default_factory=dict)
+    is_error_step: bool = False
+
+
+class TraceDiagnosisReport(BaseModel):
+    error_type: str = ""
+    failed_test_point: str = ""
+    key_variable_changes: list[VarChangeItem] = Field(default_factory=list)
+    error_step: TraceStepBrief | None = None
+    possible_cause: str = ""
+    fix_suggestion: str = ""
+    recommended_resources: list[RecommendedResourceHint] = Field(default_factory=list)
+    path_rearrange_triggered: bool = False
+    trace_steps: list[TraceStepBrief] = Field(default_factory=list)
+    source: str = "fallback"
+    tutoring: OjTutoringPayload | None = None
+
+
+class TraceReportRequest(BaseModel):
+    code: str
+    language: str = "python"
+    judge_verdict: str = ""
+    failed_cases: list[CaseResultOut] = Field(default_factory=list)

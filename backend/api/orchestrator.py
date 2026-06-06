@@ -321,6 +321,46 @@ def favorite_resource(
     return ResourceGenerateResponse(resource=item, agent_logs=_agent_logs_from_item(item))
 
 
+@router.get("/resources/{resource_id}/evidence")
+def get_resource_evidence(
+    resource_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    from models.db_models import GeneratedResource as GR
+    from services.evidence.builder import build_evidence_from_meta
+
+    row = (
+        db.query(GR)
+        .filter(GR.id == resource_id, GR.user_id == user.id)
+        .first()
+    )
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "资源不存在")
+
+    meta = dict(row.meta or {})
+    cached = meta.get("evidence")
+    if isinstance(cached, dict) and cached.get("resource_id") == row.id:
+        return cached
+
+    from models.db_models import StudentProfile
+    profile_row = db.get(StudentProfile, user.id)
+    profile_summary = profile_row.summary if profile_row else ""
+
+    evidence = build_evidence_from_meta(
+        resource_id=row.id,
+        agent_name=row.agent_name,
+        meta={**meta, "_content_for_hash": row.content or ""},
+        created_at=row.created_at.isoformat() if row.created_at else "",
+        profile_summary=profile_summary,
+    )
+    result = evidence.model_dump()
+    meta["evidence"] = result
+    row.meta = meta
+    db.commit()
+    return result
+
+
 @router.post("/resources/generate-all")
 async def generate_all_resources_stream(
     body: ResourceGenerateAllRequest,

@@ -143,7 +143,7 @@ flowchart TD
   ORCH --> RAG[KnowledgeRetriever]
   RAG --> CONCEPT[ConceptAgent<br/>讲解文档]
   CONCEPT -.摘要.-> GRAPH[GraphAgent<br/>Mermaid图谱]
-  CONCEPT -.摘要.-> QUIZ[QuizAgent<br/>3道练习题]
+  CONCEPT -.摘要.-> QUIZ[QuizAgent<br/>5道练习题]
   QUIZ -.易错点.-> SCENARIO[ScenarioAgent<br/>剧本沙盒]
   SCENARIO -.TODO框架.-> TRACE[TraceAgent<br/>轨迹动画JSON]
   CONCEPT -.核心提炼.-> PPT[PptAgent<br/>PPT胶片预览]
@@ -184,7 +184,7 @@ flowchart LR
 | 🏭 | **Generator Swarm** | 八类资源：`document` · `mindmap` · `exercises` · `code_case` · `trace_animation` · `ppt` · `video_script` · `reading`。 |
 | ↳ | `ConceptAgent` | Markdown 讲解文档（流式 SSE）。 |
 | ↳ | `GraphAgent` | Mermaid 知识图谱。 |
-| ↳ | `QuizAgent` | 个性化 **3 道**练习题。 |
+| ↳ | `QuizAgent` | 个性化 **5 道**练习题。 |
 | ↳ | `ScenarioAgent` | 剧情沙盒 + `// TODO` 代码框架（课程实操案例）。 |
 | ↳ | `TraceAgent` | 轨迹动画 JSON（对接 Trace Runner）。 |
 | ↳ | `PptAgent` / `VideoScriptAgent` / `ReadingAgent` | PPT 胶片、短视频脚本、分层拓展阅读。 |
@@ -280,21 +280,6 @@ Trace Engine 支撑 **《数据结构与算法》课内编程实践**：学生�
 
 ## 🚀 快速开始 (Quick Start)
 
-### Docker 一键演示（推荐 · 现场答辩）
-
-需安装 [Docker Desktop](https://www.docker.com/products/docker-desktop/)：
-
-```bash
-docker compose up --build
-```
-
-| 服务 | 地址 |
-|------|------|
-| 前端（Nginx） | http://localhost:8080 |
-| 后端 API | http://localhost:9000/api/health |
-
-> 大模型 Key 通过 `backend/.env` 配置；无 Key 时画像与资源生成进入模板/规则降级（不返回 503），OJ / Trace / 路径规划仍可用；配置 Key 后生成质量更高。
-
 ### 一键启动（Windows 本地开发）
 
 根目录双击：
@@ -313,7 +298,7 @@ pip install -r requirements-dev.txt
 pytest -q --cov=services
 ```
 
-GitHub Actions（`.github/workflows/ci.yml`）：后端 Ruff + pytest、前端 vue-tsc 构建、docker compose build。
+GitHub Actions（`.github/workflows/ci.yml`）：后端 Ruff + pytest、前端 vue-tsc 构建。
 
 ### 手动启动
 
@@ -374,7 +359,6 @@ npm run dev
 ```text
 A3/
 ├── README.md
-├── DEPLOY.md
 ├── start.bat
 ├── docs/
 │   └── competition/           # 竞赛材料（项目书等）

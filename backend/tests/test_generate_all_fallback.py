@@ -93,6 +93,29 @@ def test_template_fallback_unit():
         fallback_reason="单元测试",
     )
     assert title.startswith("[模板]")
-    assert "模板降级" in content
+    assert "domain_narrative" in content or "模板降级" in content
     assert meta["fallback"] is True
     assert meta["generated_by"] == "TemplateFallbackAgent"
+
+
+def test_template_fallback_mindmap_outputs_mindmap_syntax():
+    from services.agents.template_fallback import generate_fallback_resource
+    from services.knowledge.retriever import retriever
+
+    chunks = retriever.search("图 BFS DFS", module_key="graph", top_k=3)
+    _, content, meta = generate_fallback_resource(
+        "mindmap",
+        topic="图",
+        profile_block="",
+        module_key="graph",
+        focus_hint="侧重 BFS/DFS",
+        chunks=chunks,
+        fallback_reason="单元测试",
+    )
+
+    assert content.startswith("mindmap\n  root((")
+    assert "遍历算法" in content
+    assert "BFS" in content
+    assert "flowchart" not in content
+    assert "-->" not in content
+    assert meta["format"] == "mermaid"

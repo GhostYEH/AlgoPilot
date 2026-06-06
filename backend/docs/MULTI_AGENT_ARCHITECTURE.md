@@ -28,7 +28,7 @@
 | profiling | `ProfilingAgent` | 对话破冰、六维画像抽取、`patch-from-learning` | `Orchestrator.persona_*` |
 | resource | `ConceptAgent` | 讲解文档（Domain/Structure JSON） | `resource_type=document` |
 | resource | `GraphAgent` | Mermaid 知识图谱 | `mindmap` |
-| resource | `QuizAgent` | 3 道个性化题（选择+填空） | `exercises` |
+| resource | `QuizAgent` | 5 道个性化题（选择+填空） | `exercises` |
 | resource | `ScenarioAgent` | 剧本沙盒 + TODO 代码框架 | `code_case` |
 | resource | `TraceAgent` | 题解 Trace JSON（对接 `trace_runner`） | `trace_animation` |
 | path | `PlannerAgent` / `LearningPathAgent` | DAG 路径规划、受挫插入巩固节点 | `replan_learning_path` |

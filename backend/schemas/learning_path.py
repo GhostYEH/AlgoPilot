@@ -24,6 +24,10 @@ class PathStepItem(BaseModel):
     prerequisites: list[str] = Field(default_factory=list, description="前置 module_key 列表")
     difficulty: str = Field(default="标准", description="入门 | 标准 | 进阶")
     is_remediation: bool = Field(default=False, description="是否为学情降级临时插播节点")
+    explain: str = Field(
+        default="",
+        description="个性化推荐理由，结合画像维度、掌握度、OJ 表现等生成",
+    )
 
 
 class LearningPathPlanResponse(BaseModel):

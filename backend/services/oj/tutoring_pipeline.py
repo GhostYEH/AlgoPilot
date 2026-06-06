@@ -17,8 +17,6 @@ _RESOURCE_LABELS: dict[str, str] = {
     "exercises": "变式题单",
     "code_case": "代码沙盒",
     "trace_animation": "Trace 动画",
-    "ppt": "PPT 胶片",
-    "video_script": "短视频脚本",
     "reading": "拓展阅读",
 }
 
@@ -75,7 +73,7 @@ def _layered_hints(
         ],
     }
     return generic.get(error_type, [
-        f"L1：阅读诊断摘要，定位 Step 附近变量变化。",
+        "L1：阅读诊断摘要，定位 Step 附近变量变化。",
         f"L2：{analysis[:120] or '对照题目不变量检查逻辑。'}",
     ])[:3]
 

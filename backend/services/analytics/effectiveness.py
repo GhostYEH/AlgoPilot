@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any
 
 from pydantic import BaseModel, Field
-from sqlalchemy import desc, func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from models.db_models import StudentLearningMemory
@@ -117,6 +116,9 @@ def compute_effectiveness(
                 oj_attempts += 1
                 oj_failures += 1
                 latest_error_pattern = m.observed_error_pattern or m.failed_strategy or ""
+            elif et == "oj_submit_success":
+                oj_attempts += 1
+                oj_accepts += 1
             elif et in ("oj_diagnosis", "trace_diagnosis"):
                 trace_count += 1
                 if m.successful_hint:
@@ -124,6 +126,10 @@ def compute_effectiveness(
             elif et == "resource_complete":
                 resource_count += 1
             elif et == "section_done":
+                resource_count += 1
+            elif et == "quiz_complete":
+                resource_count += 1
+            elif et == "gamified_practice_complete":
                 resource_count += 1
             elif et == "evaluation_struggle":
                 pass
@@ -181,7 +187,7 @@ def compute_effectiveness(
     if not has_resource:
         missing_fields.append("resource_completion")
     if not has_mastery_change:
-        missing_fields.append("mastery_change")
+        missing_fields.append("mastery_report")
     if not has_trace:
         missing_fields.append("trace_diagnosis")
 

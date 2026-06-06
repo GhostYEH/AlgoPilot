@@ -235,3 +235,95 @@ def test_improvement_summary_not_empty(db: Session, test_user: User):
     assert len(result.rows) >= 1
     assert result.rows[0].improvement_summary != ""
     assert "掌握度" in result.rows[0].improvement_summary or "OJ" in result.rows[0].improvement_summary
+
+
+def test_oj_success_counted_in_attempts_and_accept_rate(db: Session, test_user: User):
+    svc = MemoryService(db)
+    svc.record_event(
+        test_user.id,
+        MemoryEventInput(
+            event_type="oj_submit_fail",
+            chapter_id="ch11-dynamic-programming",
+            skill_id="dp-state-design",
+            problem_slug="dp-prob-0",
+            observed_error_pattern="初始化错误",
+            mastery_delta=-1,
+            evidence_json={"verdict": "WA"},
+        ),
+    )
+    svc.record_event(
+        test_user.id,
+        MemoryEventInput(
+            event_type="oj_submit_success",
+            chapter_id="ch11-dynamic-programming",
+            skill_id="dp-state-design",
+            problem_slug="dp-prob-0",
+            mastery_delta=1,
+            evidence_json={"verdict": "AC"},
+        ),
+    )
+    svc.record_event(
+        test_user.id,
+        MemoryEventInput(
+            event_type="oj_submit_success",
+            chapter_id="ch11-dynamic-programming",
+            skill_id="dp-state-design",
+            problem_slug="dp-prob-1",
+            mastery_delta=1,
+            evidence_json={"verdict": "AC"},
+        ),
+    )
+    result = compute_effectiveness(db, test_user.id, chapter_id="ch11-dynamic-programming")
+    assert len(result.rows) >= 1
+    row = result.rows[0]
+    assert row.oj_attempts == 3
+    assert row.oj_failures == 1
+    assert row.oj_accept_rate > 0
+    assert "oj_records" not in result.missing_fields
+
+
+def test_quiz_and_gamified_counted_as_resource(db: Session, test_user: User):
+    svc = MemoryService(db)
+    svc.record_event(
+        test_user.id,
+        MemoryEventInput(
+            event_type="quiz_complete",
+            chapter_id="ch05-tree-binary-tree",
+            skill_id="tree-traversal",
+            mastery_delta=1,
+            evidence_json={"correct": True},
+        ),
+    )
+    svc.record_event(
+        test_user.id,
+        MemoryEventInput(
+            event_type="gamified_practice_complete",
+            chapter_id="ch05-tree-binary-tree",
+            skill_id="tree-traversal",
+            mastery_delta=1,
+        ),
+    )
+    result = compute_effectiveness(db, test_user.id, chapter_id="ch05-tree-binary-tree")
+    assert len(result.rows) >= 1
+    row = result.rows[0]
+    assert row.resource_completion_count == 2
+    assert "resource_completion" not in result.missing_fields
+
+
+def test_mastery_report_missing_field_name_consistent(db: Session, test_user: User):
+    svc = MemoryService(db)
+    svc.record_event(
+        test_user.id,
+        MemoryEventInput(
+            event_type="oj_submit_fail",
+            chapter_id="ch06-graph",
+            skill_id="graph-bfs-dfs",
+            observed_error_pattern="BFS 队列未去重",
+            mastery_delta=0,
+        ),
+    )
+    result = compute_effectiveness(db, test_user.id)
+    if result.partial:
+        assert "mastery_change" not in result.missing_fields
+        if "mastery_report" in result.missing_fields or "oj_records" in result.missing_fields:
+            pass

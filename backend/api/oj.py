@@ -5,6 +5,7 @@ import asyncio
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from api.deps import get_current_user, get_optional_user
+from core.config import settings
 from core.database import get_db
 from models.db_models import User
 from sqlalchemy.orm import Session
@@ -18,11 +19,13 @@ from schemas.oj import (
     CaseResultOut,
     JudgeRequest,
     JudgeResponse,
-    TraceRequest,
+    TraceDiagnosisReport,
+    TraceReportRequest,
     ProblemDetail,
     ProblemListItem,
     TraceNarrateRequest,
     TraceNarrationLine,
+    TraceRequest,
     TraceResponse,
     TraceStepOut,
     TraceVarSnapshot,
@@ -38,11 +41,13 @@ from services.oj.trace_demo_narration import generate_demo_narration
 from services.oj.trace_narration import generate_trace_narration
 from services.oj.ai_diagnosis import (
     analyze_complexity,
+    compress_trace_steps_to_text,
     diagnose_trace_bug,
     gate_code_before_dynamic_analysis,
     generate_edge_case,
     generate_trace_diagnosis,
     merge_diagnosis_narrations,
+    _fallback_trace_bug_diagnosis,
 )
 from services.oj.trace_runner import run_trace, run_trace_stdio
 from services.oj.stdio_io import case_input_text, case_output_text
@@ -752,3 +757,140 @@ def _judge(slug: str, body: JudgeRequest, *, mode: str) -> JudgeResponse:
             for c in summary.cases
         ],
     )
+
+
+@router.post("/problems/{slug}/trace-report", response_model=TraceDiagnosisReport)
+async def api_trace_report(
+    slug: str,
+    body: TraceReportRequest,
+    user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+):
+    from services.oj.trace_report import (
+        generate_trace_diagnosis_report,
+        generate_llm_cause_and_fix,
+        _build_demo_trace_steps,
+    )
+
+    lang = _normalize_lang(body.language)
+
+    try:
+        problem = get_public_problem(slug)
+        problem_full = get_problem(slug)
+    except ProblemNotFoundError:
+        raise HTTPException(404, "题目不存在") from None
+
+    cases = get_cases(slug, mode="run")
+    judge_verdict = body.judge_verdict or "WA"
+    failed_raw = [
+        {"index": c.index, "message": c.message, "input_preview": c.input_preview}
+        for c in body.failed_cases
+        if c.verdict != "AC"
+    ]
+
+    trace_steps: list[dict[str, Any]] = []
+    bug_step_index = 0
+    diagnosis_title = ""
+    detailed_analysis = ""
+    source = "fallback"
+
+    ast_gate = gate_code_before_dynamic_analysis(body.code, language=lang)
+    if ast_gate.passed and cases:
+        tl = min(problem.get("time_limit_ms", 3000), 5000)
+        trace_case = _pick_trace_case(cases)
+        try:
+            summary = _run_trace_for_case(
+                slug=slug,
+                user_code=body.code,
+                lang=lang,
+                problem=problem_full,
+                case=trace_case,
+                time_limit_ms=tl,
+            )
+            if summary.verdict == "OK" and summary.steps:
+                trace_steps = [
+                    {"line": s.line, "vars": {k: v.__dict__ if hasattr(v, "__dict__") else v for k, v in s.vars.items()}, "changed": s.changed}
+                    for s in summary.steps
+                ]
+        except Exception:
+            pass
+
+    if not trace_steps:
+        trace_steps = _build_demo_trace_steps(body.code)
+        source = "demo"
+
+    compressed_lines, _ = compress_trace_steps_to_text(trace_steps)
+
+    if settings.llm_configured and trace_steps and compressed_lines:
+        diag = await diagnose_trace_bug(
+            (problem.get("description") or "")[:2000],
+            body.code,
+            trace_steps,
+        )
+        bug_step_index = int(diag.get("bug_step_index") or 0)
+        diagnosis_title = str(diag.get("diagnosis_title") or "")
+        detailed_analysis = str(diag.get("detailed_analysis") or "")
+        source = diag.get("source", "llm")
+
+        llm_cause, llm_fix = await generate_llm_cause_and_fix(
+            body.code, trace_steps, judge_verdict, bug_step_index,
+        )
+        if llm_cause:
+            detailed_analysis = llm_cause
+        if llm_fix:
+            diagnosis_title = llm_fix
+    else:
+        fallback = _fallback_trace_bug_diagnosis(trace_steps, compressed_lines)
+        bug_step_index = int(fallback.get("bug_step_index") or 0)
+        diagnosis_title = str(fallback.get("diagnosis_title") or "")
+        detailed_analysis = str(fallback.get("detailed_analysis") or "")
+        source = fallback.get("source", "fallback")
+
+    tutoring = apply_oj_tutoring(
+        db,
+        user,
+        slug=slug,
+        problem=problem,
+        bug_step_index=bug_step_index,
+        diagnosis_title=diagnosis_title,
+        detailed_analysis=detailed_analysis,
+        judge_verdict=judge_verdict,
+        code=body.code,
+    )
+
+    report = generate_trace_diagnosis_report(
+        user_code=body.code,
+        judge_verdict=judge_verdict,
+        failed_cases=failed_raw,
+        trace_steps=trace_steps,
+        bug_step_index=bug_step_index,
+        diagnosis_title=diagnosis_title,
+        detailed_analysis=detailed_analysis,
+        problem=problem,
+        slug=slug,
+        tutoring=tutoring,
+        source=source,
+    )
+
+    if user:
+        try:
+            from services.events.event_bus import event_bus
+
+            event_bus.publish(
+                db,
+                event_type="on_trace_diagnosed",
+                user_id=user.id,
+                payload={
+                    "problem_slug": slug,
+                    "diagnosis": {
+                        "bug_step_index": bug_step_index,
+                        "diagnosis_title": diagnosis_title,
+                        "source": source,
+                    },
+                    "source": "trace_report",
+                },
+            )
+        except Exception:
+            pass
+
+    return report

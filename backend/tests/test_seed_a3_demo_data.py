@@ -50,7 +50,9 @@ def test_seed_idempotent_memory_and_resource_counts(db: Session):
     assert first.memories_count == second.memories_count
     assert first.resources_count == second.resources_count
     assert first.memories_count >= 8
-    assert first.resources_count == 3
+    assert first.resources_count == 6
+    assert first.evaluation_count >= 1
+    assert first.replan_count >= 1
     assert first.mastery_report_id
     assert first.recommended_next_route.startswith("/")
 

@@ -15,6 +15,7 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     email: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True)
     hashed_password: Mapped[str] = mapped_column(String(255))
+    role: Mapped[str] = mapped_column(String(16), default="student", server_default="student")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     learning_progress: Mapped[LearningProgress | None] = relationship(

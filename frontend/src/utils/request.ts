@@ -51,18 +51,18 @@ service.interceptors.response.use(
 
     if (status === 401) {
       if (path === '/login' || path === '/register') {
-        ElMessage.error(formatDetail())
+        ElMessage.error({ message: formatDetail(), offset: 60 })
         return Promise.reject(error)
       }
       localStorage.removeItem(ACCESS_TOKEN_KEY)
       localStorage.removeItem(USER_JSON_KEY)
       clearRefs()
-      ElMessage.warning('登录已过期，请重新登录')
+      ElMessage.warning({ message: '登录已过期，请重新登录', offset: 60 })
       void router.replace({ name: 'login', query: { redirect: router.currentRoute.value.fullPath } })
       return Promise.reject(error)
     }
 
-    ElMessage.error(formatDetail())
+    ElMessage.error({ message: formatDetail(), offset: 60 })
     return Promise.reject(error)
   },
 )

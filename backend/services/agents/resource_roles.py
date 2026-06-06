@@ -35,7 +35,6 @@ class PersonaHints:
             "学习目标": "learning_goals",
             "易错点偏好": "error_preference",
             "抗挫折心理": "grit_level",
-            "抗挫折心理能力": "grit_level",
             # 兼容旧标签
             "薄弱点": "error_preference",
             "学习节奏": "grit_level",
@@ -146,7 +145,8 @@ def _domain_structure_system_preamble(*, agent_label: str, hints: PersonaHints) 
 ## 绝对禁令
 - domain_narrative 内：**禁止** 出现任何编程语言、代码片段、伪代码、变量名、API、复杂度符号、数据结构/算法专有名词（如数组、链表、栈、队列、哈希、堆、图、指针、动态规划等）。
 - structure_logic 内：**禁止** 出现故事情节、角色对白、世界观设定；只用计算机科学学术语言。
-- 输出必须是 **唯一 JSON 对象**，不要用 markdown 代码围栏包裹。"""
+- 输出必须是 **唯一 JSON 对象**，不要用 markdown 代码围栏包裹。
+- **禁止** 在输出中包含知识库引用标注（如 `依据知识库`、`course:`、`---` 分隔线等），仅输出纯 JSON。"""
 
 
 def _normalize_domain_structure_payload(
@@ -169,8 +169,20 @@ def _normalize_domain_structure_payload(
     if scenario:
         domain.setdefault("mission", str(domain.get("mission") or "在叙事中完成核心挑战"))
     else:
-        structure.setdefault("learning_objectives", structure.get("learning_objectives") or [])
-        structure.setdefault("pitfalls", structure.get("pitfalls") or [])
+        lo = structure.get("learning_objectives")
+        if not isinstance(lo, list) or not lo:
+            structure["learning_objectives"] = ["理解核心算法思想", "掌握复杂度分析"]
+        pitfalls = structure.get("pitfalls")
+        if not isinstance(pitfalls, list) or not pitfalls:
+            structure["pitfalls"] = ["边界条件", "复杂度误判"]
+
+    if scenario:
+        sh = structure.get("step_hints")
+        if not isinstance(sh, list) or len(sh) < 3:
+            structure["step_hints"] = (sh if isinstance(sh, list) else []) + [
+                "先明确输入输出" for _ in range(3 - (len(sh) if isinstance(sh, list) else 0))
+            ]
+            structure["step_hints"] = structure["step_hints"][:3]
 
     structure.setdefault("data_structures", structure.get("data_structures") or [])
     if scenario and not str(structure.get("code_framework") or "").strip():
@@ -197,6 +209,389 @@ def _normalize_domain_structure_payload(
 
 def _serialize_domain_structure(data: dict[str, Any]) -> str:
     return json.dumps(data, ensure_ascii=False, indent=2)
+
+
+def _convert_flowchart_to_mindmap(flowchart: str, hints: PersonaHints) -> str:
+    edges: list[tuple[str, str]] = []
+    label_map: dict[str, str] = {}
+    for line in flowchart.splitlines()[1:]:
+        s = line.strip()
+        if not s or s.startswith("%%") or s.startswith("---"):
+            continue
+        m = re.match(r'(\w+)\["?([^"\]]+)"?\]\s*-->\s*(\w+)\["?([^"\]]+)"?\]', s)
+        if m:
+            label_map[m.group(1)] = m.group(2)
+            label_map[m.group(3)] = m.group(4)
+            edges.append((m.group(1), m.group(3)))
+            continue
+        m = re.match(r'(\w+)\(([^)]+)\)\s*-->\s*(\w+)\["?([^"\]]+)"?\]', s)
+        if m:
+            label_map[m.group(1)] = m.group(2)
+            label_map[m.group(3)] = m.group(4)
+            edges.append((m.group(1), m.group(3)))
+            continue
+        m = re.match(r'(\w+)\["?([^"\]]+)"?\]\s*-->\s*(\w+)\(([^)]+)\)', s)
+        if m:
+            label_map[m.group(1)] = m.group(2)
+            label_map[m.group(3)] = m.group(4)
+            edges.append((m.group(1), m.group(3)))
+            continue
+        m = re.match(r'(\w+)\s*-->\s*(\w+)', s)
+        if m:
+            edges.append((m.group(1), m.group(2)))
+            continue
+        m = re.match(r'(\w+)\["?([^"\]]+)"?\]', s)
+        if m:
+            label_map[m.group(1)] = m.group(2)
+            continue
+        m = re.match(r'(\w+)\(([^)]+)\)', s)
+        if m:
+            label_map[m.group(1)] = m.group(2)
+    children_of: dict[str, list[str]] = {}
+    all_children: set[str] = set()
+    for src, tgt in edges:
+        children_of.setdefault(src, []).append(tgt)
+        all_children.add(tgt)
+    roots = [n for n in label_map if n not in all_children]
+    if not roots and edges:
+        roots = [edges[0][0]]
+    if not roots:
+        return _build_fallback_mindmap(hints.learning_goals[:20] or "学习主题")
+    root = roots[0]
+    root_label = label_map.get(root, root)
+    lines = [f"mindmap", f"  root(({root_label}))"]
+    visited: set[str] = set()
+
+    def _walk(node: str, depth: int) -> None:
+        if node in visited:
+            return
+        visited.add(node)
+        for child in children_of.get(node, []):
+            label = label_map.get(child, child)
+            indent = "    " * (depth + 1)
+            lines.append(f"{indent}{label}")
+            _walk(child, depth + 1)
+
+    _walk(root, 0)
+    return "\n".join(lines)
+
+
+def _build_fallback_mindmap(topic: str) -> str:
+    return (
+        f"mindmap\n"
+        f"  root(({topic}))\n"
+        f"    核心概念\n"
+        f"    关键算法\n"
+        f"    应用场景"
+    )
+
+
+def _clean_mindmap_label(text: str, max_len: int = 10) -> str:
+    s = text.strip()
+    s = re.sub(r"\*\*([^*]+)\*\*", r"\1", s)
+    s = re.sub(r"\*([^*]+)\*", r"\1", s)
+    s = re.sub(r'^\d+[\.\)、]\s*', '', s)
+    s = re.sub(r'^ch\d+[-]?\s*', '', s)
+    parts = re.split(r'[:：]', s, maxsplit=1)
+    if len(parts) == 2:
+        after = parts[1].strip()
+        before = parts[0].strip()
+        has_chinese_after = bool(re.search(r'[\u4e00-\u9fff]', after))
+        if has_chinese_after and len(after) <= 12:
+            s = after
+        else:
+            s = before
+    s = re.sub(r'^[a-z]+[-]?', '', s)
+    s = re.sub(r'[。，、；！？\.\!\?\;\,（）()/／\s]+', '', s)
+    s = s.strip()
+    if len(s) > max_len:
+        s = s[:max_len]
+    return s
+
+
+def _fix_mindmap_syntax(text: str, fallback_topic: str = "学习主题") -> str:
+    lines = text.splitlines()
+    if not lines or not lines[0].strip().startswith("mindmap"):
+        return _build_fallback_mindmap(fallback_topic)
+
+    has_root = False
+    fixed_lines = ["mindmap"]
+    for line in lines[1:]:
+        stripped = line.strip()
+        if not stripped:
+            continue
+
+        if stripped.startswith("root"):
+            label = re.sub(r'^root\s*[\(\[\{]+', '', stripped)
+            label = re.sub(r'[\)\]\}]+$', '', label)
+            label = _clean_mindmap_label(label.strip(), max_len=24)
+            if not label:
+                label = fallback_topic
+            if not has_root:
+                fixed_lines.append(f"  root(({label}))")
+                has_root = True
+            else:
+                fixed_lines.append(f"    {label}")
+            continue
+
+        raw_indent = len(line) - len(line.lstrip())
+        indent = max(4, raw_indent if raw_indent > 2 else 4)
+        cleaned = _clean_mindmap_label(stripped)
+        if not cleaned:
+            continue
+        fixed_lines.append(" " * indent + cleaned)
+
+    if not has_root:
+        fixed_lines.insert(1, f"  root(({fallback_topic}))")
+
+    if len(fixed_lines) < 3:
+        return _build_fallback_mindmap(fallback_topic)
+
+    return "\n".join(fixed_lines)
+
+
+def _sanitize_mermaid(text: str) -> str:
+    text = _strip_kb_annotations(text)
+    lines = text.splitlines()
+    if not lines:
+        return text
+    header = lines[0].strip()
+    is_flowchart = header.startswith("flowchart") or header.startswith("graph")
+    is_mindmap = header.startswith("mindmap")
+    cleaned = [lines[0]]
+    for line in lines[1:]:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("---") or stripped.startswith("==="):
+            continue
+        if stripped.startswith("%%"):
+            if is_mindmap:
+                continue
+            cleaned.append(line)
+            continue
+        if re.match(r"^\*\*", stripped):
+            continue
+        if "course:" in stripped:
+            continue
+        if "依据知识库" in stripped:
+            continue
+        if re.search(r"内容校验|安全审查|校验详情|条知识库依据", stripped):
+            continue
+        s = re.sub(r"\*\*([^*]+)\*\*", r"\1", stripped)
+        s = re.sub(r"\*([^*]+)\*", r"\1", s)
+        s = re.sub(r"---+\s*依据知识库.*", "", s)
+        s = re.sub(r"---+\s*\*\*依据知识库.*", "", s)
+        if is_flowchart:
+            s = s.replace("---", "-->")
+        if not s.strip():
+            continue
+        if not re.match(r"^[\w\u4e00-\u9fff()（）、，\[\]{}:：\s]", s) and not s.startswith("}") and not s.startswith("]"):
+            continue
+        if is_mindmap:
+            indent = len(line) - len(line.lstrip())
+            cleaned.append(" " * indent + s)
+        else:
+            cleaned.append(s)
+    result = "\n".join(cleaned)
+    if is_flowchart and not any("-->" in ln for ln in cleaned[1:]):
+        return text
+    return result
+
+
+_GENERIC_MINDMAP_LABELS = {"课程定位", "章节一览", "平台模块映射", "与平台模块映射", "实验项目"}
+
+_FOCUS_MINDMAP_PROFILES: dict[str, list[tuple[str, list[str]]]] = {
+    "双指针": [
+        ("核心思想", ["左右指针", "快慢指针", "窗口边界"]),
+        ("适用场景", ["有序数组", "链表判环", "滑动窗口"]),
+        ("操作要点", ["单调移动", "边界收缩", "去重处理"]),
+        ("典型题型", ["两数之和", "三数之和", "最小覆盖子串"]),
+        ("复杂度", ["线性扫描", "常数空间"]),
+        ("易错点", ["越界条件", "重复元素", "指针初值"]),
+    ],
+    "图": [
+        ("图的表示", ["邻接矩阵", "邻接表", "边集数组"]),
+        ("遍历算法", ["BFS", "DFS", "拓扑排序"]),
+        ("关键结构", ["队列", "递归栈", "访问标记", "优先队列"]),
+        ("最短路径", ["Dijkstra", "Floyd", "Bellman-Ford"]),
+        ("最小生成树", ["Prim", "Kruskal", "并查集"]),
+        ("典型问题", ["连通性", "环检测", "二分图"]),
+        ("复杂度", ["点边规模", "存储开销"]),
+    ],
+    "栈与队列": [
+        ("受限线性表", ["栈", "队列", "双端队列"]),
+        ("核心操作", ["入栈出栈", "入队出队", "取队首"]),
+        ("典型应用", ["括号匹配", "BFS", "单调队列", "表达式求值"]),
+        ("实现细节", ["顺序存储", "链式存储", "循环队列", "共享栈"]),
+        ("扩展结构", ["单调栈", "优先队列", "阻塞队列"]),
+        ("易错点", ["空栈判断", "队满条件", "溢出处理"]),
+    ],
+    "排序": [
+        ("比较排序", ["冒泡排序", "选择排序", "插入排序"]),
+        ("高效排序", ["快速排序", "归并排序", "堆排序"]),
+        ("非比较排序", ["计数排序", "桶排序", "基数排序"]),
+        ("复杂度对比", ["最好情况", "最坏情况", "空间开销"]),
+        ("稳定性", ["稳定排序", "不稳定排序", "选择依据"]),
+        ("易错点", ["边界条件", "递归深度", "分区策略"]),
+    ],
+    "查找": [
+        ("线性查找", ["顺序查找", "哨兵查找"]),
+        ("二分查找", ["标准二分", "左边界", "右边界"]),
+        ("树表查找", ["BST", "AVL", "红黑树", "B树"]),
+        ("哈希查找", ["哈希函数", "冲突处理", "装填因子"]),
+        ("性能对比", ["时间复杂度", "空间开销", "适用场景"]),
+        ("易错点", ["溢出中点", "边界收缩", "死循环"]),
+    ],
+    "树": [
+        ("基本概念", ["根节点", "叶子节点", "深度与高度"]),
+        ("二叉树", ["满二叉树", "完全二叉树", "BST"]),
+        ("遍历方式", ["前序", "中序", "后序", "层序"]),
+        ("平衡树", ["AVL旋转", "红黑树", "B树"]),
+        ("应用场景", ["表达式树", "哈夫曼树", "并查集"]),
+        ("易错点", ["空指针", "递归终止", "旋转方向"]),
+    ],
+    "链表": [
+        ("基本结构", ["单链表", "双链表", "循环链表"]),
+        ("核心操作", ["头插法", "尾插法", "删除节点", "查找"]),
+        ("经典问题", ["反转链表", "合并链表", "环检测", "中间节点"]),
+        ("技巧", ["虚拟头节点", "快慢指针", "递归法"]),
+        ("与其他结构", ["与数组对比", "与栈队列", "跳表"]),
+        ("易错点", ["空指针", "断链", "头尾处理"]),
+    ],
+    "递归与分治": [
+        ("核心思想", ["递归定义", "递推关系", "边界条件"]),
+        ("分治策略", ["问题分解", "子问题合并", "减治法"]),
+        ("经典问题", ["归并排序", "快速排序", "二分查找"]),
+        ("递归优化", ["尾递归", "记忆化", "剪枝"]),
+        ("复杂度", ["主定理", "递推方程", "空间栈开销"]),
+        ("易错点", ["栈溢出", "重复计算", "边界遗漏"]),
+    ],
+    "动态规划": [
+        ("核心思想", ["最优子结构", "重叠子问题", "状态转移"]),
+        ("设计步骤", ["定义状态", "推导方程", "确定边界", "选择遍历序"]),
+        ("经典模型", ["背包问题", "最长子序列", "区间DP", "树形DP"]),
+        ("优化技巧", ["滚动数组", "状态压缩", "单调队列优化"]),
+        ("与贪心区别", ["局部最优", "全局最优", "决策依赖"]),
+        ("易错点", ["状态定义", "初始化", "遍历顺序"]),
+    ],
+    "字符串": [
+        ("基本操作", ["匹配", "查找", "替换", "切片"]),
+        ("模式匹配", ["暴力匹配", "KMP", "Rabin-Karp"]),
+        ("高级算法", ["Trie树", "AC自动机", "后缀数组"]),
+        ("编码问题", ["字符集", "Unicode", "UTF-8"]),
+        ("典型问题", ["回文串", "最长公共子串", "正则匹配"]),
+        ("易错点", ["空串处理", "越界访问", "编码长度"]),
+    ],
+    "哈希表": [
+        ("核心概念", ["哈希函数", "键值映射", "装填因子"]),
+        ("冲突处理", ["链地址法", "开放定址法", "再哈希法"]),
+        ("哈希函数设计", ["除留余数法", "数字分析法", "平方取中法"]),
+        ("性能分析", ["平均查找长度", "最坏情况", "扩容策略"]),
+        ("应用场景", ["字典", "缓存", "去重", "计数"]),
+        ("易错点", ["越界访问", "死循环探测", "扩容时机"]),
+    ],
+}
+
+
+def _mindmap_focus_label(topic: str, module_key: str = "", focus_hint: str = "") -> str:
+    source = " ".join([focus_hint, module_key, topic])
+    if re.search(r"双指针|two\s*pointers|对撞指针|快慢指针|sliding\s*window|滑动窗口", source, re.I):
+        return "双指针"
+    if re.search(r"stack|queue|栈|队列", source, re.I):
+        return "栈与队列"
+    if re.search(r"graph|bfs|dfs|图论|图\b|图与|深度优先|广度优先|最短路径|拓扑排序", source, re.I):
+        return "图"
+    if re.search(r"sort|排序|冒泡|快排|归并|堆排序", source, re.I):
+        return "排序"
+    if re.search(r"string|字符串|KMP|Trie|模式匹配", source, re.I):
+        return "字符串"
+    if re.search(r"tree|树\b|二叉树|搜索树|BST|AVL|红黑树|B树|哈夫曼", source, re.I):
+        return "树"
+    if re.search(r"search|查找|搜索|二分|binary\s*search", source, re.I):
+        return "查找"
+    if re.search(r"linked\s*list|链表|单链表|双链表", source, re.I):
+        return "链表"
+    if re.search(r"recursion|递归|分治|divide\s*and\s*conquer", source, re.I):
+        return "递归与分治"
+    if re.search(r"dynamic\s*programming|动态规划|\bDP\b|背包|子序列", source, re.I):
+        return "动态规划"
+    if re.search(r"hash|哈希|散列|hashmap|hashtable", source, re.I):
+        return "哈希表"
+    if focus_hint:
+        return _clean_mindmap_label(focus_hint, max_len=24) or _clean_mindmap_label(topic, max_len=24)
+    if module_key:
+        return _clean_mindmap_label(module_key, max_len=24) or _clean_mindmap_label(topic, max_len=24)
+    return _clean_mindmap_label(topic, max_len=24) or "学习主题"
+
+
+def _labels_from_knowledge_chunks(chunks: list[KnowledgeChunk], limit: int = 16) -> list[str]:
+    labels: list[str] = []
+    seen: set[str] = set()
+    for ch in chunks:
+        title = str(ch.get("title") or "")
+        title_tail = re.split(r"[·:：]", title)[-1].strip()
+        candidates = [title_tail]
+        body = str(ch.get("content") or "")
+        for part in re.split(r"\n+|。|；|;", body):
+            part = part.strip().lstrip("-•*0123456789.、)） ").strip()
+            if part:
+                candidates.append(part)
+            if len(candidates) >= 6:
+                break
+        for candidate in candidates:
+            label = _clean_mindmap_label(candidate)
+            if not label or label in seen or label in _GENERIC_MINDMAP_LABELS:
+                continue
+            seen.add(label)
+            labels.append(label)
+            if len(labels) >= limit:
+                return labels
+    return labels
+
+
+def _build_knowledge_mindmap(
+    *,
+    topic: str,
+    module_key: str = "",
+    focus_hint: str = "",
+    chunks: list[KnowledgeChunk],
+) -> str:
+    root = _mindmap_focus_label(topic, module_key, focus_hint)
+    lines = ["mindmap", f"  root(({root}))"]
+    profile = _FOCUS_MINDMAP_PROFILES.get(root)
+    if profile:
+        for branch, children in profile:
+            lines.append(f"    {branch}")
+            for child in children:
+                lines.append(f"      {child}")
+        return "\n".join(lines)
+
+    chunk_labels = _labels_from_knowledge_chunks(chunks, limit=16)
+    branches = [
+        ("核心概念", chunk_labels[:4] or ["基本定义", "抽象模型", "关键术语"]),
+        ("算法与操作", chunk_labels[4:7] or ["操作流程", "核心步骤", "适用条件"]),
+        ("数据结构", chunk_labels[7:10] or ["存储方式", "组织形式"]),
+        ("应用场景", chunk_labels[10:13] or ["典型应用", "扩展场景"]),
+        ("分析与易错", chunk_labels[13:16] or ["复杂度分析", "边界条件", "常见错误"]),
+    ]
+    for branch, children in branches:
+        lines.append(f"    {branch}")
+        for child in children:
+            lines.append(f"      {child}")
+    return "\n".join(lines)
+
+
+def _mindmap_needs_rebuild(content: str, *, focus_label: str) -> bool:
+    labels = [ln.strip() for ln in content.splitlines()[1:] if ln.strip()]
+    if len(labels) < 10:
+        return True
+    joined = "\n".join(labels)
+    if any(label in joined for label in _GENERIC_MINDMAP_LABELS):
+        return True
+    if focus_label and focus_label not in joined and focus_label not in content.splitlines()[1]:
+        return True
+    return False
 
 
 class ResourceRoleAgent(ABC):
@@ -263,7 +658,8 @@ class ResourceRoleAgent(ABC):
             temperature=self.temperature(),
             max_tokens=self.max_tokens(),
         )
-        content = self.normalize_output(content.strip(), hints=hints)
+        content = _strip_kb_annotations(content.strip())
+        content = self.normalize_output(content, hints=hints)
         title = self.build_title(topic, module_key)
         meta = {
             "format": self.output_format(),
@@ -338,7 +734,7 @@ class ConceptAgent(ResourceRoleAgent):
 
     def normalize_output(self, raw: str, *, hints: PersonaHints) -> str:
         data = _parse_json_object(raw)
-        if data.get("domain_narrative") and data.get("structure_logic"):
+        if isinstance(data.get("domain_narrative"), dict) and isinstance(data.get("structure_logic"), dict):
             normalized = _normalize_domain_structure_payload(
                 data,
                 fallback_topic=hints.learning_goals[:32] or "算法主题",
@@ -346,7 +742,6 @@ class ConceptAgent(ResourceRoleAgent):
             )
             return _serialize_domain_structure(normalized)
 
-        # 兼容旧版 Markdown：拆成双域
         legacy_story = raw.strip()
         normalized = _normalize_domain_structure_payload(
             {
@@ -373,79 +768,179 @@ class ConceptAgent(ResourceRoleAgent):
 
 
 class GraphAgent(ResourceRoleAgent):
-    """拓扑专家：生成 Mermaid 知识点思维导图。"""
+    """拓扑专家：生成 Mermaid 思维导图。"""
 
     agent_id = "GraphAgent"
     display_name = "GraphAgent"
-    role = "拓扑专家 · Mermaid 知识图谱"
+    role = "拓扑专家 · 知识思维导图"
 
     def system_prompt(self, hints: PersonaHints) -> str:
-        return f"""你是 GraphAgent（拓扑专家）。根据核心知识点输出 **Mermaid.js** 思维导图代码。
+        return f"""你是 GraphAgent（拓扑专家）。根据核心知识点输出 **Mermaid mindmap** 思维导图代码。
 
 ## 个性化要求
 - 知识基础：{hints.knowledge_base or '大一计科'}
 - 学习目标：{hints.learning_goals or '掌握本主题知识拓扑'}
 - 若 error_preference 含具体知识点，将其作为子节点高亮标注
 
+## 生成侧重
+- 若协作上下文（focus_hint）指定了侧重方向，必须将该方向作为核心分支展开，节点数占比不低于 40%
+- 侧重方向的子节点应深入 2～3 层，覆盖定义、原理、操作、应用、易错等维度
+- 非侧重方向作为辅助分支，保持 1～2 层即可
+
+## 知识维度（每个主题至少覆盖以下 5 个维度中的 4 个）
+1. **核心概念**：基本定义、抽象模型、关键术语
+2. **算法与操作**：核心算法步骤、操作流程、关键技巧
+3. **数据结构**：涉及的数据结构、存储方式、组织形式
+4. **应用场景**：典型应用、实际问题、扩展场景
+5. **分析与易错**：时间/空间复杂度、边界条件、常见错误
+
 ## 输出规范
-- 只输出 Mermaid 源码，不要 markdown 代码块围栏
-- 使用 flowchart TD 或 mindmap 语法
-- 8～15 个节点，中文标签，与知识库一致
+- 只输出 Mermaid mindmap 源码，不要 markdown 代码块围栏
+- 必须使用 `mindmap` 语法（不是 flowchart / graph），确保渲染为放射状思维导图
+- 15～30 个节点（含根节点），中文标签，与知识库一致
+- 深度 3～4 层，确保知识拓扑有足够细节
+- **禁止** 在输出中包含知识库引用标注（如 `依据知识库`、`course:`、`---` 分隔线等）
+- **禁止** 在节点标签中使用 `**粗体**` 或 `*斜体*` markdown 语法
+- **禁止** 在节点标签中使用冒号 `:`、句号 `。`、编号 `1.` 等特殊符号
+- **禁止** 把知识库原文长句塞入节点，必须提炼为 2～8 字短标签
+- 根节点使用圆形 `((主题名))`，其余节点只用纯文字，不加括号修饰
 - 示例：
-flowchart TD
-  root["哈希表"] --> collision["冲突处理"]
-  collision --> chaining["链地址法"]"""
+mindmap
+  root((哈希表))
+    核心概念
+      哈希函数
+      冲突
+      装填因子
+    冲突处理
+      链地址法
+      开放定址法
+        线性探测
+        二次探测
+    哈希函数设计
+      除留余数法
+      数字分析法
+    性能分析
+      平均查找长度
+      最坏情况
+    应用场景
+      字典
+      缓存
+    易错点
+      越界访问
+      死循环探测"""
 
     def temperature(self) -> float:
-        return 0.45
+        return 0.4
 
     def max_tokens(self) -> int:
-        return 1200
+        return 2000
 
     def output_format(self) -> str:
         return "mermaid"
+
+    def build_user_prompt(
+        self,
+        *,
+        topic: str,
+        module_key: str,
+        hints: PersonaHints,
+        focus_hint: str,
+        knowledge_block: str,
+    ) -> str:
+        parts = [
+            f"课程主题：{topic}",
+            f"关联模块：{module_key or '通用'}",
+            f"学生画像：\n{hints.personalization_block()}",
+            knowledge_block,
+        ]
+        if focus_hint:
+            parts.append(
+                f"协作上下文（生成侧重）：\n{focus_hint}\n"
+                "请将上述侧重方向作为思维导图的核心分支，深入展开其子知识点。"
+            )
+        parts.append(
+            "请直接输出内容，不要解释你是 AI。\n"
+            "要求：节点总数 15～30 个，深度 3～4 层，覆盖核心概念、算法操作、数据结构、应用场景、分析易错等维度。"
+        )
+        return "\n\n".join(parts)
+
+    async def generate(
+        self,
+        *,
+        topic: str,
+        profile_block: str,
+        module_key: str = "",
+        focus_hint: str = "",
+        chunks: list[KnowledgeChunk],
+    ) -> tuple[str, str, dict]:
+        title, content, meta = await super().generate(
+            topic=topic,
+            profile_block=profile_block,
+            module_key=module_key,
+            focus_hint=focus_hint,
+            chunks=chunks,
+        )
+        focus_label = _mindmap_focus_label(topic, module_key, focus_hint)
+        if _mindmap_needs_rebuild(content, focus_label=focus_label):
+            content = _build_knowledge_mindmap(
+                topic=topic,
+                module_key=module_key,
+                focus_hint=focus_hint,
+                chunks=chunks,
+            )
+            title = self.build_title(focus_label, module_key)
+            meta["mindmap_rebuilt"] = True
+            meta["mindmap_focus"] = focus_label
+        return title, content, meta
 
     def normalize_output(self, raw: str, *, hints: PersonaHints) -> str:
         text = raw.strip()
         fence = re.search(r"```(?:mermaid)?\s*([\s\S]*?)```", text)
         if fence:
             text = fence.group(1).strip()
-        if not text.startswith(("flowchart", "graph", "mindmap", "sequenceDiagram")):
-            topic = hints.learning_goals[:20] or "学习主题"
-            return (
-                f'flowchart TD\n  root["{topic}"]\n'
-                f'  root --> n1["{text[:40].replace(chr(10), " ") or "核心概念"}"]'
-            )
-        return text
+        topic = hints.learning_goals[:20] or "学习主题"
+        if text.startswith("mindmap"):
+            sanitized = _sanitize_mermaid(text)
+            return _fix_mindmap_syntax(sanitized, fallback_topic=topic)
+        if text.startswith(("flowchart", "graph")):
+            converted = _convert_flowchart_to_mindmap(text, hints)
+            return _fix_mindmap_syntax(converted, fallback_topic=topic)
+        return _build_fallback_mindmap(topic)
 
 
 class QuizAgent(ResourceRoleAgent):
-    """考题官：3 道个性化练习题（选择 + 填空）。"""
+    """考题官：5 道个性化练习题（3 选择 + 2 填空）。"""
 
     agent_id = "QuizAgent"
     display_name = "QuizAgent"
     role = "考题官 · 个性化题单"
 
     def system_prompt(self, hints: PersonaHints) -> str:
-        return f"""你是 QuizAgent（考题官）。根据学生知识短板与易错点生成 **3 道**个性化练习题。
+        return f"""你是 QuizAgent（考题官）。根据学生知识短板与易错点生成 **5 道**个性化练习题。
 
 ## 个性化要求
 - 知识基础：{hints.knowledge_base or '待评估'}
 - 易错点偏好：{hints.error_preference or '边界条件与复杂度'}
 - 代码能力：{hints.coding_ability or '入门'}，题目难度与之匹配
 
-## 输出规范
+## 输出规范（必须严格遵守）
 - 输出**唯一** JSON，不要 markdown 代码块
-- 固定 3 题：choice×2 + fill×1（禁止 code 编程题）
+- **禁止** 在输出中包含知识库引用标注（如 `依据知识库`、`course:`、`---` 分隔线等），仅输出纯 JSON
+- 固定 5 题：**前 3 题必须是 choice，后 2 题必须是 fill**（禁止 code 编程题）
+- **choice 题必须恰好 4 个选项**，不能多也不能少，每个选项须有实质区分度（禁止"以上都对"等废话选项）
+- fill 题不要有 options 字段（或设为空数组）
 - 每题含 stem、hint、focus、difficulty(easy|medium|hard)
+- stem 必须紧扣知识库具体知识点，禁止泛泛而谈
+- 难度梯度：第1题 easy，第2题 medium，第3题 medium，第4题 medium，第5题 hard
 
-{{"questions":[{{"type":"choice","stem":"…","options":["A","B","C","D"],"hint":"…","focus":"…","difficulty":"easy"}}]}}"""
+## JSON 示例（严格遵守此结构）
+{{"questions":[{{"type":"choice","stem":"…","options":["选项A","选项B","选项C","选项D"],"hint":"…","focus":"…","difficulty":"easy"}},{{"type":"choice","stem":"…","options":["选项A","选项B","选项C","选项D"],"hint":"…","focus":"…","difficulty":"medium"}},{{"type":"choice","stem":"…","options":["选项A","选项B","选项C","选项D"],"hint":"…","focus":"…","difficulty":"medium"}},{{"type":"fill","stem":"…","hint":"…","focus":"…","difficulty":"medium"}},{{"type":"fill","stem":"…","hint":"…","focus":"…","difficulty":"hard"}}]}}"""
 
     def temperature(self) -> float:
         return 0.3
 
     def max_tokens(self) -> int:
-        return 1400
+        return 2200
 
     def output_format(self) -> str:
         return "quiz_json"
@@ -454,8 +949,8 @@ class QuizAgent(ResourceRoleAgent):
         data = _parse_json_object(raw)
         validated, issues = validate_quiz_payload(data if isinstance(data, dict) else {})
         if validated is not None:
-            trimmed: list[QuizQuestion] = list(validated.questions[:3])
-            while len(trimmed) < 3:
+            trimmed: list[QuizQuestion] = list(validated.questions[:5])
+            while len(trimmed) < 5:
                 trimmed.append(
                     QuizQuestion(
                         type="fill",
@@ -465,8 +960,9 @@ class QuizAgent(ResourceRoleAgent):
                         difficulty="medium",
                     )
                 )
+            trimmed = _enforce_quiz_type_mix(trimmed, hints)
             return json.dumps(
-                {"questions": [q.model_dump() for q in trimmed[:3]]},
+                {"questions": [q.model_dump() for q in trimmed[:5]]},
                 ensure_ascii=False,
                 indent=2,
             )
@@ -487,6 +983,22 @@ class QuizAgent(ResourceRoleAgent):
                             "difficulty": "easy",
                         },
                         {
+                            "type": "choice",
+                            "stem": "下列哪种表述与知识库一致？",
+                            "options": ["与知识库一致", "编造题号", "忽略边界", "跳过定义"],
+                            "hint": "选与知识库一致项",
+                            "focus": "概念",
+                            "difficulty": "medium",
+                        },
+                        {
+                            "type": "choice",
+                            "stem": f"关于本主题的核心操作，下列哪项说法正确？（侧重：{focus}）",
+                            "options": ["需要辅助数据结构", "暴力即可", "无需考虑边界", "复杂度均为 O(1)"],
+                            "hint": "结合知识库与课程讲义",
+                            "focus": focus,
+                            "difficulty": "medium",
+                        },
+                        {
                             "type": "fill",
                             "stem": "请填写本主题的核心时间复杂度符号（如 O(n)）",
                             "hint": "参考知识库",
@@ -494,20 +1006,19 @@ class QuizAgent(ResourceRoleAgent):
                             "difficulty": "medium",
                         },
                         {
-                            "type": "choice",
-                            "stem": "下列哪种表述与知识库一致？",
-                            "options": ["A. 与知识库一致", "B. 编造题号", "C. 忽略边界", "D. 跳过定义"],
-                            "hint": "选与知识库一致项",
-                            "focus": "概念",
-                            "difficulty": "easy",
+                            "type": "fill",
+                            "stem": "请用一句话描述本主题最关键的算法思想或不变量",
+                            "hint": "结合课程讲义与知识库",
+                            "focus": "核心思想",
+                            "difficulty": "hard",
                         },
                     ]
                 },
                 ensure_ascii=False,
                 indent=2,
             )
-        trimmed = [q for q in questions if isinstance(q, dict)][:3]
-        while len(trimmed) < 3:
+        trimmed = [q for q in questions if isinstance(q, dict)][:5]
+        while len(trimmed) < 5:
             trimmed.append(
                 {
                     "type": "fill",
@@ -517,6 +1028,7 @@ class QuizAgent(ResourceRoleAgent):
                     "difficulty": "medium",
                 }
             )
+        trimmed = _enforce_quiz_type_mix_dict(trimmed, hints)
         return json.dumps({"questions": trimmed}, ensure_ascii=False, indent=2)
 
 
@@ -560,7 +1072,7 @@ class ScenarioAgent(ResourceRoleAgent):
 
     def normalize_output(self, raw: str, *, hints: PersonaHints) -> str:
         data = _parse_json_object(raw)
-        if data.get("domain_narrative") and data.get("structure_logic"):
+        if isinstance(data.get("domain_narrative"), dict) and isinstance(data.get("structure_logic"), dict):
             normalized = _normalize_domain_structure_payload(
                 data,
                 fallback_topic=hints.learning_goals[:32] or "实操任务",
@@ -664,11 +1176,18 @@ class TraceAgent(ResourceRoleAgent):
 
         if code:
             trace_meta = await _record_trace(code, stdin, topic=topic)
-            payload.update(trace_meta)
-            content = json.dumps(payload, ensure_ascii=False, indent=2)
 
+        trace_internal_keys = {"verdict", "message", "step_count", "user_line_count", "result_preview", "trace_source", "topic"}
+        for k in trace_internal_keys:
+            payload.pop(k, None)
+
+        if trace_meta.get("steps"):
+            payload["steps"] = trace_meta["steps"]
+
+        content = json.dumps(payload, ensure_ascii=False, indent=2)
         meta["trace_verdict"] = trace_meta.get("verdict", "SKIPPED")
         meta["trace_steps"] = trace_meta.get("step_count", 0)
+        meta["trace_source"] = trace_meta.get("trace_source", "llm_only")
         return title, content, meta
 
     def normalize_output(self, raw: str, *, hints: PersonaHints) -> str:
@@ -679,185 +1198,6 @@ class TraceAgent(ResourceRoleAgent):
             data = _fallback_trace_payload(topic=hints.learning_goals or "算法演示")
         return json.dumps(data, ensure_ascii=False, indent=2)
 
-
-class PptAgent(ResourceRoleAgent):
-    """PPT 胶片导演：输出可由前端轮播展示的 PPT 大纲页面 JSON。"""
-
-    agent_id = "PptAgent"
-    display_name = "PptAgent"
-    role = "核心知识胶片导演 · PPT 大纲页面预览"
-
-    def system_prompt(self, hints: PersonaHints) -> str:
-        return f"""你是 PptAgent。请为高校《数据结构与算法》课程生成一组可直接渲染为轮播卡片的 PPT 胶片预览。
-
-## 个性化要求
-- 认知风格：{hints.cognitive_style or '通用'}
-- 知识基础：{hints.knowledge_base or '大一计科入门'}
-- 易错点：{hints.error_preference or '边界条件与复杂度'}
-
-## 输出规范
-输出唯一 JSON，不要 markdown 代码块：
-{{
-  "deck_title": "标题",
-  "design_style": "深色科技/清爽课堂/图解优先等",
-  "slides": [
-    {{
-      "title": "胶片标题",
-      "subtitle": "一句话副标题",
-      "layout": "title|concept|compare|steps|summary",
-      "bullets": ["要点1", "要点2", "要点3"],
-      "visual_hint": "画面/图示建议",
-      "speaker_note": "讲解备注，80字以内"
-    }}
-  ]
-}}
-
-要求：5-6 页；每页不超过 3 个 bullet；术语与知识库一致；不要编造题号、论文链接或外部 URL。"""
-
-    def temperature(self) -> float:
-        return 0.42
-
-    def max_tokens(self) -> int:
-        return 1800
-
-    def output_format(self) -> str:
-        return "ppt_preview_json"
-
-    def normalize_output(self, raw: str, *, hints: PersonaHints) -> str:
-        data = _parse_json_object(raw)
-        slides = data.get("slides") if isinstance(data, dict) else None
-        if not isinstance(slides, list) or not slides:
-            topic = hints.learning_goals[:32] or "核心算法"
-            slides = [
-                {
-                    "title": f"{topic} 的问题画像",
-                    "subtitle": "先看它解决什么问题",
-                    "layout": "title",
-                    "bullets": ["输入输出是什么", "需要维护哪些状态", "边界条件先落笔"],
-                    "visual_hint": "左侧问题场景，右侧抽象模型",
-                    "speaker_note": "用生活化问题引入，再切回严格定义。",
-                },
-                {
-                    "title": "核心结构与不变量",
-                    "subtitle": "算法正确性的锚点",
-                    "layout": "concept",
-                    "bullets": ["明确数据结构", "写出循环不变量", "每步只维护必要信息"],
-                    "visual_hint": "用高亮箭头标出状态转移或指针移动",
-                    "speaker_note": "强调不变量比记模板更重要。",
-                },
-                {
-                    "title": "复杂度与易错点",
-                    "subtitle": "从会写到写对",
-                    "layout": "summary",
-                    "bullets": ["分析最坏/均摊前提", "检查空输入", "用测试样例验证边界"],
-                    "visual_hint": "复杂度表格 + 错误警示栏",
-                    "speaker_note": "结合画像易错点做针对性提醒。",
-                },
-            ]
-        normalized = {
-            "deck_title": str(data.get("deck_title") or "核心知识胶片"),
-            "design_style": str(data.get("design_style") or "图解优先、课堂展示"),
-            "slides": [_normalize_slide(s, idx) for idx, s in enumerate(slides[:6], start=1)],
-        }
-        return json.dumps(normalized, ensure_ascii=False, indent=2)
-
-
-class VideoScriptAgent(ResourceRoleAgent):
-    """短视频分镜导演：生成 60 秒教学短视频脚本与 TTS 试听文案。"""
-
-    agent_id = "VideoScriptAgent"
-    display_name = "VideoScriptAgent"
-    role = "教学短视频分镜导演 · 60 秒脚本 + TTS 试听文案"
-
-    def system_prompt(self, hints: PersonaHints) -> str:
-        style = hints.cognitive_style or "图解 + 逐步推演"
-        return f"""你是 VideoScriptAgent。请根据学生认知风格生成 60 秒教学短视频脚本。
-
-## 学生认知风格
-{style}
-
-## 输出规范
-输出唯一 JSON，不要 markdown：
-{{
-  "title": "视频标题",
-  "duration_seconds": 60,
-  "cognitive_style": "引用或归纳学生认知风格",
-  "tts_preview_text": "可直接交给科大讯飞 TTS 的 20-40 秒试听旁白",
-  "scenes": [
-    {{
-      "time_range": "0-10s",
-      "visual": "画面描述",
-      "voiceover": "旁白文案",
-      "animation_focus": "动画重点"
-    }}
-  ]
-}}
-
-要求：6 个分镜，每个 10 秒；画面描述、旁白、动画重点必须齐全；不编造外链或题号。"""
-
-    def temperature(self) -> float:
-        return 0.48
-
-    def max_tokens(self) -> int:
-        return 1800
-
-    def output_format(self) -> str:
-        return "video_script_json"
-
-    def normalize_output(self, raw: str, *, hints: PersonaHints) -> str:
-        data = _parse_json_object(raw)
-        scenes = data.get("scenes") if isinstance(data, dict) else None
-        if not isinstance(scenes, list) or not scenes:
-            topic = hints.learning_goals[:32] or "算法核心概念"
-            scenes = [
-                {
-                    "time_range": "0-10s",
-                    "visual": "标题卡片进入，背景展示问题输入与目标输出",
-                    "voiceover": f"这 60 秒，我们抓住{topic}最关键的一条线。",
-                    "animation_focus": "问题目标高亮",
-                },
-                {
-                    "time_range": "10-20s",
-                    "visual": "把输入拆成若干元素，逐个进入处理区域",
-                    "voiceover": "先看当前状态，再决定下一步怎么更新。",
-                    "animation_focus": "当前元素与状态变量联动",
-                },
-                {
-                    "time_range": "20-30s",
-                    "visual": "核心结构以卡片/表格形式展开",
-                    "voiceover": "真正要维护的是不变量，而不是死记模板。",
-                    "animation_focus": "不变量保持不变的过程",
-                },
-                {
-                    "time_range": "30-40s",
-                    "visual": "展示一个常见错误分支并打断",
-                    "voiceover": "这里最容易漏掉边界，先把空输入和首尾位置想清楚。",
-                    "animation_focus": "错误路径变红并回退",
-                },
-                {
-                    "time_range": "40-50s",
-                    "visual": "复杂度计数器随循环推进",
-                    "voiceover": "每个元素被处理的次数，决定了整体复杂度。",
-                    "animation_focus": "访问次数统计",
-                },
-                {
-                    "time_range": "50-60s",
-                    "visual": "总结卡片列出三条记忆点",
-                    "voiceover": "最后记住：定义状态、维护不变量、验证边界。",
-                    "animation_focus": "三条要点依次定格",
-                },
-            ]
-        normalized = {
-            "title": str(data.get("title") or "60 秒算法短视频"),
-            "duration_seconds": int(data.get("duration_seconds") or 60),
-            "cognitive_style": str(data.get("cognitive_style") or hints.cognitive_style or "图解优先"),
-            "tts_preview_text": str(
-                data.get("tts_preview_text")
-                or "先看问题目标，再看状态如何变化。把不变量守住，算法就不容易写偏。"
-            )[:600],
-            "scenes": [_normalize_scene(s, idx) for idx, s in enumerate(scenes[:6])],
-        }
-        return json.dumps(normalized, ensure_ascii=False, indent=2)
 
 
 class ReadingAgent(ResourceRoleAgent):
@@ -908,10 +1248,10 @@ class ReadingAgent(ResourceRoleAgent):
             levels = _fallback_reading_levels(hints)
         normalized = {
             "reading_goal": str(data.get("reading_goal") or "从课堂概念过渡到工程与面试应用"),
-            "levels": [_normalize_reading_level(l) for l in levels],
+            "levels": [_normalize_reading_level(lv) for lv in levels],
         }
         required = {"基础", "进阶", "挑战"}
-        present = {str(l.get("level")) for l in normalized["levels"]}
+        present = {str(lv.get("level")) for lv in normalized["levels"]}
         for missing in required - present:
             normalized["levels"].append(_normalize_reading_level({"level": missing, "items": []}))
         return json.dumps(normalized, ensure_ascii=False, indent=2)
@@ -923,8 +1263,6 @@ ROLE_AGENT_BY_TYPE: dict[ResourceType, ResourceRoleAgent] = {
     "exercises": QuizAgent(),
     "code_case": ScenarioAgent(),
     "trace_animation": TraceAgent(),
-    "ppt": PptAgent(),
-    "video_script": VideoScriptAgent(),
     "reading": ReadingAgent(),
 }
 
@@ -985,39 +1323,8 @@ def _fallback_trace_payload(*, topic: str) -> dict[str, Any]:
         "stdin": "3\n1 2 3\n",
         "stdout": "6\n",
         "narration_hint": "观察循环变量与累加器的变化",
-        "steps": [],
-        "verdict": "PENDING",
-        "trace_source": "fallback_template",
     }
 
-
-def _normalize_slide(raw: Any, idx: int) -> dict[str, Any]:
-    item = raw if isinstance(raw, dict) else {}
-    bullets = item.get("bullets")
-    if not isinstance(bullets, list):
-        bullets = []
-    bullets = [str(b).strip() for b in bullets if str(b).strip()][:3]
-    if not bullets:
-        bullets = ["核心概念", "关键步骤", "易错提醒"]
-    return {
-        "title": str(item.get("title") or f"核心知识胶片 {idx}"),
-        "subtitle": str(item.get("subtitle") or "个性化课堂预览"),
-        "layout": str(item.get("layout") or "concept"),
-        "bullets": bullets,
-        "visual_hint": str(item.get("visual_hint") or "用结构图展示核心状态变化"),
-        "speaker_note": str(item.get("speaker_note") or "围绕知识库术语进行讲解。")[:160],
-    }
-
-
-def _normalize_scene(raw: Any, idx: int) -> dict[str, str]:
-    item = raw if isinstance(raw, dict) else {}
-    start = idx * 10
-    return {
-        "time_range": str(item.get("time_range") or f"{start}-{start + 10}s"),
-        "visual": str(item.get("visual") or "展示算法状态变化画面"),
-        "voiceover": str(item.get("voiceover") or "观察当前状态，并说明下一步更新依据。"),
-        "animation_focus": str(item.get("animation_focus") or "高亮当前元素、状态变量与边界条件"),
-    }
 
 
 def _fallback_reading_levels(hints: PersonaHints) -> list[dict[str, Any]]:
@@ -1106,6 +1413,15 @@ def _normalize_reading_level(raw: Any) -> dict[str, Any]:
                 "task": "完成一页读书摘要。",
             }
         )
+    while len(normalized_items) < 2:
+        normalized_items.append(
+            {
+                "title": f"{level}层补充阅读",
+                "type": "textbook",
+                "why": "从不同角度巩固理解。",
+                "task": "对比两种材料的侧重点。",
+            }
+        )
     return {
         "level": level,
         "fit_for": str(item.get("fit_for") or f"{level}学习者"),
@@ -1113,20 +1429,159 @@ def _normalize_reading_level(raw: Any) -> dict[str, Any]:
     }
 
 
+def _strip_kb_annotations(raw: str) -> str:
+    cleaned = re.sub(r"---\*\*依据知识库\*\*[\s\S]*", "", raw)
+    cleaned = re.sub(r"\n\*\*依据知识库\*\*[\s\S]*", "", cleaned)
+    cleaned = re.sub(r"---{2,}\s*依据知识库[\s\S]*", "", cleaned)
+    cleaned = re.sub(r"\n---+\s*\n\*\*依据知识库\*\*[\s\S]*", "", cleaned)
+    cleaned = re.sub(r"\n---{3,}[\s\S]*", "", cleaned)
+    cleaned = re.sub(r"\ncourse:[\w\-:]+\n", "\n", cleaned)
+    cleaned = re.sub(r"\n内容校验[\s\S]*", "", cleaned)
+    cleaned = re.sub(r"\n安全审查[\s\S]*", "", cleaned)
+    return cleaned.strip()
+
+
 def _parse_json_object(raw: str) -> dict[str, Any]:
-    text = raw.strip()
+    text = _strip_kb_annotations(raw.strip())
     fence = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
     if fence:
         text = fence.group(1).strip()
+    else:
+        text = _strip_kb_annotations(text)
     try:
         data = json.loads(text)
         return data if isinstance(data, dict) else {}
     except json.JSONDecodeError:
-        start, end = text.find("{"), text.rfind("}")
-        if start >= 0 and end > start:
-            try:
-                data = json.loads(text[start : end + 1])
-                return data if isinstance(data, dict) else {}
-            except json.JSONDecodeError:
-                pass
+        pass
+    start, end = text.find("{"), text.rfind("}")
+    if start >= 0 and end > start:
+        candidate = text[start : end + 1]
+        try:
+            data = json.loads(candidate)
+            return data if isinstance(data, dict) else {}
+        except json.JSONDecodeError:
+            pass
+        brace = 0
+        for i in range(start, len(text)):
+            if text[i] == "{":
+                brace += 1
+            elif text[i] == "}":
+                brace -= 1
+                if brace == 0:
+                    try:
+                        data = json.loads(text[start : i + 1])
+                        return data if isinstance(data, dict) else {}
+                    except json.JSONDecodeError:
+                        break
     return {}
+
+
+def _pad_choice_options(opts: list[str]) -> list[str]:
+    if len(opts) >= 4:
+        return opts[:4]
+    padded = list(opts)
+    while len(padded) < 4:
+        padded.append(f"选项{chr(65 + len(padded))}")
+    return padded
+
+
+def _enforce_quiz_type_mix(
+    questions: list[QuizQuestion], hints: PersonaHints
+) -> list[QuizQuestion]:
+    result: list[QuizQuestion] = []
+    choice_count = 0
+    fill_count = 0
+    for q in questions:
+        if q.type == "choice" and choice_count < 3:
+            opts = _pad_choice_options(q.options)
+            result.append(QuizQuestion(**{**q.model_dump(), "options": opts}))
+            choice_count += 1
+        elif q.type == "fill" and fill_count < 2:
+            result.append(QuizQuestion(**{**q.model_dump(), "options": []}))
+            fill_count += 1
+        elif q.type == "choice" and choice_count >= 3 and fill_count < 2:
+            result.append(
+                QuizQuestion(
+                    type="fill",
+                    stem=q.stem,
+                    hint=q.hint,
+                    focus=q.focus,
+                    difficulty=q.difficulty,
+                    options=[],
+                )
+            )
+            fill_count += 1
+    while len(result) < 3 and choice_count < 3:
+        focus = hints.error_preference or "综合"
+        result.append(
+            QuizQuestion(
+                type="choice",
+                stem=f"关于本主题（侧重：{focus}），下列哪项说法正确？",
+                options=["与知识库一致", "忽略边界条件", "任意规模都 O(1)", "无需数据结构"],
+                hint="对照课程讲义",
+                focus=focus,
+                difficulty="easy" if choice_count == 0 else "medium",
+            )
+        )
+        choice_count += 1
+    while fill_count < 2:
+        result.append(
+            QuizQuestion(
+                type="fill",
+                stem="请用一句话总结本主题的核心思想或复杂度结论",
+                hint="参考讲解文档与知识库",
+                focus=hints.error_preference or "综合",
+                difficulty="medium" if fill_count == 0 else "hard",
+            )
+        )
+        fill_count += 1
+    return result[:5]
+
+
+def _enforce_quiz_type_mix_dict(
+    questions: list[dict[str, Any]], hints: PersonaHints
+) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    choice_count = 0
+    fill_count = 0
+    for q in questions:
+        qtype = str(q.get("type", "choice"))
+        if qtype == "choice" and choice_count < 3:
+            opts = _pad_choice_options(q.get("options") or [])
+            result.append({**q, "type": "choice", "options": opts})
+            choice_count += 1
+        elif qtype == "fill" and fill_count < 2:
+            result.append({**q, "type": "fill", "options": []})
+            fill_count += 1
+        elif qtype == "choice" and choice_count >= 3 and fill_count < 2:
+            result.append({
+                "type": "fill",
+                "stem": str(q.get("stem", "")),
+                "hint": str(q.get("hint", "")),
+                "focus": str(q.get("focus", "")),
+                "difficulty": str(q.get("difficulty", "medium")),
+                "options": [],
+            })
+            fill_count += 1
+    while len(result) < 3 and choice_count < 3:
+        focus = hints.error_preference or "综合"
+        result.append({
+            "type": "choice",
+            "stem": f"关于本主题（侧重：{focus}），下列哪项说法正确？",
+            "options": ["与知识库一致", "忽略边界条件", "任意规模都 O(1)", "无需数据结构"],
+            "hint": "对照课程讲义",
+            "focus": focus,
+            "difficulty": "easy" if choice_count == 0 else "medium",
+        })
+        choice_count += 1
+    while fill_count < 2:
+        result.append({
+            "type": "fill",
+            "stem": "请用一句话总结本主题的核心思想或复杂度结论",
+            "hint": "参考讲解文档与知识库",
+            "focus": hints.error_preference or "综合",
+            "difficulty": "medium" if fill_count == 0 else "hard",
+            "options": [],
+        })
+        fill_count += 1
+    return result[:5]

@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Grid, Reading, FolderOpened, User, QuestionFilled, Cpu, Moon, Sunny, Trophy, ArrowDown } from '@element-plus/icons-vue'
+import { Grid, Reading, FolderOpened, User, QuestionFilled, Cpu, Moon, Sunny, Trophy, ArrowDown, DataLine } from '@element-plus/icons-vue'
 import { useTheme } from '@/composables/useTheme'
 import { providePersonaUi } from '@/composables/usePersonaUiProvider'
 import { ALGORITHM_MODULES, MODULE_ROUTE_NAMES } from '@/constants/modules'
 import { recordModuleVisit } from '@/utils/learningBookmarks'
-import { isLoggedIn, getUser, logout } from '@/stores/auth'
+import { isLoggedIn, getUser, logout, isTeacher } from '@/stores/auth'
 import PageTransition from '@/components/layout/PageTransition.vue'
 import LearningQuickPanel from '@/components/layout/LearningQuickPanel.vue'
 import { prefetchRoute } from '@/router/prefetch'
@@ -14,8 +14,7 @@ import { prefetchRoute } from '@/router/prefetch'
 const route = useRoute()
 const router = useRouter()
 const { isDark, toggleTheme } = useTheme()
-const { settings: personaUi } = providePersonaUi()
-const showAdvancedNav = computed(() => personaUi.value.graphDetail !== 'minimal')
+providePersonaUi()
 
 const ROUTE_TO_MODULE: Record<string, string> = Object.fromEntries(
   Object.entries(MODULE_ROUTE_NAMES).map(([key, name]) => [name as string, key]),
@@ -58,7 +57,7 @@ function goRegister() {
 
 function onLogout() {
   logout()
-  router.push({ name: 'home' })
+  router.push({ name: 'login' })
 }
 
 const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
@@ -100,10 +99,10 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
           <span>在线 OJ</span>
         </el-menu-item>
         <el-menu-item
-          v-if="showAdvancedNav"
           index="/agent-workbench"
           @mouseenter="prefetchRoute('/agent-workbench')"
         >
+          <el-icon><Cpu /></el-icon>
           <span>多智能体</span>
         </el-menu-item>
 
@@ -130,6 +129,10 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
           </template>
         </el-dropdown>
 
+        <el-menu-item v-if="isTeacher" index="/teacher-dashboard" @mouseenter="prefetchRoute('/teacher-dashboard')">
+          <el-icon><DataLine /></el-icon>
+          <span>教师看板</span>
+        </el-menu-item>
         <el-menu-item index="/a3-demo" @mouseenter="prefetchRoute('/a3-demo')">
           <el-icon><Trophy /></el-icon>
           <span>比赛演示</span>

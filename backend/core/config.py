@@ -1,4 +1,5 @@
 import re
+import sys
 from pathlib import Path
 from typing import Self
 
@@ -17,18 +18,29 @@ def _is_llm_placeholder(value: str) -> bool:
     return not text or bool(_LLM_PLACEHOLDER_RE.search(text))
 
 
+def _app_root() -> Path:
+    """打包后使用可执行文件所在目录，开发时使用 backend 目录。"""
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parent.parent
+
+
 def _default_database_url() -> str:
-    """默认使用后端目录下的 SQLite 文件，无需单独安装数据库服务。"""
-    backend_root = Path(__file__).resolve().parent.parent
-    data_dir = backend_root / "data"
+    """默认使用应用根目录/data/ 下的 SQLite 文件，无需单独安装数据库服务。"""
+    data_dir = _app_root() / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
     return f"sqlite:///{(data_dir / 'alp_learning.db').as_posix()}"
+
+
+def _default_env_file() -> str:
+    """打包后从可执行文件目录读取 .env，开发时从 backend 目录读取。"""
+    return str(_app_root() / ".env")
 
 
 class Settings(BaseSettings):
     """从环境变量或 `.env` 读取配置。"""
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(env_file=_default_env_file(), env_file_encoding="utf-8", extra="ignore")
 
     database_url: str = Field(default_factory=_default_database_url)
     jwt_secret: str = "dev-change-me-use-long-random-string"
@@ -77,6 +89,22 @@ class Settings(BaseSettings):
         default="x4_xiaoyan",
         validation_alias=AliasChoices("TTS_VOICE", "TTS_VCN", "IFLYTEK_TTS_VCN"),
     )
+
+    cors_origins: str = Field(
+        default="http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:8000,http://localhost:8000",
+        validation_alias="CORS_ORIGINS",
+    )
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def is_production(self) -> bool:
+        return not any(
+            host in self.cors_origins
+            for host in ("127.0.0.1", "localhost", "0.0.0.0")
+        )
 
     @property
     def tts_configured(self) -> bool:

@@ -22,6 +22,7 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<UserInfo | null>(readUserFromStorage())
 
   const isLoggedIn = computed(() => !!token.value)
+  const isTeacher = computed(() => user.value?.role === 'teacher')
 
   function getToken() {
     return token.value
@@ -82,6 +83,7 @@ export const useAuthStore = defineStore('auth', () => {
     token,
     user,
     isLoggedIn,
+    isTeacher,
     getToken,
     getUser,
     clearRefs,

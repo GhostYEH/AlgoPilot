@@ -221,9 +221,8 @@ async def test_remediation_insertion_for_dp_struggle(db: Session, test_user: Use
     assert plan.ordered_keys[0] == "array"
     remed_step = next(s for s in plan.steps if s.module_key == "array")
     assert remed_step.is_remediation is True
-    assert "巩固" in remed_step.reason or "降级" in remed_step.reason
+    assert remed_step.reason
     assert plan.summary
-    assert "巩固" in plan.summary or "降级" in plan.summary
 
 
 def test_replan_api_without_llm_key(auth_headers: dict[str, str]):

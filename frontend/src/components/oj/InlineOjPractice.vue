@@ -8,7 +8,7 @@ import {
   type JudgeResponse,
   type ProblemDetail,
 } from '@/api/oj'
-import type { AiDiagnoseResponse, TraceResponse } from '@/types/codeTrace'
+import type { AiDiagnoseResponse, TraceDiagnosisReport, TraceResponse } from '@/types/codeTrace'
 import type { PracticeLink } from '@/modules/shared/learningTypes'
 import { buildFallbackProblem } from '@/api/ojLocal'
 import { enrichProblemStarters, getStarterForLanguage } from '@/utils/ojStarterCode'
@@ -28,6 +28,8 @@ const result = ref<JudgeResponse | null>(null)
 const trace = ref<TraceResponse | null>(null)
 const diagnosis = ref<AiDiagnoseResponse | null>(null)
 const traceBugDiagnosis = ref<import('@/types/codeTrace').TraceBugDiagnoseResponse | null>(null)
+const traceReport = ref<TraceDiagnosisReport | null>(null)
+const traceReportLoading = ref(false)
 const apiOnline = ref(false)
 const traceCpp = ref(false)
 const language = ref<'python' | 'cpp'>('cpp')
@@ -56,6 +58,7 @@ const {
   onVisualTraceDiagnose,
   agentConsoleLines,
   struggleView,
+  consecutiveFailures,
 } = useOjWorkbenchActions({
   slug: activeSlug,
   code,
@@ -67,6 +70,8 @@ const {
   trace,
   diagnosis,
   traceBugDiagnosis,
+  traceReport,
+  traceReportLoading,
   router,
   loginRedirect: () => router.currentRoute.value.fullPath,
 })
@@ -181,10 +186,13 @@ function resetCode() {
         :trace="trace"
         :diagnosis="diagnosis"
         :trace-bug-diagnosis="traceBugDiagnosis"
+        :trace-report="traceReport"
+        :trace-report-loading="traceReportLoading"
         :api-online="apiOnline"
         :trace-cpp="traceCpp"
         :agent-console-lines="agentConsoleLines"
         :struggle-view="struggleView"
+        :consecutive-failures="consecutiveFailures"
         @run="onRun"
         @submit="onSubmit"
         @trace="onTrace"

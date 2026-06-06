@@ -17,9 +17,11 @@ export function useProvideAiTutorFromPanel(panelRef: Ref<PanelInstance>) {
   provide(AI_TUTOR_BRIDGE_KEY, {
     ask: (message: string) => {
       if (!panelRef.value) {
+        console.warn('[AiTutorBridge] panelRef.value is null')
         ElMessage.warning('AI 助教尚未就绪，请稍后再试')
         return
       }
+      console.log('[AiTutorBridge] askQuestion:', message)
       void panelRef.value.askQuestion(message)
     },
     loading: panelLoading(panelRef),

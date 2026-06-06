@@ -7,7 +7,7 @@ import {
   needsOnboarding,
   ONBOARDING_ALLOWED_ROUTE_NAMES,
 } from '@/composables/usePersonaGate'
-import { isLoggedIn } from '@/stores/auth'
+import { isLoggedIn, isTeacher } from '@/stores/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -71,6 +71,12 @@ const router = createRouter({
           meta: { title: '比赛演示', public: true },
         },
         {
+          path: 'teacher-dashboard',
+          name: 'teacher-dashboard',
+          component: () => import('@/views/TeacherDashboardView.vue'),
+          meta: { title: '教师看板', requiresTeacher: true },
+        },
+        {
           path: 'help',
           name: 'help',
           component: () => import('@/views/HelpCenterView.vue'),
@@ -103,10 +109,18 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
-  if (!isLoggedIn.value || to.meta.public) return true
+  if (!isLoggedIn.value) {
+    if (to.meta.public) return true
+    return { name: 'login', query: { redirect: to.fullPath } }
+  }
+  if (to.meta.requiresTeacher && !isTeacher.value) {
+    return { name: 'home' }
+  }
   const routeName = typeof to.name === 'string' ? to.name : ''
   if (ONBOARDING_ALLOWED_ROUTE_NAMES.has(routeName)) return true
   if (to.name === 'learning-path' && to.query.onboarding === '1') return true
+  // 学习与练习页面无需完成画像即可访问（打包后可能未配置 LLM，用户无法完成 onboarding）
+  if (routeName.startsWith('learn-') || routeName.startsWith('practice-')) return true
   if (await needsOnboarding()) {
     return {
       name: 'learning-path',

@@ -7,11 +7,14 @@ import {
   fetchAgentsCatalog,
   getStageDetail,
   streamGenerateAllResources,
+  RESOURCE_TYPE_META,
   type AgentInfo,
   type GeneratedResource,
 } from '@/api/orchestrator'
 import { isLoggedIn } from '@/stores/auth'
 import AgentThinkingConsole from '@/components/agents/AgentThinkingConsole.vue'
+import AgentStatusGrid from '@/components/agents/AgentStatusGrid.vue'
+import type { AgentTaskStatus } from '@/components/agents/AgentStatusGrid.vue'
 import PersonalizedResourceDashboard from '@/components/agents/PersonalizedResourceDashboard.vue'
 import type { AgentConsoleLine } from '@/utils/agentConsole'
 import { A3_SHOWCASE_AGENTS, DEMO_RESOURCE_PIPELINE } from '@/constants/a3Demo'
@@ -39,11 +42,20 @@ const progress = ref(0)
 const consoleLines = ref<AgentConsoleLine[]>([])
 const generatedResources = ref<GeneratedResource[]>([])
 const activeResourceTab = ref('document')
+const agentStatuses = ref<Map<string, AgentTaskStatus>>(new Map())
 
 const stageDetail = computed(() => {
   const s = pipeline.value[activeStage.value]
   return s ? getStageDetail(s.stage) : null
 })
+
+const statusGridResources = computed(() =>
+  Object.keys(RESOURCE_TYPE_META).map((rt) => ({
+    resource_type: rt,
+    agent_name: RESOURCE_TYPE_META[rt].agentName,
+    status: agentStatuses.value.get(rt) ?? ('pending' as AgentTaskStatus),
+  })),
+)
 
 const catalogError = ref(false)
 
@@ -90,6 +102,12 @@ async function runResourceGeneration() {
   consoleLines.value = [...resourceBootstrapLines(topic.value)]
   generatedResources.value = []
 
+  const statusMap = new Map<string, AgentTaskStatus>()
+  for (const rt of Object.keys(RESOURCE_TYPE_META)) {
+    statusMap.set(rt, 'pending')
+  }
+  agentStatuses.value = statusMap
+
   try {
     await streamGenerateAllResources(
       { topic: topic.value, focus_hint: focusHint.value },
@@ -98,11 +116,29 @@ async function runResourceGeneration() {
           pushLine(lineFromProgress(p))
           if (typeof p.percent === 'number') progress.value = p.percent
           activeResourceTab.value = p.resource_type
+          statusMap.set(p.resource_type, 'running')
+          agentStatuses.value = new Map(statusMap)
         },
         onWorkflow(w) {
           if (w.status === 'done') markRunningDone(w.agent)
           pushLine(lineFromWorkflow(w))
           if (typeof w.percent === 'number') progress.value = w.percent
+          if (w.stage === 'content_verify' && w.status === 'running') {
+            const rt = Object.entries(RESOURCE_TYPE_META).find(([, m]) => m.agentName === w.agent)?.[0]
+            if (rt) { statusMap.set(rt, 'verifying'); agentStatuses.value = new Map(statusMap) }
+          }
+          if (w.stage === 'content_verify' && w.status === 'warn') {
+            const rt = Object.entries(RESOURCE_TYPE_META).find(([, m]) => m.agentName === w.agent)?.[0]
+            if (rt) { statusMap.set(rt, 'retrying'); agentStatuses.value = new Map(statusMap) }
+          }
+          if (w.stage === 'safety_filter' && w.status === 'running') {
+            const rt = Object.entries(RESOURCE_TYPE_META).find(([, m]) => m.agentName === w.agent)?.[0]
+            if (rt) { statusMap.set(rt, 'safe_checking'); agentStatuses.value = new Map(statusMap) }
+          }
+          if (w.stage === 'agent_generate' && w.status === 'done') {
+            const rt = Object.entries(RESOURCE_TYPE_META).find(([, m]) => m.agentName === w.agent)?.[0]
+            if (rt) { statusMap.set(rt, 'running'); agentStatuses.value = new Map(statusMap) }
+          }
         },
         onCollaboration(log) {
           for (const row of log) pushLine(lineFromCollaboration(row))
@@ -116,6 +152,8 @@ async function runResourceGeneration() {
             ...generatedResources.value.filter((x) => x.id !== r.id),
           ]
           activeResourceTab.value = r.resource_type
+          statusMap.set(r.resource_type, 'done')
+          agentStatuses.value = new Map(statusMap)
           pushLine(
             systemLine(
               `${r.agent_name} 已落库 · ${r.title.slice(0, 40)}`,
@@ -126,6 +164,10 @@ async function runResourceGeneration() {
         onDone(info) {
           progress.value = 100
           if (info?.fallback_mode) {
+            for (const [rt, s] of statusMap) {
+              if (s !== 'done') statusMap.set(rt, 'fallback')
+            }
+            agentStatuses.value = new Map(statusMap)
             pushLine(
               systemLine(
                 'TemplateFallbackAgent：无 LLM Key，已用课程知识库模板降级（非大模型生成）',
@@ -137,6 +179,12 @@ async function runResourceGeneration() {
             )
           } else if (info?.partial_failure) {
             const failed = info.errors?.map((e) => e.agent_name ?? e.resource_type ?? '未知').join('、') ?? '部分资源'
+            if (info.errors) {
+              for (const e of info.errors) {
+                if (e.resource_type) { statusMap.set(e.resource_type, 'failed') }
+              }
+              agentStatuses.value = new Map(statusMap)
+            }
             pushLine(systemLine(`部分资源生成失败（${failed}），其余已装配完毕`, 'warn'))
             ElMessage.warning(`${failed} 生成失败，其余资源已就绪`)
           } else {
@@ -213,6 +261,13 @@ function agentStatus(id: string): 'running' | 'idle' {
       title="Agent Synergy Terminal"
       subtitle="Concept → Graph → Quiz → Scenario → Trace → PPT → Video → Reading"
       class="wb-console"
+    />
+
+    <AgentStatusGrid
+      v-if="generating || agentStatuses.size > 0"
+      :resources="statusGridResources"
+      :active="generating"
+      class="wb-status-grid"
     />
 
     <PersonalizedResourceDashboard
@@ -310,6 +365,10 @@ function agentStatus(id: string): 'running' | 'idle' {
 }
 
 .wb-console {
+  margin-bottom: 24px;
+}
+
+.wb-status-grid {
   margin-bottom: 24px;
 }
 

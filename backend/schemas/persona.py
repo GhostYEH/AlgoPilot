@@ -55,7 +55,7 @@ class PersonaDimensions(BaseModel):
     coding_ability: str = Field(default="", description="代码实操能力")
     learning_goals: str = Field(default="", description="学习目标")
     error_preference: str = Field(default="", description="易错点偏好")
-    grit_level: str = Field(default="", description="抗挫折心理能力")
+    grit_level: str = Field(default="", description="抗挫折心理")
 
     @classmethod
     def from_storage(cls, raw: dict | None) -> "PersonaDimensions":

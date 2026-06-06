@@ -1,67 +1,81 @@
-# A3 比赛演示前检查清单
+# A3 比赛演示数据种子 · 使用指南
 
-> 建议在正式答辩 / 录屏前 **15 分钟** 按序完成。全部打勾即可开始 7 分钟演示。
-
-## 1. 环境启动
-
-- [ ] 已执行 `docker compose up --build`（或本地 `backend` + `frontend` 双进程）
-- [ ] 浏览器打开 http://localhost:8080 首页无白屏
-- [ ] http://localhost:9000/api/health 返回 `status: ok`
-- [ ] 健康检查中 `trace_python: true`（Python Trace 可用）
-- [ ] 若 `trace_cpp: false`：**OJ 演示请选 Python 语言**，不要演示 C++ Trace
-
-## 2. API Key 与可选服务
-
-- [ ] **LLM（推荐）**：`.env` 中 `SPARK_API_PASSWORD` 已配置且非占位符
-  - 未配置时：画像对话与 generate-all 走**模板降级**（非 503）；OJ Trace 诊断、学习路径启发式、掌握度评估仍可用
-- [ ] **TTS（可选）**：未配置不影响演示；视频脚本分镜与 `tts_preview_text` 仍可展示
-- [ ] **JWT**：生产/容器环境已修改默认 `JWT_SECRET`
-
-## 3. 演示账号
-
-- [ ] 已注册并登录演示账号（资源生成、掌握度、Memory 需登录）
-- [ ] 或运行 `python backend/scripts/seed_a3_demo_data.py` 预热 `a3_demo` 演示数据（密码 `Demo1234!`）
-- [ ] 或确认 `/a3-demo` 在未登录下可展示 mock 闭环（含「含演示数据」标签）
-
-## 4. 七步演示路径（推荐顺序）
-
-| 步骤 | 页面 | 检查点 |
-|------|------|--------|
-| 1 | 首页 `/` | 导航可见「比赛演示」 |
-| 2 | `/a3-demo` | 无白屏；有 loading；后端不可用时有 warning + mock |
-| 3 | 学习路径 · 画像 | 破冰对话或已有画像摘要 |
-| 4 | 多智能体工作台 | 点击「启动个性化资源生成」；控制台有 Agent 日志 |
-| 5 | OJ `/practice/reverse-linked-list` | **Python** 提交错误代码 → Trace → AI 诊断 → 智能辅导面板 |
-| 6 | 我的学习 · 评估 | MasteryAgent 卡片有分数或「重试」按钮 |
-| 7 | 资源库 | 资源带校验标签；Safety 面板可展开 |
-
-## 5. 后端自检（可选，1 分钟）
+## 快速开始
 
 ```bash
-curl http://localhost:9000/api/a3/health
-py -3 -m pytest backend/tests -q
+# 1. 确保后端虚拟环境已激活
+cd backend
+source .venv/bin/activate  # Linux/macOS
+# .venv\Scripts\activate   # Windows
+
+# 2. 设置环境变量（生产环境默认关闭）
+export ALGO_DEMO_SEED_ENABLED=1
+
+# 3. 执行种子脚本
+python -m scripts.seed_demo
+# 或直接运行
+python scripts/seed_a3_demo_data.py
+
+# 本地临时演示可跳过环境变量检查
+python scripts/seed_a3_demo_data.py --force
 ```
 
-期望：health 返回 `status: ok`；pytest 以当前 CI / pytest 输出为准（不写死通过数）。
+## 演示数据闭环
 
-## 6. 前端构建自检（可选）
+执行一条命令后，将生成以下完整演示数据：
 
-```bash
-cd frontend && npm run typecheck
-```
+| 数据项 | 说明 |
+|--------|------|
+| 演示用户 | `a3_demo` / `Demo1234!` |
+| 六维画像 | 知识基础偏弱、视觉化偏好、代码实操中等偏弱、OJ 通过率目标、边界条件易错、抗挫折中等 |
+| 学习路径 | array → linked-list → stack-queue → binary-tree → graph → dp，含 DP 受挫后插入 array 巩固节点 |
+| 8 类资源 | document / mindmap / exercises / code_case / trace_animation / ppt / video_script / reading |
+| OJ 提交记录 | WA（链表反转）+ TLE（图 BFS）+ AC（括号匹配 + 爬楼梯） |
+| 评估快照 | EvaluationAgent 学习效果评估记录 |
+| 路径重排 | 评估触发的路径重排标记 |
 
-## 7. 常见故障快速处理
+## 前端验证
 
-| 现象 | 处理 |
-|------|------|
-| 资源生成无 LLM Key | 工作台仍可走 generate-all 模板降级；配置 `SPARK_API_PASSWORD` 可启用完整多智能体生成 |
-| TTS 试听失败 | 忽略，展示脚本分镜即可 |
-| C++ Trace 400 | 切换语言为 Python |
-| 演示页空白区块 | 刷新；或访问 `/a3-demo` 查看「含演示数据」fallback |
-| OJ 列表为空 | 确认 `frontend/public/oj/bundle.json` 存在；后端离线会自动 fallback |
+1. 使用 `a3_demo` / `Demo1234!` 登录
+2. **学习路径页**：能看到六维画像、DAG 星图、推荐路径
+3. **我的学习页**：能看到进度仪表盘、活跃度热力图、模块进度
+4. **资源库页**：能看到 8 类已生成资源卡片
+5. **多智能体工作台**：能看到 Agent 状态卡片、SSE 实时进度
+6. **OJ 练习**：能看到提交历史记录
 
-## 8. 答辩话术要点（30 秒）
+## 环境变量保护
 
-1. **不是普通聊天**：OJ 辅导基于 Trace 执行轨迹 + SkillCard 分层提示  
-2. **闭环**：错误 → 诊断 → 资源推荐 → Memory → Mastery → 路径调整  
-3. **防幻觉**：ContentVerifier + SafetyAgent 结构化 evidence；trace_animation 跳过文本校验但 Safety 仍审查  
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `ALGO_DEMO_SEED_ENABLED` | 空（关闭） | 必须设为 `1`/`true`/`yes`/`on` 才允许执行 |
+| `--force` 参数 | — | 绕过环境变量检查，仅用于本地临时演示 |
+
+**生产环境默认关闭**，不会影响正常用户数据。
+
+## 幂等性
+
+- 脚本可重复执行，不会产生重复数据
+- 同名 `a3_demo` 用户存在时更新而非重复创建
+- `clear_demo_seed_artifacts()` 仅删除带 demo 标记的数据
+
+## SSE 实时进度体验
+
+资源批量生成时，前端能看到：
+
+1. **"Orchestrator 已接收任务"** — 立即显示
+2. **RAG 检索开始/完成** — 实时推送
+3. **每个 Agent 状态卡片** — pending → running → verifying → done
+4. **校验重试** — 显示第几次重试
+5. **安全审查** — 实时状态
+6. **Heartbeat** — 每 2.5 秒发送，避免长时间无响应
+7. **Fallback 降级** — 显示 warning 但不崩溃
+8. **单个资源失败** — 显示失败卡片，其余继续
+
+## 无 LLM Key 演示
+
+即使没有配置 `SPARK_API_PASSWORD`，系统会：
+
+- 自动降级为课程知识库模板生成
+- 前端显示"模板降级"提示
+- 资源仍可正常生成和展示
+- SSE 进度仍然实时可见

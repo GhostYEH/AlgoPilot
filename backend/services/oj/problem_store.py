@@ -123,16 +123,21 @@ def get_cases(slug: str, *, mode: str) -> list[dict[str, Any]]:
 
 def _default_description(meta: dict[str, Any]) -> str:
     title = meta.get("title") or meta.get("slug")
+    lc_id = meta.get("lc_id", 0)
     entry = meta.get("entry") or {}
     judge_mode = meta.get("judge_mode")
     if not judge_mode:
         judge_mode = "stdio" if entry.get("mode") == "stdio" or not entry.get("method") else "leetcode"
-    return (
-        f"## {title}\n\n"
-        "请按**洛谷格式**编写完整程序，使用标准输入/输出（`cin`/`cout` 或 `input`/`print`）。\n\n"
-        "按上方样例从标准输入读入、向标准输出写出答案；`null` 表示空树/空链表/无交点。\n\n"
-        "若「运行样例」不可用，表示测例仍在完善中，可先参考学习页讲解与力扣原题。"
-    )
+    lines = [f"## {title}", ""]
+    if lc_id:
+        lines.append(f"力扣 {lc_id} · {title}")
+        lines.append("")
+    lines.append("请按**洛谷格式**编写完整程序，使用标准输入/输出（`cin`/`cout` 或 `input`/`print`）。")
+    lines.append("")
+    lines.append("按上方样例从标准输入读入、向标准输出写出答案；`null` 表示空树/空链表/无交点。")
+    lines.append("")
+    lines.append("若「运行样例」不可用，表示测例仍在完善中，可先参考学习页讲解与力扣原题。")
+    return "\n".join(lines)
 
 
 def _merge_starter_code(full: dict[str, Any]) -> dict[str, str]:

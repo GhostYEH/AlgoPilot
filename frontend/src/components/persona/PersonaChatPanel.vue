@@ -27,7 +27,8 @@ interface UiMsg {
 
 const ICEBREAKER_PROMPTS = [
   '你好！欢迎加入算法智能学习平台 🎓 我是你的**学习画像 Agent**。先聊聊：你目前是大几、什么专业？对数据结构（数组、链表等）熟悉到什么程度？',
-  '很棒！第二个问题：你平时写代码报错时，**最怕遇到哪种情况**？比如边界越界、递归写不对、还是看不懂题意？',
+  '了解！接下来：你平时学习更喜欢**看图示/动画**，还是**读文字讲义**，或者**直接动手写代码**？另外，你能**独立写完一道 OJ 题并调试通过**吗？',
+  '很好！第三个问题：你平时写代码报错时，**最怕遇到哪种情况**？比如边界越界、递归写不对、还是看不懂题意？',
   '最后一个问题：你的**学习目标**是什么（课内及格 / 蓝桥杯 / 考研 / 就业面试）？遇到 WA 或 TLE 时，你一般会坚持多久？',
 ]
 
@@ -58,7 +59,7 @@ const userTurnCount = computed(
 )
 
 const showProfileNudge = computed(
-  () => userTurnCount.value >= 3 && !profile.value?.updated_at && !autoFlowRunning.value,
+  () => userTurnCount.value >= 4 && !profile.value?.updated_at && !autoFlowRunning.value,
 )
 
 function scrollBottom() {
@@ -156,9 +157,9 @@ async function send() {
     )
   } finally {
     loading.value = false
-    if (userTurnCount.value >= 3 && !profile.value?.updated_at) {
+    if (userTurnCount.value >= 4 && !profile.value?.updated_at) {
       void autoCompleteProfileFlow()
-    } else if (userTurnCount.value >= 5 && !profileUpdateHintShown.value) {
+    } else if (userTurnCount.value >= 6 && !profileUpdateHintShown.value) {
       profileUpdateHintShown.value = true
       ElMessage.info('对话已较充分，可点击「从对话更新画像」同步六维画像')
     }
@@ -302,7 +303,7 @@ const dimensionEntries = (dims: PersonaDimensions) =>
         type="info"
         :closable="false"
         show-icon
-        title="已完成 3 轮破冰对话，回复后将自动抽取画像并生成路径"
+        title="已完成 4 轮破冰对话，回复后将自动抽取画像并生成路径"
         class="nudge-alert"
       />
       <div class="chat-actions">
@@ -365,22 +366,13 @@ const dimensionEntries = (dims: PersonaDimensions) =>
 <style scoped>
 .persona-layout {
   display: grid;
-  grid-template-columns: 1fr 280px;
+  grid-template-columns: 1fr 320px;
+  grid-template-rows: auto 1fr;
   gap: 16px;
-  min-height: 420px;
-}
-
-.persona-evidence-full {
-  grid-column: 1 / -1;
-}
-
-@media (max-width: 900px) {
-  .persona-layout {
-    grid-template-columns: 1fr;
-  }
 }
 
 .persona-chat {
+  grid-row: 1 / 3;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -388,6 +380,29 @@ const dimensionEntries = (dims: PersonaDimensions) =>
   border-radius: var(--alp-radius-card);
   padding: 12px;
   background: var(--alp-bg-soft-block);
+  min-height: 0;
+}
+
+.persona-evidence-full {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: start;
+}
+
+@media (max-width: 900px) {
+  .persona-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+
+  .persona-chat {
+    grid-row: auto;
+  }
+
+  .persona-evidence-full {
+    grid-column: 1;
+    grid-row: auto;
+  }
 }
 
 .fallback-banner {
@@ -396,8 +411,8 @@ const dimensionEntries = (dims: PersonaDimensions) =>
 
 .chat-list {
   flex: 1;
-  min-height: 260px;
-  max-height: 360px;
+  min-height: 180px;
+  max-height: 480px;
   overflow-y: auto;
   padding: 8px;
 }
@@ -449,6 +464,9 @@ const dimensionEntries = (dims: PersonaDimensions) =>
 }
 
 .persona-dims {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
   border: 1px solid var(--alp-color-border);
   border-radius: var(--alp-radius-card);
   padding: 14px;
@@ -503,9 +521,29 @@ const dimensionEntries = (dims: PersonaDimensions) =>
   line-height: 1.45;
 }
 
+.dims-missing {
+  font-size: 12px;
+  line-height: 1.45;
+  margin-top: 8px;
+}
+
+.dims-missing.muted {
+  color: var(--alp-color-muted);
+}
+
 .dims-time {
   font-size: 11px;
   color: var(--alp-color-muted);
   margin-top: 12px;
+}
+
+.nudge-alert {
+  margin-top: 4px;
+}
+
+.chat-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
 }
 </style>

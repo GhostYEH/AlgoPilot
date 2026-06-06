@@ -1,10 +1,23 @@
 import { ref, watch, type Ref } from 'vue'
+import { ElMessage } from 'element-plus'
 import type { ProblemDetail } from '@/api/oj'
 import { postOjAssistant } from '@/api/ojAssistant'
+import { fetchSystemHealth } from '@/api/health'
 import {
   formatSampleInput,
   formatSampleOutput,
 } from '@/utils/ojSampleFormat'
+
+let _llmCache: { ok: boolean; ts: number } | null = null
+
+async function _checkLlm(): Promise<boolean> {
+  const now = Date.now()
+  if (_llmCache && now - _llmCache.ts < 60_000) return _llmCache.ok
+  const h = await fetchSystemHealth()
+  const ok = h?.llm_configured === true
+  _llmCache = { ok, ts: now }
+  return ok
+}
 
 export function useOjAssistantHints(
   problem: Ref<ProblemDetail | null | undefined>,
@@ -44,6 +57,10 @@ export function useOjAssistantHints(
 
   async function fetchDsHint() {
     if (!problem.value) return
+    if (!(await _checkLlm())) {
+      ElMessage.warning('AI 未配置，请在 .env 中设置 SPARK_API_PASSWORD')
+      return
+    }
     dsLoading.value = true
     dsReply.value = ''
     try {
@@ -62,6 +79,10 @@ export function useOjAssistantHints(
 
   async function fetchCodeHint() {
     if (!problem.value) return
+    if (!(await _checkLlm())) {
+      ElMessage.warning('AI 未配置，请在 .env 中设置 SPARK_API_PASSWORD')
+      return
+    }
     codeLoading.value = true
     codeReply.value = ''
     try {

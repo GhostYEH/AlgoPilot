@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import shutil
 import subprocess
-import sys
 import tempfile
 from pathlib import Path
 from typing import Any, Literal
 
 from services.oj.runner import CaseResult, RunSummary, _preview_value
 from services.oj.stdio_io import case_input_text, case_output_text, stdout_equal
+from services.oj.cpp_runner import ensure_toolchain_on_path
+from utils import python_exec_args
 
 Verdict = Literal["AC", "WA", "TLE", "RE", "CE"]
 
@@ -69,7 +70,7 @@ def _run_python_stdio(
 
             try:
                 proc = subprocess.run(
-                    [sys.executable, str(path)],
+                    python_exec_args(str(path)),
                     input=stdin,
                     capture_output=True,
                     text=True,
@@ -145,6 +146,7 @@ def _run_cpp_stdio(
     time_limit_ms: int,
     order_insensitive: bool,
 ) -> RunSummary:
+    ensure_toolchain_on_path()
     gpp = None
     for name in ("g++", "g++.exe", "clang++", "clang++.exe"):
         p = shutil.which(name)

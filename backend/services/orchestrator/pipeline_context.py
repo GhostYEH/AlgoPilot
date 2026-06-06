@@ -101,7 +101,7 @@ class PipelineContext:
                 role="互动编剧",
                 resource_type=resource_type,
             )
-        elif resource_type in ("trace_animation", "video_script"):
+        elif resource_type == "trace_animation":
             self.trace_hint = _extract_trace_hint(content)
             self.log(
                 "TraceAgent",

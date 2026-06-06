@@ -73,6 +73,8 @@ export function buildFallbackProblem(
     description: [
       `## ${title}`,
       '',
+      lcId > 0 ? `力扣 ${lcId} · ${title}` : title,
+      '',
       '请按**洛谷格式**编写完整程序，使用标准输入/输出。',
       '',
       '当前为**离线题库预览**（后端未连接时也可做题）。',

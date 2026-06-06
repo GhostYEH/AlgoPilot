@@ -152,6 +152,7 @@ watch(
 
     <el-empty
       v-else-if="showEmpty"
+      :image-size="48"
       description="暂无学习证据，完成一次资源学习或 OJ 诊断后将自动更新。"
     />
 
@@ -230,10 +231,13 @@ watch(
 
 <style scoped>
 .evidence-card {
-  margin-top: 16px;
   border: 1px solid var(--alp-color-border);
   border-radius: var(--alp-radius-card);
   background: var(--alp-bg-surface);
+}
+
+.evidence-card :deep(.el-card__body) {
+  padding: 14px;
 }
 
 .evidence-head {

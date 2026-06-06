@@ -4,11 +4,12 @@ import { Refresh, VideoPlay, Upload, View, MagicStick } from '@element-plus/icon
 import CodeEditor from '@/components/oj/CodeEditor.vue'
 import OjAiDiagnosisPanel from '@/components/oj/OjAiDiagnosisPanel.vue'
 import OjStruggleInterventionPanel from '@/components/oj/OjStruggleInterventionPanel.vue'
+import OjTraceDiagnosisReport from '@/components/oj/OjTraceDiagnosisReport.vue'
 import AgentThinkingConsole from '@/components/agents/AgentThinkingConsole.vue'
 import type { OjStruggleInterventionView } from '@/composables/useOjStruggleIntervention'
 import type { AgentConsoleLine } from '@/utils/agentConsole'
 import type { JudgeResponse, ProblemDetail, Verdict } from '@/api/oj'
-import type { AiDiagnoseResponse } from '@/types/codeTrace'
+import type { AiDiagnoseResponse, TraceDiagnosisReport } from '@/types/codeTrace'
 import {
   formatSampleInput,
   formatSampleOutput,
@@ -16,6 +17,7 @@ import {
 } from '@/utils/ojSampleFormat'
 import { useTraceHighlightLine } from '@/composables/useTraceHighlight'
 import { getStarterForLanguage } from '@/utils/ojStarterCode'
+import { renderAiReplyHtml } from '@/utils/renderAiReply'
 
 const code = defineModel<string>({ required: true })
 const language = defineModel<'python' | 'cpp'>('language', { default: 'python' })
@@ -29,12 +31,15 @@ const props = defineProps<{
   visualTraceDiagnosing?: boolean
   result?: JudgeResponse | null
   diagnosis?: AiDiagnoseResponse | null
+  traceReport?: TraceDiagnosisReport | null
+  traceReportLoading?: boolean
   apiOnline?: boolean
   traceCpp?: boolean
   /** 可视化分屏：仅保留代码编辑区 */
   traceLayout?: boolean
   agentConsoleLines?: AgentConsoleLine[]
   struggleView?: OjStruggleInterventionView | null
+  consecutiveFailures?: number
 }>()
 
 const emit = defineEmits<{
@@ -48,6 +53,8 @@ const emit = defineEmits<{
 
 const fontSize = ref('14px')
 const traceHighlightLine = useTraceHighlightLine()
+
+const renderedDesc = computed(() => renderAiReplyHtml(props.problem.description ?? ''))
 
 const VERDICT_LABEL: Record<Verdict, string> = {
   AC: '通过',
@@ -157,7 +164,7 @@ function onReset() {
       </header>
 
       <div class="problem-scroll">
-        <pre class="problem-desc">{{ problem.description }}</pre>
+        <div class="problem-desc" v-html="renderedDesc"></div>
         <template v-if="problem.samples.length">
           <h4 class="block-title">示例</h4>
           <div v-for="(s, i) in problem.samples" :key="i" class="io-block">
@@ -316,6 +323,13 @@ function onReset() {
         >用例 {{ c.index + 1 }}：{{ c.message }}</pre>
 
         <OjStruggleInterventionPanel v-if="!traceLayout" :state="struggleView ?? null" />
+
+        <OjTraceDiagnosisReport
+          v-if="!traceLayout && (traceReport || traceReportLoading)"
+          :report="traceReport ?? null"
+          :loading="traceReportLoading"
+          :consecutive-failures="consecutiveFailures"
+        />
       </div>
     </section>
 
@@ -425,11 +439,38 @@ function onReset() {
   max-height: min(560px, calc(100vh - var(--alp-header-height, 60px) - 200px));
 }
 .problem-desc {
-  white-space: pre-wrap;
-  font-family: inherit;
   font-size: 14px;
   line-height: 1.65;
   margin: 0 0 16px;
+}
+.problem-desc :deep(.ai-md-h) {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.problem-desc :deep(.ai-md-h--2) {
+  font-size: 1.15rem;
+}
+.problem-desc :deep(.ai-md-p) {
+  margin: 0 0 8px;
+}
+.problem-desc :deep(.ai-md-code) {
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 0.9em;
+  background: var(--el-fill-color-light);
+}
+.problem-desc :deep(.ai-md-ul),
+.problem-desc :deep(.ai-md-ol) {
+  margin: 4px 0 8px;
+  padding-left: 1.25rem;
+}
+.problem-desc :deep(.ai-md-pre) {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--el-fill-color-lighter);
+  overflow-x: auto;
 }
 .block-title {
   margin: 0 0 8px;

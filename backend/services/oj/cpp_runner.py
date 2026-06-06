@@ -310,6 +310,7 @@ def _toolchain_roots() -> list[Path]:
     """常见 MinGW/MSYS2 安装位置（含 IDE 启动时 PATH 为空的情况）。"""
     import os
     import string
+    import sys
 
     roots: list[Path] = []
     seen: set[str] = set()
@@ -323,6 +324,16 @@ def _toolchain_roots() -> list[Path]:
             return
         seen.add(key)
         roots.append(p)
+
+    # PyInstaller 打包后：可执行文件同级及 _internal/ 下的 mingw/ 目录
+    if getattr(sys, "frozen", False):
+        exe_dir = Path(sys.executable).parent
+        add(exe_dir / "mingw")
+        add(exe_dir / "mingw" / "ucrt64")
+        add(exe_dir / "mingw" / "mingw64")
+        add(exe_dir / "_internal" / "mingw")
+        add(exe_dir / "_internal" / "mingw" / "ucrt64")
+        add(exe_dir / "_internal" / "mingw" / "mingw64")
 
     for env_key in ("MINGW_PREFIX", "MSYSTEM_PREFIX", "MSYS2_UCRT64"):
         add(os.environ.get(env_key))

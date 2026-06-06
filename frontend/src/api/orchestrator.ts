@@ -97,6 +97,7 @@ export interface PathStepItem {
   prerequisites?: string[]
   difficulty?: string
   is_remediation?: boolean
+  explain?: string
 }
 
 export interface LearningPathPlan {
@@ -164,6 +165,7 @@ export interface GeneratedResource {
   meta: Record<string, unknown>
   created_at: string
   verification?: Record<string, unknown> | null
+  explain?: string
 }
 
 
@@ -172,12 +174,10 @@ export const RESOURCE_TYPE_META: Record<
   { label: string; agentName: string; color: string }
 > = {
   document: { label: '概念讲解', agentName: 'ConceptAgent', color: '#3b82f6' },
-  mindmap: { label: '知识图谱', agentName: 'GraphAgent', color: '#8b5cf6' },
+  mindmap: { label: '知识思维导图', agentName: 'GraphAgent', color: '#8b5cf6' },
   exercises: { label: '个性化题单', agentName: 'QuizAgent', color: '#f59e0b' },
   code_case: { label: '剧本沙盒', agentName: 'ScenarioAgent', color: '#ef4444' },
   trace_animation: { label: '轨迹动画', agentName: 'TraceAgent', color: '#ec4899' },
-  ppt: { label: 'PPT 胶片', agentName: 'PptAgent', color: '#06b6d4' },
-  video_script: { label: '短视频脚本', agentName: 'VideoScriptAgent', color: '#ec4899' },
   reading: { label: '分层阅读', agentName: 'ReadingAgent', color: '#10b981' },
 }
 
@@ -453,6 +453,9 @@ export async function syncPersonaFromStored(): Promise<{
   return request.post('/api/orchestrator/persona/sync-from-stored', {}) as Promise<{
     profile: PersonaProfile
     message: string
+    fallback?: boolean
+    fallback_reason?: string
+    generated_by?: string
   }>
 }
 
@@ -554,6 +557,31 @@ export async function fetchResources(): Promise<GeneratedResource[]> {
   return r.items ?? []
 }
 
+export interface TrustEvidence {
+  resource_id: number
+  agent_name: string
+  agent_role: string
+  profile_summary: string
+  knowledge_chunks: Array<{ chunk_id: string; title: string; snippet: string }>
+  verifier_status: 'passed' | 'warning' | 'failed'
+  safety_status: 'passed' | 'warning' | 'failed'
+  retry_count: number
+  used_fallback: boolean
+  fallback_reason: string
+  generated_at: string
+  content_hash: string
+  version: number
+  human_review: 'pending' | 'not_required' | 'approved' | 'rejected'
+  timeline: Array<{ stage: string; agent: string; status: 'passed' | 'warning' | 'failed'; detail: string; timestamp: string }>
+  hallucination_risks: string[]
+  unsupported_claims: string[]
+  final_decision: 'publish' | 'draft' | 'blocked'
+}
+
+export async function fetchResourceEvidence(resourceId: number): Promise<TrustEvidence> {
+  return request.get(`/api/orchestrator/resources/${resourceId}/evidence`) as Promise<TrustEvidence>
+}
+
 export async function streamGenerateAllResources(
   params: { topic: string; module_key?: string; focus_hint?: string },
   handlers: {
@@ -587,11 +615,19 @@ export async function streamGenerateAllResources(
       fallback_reason?: string
       errors?: Array<{ resource_type?: string; agent_name?: string; error: string }>
     }) => void
+    onHeartbeat?: (info: { message: string; percent?: number; timestamp?: string }) => void
     onError?: (msg: string) => void
   },
 ): Promise<void> {
   try {
     await consumeSse('/api/orchestrator/resources/generate-all', params, (ev) => {
+      if (ev.type === 'heartbeat') {
+        handlers.onHeartbeat?.({
+          message: String(ev.message ?? ''),
+          percent: typeof ev.percent === 'number' ? ev.percent : undefined,
+          timestamp: typeof ev.timestamp === 'string' ? ev.timestamp : undefined,
+        })
+      }
       if (ev.type === 'progress') {
         handlers.onProgress?.(ev as Parameters<NonNullable<typeof handlers.onProgress>>[0])
       }

@@ -16,6 +16,7 @@ const route = useRoute()
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
+const loginRole = ref<'student' | 'teacher'>('student')
 
 const form = reactive({
   username: '',
@@ -32,14 +33,14 @@ async function submitForm() {
 
   const inst = formRef.value
   if (!inst) {
-    ElMessage.error('页面未就绪，请刷新后重试')
+    ElMessage.error({ message: '页面未就绪，请刷新后重试', offset: 60 })
     return
   }
 
   try {
     await inst.validate()
   } catch {
-    ElMessage.warning('请按提示修正用户名或密码')
+    ElMessage.warning({ message: '请按提示修正用户名或密码', offset: 60 })
     return
   }
 
@@ -48,17 +49,23 @@ async function submitForm() {
     const res = await loginApi({
       username: form.username.trim(),
       password: form.password,
+      role: loginRole.value,
     })
     setSession(res.access_token, res.user)
     await syncLearningProgressAfterAuth()
-    ElMessage.success('登录成功')
-    const redir = route.query.redirect as string | undefined
-    if (redir && redir.startsWith('/') && !(await needsOnboarding())) {
-      await router.replace(redir)
-    } else if (await needsOnboarding()) {
-      await router.replace({ name: 'learning-path', query: { onboarding: '1' } })
+    ElMessage.success({ message: '登录成功', offset: 60 })
+
+    if (res.user.role === 'teacher') {
+      await router.replace({ name: 'teacher-dashboard' })
     } else {
-      await router.replace('/')
+      const redir = route.query.redirect as string | undefined
+      if (redir && redir.startsWith('/') && !(await needsOnboarding())) {
+        await router.replace(redir)
+      } else if (await needsOnboarding()) {
+        await router.replace({ name: 'learning-path', query: { onboarding: '1' } })
+      } else {
+        await router.replace('/')
+      }
     }
   } catch {
     /* 错误由 axios 拦截器提示 */
@@ -74,6 +81,27 @@ async function submitForm() {
       <span class="auth-card-kicker">Sign In</span>
       <h2 class="auth-card-title">登录账号</h2>
       <p class="auth-card-sub">使用账号登录后，学习进度会同步到服务端保存。</p>
+
+      <div class="role-switch">
+        <button
+          type="button"
+          class="role-btn"
+          :class="{ active: loginRole === 'student' }"
+          @click="loginRole = 'student'"
+        >
+          <el-icon :size="16"><User /></el-icon>
+          学生登录
+        </button>
+        <button
+          type="button"
+          class="role-btn"
+          :class="{ active: loginRole === 'teacher' }"
+          @click="loginRole = 'teacher'"
+        >
+          <el-icon :size="16"><User /></el-icon>
+          教师登录
+        </button>
+      </div>
 
       <el-form
         ref="formRef"
@@ -120,7 +148,7 @@ async function submitForm() {
             round
             @click="submitForm"
           >
-            登录
+            {{ loginRole === 'teacher' ? '教师登录' : '学生登录' }}
           </el-button>
         </el-form-item>
       </el-form>
@@ -134,3 +162,42 @@ async function submitForm() {
     </div>
   </AuthPageFrame>
 </template>
+
+<style scoped>
+.role-switch {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.role-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 0;
+  border: 1px solid var(--alp-color-border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--alp-color-muted);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    color 0.2s,
+    background 0.2s;
+}
+
+.role-btn:hover {
+  border-color: var(--alp-color-primary);
+  color: var(--alp-color-primary);
+}
+
+.role-btn.active {
+  border-color: var(--alp-color-primary);
+  color: var(--alp-color-primary);
+  background: var(--alp-color-primary-soft);
+}
+</style>

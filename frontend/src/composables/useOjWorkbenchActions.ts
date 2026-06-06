@@ -9,6 +9,7 @@ import {
   traceNarration,
   traceBugDiagnose,
   aiDiagnose,
+  fetchTraceReport,
   fetchOjCapabilities,
   inferTraceCpp,
   type JudgeResponse,
@@ -16,7 +17,7 @@ import {
   type ProblemDetail,
   type Verdict,
 } from '@/api/oj'
-import type { AiDiagnoseResponse, TraceBugDiagnoseResponse, TraceResponse } from '@/types/codeTrace'
+import type { AiDiagnoseResponse, TraceBugDiagnoseResponse, TraceDiagnosisReport, TraceResponse } from '@/types/codeTrace'
 import { isLoggedIn } from '@/stores/auth'
 import { showJudgeResultMessage } from '@/utils/ojErrors'
 import { recordOjPractice } from '@/utils/ojPracticeHistory'
@@ -46,6 +47,8 @@ export function useOjWorkbenchActions(options: {
   trace: Ref<TraceResponse | null>
   diagnosis: Ref<AiDiagnoseResponse | null>
   traceBugDiagnosis: Ref<TraceBugDiagnoseResponse | null>
+  traceReport: Ref<TraceDiagnosisReport | null>
+  traceReportLoading: Ref<boolean>
   router: Router
   loginRedirect: () => string
 }) {
@@ -139,6 +142,35 @@ export function useOjWorkbenchActions(options: {
     onStruggleComplete,
   })
 
+  let traceReportInFlight = false
+
+  async function autoTriggerTraceReport(verdict: Verdict | undefined) {
+    if (!verdict || verdict === 'AC') return
+    if (traceReportInFlight) return
+    if (!options.apiOnline.value) return
+    if (!options.problem.value?.ready) return
+    if (!options.code.value.trim()) return
+
+    traceReportInFlight = true
+    options.traceReportLoading.value = true
+    options.traceReport.value = null
+    try {
+      const failed = options.result.value?.cases.filter((c) => c.verdict !== 'AC') ?? []
+      const report = await fetchTraceReport(options.slug.value, {
+        code: options.code.value,
+        language: options.language.value,
+        judge_verdict: verdict,
+        failed_cases: failed,
+      })
+      options.traceReport.value = report
+    } catch {
+      options.traceReport.value = null
+    } finally {
+      options.traceReportLoading.value = false
+      traceReportInFlight = false
+    }
+  }
+
   function recordVerdict(verdict: Verdict | undefined) {
     if (!verdict) return
     recordOjPractice(options.slug.value, verdict)
@@ -188,6 +220,7 @@ export function useOjWorkbenchActions(options: {
       showJudgeResultMessage(options.result.value, 'run')
       recordVerdict(options.result.value?.verdict)
       onVerdictRecorded(options.result.value?.verdict)
+      autoTriggerTraceReport(options.result.value?.verdict)
     } catch {
       /* judgeClient 拦截器已提示 */
     } finally {
@@ -224,6 +257,7 @@ export function useOjWorkbenchActions(options: {
         agentConsoleLines.value = linesFromEventLogs(options.result.value.event_logs)
       }
       onVerdictRecorded(options.result.value?.verdict)
+      autoTriggerTraceReport(options.result.value?.verdict)
     } catch {
       /* judgeClient 拦截器已提示 */
     } finally {

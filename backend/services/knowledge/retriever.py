@@ -58,7 +58,8 @@ def _expand_query_tokens(tokens: list[str]) -> list[str]:
     expanded = list(tokens)
     for t in tokens:
         for key, aliases in SYNONYM_MAP.items():
-            if t == key.lower() or t in key.lower():
+            key_lower = key.lower()
+            if t == key_lower or t in key_lower or key_lower in t:
                 expanded.extend(_tokenize(" ".join(aliases)))
     return expanded
 

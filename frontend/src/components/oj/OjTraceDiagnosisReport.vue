@@ -1,0 +1,364 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import {
+  Warning,
+  Document,
+  MagicStick,
+  Compass,
+  TrendCharts,
+  Collection,
+  Guide,
+} from '@element-plus/icons-vue'
+import type { TraceDiagnosisReport, TraceStepBrief } from '@/types/codeTrace'
+import OjTraceStepTimeline from '@/components/oj/OjTraceStepTimeline.vue'
+
+const props = defineProps<{
+  report: TraceDiagnosisReport | null
+  loading?: boolean
+  consecutiveFailures?: number
+}>()
+
+const VERDICT_TAG: Record<string, { label: string; type: 'danger' | 'warning' | 'info' }> = {
+  WA: { label: 'WA · 答案错误', type: 'warning' },
+  TLE: { label: 'TLE · 超时', type: 'danger' },
+  RE: { label: 'RE · 运行错误', type: 'danger' },
+  CE: { label: 'CE · 编译错误', type: 'danger' },
+}
+
+const errorTag = computed(() => {
+  const et = props.report?.error_type ?? ''
+  return VERDICT_TAG[et] ?? { label: et || '未知', type: 'info' as const }
+})
+
+const sourceLabel = computed(() => {
+  const s = props.report?.source
+  if (s === 'llm') return 'AI 诊断'
+  if (s === 'demo') return '演示诊断'
+  return '规则诊断'
+})
+
+const sourceTagType = computed(() => {
+  const s = props.report?.source
+  if (s === 'llm') return 'success'
+  if (s === 'demo') return 'info'
+  return 'warning'
+})
+
+const RESOURCE_TYPE_LABEL: Record<string, string> = {
+  document: '概念文档',
+  mindmap: '思维导图',
+  exercises: '变式题单',
+  code_case: '代码沙盒',
+  trace_animation: 'Trace 动画',
+  reading: '拓展阅读',
+}
+
+const errorStepDisplay = computed(() => {
+  const es = props.report?.error_step
+  if (!es) return null
+  return `Step ${es.step_index + 1} · 代码第 ${es.line} 行`
+})
+</script>
+
+<template>
+  <div v-if="report || loading" v-loading="loading" class="trace-report">
+    <header class="trace-report__head">
+      <el-icon class="trace-report__icon"><MagicStick /></el-icon>
+      <span class="trace-report__title">AI Trace 诊断报告</span>
+      <el-tag v-if="report" size="small" :type="sourceTagType" effect="plain">
+        {{ sourceLabel }}
+      </el-tag>
+    </header>
+
+    <template v-if="report">
+      <div class="trace-report__meta">
+        <div class="trace-report__meta-row">
+          <span class="trace-report__label">错误类型</span>
+          <el-tag size="small" :type="errorTag.type">{{ errorTag.label }}</el-tag>
+        </div>
+        <div class="trace-report__meta-row">
+          <span class="trace-report__label">失败测试点</span>
+          <span class="trace-report__value">{{ report.failed_test_point || '—' }}</span>
+        </div>
+        <div v-if="errorStepDisplay" class="trace-report__meta-row trace-report__meta-row--error">
+          <span class="trace-report__label">
+            <el-icon><Warning /></el-icon>
+            出错步骤
+          </span>
+          <el-tag size="small" type="danger" effect="dark">{{ errorStepDisplay }}</el-tag>
+        </div>
+      </div>
+
+      <section v-if="report.key_variable_changes.length" class="trace-report__section">
+        <div class="trace-report__section-title">
+          <el-icon><TrendCharts /></el-icon>
+          关键变量变化
+        </div>
+        <div class="trace-report__var-changes">
+          <div
+            v-for="(vc, i) in report.key_variable_changes"
+            :key="i"
+            class="trace-report__var-change"
+            :class="{ 'trace-report__var-change--error': report.error_step?.step_index === vc.step_index }"
+          >
+            <span class="vc-step">Step {{ vc.step_index + 1 }}</span>
+            <span class="vc-line">L{{ vc.line }}</span>
+            <span class="vc-name">{{ vc.variable_name }}</span>
+            <span class="vc-arrow">→</span>
+            <span class="vc-before">{{ vc.before }}</span>
+            <span class="vc-sep">→</span>
+            <span class="vc-after">{{ vc.after }}</span>
+          </div>
+        </div>
+      </section>
+
+      <section v-if="report.possible_cause" class="trace-report__section">
+        <div class="trace-report__section-title">
+          <el-icon><Warning /></el-icon>
+          可能原因
+        </div>
+        <p class="trace-report__text">{{ report.possible_cause }}</p>
+      </section>
+
+      <section v-if="report.fix_suggestion" class="trace-report__section trace-report__section--fix">
+        <div class="trace-report__section-title">
+          <el-icon><Compass /></el-icon>
+          修复建议
+        </div>
+        <p class="trace-report__text trace-report__text--fix">{{ report.fix_suggestion }}</p>
+      </section>
+
+      <section v-if="report.trace_steps.length" class="trace-report__section">
+        <div class="trace-report__section-title">
+          <el-icon><Collection /></el-icon>
+          执行轨迹概览
+        </div>
+        <OjTraceStepTimeline
+          :steps="report.trace_steps"
+          :error-step-index="report.error_step?.step_index ?? -1"
+        />
+      </section>
+
+      <section v-if="report.recommended_resources.length" class="trace-report__section">
+        <div class="trace-report__section-title">
+          <el-icon><Document /></el-icon>
+          推荐复习资源
+        </div>
+        <ul class="trace-report__resources">
+          <li v-for="(res, i) in report.recommended_resources" :key="i">
+            <el-tag size="small" effect="plain">
+              {{ RESOURCE_TYPE_LABEL[res.resource_type] ?? res.resource_type }}
+            </el-tag>
+            <span class="res-topic">{{ res.topic }}</span>
+            <span v-if="res.reason" class="res-reason">{{ res.reason }}</span>
+          </li>
+        </ul>
+      </section>
+
+      <div v-if="report.path_rearrange_triggered" class="trace-report__path-alert">
+        <el-icon><Guide /></el-icon>
+        <span>检测到连续受挫，已建议插入巩固节点。</span>
+      </div>
+    </template>
+  </div>
+</template>
+
+<style scoped>
+.trace-report {
+  margin-top: 12px;
+  padding: 16px 18px;
+  border-radius: var(--alp-radius-card);
+  border: 1px solid color-mix(in srgb, var(--el-color-danger) 40%, var(--alp-color-border));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--el-color-danger) 6%, var(--alp-bg-surface-muted)) 0%,
+    color-mix(in srgb, #a78bfa 4%, var(--alp-bg-surface-muted)) 100%
+  );
+}
+
+.trace-report__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.trace-report__icon {
+  color: var(--el-color-danger);
+  font-size: 20px;
+}
+
+.trace-report__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--el-text-color-primary);
+}
+
+.trace-report__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--alp-bg-surface);
+  border: 1px solid var(--alp-color-border);
+}
+
+.trace-report__meta-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.trace-report__meta-row--error {
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--el-color-danger) 10%, var(--alp-bg-surface));
+  border: 1px solid color-mix(in srgb, var(--el-color-danger) 30%, var(--alp-color-border));
+}
+
+.trace-report__label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 80px;
+  font-weight: 600;
+  color: var(--el-text-color-secondary);
+}
+
+.trace-report__value {
+  color: var(--el-text-color-primary);
+  font-size: 13px;
+}
+
+.trace-report__section {
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--alp-bg-surface);
+  border: 1px solid var(--alp-color-border);
+}
+
+.trace-report__section--fix {
+  border-color: color-mix(in srgb, var(--el-color-success) 35%, var(--alp-color-border));
+}
+
+.trace-report__section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--el-text-color-primary);
+}
+
+.trace-report__text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--el-text-color-regular);
+}
+
+.trace-report__text--fix {
+  color: var(--el-color-success);
+  font-weight: 500;
+}
+
+.trace-report__var-changes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.trace-report__var-change {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: ui-monospace, Consolas, monospace;
+  background: var(--alp-bg-surface-muted);
+  border: 1px solid var(--alp-color-border);
+}
+
+.trace-report__var-change--error {
+  border-color: color-mix(in srgb, var(--el-color-danger) 50%, var(--alp-color-border));
+  background: color-mix(in srgb, var(--el-color-danger) 8%, var(--alp-bg-surface-muted));
+}
+
+.vc-step {
+  color: var(--el-text-color-secondary);
+  font-weight: 600;
+}
+
+.vc-line {
+  color: var(--el-color-primary);
+  font-weight: 600;
+}
+
+.vc-name {
+  color: var(--el-color-danger);
+  font-weight: 700;
+}
+
+.vc-arrow,
+.vc-sep {
+  color: var(--el-text-color-placeholder);
+}
+
+.vc-before {
+  color: var(--el-text-color-secondary);
+}
+
+.vc-after {
+  color: var(--el-color-primary);
+  font-weight: 600;
+}
+
+.trace-report__resources {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.trace-report__resources li {
+  margin-bottom: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.res-topic {
+  font-weight: 500;
+}
+
+.res-reason {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.trace-report__path-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--el-color-warning) 12%, var(--alp-bg-surface));
+  border: 1px solid color-mix(in srgb, var(--el-color-warning) 40%, var(--alp-color-border));
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--el-color-warning);
+  animation: path-alert-pulse 1.5s ease-in-out 2;
+}
+
+@keyframes path-alert-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--el-color-warning) 25%, transparent); }
+}
+</style>

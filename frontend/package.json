@@ -10,6 +10,7 @@
     "test:oj-struggle": "npx tsx --tsconfig tsconfig.app.json src/utils/ojStruggleSession.test.ts",
     "test:path-replan-diff": "npx tsx --tsconfig tsconfig.app.json src/utils/pathReplanDiff.test.ts",
     "test:graph-module": "npx tsx --tsconfig tsconfig.app.json src/utils/graphModuleContract.test.ts",
+    "test:a3-demo": "npx tsx --tsconfig tsconfig.app.json src/utils/a3DemoMainFlow.test.ts",
     "preview": "vite preview"
   },
   "dependencies": {

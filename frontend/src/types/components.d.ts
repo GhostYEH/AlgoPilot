@@ -11,6 +11,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AgentStatusGrid: typeof import('./../components/agents/AgentStatusGrid.vue')['default']
     AgentThinkingConsole: typeof import('./../components/agents/AgentThinkingConsole.vue')['default']
     AiTutorPanel: typeof import('./../components/learning/AiTutorPanel.vue')['default']
     AlgorithmLearningMap: typeof import('./../components/learning/AlgorithmLearningMap.vue')['default']
@@ -28,8 +29,6 @@ declare module 'vue' {
     ElButton: typeof import('element-plus/es')['ElButton']
     ElButtonGroup: typeof import('element-plus/es')['ElButtonGroup']
     ElCard: typeof import('element-plus/es')['ElCard']
-    ElCarousel: typeof import('element-plus/es')['ElCarousel']
-    ElCarouselItem: typeof import('element-plus/es')['ElCarouselItem']
     ElCol: typeof import('element-plus/es')['ElCol']
     ElCollapse: typeof import('element-plus/es')['ElCollapse']
     ElCollapseItem: typeof import('element-plus/es')['ElCollapseItem']
@@ -100,7 +99,9 @@ declare module 'vue' {
     OjDsHintCard: typeof import('./../components/oj/OjDsHintCard.vue')['default']
     OjPracticeRow: typeof import('./../components/oj/OjPracticeRow.vue')['default']
     OjStruggleInterventionPanel: typeof import('./../components/oj/OjStruggleInterventionPanel.vue')['default']
+    OjTraceDiagnosisReport: typeof import('./../components/oj/OjTraceDiagnosisReport.vue')['default']
     OjTraceSplitView: typeof import('./../components/oj/OjTraceSplitView.vue')['default']
+    OjTraceStepTimeline: typeof import('./../components/oj/OjTraceStepTimeline.vue')['default']
     OjTutoringSection: typeof import('./../components/oj/OjTutoringSection.vue')['default']
     OjWorkbench: typeof import('./../components/oj/OjWorkbench.vue')['default']
     PageTransition: typeof import('./../components/layout/PageTransition.vue')['default']
@@ -131,6 +132,7 @@ declare module 'vue' {
     TraceStackScene: typeof import('./../components/oj/trace/TraceStackScene.vue')['default']
     TraceTreePanel: typeof import('./../components/oj/trace/TraceTreePanel.vue')['default']
     TraceVizLegend: typeof import('./../components/oj/trace/TraceVizLegend.vue')['default']
+    TrustEvidenceDrawer: typeof import('./../components/resources/TrustEvidenceDrawer.vue')['default']
   }
   export interface GlobalDirectives {
     vLoading: typeof import('element-plus/es')['ElLoadingDirective']
