@@ -25,7 +25,7 @@ HIDDEN_SUPPLEMENT: dict[str, list[dict[str, Any]]] = {
     ],
     "average-of-levels-in-binary-tree": [
         {"args": [[1]], "expected": [1.0]},
-        {"args": [[1, 2, 3]], "expected": [2.0, 2.5]},
+        {"args": [[1, 2, 3]], "expected": [1.0, 2.5]},
     ],
     "best-time-to-buy-and-sell-stock": [
         {"args": [[7, 6, 4, 3, 1]], "expected": 0},
@@ -37,7 +37,7 @@ HIDDEN_SUPPLEMENT: dict[str, list[dict[str, Any]]] = {
     ],
     "binary-tree-inorder-traversal": [
         {"args": [[1]], "expected": [1]},
-        {"args": [[2, 3, None, 1]], "expected": [3, 2, 1]},
+        {"args": [[1, None, 2, 3]], "expected": [1, 3, 2]},
     ],
     "binary-tree-level-order-traversal": [
         {"args": [[1, 2]], "expected": [[1], [2]]},
@@ -162,7 +162,7 @@ HIDDEN_SUPPLEMENT: dict[str, list[dict[str, Any]]] = {
     ],
     "lowest-common-ancestor-of-a-binary-tree": [
         {"args": [[3, 5, 1, 6, 2, 0, 8, None, None, 7, 4], 5, 1], "expected": 3},
-        {"args": [[1, 2, 3, 4, 5], 4, 5], "expected": 4},
+        {"args": [[1, 2, 3, 4, 5], 4, 5], "expected": 2},
     ],
     "maximum-binary-tree": [
         {"args": [[1]], "expected": [1]},
@@ -186,7 +186,7 @@ HIDDEN_SUPPLEMENT: dict[str, list[dict[str, Any]]] = {
     ],
     "minimum-depth-of-binary-tree": [
         {"args": [[1, 2]], "expected": 2},
-        {"args": [[1, None, 2, 3]], "expected": 2},
+        {"args": [[1, None, 2]], "expected": 2},
     ],
     "minimum-number-of-arrows-to-burst-balloons": [
         {"args": [[[1, 2], [3, 4], [5, 6], [7, 8]]], "expected": 4},
@@ -213,7 +213,7 @@ HIDDEN_SUPPLEMENT: dict[str, list[dict[str, Any]]] = {
         {"args": [[1, 3, 5, 2], [1, 3, 5, 2]], "expected": [3, 5, -1, -1]},
     ],
     "next-greater-element-ii": [
-        {"args": [[3, 8, 4, 1, 2]], "expected": [8, -1, 8, 3, 4]},
+        {"args": [[3, 8, 4, 1, 2]], "expected": [8, -1, 8, 2, 3]},
         {"args": [[1, 2, 3]], "expected": [2, 3, -1]},
     ],
     "non-overlapping-intervals": [
@@ -229,7 +229,7 @@ HIDDEN_SUPPLEMENT: dict[str, list[dict[str, Any]]] = {
         {"args": [[1, 2], 1], "expected": False},
     ],
     "path-sum-ii": [
-        {"args": [[1, 2, 5], 8], "expected": [[1, 2, 5]]},
+        {"args": [[5, 4, 8, 11, None, 13, 4, 7, 2, None, None, 5, 1], 22], "expected": [[5, 4, 11, 2], [5, 8, 4, 5]]},
         {"args": [[1, 2, 3, 4, 5], 10], "expected": []},
     ],
     "permutations": [
@@ -305,7 +305,7 @@ HIDDEN_SUPPLEMENT: dict[str, list[dict[str, Any]]] = {
     ],
     "sliding-window-maximum": [
         {"args": [[1], 1], "expected": [1]},
-        {"args": [[9, 10, 9, 7, 4, 8, 6, 0, 1, 5], 4], "expected": [10, 10, 9, 8, 8, 8, 8, 5]},
+        {"args": [[9, 10, 9, 7, 4, 8, 6, 0, 1, 5], 4], "expected": [10, 10, 9, 8, 8, 8, 6]},
     ],
     "spiral-matrix": [
         {"args": [[[1, 2, 3, 4]]], "expected": [1, 2, 3, 4]},
@@ -325,7 +325,7 @@ HIDDEN_SUPPLEMENT: dict[str, list[dict[str, Any]]] = {
     ],
     "subtree-of-another-tree": [
         {"args": [[1], [2]], "expected": False},
-        {"args": [[1, 2, 3], [2, 3]], "expected": True},
+        {"args": [[3, 4, 5, 1, 2], [4, 1, 2]], "expected": True},
     ],
     "sudoku-solver": [
         {
@@ -370,7 +370,7 @@ HIDDEN_SUPPLEMENT: dict[str, list[dict[str, Any]]] = {
     ],
     "trapping-rain-water": [
         {"args": [[4, 2, 3]], "expected": 1},
-        {"args": [[1, 0, 2, 1, 3, 2, 1, 2, 1]], "expected": 2},
+        {"args": [[1, 0, 2, 1, 3, 2, 1, 2, 1]], "expected": 3},
     ],
     "trim-a-binary-search-tree": [
         {"args": [[3, 1, 4, None, 2], 2, 3], "expected": [3, 2]},

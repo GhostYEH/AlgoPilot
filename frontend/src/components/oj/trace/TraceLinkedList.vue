@@ -8,6 +8,7 @@ const props = defineProps<{
   name: string
   graph: LinkedListGraph
   pointerLabels?: Record<string, string[]>
+  pointerRefs?: { name: string; nodeId: string | null }[]
   hotNodes?: Set<string>
   hotEdges?: Set<string>
   hotPointers?: Set<string>
@@ -16,6 +17,10 @@ const props = defineProps<{
 
 const mainChain = computed(() => orderedFromHead(props.graph))
 const orphans = computed(() => orphanNodeIds(props.graph))
+const focusPointers = computed(() => {
+  const names = new Set(['prev', 'curr', 'current', 'nxt', 'next'])
+  return (props.pointerRefs ?? []).filter((item) => names.has(item.name))
+})
 
 function edgeHot(fromId: string) {
   const to = props.graph.nodes[fromId]?.next ?? null
@@ -39,6 +44,19 @@ function ptrHot(name: string) {
       <span class="tag">链表</span>
     </div>
     <TraceVizLegend variant="linked_list" />
+
+    <div v-if="focusPointers.length" class="trace-ll-focus" aria-label="关键指针状态">
+      <span class="trace-ll-focus__title">三指针观察窗</span>
+      <span
+        v-for="pointer in focusPointers"
+        :key="pointer.name"
+        class="trace-ll-focus__item"
+        :class="{ 'trace-ll-focus__item--hot': ptrHot(pointer.name) }"
+      >
+        <strong>{{ pointer.name }}</strong>
+        <span>→ {{ pointer.nodeId ?? 'null' }}</span>
+      </span>
+    </div>
 
     <div v-if="!Object.keys(graph.nodes).length" class="trace-ll-empty">空链表</div>
 
@@ -136,6 +154,42 @@ function ptrHot(name: string) {
   border-radius: 8px;
   background: var(--alp-bg-soft-block);
   border: 1px solid var(--alp-color-border);
+}
+
+.trace-ll-focus {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--el-color-primary) 30%, var(--alp-color-border));
+  background: color-mix(in srgb, var(--el-color-primary) 6%, var(--alp-bg-surface));
+}
+
+.trace-ll-focus__title {
+  margin-right: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--el-color-primary);
+}
+
+.trace-ll-focus__item {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px 7px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-family: ui-monospace, Consolas, monospace;
+  color: var(--el-text-color-regular);
+  background: var(--alp-bg-surface-muted);
+}
+
+.trace-ll-focus__item--hot {
+  color: #713f12;
+  background: #fde68a;
+  box-shadow: 0 0 0 2px color-mix(in srgb, #f59e0b 30%, transparent);
 }
 
 .trace-ll-section-title {

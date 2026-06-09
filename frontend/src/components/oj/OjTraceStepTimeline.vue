@@ -32,7 +32,7 @@ const hasGap = computed(() => displaySteps.value.length < props.steps.length)
 <template>
   <div class="step-timeline">
     <div
-      v-for="(step, i) in displaySteps"
+      v-for="step in displaySteps"
       :key="step.step_index"
       class="step-item"
       :class="{

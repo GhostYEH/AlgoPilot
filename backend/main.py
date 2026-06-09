@@ -55,6 +55,7 @@ from api.mastery import router as mastery_router
 from api.events import router as events_router
 from api.analytics import router as analytics_router
 from api.teacher_dashboard import router as teacher_dashboard_router
+from api.competition import router as competition_router
 from core.config import settings
 from core.database import Base, engine
 
@@ -119,6 +120,7 @@ app.include_router(mastery_router, prefix="/api")
 app.include_router(events_router, prefix="/api")
 app.include_router(analytics_router, prefix="/api")
 app.include_router(teacher_dashboard_router, prefix="/api")
+app.include_router(competition_router, prefix="/api")
 
 # --- 内嵌前端静态文件（打包部署时使用） ---
 _FRONTEND_DIR: Path | None = None

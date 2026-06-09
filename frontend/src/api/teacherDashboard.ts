@@ -1,92 +1,56 @@
 import request from '@/utils/request'
 
-export interface ClassOverviewResponse {
+export interface ClassLearningOverview {
   student_count: number
-  avg_mastery: number
-  active_rate_7d: number
-  oj_accept_rate: number
-  error_type_distribution: Record<string, number>
-  is_demo: boolean
+  profile_count: number
+  average_mastery: number
+  resource_count: number
+  oj_submission_count: number
 }
 
-export interface WeakModuleItem {
+export interface WeakKnowledgePoint {
   module_key: string
   module_label: string
-  avg_mastery: number
   error_count: number
+  affected_students: number
 }
 
-export interface WeakKnowledgeItem {
-  knowledge_point: string
-  error_count: number
-  typical_error: string
-}
-
-export interface WeakProblemTypeItem {
-  problem_slug: string
-  problem_title: string
-  wa_count: number
-  tle_count: number
-}
-
-export interface WeakPointsResponse {
-  weak_modules: WeakModuleItem[]
-  weak_knowledge_points: WeakKnowledgeItem[]
-  weak_problem_types: WeakProblemTypeItem[]
-  recommended_teaching_focus: string[]
-  is_demo: boolean
-}
-
-export interface ResourceStatItem {
-  resource_type: string
-  resource_label: string
+export interface ErrorTypeStat {
+  error_type: string
+  label: string
   count: number
-  usage_rate: number
-  avg_feedback_score: number
+  percentage: number
 }
 
-export interface ResourceStatsResponse {
-  resource_stats: ResourceStatItem[]
-  recommended_supplements: string[]
+export interface TeachingSuggestion {
+  title: string
+  reason: string
+  focus: string
+}
+
+export interface RecommendedOjProblem {
+  slug: string
+  title: string
+}
+
+export interface ReinforcementPack {
+  module_key: string
+  module_label: string
+  resource_types: string[]
+  oj_problems: RecommendedOjProblem[]
+}
+
+export interface TeacherDashboardSummary {
+  overview: ClassLearningOverview
+  weak_knowledge_points: WeakKnowledgePoint[]
+  error_types: ErrorTypeStat[]
+  teaching_suggestions: TeachingSuggestion[]
+  reinforcement_packs: ReinforcementPack[]
   is_demo: boolean
+  data_note: string
+  generated_at: string
 }
 
-export interface StrugglingStudentItem {
-  user_id: number
-  username: string
-  consecutive_failures: number
-  last_problem: string
-  suggested_action: string
-}
-
-export interface HighPerformerItem {
-  user_id: number
-  username: string
-  ac_count: number
-  avg_mastery: number
-  suggested_project: string
-}
-
-export interface InterventionResponse {
-  struggling_students: StrugglingStudentItem[]
-  class_common_issues: string[]
-  suggested_topic_resources: string[]
-  high_performers: HighPerformerItem[]
-  is_demo: boolean
-}
-
-export async function fetchClassOverview(): Promise<ClassOverviewResponse> {
-  return request.get('/api/teacher-dashboard/class-overview') as Promise<ClassOverviewResponse>
-}
-
-export async function fetchWeakPoints(): Promise<WeakPointsResponse> {
-  return request.get('/api/teacher-dashboard/weak-points') as Promise<WeakPointsResponse>
-}
-
-export async function fetchResourceStats(): Promise<ResourceStatsResponse> {
-  return request.get('/api/teacher-dashboard/resource-stats') as Promise<ResourceStatsResponse>
-}
-
-export async function fetchInterventions(): Promise<InterventionResponse> {
-  return request.get('/api/teacher-dashboard/interventions') as Promise<InterventionResponse>
+export function fetchTeacherDashboardSummary() {
+  return request.get<unknown, TeacherDashboardSummary>('/api/teacher/dashboard-summary')
 }

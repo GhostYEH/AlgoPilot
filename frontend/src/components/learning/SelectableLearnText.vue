@@ -129,8 +129,8 @@ function onAsk() {
     hidePopover()
     return
   }
-  if (!popover.value.text || bridge.loading) {
-    console.warn('[SelectableLearnText] onAsk early return', { text: popover.value.text, loading: bridge.loading })
+  if (!popover.value.text || unref(bridge.loading)) {
+    console.warn('[SelectableLearnText] onAsk early return', { text: popover.value.text, loading: unref(bridge.loading) })
     return
   }
   const q = formatSelectionQuestion(popover.value.text)

@@ -232,10 +232,15 @@ def _build_chunk(
     primary_module = module_keys[0] if module_keys else ""
     return KnowledgeChunk(
         id=chunk_id,
+        chunk_id=chunk_id,
         module_key=primary_module,
+        module_id=primary_module,
         title=f"{doc_title} · {section}",
+        chapter_title=doc_title,
+        section_title=section,
         keywords=kw,
         content=body,
+        excerpt=re.sub(r"\s+", " ", body).strip()[:240],
         chunk_type=_slug(section),
         course_id=course_id,
         chapter_id=chapter_id,

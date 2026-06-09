@@ -38,6 +38,7 @@ const emit = defineEmits<{
   narrate: []
   diagnose: []
   visualTraceDiagnose: []
+  demo: []
   closeTrace: []
 }>()
 </script>
@@ -76,6 +77,7 @@ const emit = defineEmits<{
         @trace="emit('trace')"
         @diagnose="emit('diagnose')"
         @visual-trace-diagnose="emit('visualTraceDiagnose')"
+        @demo="emit('demo')"
       />
     </div>
 
@@ -115,6 +117,7 @@ const emit = defineEmits<{
         @trace="emit('trace')"
         @diagnose="emit('diagnose')"
         @visual-trace-diagnose="emit('visualTraceDiagnose')"
+        @demo="emit('demo')"
       />
     </OjTraceSplitView>
   </div>

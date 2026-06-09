@@ -188,6 +188,13 @@ export interface TraceBugDiagnoseResponse {
   diagnosis_title: string
   detailed_analysis: string
   source?: string
+  error_type?: string
+  error_type_label?: string
+  why_failed?: string
+  fix_suggestion?: string
+  recommended_knowledge_points?: string[]
+  intervention_suggestion?: string
+  variable_evidence?: string[]
   tutoring?: OjTutoringPayload | null
 }
 
@@ -209,11 +216,17 @@ export interface TraceStepBrief {
 
 export interface TraceDiagnosisReport {
   error_type: string
+  error_category: string
+  error_category_label: string
   failed_test_point: string
   key_variable_changes: VarChangeItem[]
   error_step: TraceStepBrief | null
   possible_cause: string
+  why_failed: string
   fix_suggestion: string
+  recommended_knowledge_points: string[]
+  intervention_suggestion: string
+  learning_intervention_generated: boolean
   recommended_resources: RecommendedResourceHint[]
   path_rearrange_triggered: boolean
   trace_steps: TraceStepBrief[]

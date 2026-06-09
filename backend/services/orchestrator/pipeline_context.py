@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 
 
 @dataclass
@@ -38,14 +39,30 @@ class PipelineContext:
         role: str = "",
         resource_type: str = "",
         status: str = "done",
+        duration_ms: int | None = None,
+        validation_result: dict | None = None,
+        retry_count: int = 0,
+        input_summary: str = "",
+        output_summary: str = "",
+        failure_reason: str = "",
     ) -> None:
         entry = {
             "agent": agent,
+            "agent_id": agent,
+            "agent_name": agent,
             "role": role,
             "action": action,
             "detail": detail[:500],
+            "message": detail[:500],
             "resource_type": resource_type,
             "status": status,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "duration_ms": duration_ms,
+            "validation_result": validation_result,
+            "retry_count": retry_count,
+            "input_summary": input_summary[:500],
+            "output_summary": output_summary[:500],
+            "failure_reason": failure_reason[:500],
         }
         self.collaboration_log.append(entry)
         self.agent_logs.append(entry)

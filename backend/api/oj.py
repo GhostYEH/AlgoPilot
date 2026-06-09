@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -78,6 +79,8 @@ def api_list_problems(q: str | None = Query(None, description="按标题或 slug
         chapter_id = p.get("chapter_id", "")
         module_key = p.get("module_key", "")
         skill_id = p.get("skill_id", "")
+        tags = p.get("tags", [])
+        common_errors = p.get("common_errors", [])
         try:
             detail = get_public_problem(slug)
             ready = detail["ready"]
@@ -85,6 +88,8 @@ def api_list_problems(q: str | None = Query(None, description="按标题或 slug
             chapter_id = detail.get("chapter_id", chapter_id)
             module_key = detail.get("module_key", module_key)
             skill_id = detail.get("skill_id", skill_id)
+            tags = detail.get("tags", tags)
+            common_errors = detail.get("common_errors", common_errors)
         except ProblemNotFoundError:
             ready = False
         items.append(
@@ -98,6 +103,8 @@ def api_list_problems(q: str | None = Query(None, description="按标题或 slug
                 chapter_id=chapter_id,
                 module_key=module_key,
                 skill_id=skill_id,
+                tags=tags,
+                common_errors=common_errors,
             )
         )
     return items
@@ -413,7 +420,13 @@ async def api_trace_bug_diagnose(
         }
         for s in body.steps
     ]
-    result = await diagnose_trace_bug(description, body.code, steps_raw)
+    result = await diagnose_trace_bug(
+        description,
+        body.code,
+        steps_raw,
+        slug=slug,
+        judge_verdict="WA",
+    )
     tutoring = apply_oj_tutoring(
         db,
         user,
@@ -792,6 +805,7 @@ async def api_trace_report(
     bug_step_index = 0
     diagnosis_title = ""
     detailed_analysis = ""
+    fix_suggestion = ""
     source = "fallback"
 
     ast_gate = gate_code_before_dynamic_analysis(body.code, language=lang)
@@ -826,6 +840,9 @@ async def api_trace_report(
             (problem.get("description") or "")[:2000],
             body.code,
             trace_steps,
+            slug=slug,
+            judge_verdict=judge_verdict,
+            failed_cases=failed_raw,
         )
         bug_step_index = int(diag.get("bug_step_index") or 0)
         diagnosis_title = str(diag.get("diagnosis_title") or "")
@@ -834,13 +851,19 @@ async def api_trace_report(
 
         llm_cause, llm_fix = await generate_llm_cause_and_fix(
             body.code, trace_steps, judge_verdict, bug_step_index,
+            problem_description=(problem.get("description") or "")[:2000],
+            failed_cases=failed_raw,
         )
         if llm_cause:
             detailed_analysis = llm_cause
         if llm_fix:
-            diagnosis_title = llm_fix
+            fix_suggestion = llm_fix
     else:
-        fallback = _fallback_trace_bug_diagnosis(trace_steps, compressed_lines)
+        fallback = _fallback_trace_bug_diagnosis(
+            trace_steps, compressed_lines,
+            user_code=body.code,
+            judge_verdict=judge_verdict,
+        )
         bug_step_index = int(fallback.get("bug_step_index") or 0)
         diagnosis_title = str(fallback.get("diagnosis_title") or "")
         detailed_analysis = str(fallback.get("detailed_analysis") or "")
@@ -870,6 +893,7 @@ async def api_trace_report(
         slug=slug,
         tutoring=tutoring,
         source=source,
+        fix_suggestion=fix_suggestion,
     )
 
     if user:

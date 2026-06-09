@@ -78,7 +78,36 @@ def _layered_hints(
     ])[:3]
 
 
-def _recommended_resources(skill_id: str, module_key: str, chapter_id: str) -> list[RecommendedResourceHint]:
+def _recommended_resources(
+    skill_id: str,
+    module_key: str,
+    chapter_id: str,
+    *,
+    slug: str = "",
+    error_type: ErrorType = "unknown",
+) -> list[RecommendedResourceHint]:
+    if slug == "reverse-linked-list" and error_type == "pointer_update_error":
+        return [
+            RecommendedResourceHint(
+                resource_type="trace_animation",
+                topic="指针更新动画",
+                reason="逐帧对比 prev / curr / nxt，识别后继保存时机",
+                chapter_id=chapter_id,
+            ),
+            RecommendedResourceHint(
+                resource_type="exercises",
+                topic="边界条件练习",
+                reason="覆盖空链表、单节点与双节点反转",
+                chapter_id=chapter_id,
+            ),
+            RecommendedResourceHint(
+                resource_type="reading",
+                topic="错题复盘卡",
+                reason="记录断链步骤、循环不变量与修复顺序",
+                chapter_id=chapter_id,
+            ),
+        ]
+
     out: list[RecommendedResourceHint] = []
     try:
         from services.skills.registry import SkillRegistry
@@ -184,7 +213,13 @@ def apply_oj_tutoring(
         hint_level=hint_level,
         analysis=detailed_analysis,
     )
-    resources = _recommended_resources(skill_id, ctx.get("module_key") or "", ctx.get("chapter_id") or "")
+    resources = _recommended_resources(
+        skill_id,
+        ctx.get("module_key") or "",
+        ctx.get("chapter_id") or "",
+        slug=slug,
+        error_type=error_type,
+    )
 
     memory_event_id: int | None = None
     mastery_summary = ""

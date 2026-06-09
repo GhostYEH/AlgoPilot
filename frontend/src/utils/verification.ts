@@ -6,6 +6,11 @@ export interface GroundedChunkRef {
   id: string
   title?: string
   snippet?: string
+  module_id?: string
+  chapter_title?: string
+  section_title?: string
+  source_path?: string
+  relevance_score?: number
 }
 
 export interface ResourceVerification {

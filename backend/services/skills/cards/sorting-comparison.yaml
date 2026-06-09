@@ -6,7 +6,7 @@ description: 排序稳定性与复杂度对比；资源生成须含冒泡/插入
 prerequisites: [ch02-linear-list]
 triggers:
   keywords: [排序, 快排, 归并, 稳定, 原地]
-  module_keys: [array]
+  module_keys: [sorting]
   chapter_ids: [ch08-sorting]
   oj_verdicts: [WA, TLE]
   error_patterns: [pivot, 分区, 稳定]
@@ -28,4 +28,4 @@ evaluation_rules:
     weight: 1.0
     pass_threshold: 60
 recommended_resources: [document, ppt, mindmap]
-recommended_problems: [sort-colors]
+recommended_problems: [sorting-basic-output, sorting-inversion-count, sorting-kth-largest]

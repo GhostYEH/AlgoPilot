@@ -180,6 +180,8 @@ def _stdio(
     difficulty: str = "medium",
     description: str = "",
     order_insensitive: bool = False,
+    tags: list[str] | None = None,
+    common_errors: list[str] | None = None,
 ) -> dict[str, Any]:
     """洛谷风格：测例直接给出 stdin/stdout，完整 main 程序判题。"""
     desc = description or "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。"
@@ -192,6 +194,8 @@ def _stdio(
         "samples": samples,
         "hidden": hidden or [],
         "order_insensitive": order_insensitive,
+        "tags": tags or [],
+        "common_errors": common_errors or [],
     }
 
 
@@ -267,6 +271,84 @@ def _p(
 
 
 TEST_DEFINITIONS: dict[str, dict[str, Any]] = {
+    "sorting-basic-output": _stdio(
+        difficulty="easy",
+        tags=["sorting", "数组", "基础排序"],
+        common_errors=[
+            "只读取了第一行部分数据，未按 n 读取完整序列。",
+            "输出格式多出括号、逗号或提示文字，导致标准输出不匹配。",
+            "重复值、负数或 n=1 时使用了错误的边界。",
+        ],
+        description=(
+            "## 基础排序输出\n\n"
+            "给定 `n` 个整数，请按非递减顺序输出排序结果。\n\n"
+            "**输入**：第一行一个整数 `n`；第二行包含 `n` 个整数。\n\n"
+            "**输出**：一行 `n` 个整数，相邻整数以一个空格分隔。\n\n"
+            "**样例输入**\n```text\n5\n5 1 4 2 8\n```\n\n"
+            "**样例输出**\n```text\n1 2 4 5 8\n```\n\n"
+            "建议先验证输入输出与边界，再比较标准库排序和手写排序的复杂度。"
+        ),
+        samples=[
+            {"stdin": "5\n5 1 4 2 8\n", "stdout": "1 2 4 5 8\n"},
+            {"stdin": "6\n3 -1 3 0 -5 2\n", "stdout": "-5 -1 0 2 3 3\n"},
+        ],
+        hidden=[
+            {"stdin": "1\n42\n", "stdout": "42\n"},
+            {"stdin": "8\n9 9 7 5 5 3 1 1\n", "stdout": "1 1 3 5 5 7 9 9\n"},
+        ],
+    ),
+    "sorting-inversion-count": _stdio(
+        difficulty="medium",
+        tags=["sorting", "归并排序", "逆序对", "分治"],
+        common_errors=[
+            "合并后没有把临时数组正确写回原区间。",
+            "右侧元素先取出时，逆序对增量应为左半区剩余元素数量。",
+            "逆序对总数可能超过 32 位整数范围，应使用 64 位整数。",
+        ],
+        description=(
+            "## 逆序对统计\n\n"
+            "若 `i < j` 且 `a[i] > a[j]`，则 `(i,j)` 是一个逆序对。给定整数序列，输出逆序对总数。\n\n"
+            "**输入**：第一行一个整数 `n`；第二行包含 `n` 个整数。\n\n"
+            "**输出**：一个整数，表示逆序对数量。\n\n"
+            "**样例输入**\n```text\n5\n7 5 6 4 3\n```\n\n"
+            "**样例输出**\n```text\n8\n```\n\n"
+            "建议使用归并排序，在合并有序区间时累计跨区间逆序对。"
+        ),
+        samples=[
+            {"stdin": "5\n7 5 6 4 3\n", "stdout": "8\n"},
+            {"stdin": "4\n1 2 3 4\n", "stdout": "0\n"},
+        ],
+        hidden=[
+            {"stdin": "5\n5 4 3 2 1\n", "stdout": "10\n"},
+            {"stdin": "6\n2 3 2 3 1 1\n", "stdout": "9\n"},
+        ],
+    ),
+    "sorting-kth-largest": _stdio(
+        difficulty="medium",
+        tags=["sorting", "TopK", "快速选择", "堆"],
+        common_errors=[
+            "混淆第 k 大与升序下标，目标位置应换算为 n-k。",
+            "快速选择分区后仍处理错误区间，或重复值使指针无法前进。",
+            "使用小根堆时堆大小未限制为 k，导致复杂度和结果错误。",
+        ],
+        description=(
+            "## 第 K 大元素\n\n"
+            "给定 `n` 个整数和整数 `k`，输出按从大到小排列后的第 `k` 个元素。重复元素分别计数。\n\n"
+            "**输入**：第一行两个整数 `n k`；第二行包含 `n` 个整数，保证 `1 <= k <= n`。\n\n"
+            "**输出**：一个整数，表示第 `k` 大元素。\n\n"
+            "**样例输入**\n```text\n6 2\n3 2 1 5 6 4\n```\n\n"
+            "**样例输出**\n```text\n5\n```\n\n"
+            "可使用排序、大小为 k 的小根堆，或平均 O(n) 的快速选择。"
+        ),
+        samples=[
+            {"stdin": "6 2\n3 2 1 5 6 4\n", "stdout": "5\n"},
+            {"stdin": "9 4\n3 2 3 1 2 4 5 5 6\n", "stdout": "4\n"},
+        ],
+        hidden=[
+            {"stdin": "1 1\n-7\n", "stdout": "-7\n"},
+            {"stdin": "7 5\n8 8 7 6 6 5 4\n", "stdout": "6\n"},
+        ],
+    ),
     "two-sum": _p(
         "twoSum",
         difficulty="easy",

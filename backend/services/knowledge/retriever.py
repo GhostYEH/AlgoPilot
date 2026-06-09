@@ -27,6 +27,8 @@ SYNONYM_MAP: dict[str, list[str]] = {
     "二叉树": ["binary tree", "binary-tree"],
     "回溯": ["backtracking", "dfs"],
     "贪心": ["greedy"],
+    "排序": ["sorting", "sort", "归并排序", "快速排序", "堆排序"],
+    "sorting": ["排序", "sort", "merge sort", "quick sort", "heap sort"],
     "图": ["graph", "图论", "bfs", "dfs"],
     "oj": ["在线评测", "编程题"],
 }
@@ -34,10 +36,16 @@ SYNONYM_MAP: dict[str, list[str]] = {
 
 class KnowledgeChunk(TypedDict, total=False):
     id: str
+    chunk_id: str
     module_key: str
+    module_id: str
     title: str
+    chapter_title: str
+    section_title: str
     keywords: list[str]
     content: str
+    excerpt: str
+    relevance_score: float
     chunk_type: str
     course_id: str
     chapter_id: str
@@ -73,11 +81,19 @@ def _load_legacy_chunks() -> list[KnowledgeChunk]:
         out.append(
             KnowledgeChunk(
                 id=item["id"],
+                chunk_id=item["id"],
                 module_key=item.get("module_key", ""),
+                module_id=item.get("module_key", ""),
                 title=item["title"],
+                chapter_title=item.get("chapter_title") or item["title"].split("·", 1)[0],
+                section_title=item.get("section_title")
+                or item.get("chunk_type", "")
+                or item["title"],
                 keywords=item.get("keywords", []),
                 content=item["content"],
+                excerpt=_excerpt(item["content"]),
                 chunk_type=item.get("chunk_type", ""),
+                source_path=item.get("source_path") or "knowledge_base/chunks.json",
             )
         )
     return out
@@ -210,7 +226,7 @@ class KnowledgeRetriever:
                 pool = scoped_course
 
         if not self._index:
-            return chunks[:top_k]
+            return [_retrieval_result(ch, 0.0, 0.0) for ch in chunks[:top_k]]
 
         id_to_idx = {cid: i for i, cid in enumerate(self._chunk_ids)}
         scored: list[tuple[float, KnowledgeChunk]] = []
@@ -240,14 +256,97 @@ class KnowledgeRetriever:
 
         seen: set[str] = set()
         out: list[KnowledgeChunk] = []
-        for _, ch in scored:
+        max_score = max((score for score, _ in scored), default=0.0)
+        for score, ch in scored:
             if ch["id"] in seen:
                 continue
             seen.add(ch["id"])
-            out.append(ch)
+            out.append(_retrieval_result(ch, score, max_score))
             if len(out) >= top_k:
                 break
         return out
+
+
+def _excerpt(content: str, limit: int = 240) -> str:
+    text = re.sub(r"\s+", " ", str(content or "")).strip()
+    if len(text) <= limit:
+        return text
+    return text[: limit - 1].rstrip() + "…"
+
+
+def _retrieval_result(
+    chunk: KnowledgeChunk,
+    score: float,
+    max_score: float,
+) -> KnowledgeChunk:
+    result = KnowledgeChunk(**chunk)
+    result["chunk_id"] = str(chunk.get("chunk_id") or chunk.get("id") or "")
+    result["module_id"] = str(
+        chunk.get("module_id") or chunk.get("module_key") or ""
+    )
+    result["chapter_title"] = str(
+        chunk.get("chapter_title")
+        or str(chunk.get("title") or "").split("·", 1)[0]
+    )
+    result["section_title"] = str(
+        chunk.get("section_title")
+        or chunk.get("section")
+        or chunk.get("chunk_type")
+        or chunk.get("title")
+        or ""
+    )
+    result["source_path"] = str(
+        chunk.get("source_path") or "knowledge_base/chunks.json"
+    )
+    result["excerpt"] = str(chunk.get("excerpt") or _excerpt(chunk.get("content", "")))
+    result["relevance_score"] = (
+        round(max(0.0, min(1.0, score / max_score)), 4) if max_score > 0 else 0.0
+    )
+    return result
+
+
+def build_source_records(
+    chunks: list[KnowledgeChunk],
+    *,
+    max_sources: int = 5,
+) -> list[dict[str, str | float]]:
+    """将检索命中转换为可持久化、可直接展示的课程来源。"""
+    sources: list[dict[str, str | float]] = []
+    seen: set[str] = set()
+    for chunk in chunks:
+        chunk_id = str(chunk.get("chunk_id") or chunk.get("id") or "")
+        if not chunk_id or chunk_id in seen:
+            continue
+        seen.add(chunk_id)
+        sources.append(
+            {
+                "chunk_id": chunk_id,
+                "module_id": str(
+                    chunk.get("module_id") or chunk.get("module_key") or ""
+                ),
+                "chapter_title": str(
+                    chunk.get("chapter_title")
+                    or str(chunk.get("title") or "").split("·", 1)[0]
+                ),
+                "section_title": str(
+                    chunk.get("section_title")
+                    or chunk.get("section")
+                    or chunk.get("chunk_type")
+                    or chunk.get("title")
+                    or ""
+                ),
+                "source_path": str(
+                    chunk.get("source_path") or "knowledge_base/chunks.json"
+                ),
+                "relevance_score": float(chunk.get("relevance_score") or 0.0),
+                "excerpt": str(
+                    chunk.get("excerpt") or _excerpt(chunk.get("content", ""))
+                ),
+            }
+        )
+        if len(sources) >= max_sources:
+            break
+    return sources
 
 
 def format_context_block(chunks: list[KnowledgeChunk]) -> str:

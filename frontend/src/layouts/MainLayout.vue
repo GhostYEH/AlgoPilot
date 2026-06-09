@@ -6,7 +6,7 @@ import { useTheme } from '@/composables/useTheme'
 import { providePersonaUi } from '@/composables/usePersonaUiProvider'
 import { ALGORITHM_MODULES, MODULE_ROUTE_NAMES } from '@/constants/modules'
 import { recordModuleVisit } from '@/utils/learningBookmarks'
-import { isLoggedIn, getUser, logout, isTeacher } from '@/stores/auth'
+import { isLoggedIn, getUser, logout } from '@/stores/auth'
 import PageTransition from '@/components/layout/PageTransition.vue'
 import LearningQuickPanel from '@/components/layout/LearningQuickPanel.vue'
 import { prefetchRoute } from '@/router/prefetch'
@@ -129,9 +129,9 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
           </template>
         </el-dropdown>
 
-        <el-menu-item v-if="isTeacher" index="/teacher-dashboard" @mouseenter="prefetchRoute('/teacher-dashboard')">
+        <el-menu-item index="/teacher-dashboard" @mouseenter="prefetchRoute('/teacher-dashboard')">
           <el-icon><DataLine /></el-icon>
-          <span>教师看板</span>
+          <span>教师教学看板</span>
         </el-menu-item>
         <el-menu-item index="/a3-demo" @mouseenter="prefetchRoute('/a3-demo')">
           <el-icon><Trophy /></el-icon>

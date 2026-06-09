@@ -112,9 +112,13 @@ function goHome() {
 }
 
 function goGenerateResources() {
+  const topic =
+    props.moduleKey === 'sorting'
+      ? '排序算法专题：归并、快速排序、堆排序与稳定性'
+      : '图论 BFS DFS ch06-graph'
   router.push({
     name: 'resources',
-    query: { topic: '图论 BFS DFS ch06-graph' },
+    query: { topic, module: props.moduleKey },
   })
 }
 
@@ -238,7 +242,7 @@ watch(
             skill: graph-bfs-dfs
           </el-tag>
         </div>
-        <div v-if="moduleKey === 'graph'" class="hero-actions">
+        <div v-if="moduleKey === 'graph' || moduleKey === 'sorting'" class="hero-actions">
           <el-button type="primary" plain size="small" :icon="MagicStick" @click="goGenerateResources">
             生成个性化资源
           </el-button>
@@ -493,7 +497,9 @@ watch(
 .ll-anim-fade-enter-active,
 .ll-anim-fade-leave-active,
 .graph-anim-fade-enter-active,
-.graph-anim-fade-leave-active {
+.graph-anim-fade-leave-active,
+.sorting-anim-fade-enter-active,
+.sorting-anim-fade-leave-active {
   transition:
     opacity 0.22s ease,
     transform 0.22s ease;
@@ -514,7 +520,9 @@ watch(
 .ll-anim-fade-enter-from,
 .ll-anim-fade-leave-to,
 .graph-anim-fade-enter-from,
-.graph-anim-fade-leave-to {
+.graph-anim-fade-leave-to,
+.sorting-anim-fade-enter-from,
+.sorting-anim-fade-leave-to {
   opacity: 0;
   transform: translateY(6px);
 }

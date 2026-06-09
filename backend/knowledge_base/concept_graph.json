@@ -6,6 +6,10 @@
     {"id": "sliding-window", "label": "滑动窗口", "module_key": "string", "keywords": ["滑动窗口", "sliding window", "子串"], "prerequisites": ["two-pointers-same"], "description": "维护可变窗口统计连续子串/子数组性质。"},
     {"id": "two-pointers-same", "label": "同向双指针", "module_key": "two-pointers", "keywords": ["同向", "快慢指针", "two pointers"], "prerequisites": ["array-traversal"], "description": "两指针同向移动，常用于去重与窗口类题。"},
     {"id": "two-pointers-opposite", "label": "相向双指针", "module_key": "two-pointers", "keywords": ["相向", "对撞", "sorted array"], "prerequisites": ["array-traversal", "binary-search"], "description": "左右夹逼，适用于有序数组求和对类问题。"},
+    {"id": "sorting-comparison", "label": "排序算法比较", "module_key": "sorting", "keywords": ["排序", "稳定性", "原地排序", "复杂度"], "prerequisites": ["array-traversal", "two-pointers-same"], "description": "从稳定性、原地性、时间与空间复杂度比较排序算法。"},
+    {"id": "merge-sort", "label": "归并排序", "module_key": "sorting", "keywords": ["归并排序", "merge sort", "逆序对"], "prerequisites": ["sorting-comparison"], "description": "使用分治和双指针合并有序区间，可扩展到逆序对统计。"},
+    {"id": "quick-select", "label": "快速排序与快速选择", "module_key": "sorting", "keywords": ["快速排序", "quick sort", "quickselect", "TopK"], "prerequisites": ["sorting-comparison"], "description": "利用 pivot 分区完成快速排序或平均 O(n) 的第 k 大选择。"},
+    {"id": "heap-sort", "label": "堆排序", "module_key": "sorting", "keywords": ["堆排序", "heap sort", "堆化"], "prerequisites": ["sorting-comparison"], "description": "通过建堆与下沉实现最坏 O(n log n) 的原地排序。"},
     {"id": "linked-list-pointer", "label": "链表指针操作", "module_key": "linked-list", "keywords": ["链表", "指针", "next"], "prerequisites": [], "description": "虚拟头结点、反转、快慢指针等指针技巧。"},
     {"id": "hash-map", "label": "哈希映射", "module_key": "hash-table", "keywords": ["哈希", "hash map", "两数之和"], "prerequisites": [], "description": "用空间换时间，O(1) 查找与计数。"},
     {"id": "stack-adt", "label": "栈 ADT", "module_key": "stack-queue", "keywords": ["栈", "stack", "LIFO"], "prerequisites": [], "description": "后进先出，支撑括号匹配与单调栈。"},
@@ -25,6 +29,9 @@
     {"id": "prob-climb", "label": "爬楼梯", "slug": "climbing-stairs", "module_key": "dp", "concept_ids": ["dp-state"], "difficulty": "easy", "keywords": ["dp", "斐波那契"]},
     {"id": "prob-coin-change", "label": "零钱兑换", "slug": "coin-change", "module_key": "dp", "concept_ids": ["dp-state"], "difficulty": "medium", "keywords": ["dp", "完全背包"]},
     {"id": "prob-reverse-list", "label": "反转链表", "slug": "reverse-linked-list", "module_key": "linked-list", "concept_ids": ["linked-list-pointer"], "difficulty": "easy", "keywords": ["链表", "反转"]},
+    {"id": "prob-sorting-basic", "label": "基础排序输出", "slug": "sorting-basic-output", "module_key": "sorting", "concept_ids": ["sorting-comparison"], "difficulty": "easy", "keywords": ["排序", "标准输入输出"]},
+    {"id": "prob-sorting-inversion", "label": "逆序对统计", "slug": "sorting-inversion-count", "module_key": "sorting", "concept_ids": ["merge-sort"], "difficulty": "medium", "keywords": ["归并排序", "逆序对"]},
+    {"id": "prob-sorting-kth", "label": "第 K 大元素", "slug": "sorting-kth-largest", "module_key": "sorting", "concept_ids": ["quick-select", "heap-sort"], "difficulty": "medium", "keywords": ["TopK", "快速选择", "堆"]},
     {"id": "prob-max-depth", "label": "二叉树最大深度", "slug": "maximum-depth-of-binary-tree", "module_key": "binary-tree", "concept_ids": ["tree-traversal"], "difficulty": "easy", "keywords": ["二叉树", "dfs"]}
   ],
   "pattern_edges": [
@@ -32,6 +39,8 @@
     {"source": "prob-3sum", "target": "binary-search", "label": "requires_sort"},
     {"source": "prob-daily-temp", "target": "monotonic-stack", "label": "uses"},
     {"source": "prob-two-sum", "target": "hash-map", "label": "uses"},
+    {"source": "prob-sorting-inversion", "target": "merge-sort", "label": "uses"},
+    {"source": "prob-sorting-kth", "target": "quick-select", "label": "uses"},
     {"source": "sliding-window", "target": "two-pointers-same", "label": "extends"}
   ]
 }

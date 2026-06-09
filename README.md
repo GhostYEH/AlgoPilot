@@ -91,6 +91,7 @@ flowchart LR
   D --> E[学习效果评估]
   E --> F[路径动态调整]
   F --> B
+  E --> G[教师教学看板]
 ```
 
 | 步骤 | 演示动作 | 页面 / API |
@@ -101,6 +102,23 @@ flowchart LR
 | 4 辅导 | 模块讲义 + AI 助教；OJ 提交 WA → Trace 动画 → AI 诊断 | 模块学习页 · `PracticeProblemView` |
 | 5 评估 | 我的学习 → 效果评估 → 查看得分与推送策略 → 「按评估重排路径」 | `LearningEvaluationPanel` · `POST /evaluation` |
 | 6 调整 | 展示路径顺序变化；连续非 AC ≥3 次时 OJ 页自动调用 `POST /evaluation/oj-struggle`（**已实现自动触发**） | 路径页 / OJ 练习页 |
+| 7 教学落地 | 顶栏进入「教师教学看板」→ 查看班级概览、薄弱点、错误类型、3 条补讲建议与课后巩固包 | `/teacher-dashboard` · `GET /api/teacher/dashboard-summary` |
+
+---
+
+### 教师教学看板
+
+教师教学看板将现有学生侧数据聚合为课堂决策信息，不新增独立班级表：
+
+- `users.role=student`：班级学生数；
+- `student_profiles`：画像数量、掌握度缓存和 Evaluation 快照；
+- `learning_progress`：掌握度缺失时的学习进度回退；
+- `student_learning_memories`：OJ 提交、薄弱模块和高频错因；
+- `generated_resources`：资源生成数量。
+
+登录后访问 `http://127.0.0.1:5173/teacher-dashboard`。当真实记录不足以形成班级统计时，接口自动返回带 `is_demo=true` 标记的演示数据，页面不会因空数据报错。
+
+> 当前为比赛演示入口，仅复用现有登录校验，不扩展班级与教师授权模型。正式教学部署时可在 `GET /api/teacher/dashboard-summary` 的依赖中接入教师角色和班级数据范围权限。
 
 ---
 
@@ -124,6 +142,7 @@ flowchart LR
 | **DAG 学习路径** | `LearningPathAgent` 拓扑排序 + 画像分数 + `prerequisites` / 阶段难度 |
 | **多模态资源** | `CORE_RESOURCE_PIPELINE` 八类资源；RAG → 生成 ⇄ 校验 → `SafetyAgent` |
 | **学情自适应** | `EvaluationAgent`；连续 3 次 WA/RE/TLE/CE 可经 `oj-struggle` 建议插入巩固节点（见演示闭环说明） |
+| **教师教学辅助** | 用户、画像、进度、Evaluation、OJ 与资源记录聚合 → 薄弱点、错因、补讲建议、课后巩固包 |
 | **内容安全** | C++ 静态危险调用拦截（编译前正则扫描，非运行时沙箱）+ `SafetyAgent` 审查；`SafetyValidationPanel` 可视化 |
 | **课程实操与 Trace** | 课内 OJ + `trace_runner` / `gdb_stl_extract` → 动画与 `OjDiagnosisAgent` |
 

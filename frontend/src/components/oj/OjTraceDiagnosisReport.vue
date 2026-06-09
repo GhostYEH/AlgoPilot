@@ -9,7 +9,7 @@ import {
   Collection,
   Guide,
 } from '@element-plus/icons-vue'
-import type { TraceDiagnosisReport, TraceStepBrief } from '@/types/codeTrace'
+import type { TraceDiagnosisReport } from '@/types/codeTrace'
 import OjTraceStepTimeline from '@/components/oj/OjTraceStepTimeline.vue'
 
 const props = defineProps<{
@@ -71,10 +71,19 @@ const errorStepDisplay = computed(() => {
     </header>
 
     <template v-if="report">
+      <p class="trace-report__competition-note">
+        系统不仅判断对错，还基于 Trace 捕捉学生错误发生的具体步骤，并反向更新学习画像与路径规划。
+      </p>
       <div class="trace-report__meta">
         <div class="trace-report__meta-row">
           <span class="trace-report__label">错误类型</span>
           <el-tag size="small" :type="errorTag.type">{{ errorTag.label }}</el-tag>
+        </div>
+        <div v-if="report.error_category_label" class="trace-report__meta-row">
+          <span class="trace-report__label">错因分类</span>
+          <el-tag size="small" type="danger" effect="plain">
+            {{ report.error_category_label }}
+          </el-tag>
         </div>
         <div class="trace-report__meta-row">
           <span class="trace-report__label">失败测试点</span>
@@ -120,12 +129,41 @@ const errorStepDisplay = computed(() => {
         <p class="trace-report__text">{{ report.possible_cause }}</p>
       </section>
 
+      <section v-if="report.why_failed" class="trace-report__section">
+        <div class="trace-report__section-title">
+          <el-icon><Warning /></el-icon>
+          为什么导致 WA
+        </div>
+        <p class="trace-report__text">{{ report.why_failed }}</p>
+      </section>
+
       <section v-if="report.fix_suggestion" class="trace-report__section trace-report__section--fix">
         <div class="trace-report__section-title">
           <el-icon><Compass /></el-icon>
           修复建议
         </div>
         <p class="trace-report__text trace-report__text--fix">{{ report.fix_suggestion }}</p>
+      </section>
+
+      <section
+        v-if="report.recommended_knowledge_points.length"
+        class="trace-report__section"
+      >
+        <div class="trace-report__section-title">
+          <el-icon><Collection /></el-icon>
+          推荐巩固知识点
+        </div>
+        <div class="trace-report__knowledge-points">
+          <el-tag
+            v-for="point in report.recommended_knowledge_points"
+            :key="point"
+            size="small"
+            type="warning"
+            effect="plain"
+          >
+            {{ point }}
+          </el-tag>
+        </div>
       </section>
 
       <section v-if="report.trace_steps.length" class="trace-report__section">
@@ -158,6 +196,13 @@ const errorStepDisplay = computed(() => {
       <div v-if="report.path_rearrange_triggered" class="trace-report__path-alert">
         <el-icon><Guide /></el-icon>
         <span>检测到连续受挫，已建议插入巩固节点。</span>
+      </div>
+      <div
+        v-else-if="report.learning_intervention_generated && report.intervention_suggestion"
+        class="trace-report__intervention"
+      >
+        <el-icon><Guide /></el-icon>
+        <span>{{ report.intervention_suggestion }}</span>
       </div>
     </template>
   </div>
@@ -203,6 +248,17 @@ const errorStepDisplay = computed(() => {
   border-radius: 10px;
   background: var(--alp-bg-surface);
   border: 1px solid var(--alp-color-border);
+}
+
+.trace-report__competition-note {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--el-color-primary) 35%, var(--alp-color-border));
+  background: color-mix(in srgb, var(--el-color-primary) 7%, var(--alp-bg-surface));
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--el-text-color-primary);
 }
 
 .trace-report__meta-row {
@@ -326,6 +382,12 @@ const errorStepDisplay = computed(() => {
   line-height: 1.6;
 }
 
+.trace-report__knowledge-points {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .trace-report__resources li {
   margin-bottom: 6px;
   display: flex;
@@ -355,6 +417,19 @@ const errorStepDisplay = computed(() => {
   font-weight: 600;
   color: var(--el-color-warning);
   animation: path-alert-pulse 1.5s ease-in-out 2;
+}
+
+.trace-report__intervention {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--el-color-primary) 10%, var(--alp-bg-surface));
+  border: 1px solid color-mix(in srgb, var(--el-color-primary) 35%, var(--alp-color-border));
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--el-color-primary);
 }
 
 @keyframes path-alert-pulse {

@@ -15,6 +15,11 @@ def chunks_to_grounded(chunks: list[KnowledgeChunk]) -> list[GroundedChunkRef]:
                 id=str(c.get("id") or ""),
                 title=str(c.get("title") or ""),
                 snippet=content[:120].replace("\n", " "),
+                module_id=str(c.get("module_id") or c.get("module_key") or ""),
+                chapter_title=str(c.get("chapter_title") or ""),
+                section_title=str(c.get("section_title") or c.get("section") or ""),
+                source_path=str(c.get("source_path") or ""),
+                relevance_score=float(c.get("relevance_score") or 0.0),
             )
         )
     return out

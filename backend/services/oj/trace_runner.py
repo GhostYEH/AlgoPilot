@@ -30,32 +30,9 @@ def _trace_engine_tail() -> str:
         _PREV_SNAP = {{}}
         USER_FILENAME = "<user>"
         MAX_TRACE_STEPS = {MAX_TRACE_STEPS}
-        _TR_SEQ = 0
 
         def _is_tree_node(val):
             return val is not None and hasattr(val, "val") and hasattr(val, "left") and hasattr(val, "right")
-
-        def _serialize_tree(root):
-            global _TR_SEQ
-            nodes = {{}}
-
-            def walk(node):
-                global _TR_SEQ
-                if node is None:
-                    return None
-                nid = "t" + str(_TR_SEQ)
-                _TR_SEQ += 1
-                left_id = walk(getattr(node, "left", None))
-                right_id = walk(getattr(node, "right", None))
-                nodes[nid] = {{
-                    "id": nid,
-                    "val": getattr(node, "val", 0),
-                    "left": left_id,
-                    "right": right_id,
-                }}
-                return nid
-
-            return {{"root": walk(root), "nodes": nodes}}
 
         def _collect_vars(frame):
             skip = {{
@@ -66,12 +43,10 @@ def _trace_engine_tail() -> str:
             raw = collect_frame_vars(dict(frame.f_locals), skip)
             for k, v in list(raw.items()):
                 loc_val = frame.f_locals.get(k)
-                if _is_tree_node(loc_val):
-                    raw[k] = {{"type": "tree", "value": _serialize_tree(loc_val)}}
-                    continue
                 if v.get("type") == "other":
                     continue
-                if v.get("type") not in ("linked_list", "node_ref", "tree", "matrix", "matrix_overflow",
+                if v.get("type") not in ("linked_list", "node_ref", "tree", "tree_node_ref",
+                                         "matrix", "matrix_overflow",
                                          "list", "queue", "stack", "dict",
                                          "int", "float", "bool", "str", "none"):
                     raw[k] = {{"type": "other", "value": str(loc_val)[:120]}}

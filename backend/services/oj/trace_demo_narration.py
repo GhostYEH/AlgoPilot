@@ -44,6 +44,17 @@ def _scalar(vars_map: dict, *names: str) -> int | None:
     return None
 
 
+def _node_ref(vars_map: dict, *names: str) -> str | None:
+    for name in names:
+        snap = vars_map.get(name) or {}
+        if snap.get("type") != "node_ref":
+            continue
+        value = snap.get("value") or {}
+        node_id = value.get("node") if isinstance(value, dict) else None
+        return str(node_id) if node_id is not None else None
+    return None
+
+
 def _matrix_cell(vars_map: dict, name: str, r: int, c: int) -> Any:
     snap = vars_map.get(name) or {}
     if snap.get("type") != "matrix":
@@ -70,7 +81,12 @@ def _demo_linked_list(steps: list[dict[str, Any]]) -> list[dict[str, int | str]]
         if "curr" in ch:
             parts.append("curr 指向当前待处理节点")
         if "nxt" in ch or "next" in ch:
-            parts.append("先用 nxt 保存后继，避免断链后找不到")
+            current_ref = _node_ref(vars_map, "curr", "current")
+            next_ref = _node_ref(vars_map, "nxt", "next")
+            if current_ref is not None and next_ref is None:
+                parts.append("nxt 变为 null：后继指针保存过晚，原链表已断开")
+            else:
+                parts.append("用 nxt 保存原后继，避免反转后断链")
         if any("next" in x for x in ch) or "curr" in ch and "prev" in ch:
             parts.append("把 curr.next 改指向前驱，完成局部反转")
         if "prev" in ch and "curr" in ch and _scalar(vars_map, "curr") is None:

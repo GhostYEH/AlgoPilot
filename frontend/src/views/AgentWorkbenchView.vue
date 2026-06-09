@@ -9,10 +9,12 @@ import {
   streamGenerateAllResources,
   RESOURCE_TYPE_META,
   type AgentInfo,
+  type AgentWorkflowEvent,
   type GeneratedResource,
 } from '@/api/orchestrator'
 import { isLoggedIn } from '@/stores/auth'
 import AgentThinkingConsole from '@/components/agents/AgentThinkingConsole.vue'
+import AgentCollaborationFlow from '@/components/agents/AgentCollaborationFlow.vue'
 import AgentStatusGrid from '@/components/agents/AgentStatusGrid.vue'
 import type { AgentTaskStatus } from '@/components/agents/AgentStatusGrid.vue'
 import PersonalizedResourceDashboard from '@/components/agents/PersonalizedResourceDashboard.vue'
@@ -26,6 +28,7 @@ import {
   resourceBootstrapLines,
   systemLine,
 } from '@/utils/agentConsole'
+import { ALGORITHM_MODULES } from '@/constants/modules'
 
 const router = useRouter()
 
@@ -37,10 +40,12 @@ const activeStage = ref(0)
 
 const topic = ref('动态规划入门')
 const focusHint = ref('主攻状态转移方程与边界')
+const selectedModule = ref('dp')
 const generating = ref(false)
 const progress = ref(0)
 const consoleLines = ref<AgentConsoleLine[]>([])
 const generatedResources = ref<GeneratedResource[]>([])
+const workflowEvents = ref<AgentWorkflowEvent[]>([])
 const activeResourceTab = ref('document')
 const agentStatuses = ref<Map<string, AgentTaskStatus>>(new Map())
 
@@ -83,6 +88,36 @@ function pushLine(line: AgentConsoleLine) {
   consoleLines.value = [...consoleLines.value, line]
 }
 
+function pushWorkflowEvent(event: AgentWorkflowEvent) {
+  workflowEvents.value = [...workflowEvents.value, event]
+}
+
+function progressWorkflowEvent(p: {
+  resource_type: string
+  agent_name: string
+  label: string
+  percent?: number
+}): AgentWorkflowEvent {
+  return {
+    agent: p.agent_name,
+    detail: p.label,
+    agent_id: p.agent_name,
+    agent_name: p.agent_name,
+    stage: 'agent_generate',
+    status: 'running',
+    message: p.label,
+    timestamp: new Date().toISOString(),
+    duration_ms: null,
+    validation_result: null,
+    retry_count: 0,
+    input_summary: `${topic.value} | ${focusHint.value}`,
+    output_summary: '',
+    failure_reason: '',
+    resource_type: p.resource_type,
+    percent: p.percent,
+  }
+}
+
 function markRunningDone(agent: string) {
   consoleLines.value = consoleLines.value.map((l) =>
     l.agent === agent && l.status === 'running' ? { ...l, status: 'done' as const } : l,
@@ -100,6 +135,7 @@ async function runResourceGeneration() {
   generating.value = true
   progress.value = 0
   consoleLines.value = [...resourceBootstrapLines(topic.value)]
+  workflowEvents.value = []
   generatedResources.value = []
 
   const statusMap = new Map<string, AgentTaskStatus>()
@@ -110,24 +146,30 @@ async function runResourceGeneration() {
 
   try {
     await streamGenerateAllResources(
-      { topic: topic.value, focus_hint: focusHint.value },
+      {
+        topic: topic.value,
+        module_key: selectedModule.value || undefined,
+        focus_hint: focusHint.value,
+      },
       {
         onProgress(p) {
           pushLine(lineFromProgress(p))
+          pushWorkflowEvent(progressWorkflowEvent(p))
           if (typeof p.percent === 'number') progress.value = p.percent
           activeResourceTab.value = p.resource_type
           statusMap.set(p.resource_type, 'running')
           agentStatuses.value = new Map(statusMap)
         },
         onWorkflow(w) {
-          if (w.status === 'done') markRunningDone(w.agent)
+          pushWorkflowEvent(w)
+          if (w.status === 'success' || w.status === 'skipped') markRunningDone(w.agent)
           pushLine(lineFromWorkflow(w))
           if (typeof w.percent === 'number') progress.value = w.percent
           if (w.stage === 'content_verify' && w.status === 'running') {
             const rt = Object.entries(RESOURCE_TYPE_META).find(([, m]) => m.agentName === w.agent)?.[0]
             if (rt) { statusMap.set(rt, 'verifying'); agentStatuses.value = new Map(statusMap) }
           }
-          if (w.stage === 'content_verify' && w.status === 'warn') {
+          if (w.stage === 'content_verify' && w.status === 'retry') {
             const rt = Object.entries(RESOURCE_TYPE_META).find(([, m]) => m.agentName === w.agent)?.[0]
             if (rt) { statusMap.set(rt, 'retrying'); agentStatuses.value = new Map(statusMap) }
           }
@@ -135,7 +177,7 @@ async function runResourceGeneration() {
             const rt = Object.entries(RESOURCE_TYPE_META).find(([, m]) => m.agentName === w.agent)?.[0]
             if (rt) { statusMap.set(rt, 'safe_checking'); agentStatuses.value = new Map(statusMap) }
           }
-          if (w.stage === 'agent_generate' && w.status === 'done') {
+          if (w.stage === 'agent_generate' && w.status === 'success') {
             const rt = Object.entries(RESOURCE_TYPE_META).find(([, m]) => m.agentName === w.agent)?.[0]
             if (rt) { statusMap.set(rt, 'running'); agentStatuses.value = new Map(statusMap) }
           }
@@ -154,6 +196,29 @@ async function runResourceGeneration() {
           activeResourceTab.value = r.resource_type
           statusMap.set(r.resource_type, 'done')
           agentStatuses.value = new Map(statusMap)
+          const roleAgent = RESOURCE_TYPE_META[r.resource_type]?.agentName ?? r.agent_name
+          pushWorkflowEvent({
+            agent: roleAgent,
+            detail: r.title,
+            agent_id: roleAgent,
+            agent_name: roleAgent,
+            stage: 'resource_ready',
+            status: 'success',
+            message: `${r.title} 已就绪`,
+            timestamp: r.created_at || new Date().toISOString(),
+            duration_ms: null,
+            validation_result:
+              r.verification && typeof r.verification === 'object'
+                ? r.verification
+                : ((r.meta?.verification as Record<string, unknown> | undefined) ?? null),
+            retry_count: Number(
+              (r.meta?.verification as Record<string, unknown> | undefined)?.retry_count ?? 0,
+            ),
+            input_summary: `${topic.value} | ${r.resource_type}`,
+            output_summary: `${r.title} | ${r.content.length} chars`,
+            failure_reason: '',
+            resource_type: r.resource_type,
+          })
           pushLine(
             systemLine(
               `${r.agent_name} 已落库 · ${r.title.slice(0, 40)}`,
@@ -230,15 +295,32 @@ function agentStatus(id: string): 'running' | 'idle' {
 
     <section class="wb-generate">
       <el-row :gutter="12" align="middle">
-        <el-col :xs="24" :md="9">
+        <el-col :xs="24" :md="6">
+          <label class="field-label">课程模块</label>
+          <el-select
+            v-model="selectedModule"
+            size="large"
+            filterable
+            placeholder="选择课程模块"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="item in ALGORITHM_MODULES"
+              :key="item.key"
+              :label="item.label"
+              :value="item.key"
+            />
+          </el-select>
+        </el-col>
+        <el-col :xs="24" :md="7">
           <label class="field-label">课程主题</label>
           <el-input v-model="topic" size="large" placeholder="如：动态规划入门" />
         </el-col>
-        <el-col :xs="24" :md="9">
+        <el-col :xs="24" :md="6">
           <label class="field-label">生成侧重</label>
           <el-input v-model="focusHint" size="large" placeholder="如：状态转移方程" />
         </el-col>
-        <el-col :xs="24" :md="6">
+        <el-col :xs="24" :md="5">
           <el-button
             type="primary"
             size="large"
@@ -261,6 +343,12 @@ function agentStatus(id: string): 'running' | 'idle' {
       title="Agent Synergy Terminal"
       subtitle="Concept → Graph → Quiz → Scenario → Trace → PPT → Video → Reading"
       class="wb-console"
+    />
+
+    <AgentCollaborationFlow
+      :events="workflowEvents"
+      :active="generating"
+      class="wb-flow"
     />
 
     <AgentStatusGrid
@@ -365,6 +453,10 @@ function agentStatus(id: string): 'running' | 'idle' {
 }
 
 .wb-console {
+  margin-bottom: 24px;
+}
+
+.wb-flow {
   margin-bottom: 24px;
 }
 

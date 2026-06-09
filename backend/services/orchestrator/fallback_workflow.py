@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import hashlib
 from collections.abc import Awaitable, Callable
+from datetime import datetime, timezone
+from time import perf_counter
 from typing import Any
 
 from schemas.resources import ResourceType
 from services.agents.template_fallback import GENERATED_BY, generate_fallback_resource
 from services.agents.verifier import _rule_check_structured
-from services.knowledge.retriever import retriever
+from services.knowledge.retriever import build_source_records, retriever
 from services.orchestrator.pipeline_context import PipelineContext
 from services.safety.content_filter import safety_agent
 from services.verification.builder import build_verification_result, chunks_to_grounded, verification_for_skipped_type
@@ -33,17 +35,46 @@ class FallbackResourceWorkflow:
         pipeline_ctx: PipelineContext | None = None,
     ) -> tuple[str, str, dict]:
         ctx = pipeline_ctx or PipelineContext()
+        stage_started_at: dict[tuple[str, str], float] = {}
 
-        async def _emit(stage: str, agent: str, status: str, detail: str = "") -> None:
+        async def _emit(
+            stage: str,
+            agent: str,
+            status: str,
+            detail: str = "",
+            *,
+            validation_result: dict | None = None,
+            input_summary: str = "",
+            output_summary: str = "",
+            failure_reason: str = "",
+        ) -> None:
             if emit:
+                key = (stage, agent)
+                duration_ms = None
+                if status == "running":
+                    stage_started_at[key] = perf_counter()
+                elif key in stage_started_at:
+                    duration_ms = max(
+                        0, int((perf_counter() - stage_started_at.pop(key)) * 1000)
+                    )
                 await emit(
                     {
                         "type": "workflow",
                         "stage": stage,
                         "agent": agent,
+                        "agent_id": agent,
+                        "agent_name": agent,
                         "status": status,
                         "resource_type": resource_type,
                         "detail": detail,
+                        "message": detail,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "duration_ms": duration_ms,
+                        "validation_result": validation_result,
+                        "retry_count": 0,
+                        "input_summary": input_summary,
+                        "output_summary": output_summary,
+                        "failure_reason": failure_reason,
                     }
                 )
 
@@ -55,7 +86,13 @@ class FallbackResourceWorkflow:
             resource_type=resource_type,
             status="running",
         )
-        await _emit("rag_retrieve", "KnowledgeRetriever", "running", "BM25 匹配课程知识库")
+        await _emit(
+            "rag_retrieve",
+            "KnowledgeRetriever",
+            "running",
+            "BM25 匹配课程知识库",
+            input_summary=f"{topic} | {focus_hint or module_key}",
+        )
 
         chapter_id = ""
         try:
@@ -78,11 +115,24 @@ class FallbackResourceWorkflow:
         course_ctx = primary_course_context(chunks)
         course_id = course_ctx.get("course_id") or "data_structures_algorithms"
         chapter_id_final = course_ctx.get("chapter_id") or chapter_id
+        sources = build_source_records(chunks)
 
         ctx.log("KnowledgeRetriever", "retrieve", f"命中 {len(chunks)} 条", resource_type=resource_type)
-        await _emit("rag_retrieve", "KnowledgeRetriever", "done", f"命中 {len(chunks)} 条")
+        await _emit(
+            "rag_retrieve",
+            "KnowledgeRetriever",
+            "success",
+            f"命中 {len(chunks)} 条",
+            output_summary=f"Top-{len(chunks)} knowledge chunks",
+        )
 
-        await _emit("agent_generate", GENERATED_BY, "running", fallback_reason)
+        await _emit(
+            "agent_generate",
+            GENERATED_BY,
+            "running",
+            fallback_reason,
+            input_summary=f"{topic} | course template + knowledge chunks",
+        )
         title, content, gen_meta = generate_fallback_resource(
             resource_type,
             topic=topic,
@@ -93,7 +143,13 @@ class FallbackResourceWorkflow:
             fallback_reason=fallback_reason,
         )
         ctx.log(GENERATED_BY, "generate", "模板拼装完成", resource_type=resource_type)
-        await _emit("agent_generate", GENERATED_BY, "done", "模板资源已生成")
+        await _emit(
+            "agent_generate",
+            GENERATED_BY,
+            "success",
+            "模板资源已生成",
+            output_summary=f"{title} | template fallback",
+        )
 
         verify_skipped = resource_type in _SKIP_VERIFY_TYPES
         verifier_structured = None
@@ -105,9 +161,16 @@ class FallbackResourceWorkflow:
                 "ContentVerifierAgent",
                 "skipped",
                 "轨迹占位资源跳过 LLM 文本校验",
+                validation_result={"status": "skipped", "reason": "trace resource"},
             )
             gen_meta["verified"] = True
             gen_meta["verify_attempts"] = 0
+            gen_meta["content_verification"] = {
+                "passed": True,
+                "warnings": ["该资源由专用执行管线校验，跳过文本事实对照"],
+                "grounded_terms": [],
+                "unsupported_claims": [],
+            }
         else:
             await _emit("content_verify", "ContentVerifierAgent", "running", "规则快检（无 LLM）")
             verifier_structured, rule_failed = _rule_check_structured(content, chunks, topic=topic)
@@ -115,16 +178,28 @@ class FallbackResourceWorkflow:
             gen_meta["knowledge_refs"] = citation_ids
             gen_meta["verified"] = verifier_structured.passed and not rule_failed
             gen_meta["verify_attempts"] = 1
+            gen_meta["content_verification"] = verifier_structured.to_display_dict()
             if rule_failed:
                 await _emit(
                     "content_verify",
                     "ContentVerifierAgent",
-                    "warn",
+                    "failed",
                     verifier_structured.revised_hint or "规则快检提示",
+                    validation_result={"status": "failed"},
+                    failure_reason=verifier_structured.revised_hint or "rule verification failed",
                 )
                 gen_meta["status"] = "draft"
             else:
-                await _emit("content_verify", "ContentVerifierAgent", "done", "规则快检通过")
+                await _emit(
+                    "content_verify",
+                    "ContentVerifierAgent",
+                    "success",
+                    "规则快检通过",
+                    validation_result={
+                        "status": "passed",
+                        "evidence_count": len(citation_ids),
+                    },
+                )
 
         await _emit("safety_filter", "SafetyAgent", "running")
         try:
@@ -143,8 +218,9 @@ class FallbackResourceWorkflow:
             await _emit(
                 "safety_filter",
                 "SafetyAgent",
-                "done" if passed_safety else "warn",
+                "success" if passed_safety else "failed",
                 "安全审查完成" if passed_safety else "安全审查告警",
+                validation_result={"status": safety_structured.status},
             )
         except Exception as exc:
             passed_safety = True
@@ -193,6 +269,14 @@ class FallbackResourceWorkflow:
         gen_meta["verification"] = verification.to_meta_dict()
         gen_meta["course_id"] = course_id
         gen_meta["chapter_id"] = chapter_id_final
+        gen_meta["sources"] = sources
+        gen_meta["grounding_basis"] = {
+            "course_id": course_id,
+            "module_id": module_key,
+            "chapter_id": chapter_id_final,
+            "retrieval": "BM25 + synonym expansion",
+        }
+        gen_meta["knowledge_chunk_ids"] = [c["id"] for c in chunks]
         gen_meta["collaboration_log"] = list(ctx.collaboration_log)
         gen_meta["agent_logs"] = list(ctx.agent_logs)
         gen_meta["_evidence_version"] = 1
@@ -210,7 +294,13 @@ class FallbackResourceWorkflow:
             profile_summary="",
         ).model_dump()
         ctx.update_from_resource(resource_type, safe_text)
-        await _emit("persist", "Orchestrator", "done", gen_meta.get("status", ""))
+        await _emit(
+            "persist",
+            "Orchestrator",
+            "success" if gen_meta.get("status") == "published" else "failed",
+            gen_meta.get("status", ""),
+            validation_result={"final_decision": verification.final_decision},
+        )
         return title, safe_text, gen_meta
 
 

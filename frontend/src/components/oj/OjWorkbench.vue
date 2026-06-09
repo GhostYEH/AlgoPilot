@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { Refresh, VideoPlay, Upload, View, MagicStick } from '@element-plus/icons-vue'
+import { Medal, Refresh, VideoPlay, Upload, View, MagicStick } from '@element-plus/icons-vue'
 import CodeEditor from '@/components/oj/CodeEditor.vue'
 import OjAiDiagnosisPanel from '@/components/oj/OjAiDiagnosisPanel.vue'
 import OjStruggleInterventionPanel from '@/components/oj/OjStruggleInterventionPanel.vue'
@@ -49,6 +49,7 @@ const emit = defineEmits<{
   trace: []
   diagnose: []
   visualTraceDiagnose: []
+  demo: []
 }>()
 
 const fontSize = ref('14px')
@@ -84,8 +85,10 @@ const showVisualDiagnoseCta = computed(() => {
   return v === 'WA' || v === 'RE' || v === 'TLE'
 })
 
+const hasJudgeDemo = computed(() => props.problem.slug === 'reverse-linked-list')
+
 const VISUAL_DIAGNOSE_LOADING_TEXT =
-  'AI 助教正在逐行审视您的代码，试图抓住那只逃逸的 Bug...'
+  '系统正在对齐判题结果与 Trace 关键帧，定位最早逻辑偏差...'
 
 const traceDisableReason = computed(() => {
   if (props.apiOnline === false) return '判题服务未连接'
@@ -202,7 +205,19 @@ function onReset() {
             <el-option label="16px" value="16px" />
           </el-select>
         </div>
-        <el-button size="small" :icon="Refresh" @click="onReset">重置代码</el-button>
+        <div class="header-actions">
+          <el-button
+            v-if="!traceLayout && hasJudgeDemo"
+            size="small"
+            type="warning"
+            plain
+            :icon="Medal"
+            @click="emit('demo')"
+          >
+            评委演示模式
+          </el-button>
+          <el-button size="small" :icon="Refresh" @click="onReset">重置代码</el-button>
+        </div>
       </header>
 
       <CodeEditor
@@ -267,6 +282,9 @@ function onReset() {
       </footer>
 
       <div v-if="result" class="console-panel">
+        <div v-if="result.verdict !== 'AC'" class="competition-closed-loop-note">
+          系统不仅判断对错，还基于 Trace 捕捉学生错误发生的具体步骤，并反向更新学习画像与路径规划。
+        </div>
         <div class="verdict-line">
           <el-tag
             :type="
@@ -299,9 +317,9 @@ function onReset() {
 
           <template v-else>
             <div class="visual-diagnose-cta__copy">
-              <h4 class="visual-diagnose-cta__title">想知道代码是在哪一步跑偏的吗？</h4>
+              <h4 class="visual-diagnose-cta__title">定位首次逻辑偏差</h4>
               <p class="visual-diagnose-cta__subtitle">
-                点击使用 AI 可视化诊断，自动找出逻辑出轨的最初一帧。
+                联合判题结果与变量轨迹，自动跳转到错误发生的首个关键帧。
               </p>
             </div>
             <el-button
@@ -522,6 +540,11 @@ function onReset() {
   gap: 8px;
   min-width: 0;
 }
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .pane-title {
   font-size: 13px;
   font-weight: 600;
@@ -563,6 +586,16 @@ function onReset() {
   border-top: 1px solid #333;
   max-height: 320px;
   overflow: auto;
+}
+.competition-closed-loop-note {
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--el-color-primary) 40%, #444);
+  border-radius: 8px;
+  color: #dbeafe;
+  background: color-mix(in srgb, var(--el-color-primary) 14%, #1a1a1a);
+  font-size: 13px;
+  line-height: 1.6;
 }
 .verdict-line {
   display: flex;

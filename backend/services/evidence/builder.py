@@ -23,16 +23,36 @@ def build_evidence_from_meta(
     agent_logs = meta.get("agent_logs") or []
     knowledge_refs = meta.get("knowledge_refs") or []
     knowledge_chunk_ids = meta.get("knowledge_chunk_ids") or []
+    sources_raw = meta.get("sources") or []
     chunks_raw = verification.get("grounded_chunks") or []
 
     chunks: list[EvidenceChunkRef] = []
-    for c in chunks_raw:
+    for source in sources_raw:
+        if isinstance(source, dict):
+            chunks.append(
+                EvidenceChunkRef(
+                    chunk_id=str(source.get("chunk_id") or ""),
+                    title=str(source.get("chapter_title") or ""),
+                    snippet=str(source.get("excerpt") or ""),
+                    module_id=str(source.get("module_id") or ""),
+                    chapter_title=str(source.get("chapter_title") or ""),
+                    section_title=str(source.get("section_title") or ""),
+                    source_path=str(source.get("source_path") or ""),
+                    relevance_score=float(source.get("relevance_score") or 0.0),
+                )
+            )
+    for c in chunks_raw if not chunks else []:
         if isinstance(c, dict):
             chunks.append(
                 EvidenceChunkRef(
                     chunk_id=str(c.get("id") or c.get("chunk_id") or ""),
                     title=str(c.get("title") or ""),
                     snippet=str(c.get("snippet") or ""),
+                    module_id=str(c.get("module_id") or ""),
+                    chapter_title=str(c.get("chapter_title") or ""),
+                    section_title=str(c.get("section_title") or ""),
+                    source_path=str(c.get("source_path") or ""),
+                    relevance_score=float(c.get("relevance_score") or 0.0),
                 )
             )
     if not chunks and knowledge_chunk_ids:

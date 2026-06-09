@@ -76,17 +76,39 @@ PRACTICE_RE = re.compile(
     re.MULTILINE,
 )
 
+MODULE_DIR_KEYS = {
+    "array": "array",
+    "linkedList": "linked-list",
+    "hashTable": "hash-table",
+    "string": "string",
+    "twoPointers": "two-pointers",
+    "stackQueue": "stack-queue",
+    "sorting": "sorting",
+    "binaryTree": "binary-tree",
+    "backtracking": "backtracking",
+    "greedy": "greedy",
+    "dp": "dp",
+    "monotonicStack": "monotonic-stack",
+    "graph": "graph",
+}
+
 
 def scan_curricula() -> dict[str, dict]:
     by_slug: dict[str, dict] = {}
     for path in sorted(FRONTEND_MODULES.glob("*/*Curriculum.ts")):
         text = path.read_text(encoding="utf-8")
+        module_key = MODULE_DIR_KEYS.get(path.parent.name, "")
         for m in PRACTICE_RE.finditer(text):
             lc_id = int(m.group(1))
             title = m.group(2)
             slug = m.group(3)
             if slug not in by_slug or (by_slug[slug].get("lc_id", 0) == 0 and lc_id > 0):
-                by_slug[slug] = {"slug": slug, "title": title, "lc_id": max(lc_id, 0)}
+                by_slug[slug] = {
+                    "slug": slug,
+                    "title": title,
+                    "lc_id": max(lc_id, 0),
+                    "module_key": module_key,
+                }
     return by_slug
 
 
@@ -105,6 +127,7 @@ def main() -> None:
                 **merged_definitions[slug],
                 "title": meta["title"],
                 "lc_id": meta["lc_id"],
+                "module_key": meta.get("module_key", ""),
             }
 
     CATALOG_PATH.write_text(json.dumps(catalog, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -147,6 +170,9 @@ def main() -> None:
             ),
             "time_limit_ms": cfg.get("time_limit_ms", 3000),
             "order_insensitive": cfg.get("order_insensitive", False),
+            "module_key": cfg.get("module_key", meta.get("module_key", "")),
+            "tags": cfg.get("tags", []),
+            "common_errors": cfg.get("common_errors", []),
         }
     FRONTEND_BUNDLE.parent.mkdir(parents=True, exist_ok=True)
     FRONTEND_BUNDLE.write_text(

@@ -329,7 +329,7 @@ export function useOjWorkbenchActions(options: {
         ElMessage.warning(traceRes.message.slice(0, 160))
       }
     } catch {
-      ElMessage.warning('可视化诊断失败，请检查判题服务与 SPARK_API_PASSWORD')
+      ElMessage.warning('可视化诊断失败，请检查判题服务与代码是否可执行')
     } finally {
       visualTraceDiagnosing.value = false
     }
@@ -398,7 +398,7 @@ export function useOjWorkbenchActions(options: {
       options.trace.value = { ...options.trace.value, narrations: res.narrations }
       ElMessage.success('AI 旁白已生成')
     } catch {
-      ElMessage.warning('旁白生成失败，请检查 SPARK_API_PASSWORD')
+      ElMessage.warning('旁白生成失败，请检查判题服务；无 API Key 时将使用规则旁白')
     } finally {
       narrating.value = false
     }
@@ -436,7 +436,7 @@ export function useOjWorkbenchActions(options: {
       onVerdictRecorded(verdict)
       ElMessage.success('AI 诊断完成：已生成边界测例与可视化回放')
     } catch {
-      ElMessage.warning('AI 诊断失败，请检查 SPARK_API_PASSWORD 与判题服务')
+      ElMessage.warning('诊断失败，请检查判题服务；无 API Key 时系统将自动使用规则诊断')
     } finally {
       diagnosing.value = false
     }

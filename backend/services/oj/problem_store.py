@@ -82,6 +82,8 @@ def get_public_problem(slug: str) -> dict[str, Any]:
         "ready": ready,
         "time_limit_ms": full.get("time_limit_ms", 3000),
         "order_insensitive": full.get("order_insensitive", False),
+        "tags": full.get("tags") or [],
+        "common_errors": full.get("common_errors") or [],
         **_course_context_fields(full, slug),
     }
 

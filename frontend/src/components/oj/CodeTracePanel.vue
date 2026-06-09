@@ -162,7 +162,7 @@ async function onTraceBugDiagnose() {
       ElMessage.success(`AI 已定位第 ${idx + 1} 步，已跳转至可疑帧`)
     }
   } catch {
-    ElMessage.warning('AI 轨迹诊断失败，请检查 SPARK_API_PASSWORD 与判题服务')
+    ElMessage.warning('轨迹诊断失败，请检查判题服务；无 API Key 时系统将自动使用规则诊断')
   } finally {
     diagnosingTrace.value = false
   }
@@ -639,6 +639,7 @@ const showNarrateBtn = computed(
                 name="链表"
                 :graph="listScene.graph"
                 :pointer-labels="listScene.pointerLabels"
+                :pointer-refs="listScene.pointerRefs"
                 :hot-nodes="listDiff.hotNodes"
                 :hot-edges="listDiff.hotEdges"
                 :hot-pointers="listDiff.hotPointers"
@@ -783,6 +784,7 @@ const showNarrateBtn = computed(
             name="链表"
             :graph="listScene.graph"
             :pointer-labels="listScene.pointerLabels"
+            :pointer-refs="listScene.pointerRefs"
             :hot-nodes="listDiff.hotNodes"
             :hot-edges="listDiff.hotEdges"
             :hot-pointers="listDiff.hotPointers"

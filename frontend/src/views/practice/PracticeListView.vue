@@ -1,25 +1,29 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Search } from '@element-plus/icons-vue'
 import { fetchProblems, type ProblemListItem } from '@/api/oj'
+import { ALGORITHM_MODULES } from '@/constants/modules'
 
 const route = useRoute()
 const router = useRouter()
 const loading = ref(true)
-const listEmpty = ref(false)
 const list = ref<ProblemListItem[]>([])
 const q = ref((route.query.q as string) || '')
+const moduleFilter = ref((route.query.module as string) || '')
+
+const filteredList = computed(() =>
+  moduleFilter.value
+    ? list.value.filter((item) => item.module_key === moduleFilter.value)
+    : list.value,
+)
 
 async function load() {
   loading.value = true
-  listEmpty.value = false
   try {
     list.value = await fetchProblems(q.value.trim() || undefined)
-    listEmpty.value = list.value.length === 0
   } catch {
     list.value = []
-    listEmpty.value = true
   } finally {
     loading.value = false
   }
@@ -35,8 +39,20 @@ watch(
   },
 )
 
-function onSearch() {
-  router.replace({ query: q.value.trim() ? { q: q.value.trim() } : {} })
+watch(
+  () => route.query.module,
+  (value) => {
+    moduleFilter.value = (value as string) || ''
+  },
+)
+
+function applyFilters() {
+  router.replace({
+    query: {
+      ...(q.value.trim() ? { q: q.value.trim() } : {}),
+      ...(moduleFilter.value ? { module: moduleFilter.value } : {}),
+    },
+  })
   void load()
 }
 
@@ -62,15 +78,30 @@ function diffTag(d: string) {
         placeholder="搜索标题或 slug…"
         clearable
         class="search-input"
-        @keyup.enter="onSearch"
+        @keyup.enter="applyFilters"
       >
         <template #append>
-          <el-button :icon="Search" @click="onSearch">搜索</el-button>
+          <el-button :icon="Search" @click="applyFilters">搜索</el-button>
         </template>
       </el-input>
+      <el-select
+        v-model="moduleFilter"
+        clearable
+        filterable
+        placeholder="按课程模块筛选"
+        class="module-select"
+        @change="applyFilters"
+      >
+        <el-option
+          v-for="item in ALGORITHM_MODULES"
+          :key="item.key"
+          :label="item.label"
+          :value="item.key"
+        />
+      </el-select>
     </div>
 
-    <el-table v-loading="loading" :data="list" stripe class="problem-table">
+    <el-table v-loading="loading" :data="filteredList" stripe class="problem-table">
       <el-table-column label="状态" width="88">
         <template #default="{ row }">
           <el-tag v-if="row.ready" type="success" size="small">可判题</el-tag>
@@ -83,6 +114,12 @@ function diffTag(d: string) {
         </template>
       </el-table-column>
       <el-table-column prop="slug" label="Slug" min-width="180" show-overflow-tooltip />
+      <el-table-column label="模块" width="110">
+        <template #default="{ row }">
+          <el-tag v-if="row.module_key" type="info" size="small">{{ row.module_key }}</el-tag>
+          <span v-else class="muted">—</span>
+        </template>
+      </el-table-column>
       <el-table-column label="力扣" width="72">
         <template #default="{ row }">
           <span v-if="row.lc_id">{{ row.lc_id }}</span>
@@ -104,7 +141,7 @@ function diffTag(d: string) {
     </el-table>
 
     <el-empty
-      v-if="!loading && listEmpty"
+      v-if="!loading && filteredList.length === 0"
       description="暂无题目。若后端离线，请确认 frontend/public/oj/bundle.json 可访问"
     >
       <el-button type="primary" plain @click="load">重新加载</el-button>
@@ -129,9 +166,16 @@ function diffTag(d: string) {
 }
 .toolbar {
   margin-bottom: 16px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 .search-input {
   max-width: 420px;
+}
+.module-select {
+  width: 220px;
 }
 .title-link {
   color: var(--el-color-primary);

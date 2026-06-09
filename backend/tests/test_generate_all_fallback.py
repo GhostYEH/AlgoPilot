@@ -57,6 +57,34 @@ def test_generate_all_fallback_without_llm_key(monkeypatch: pytest.MonkeyPatch):
         e.get("agent") == "TemplateFallbackAgent" or e.get("stage") == "fallback_mode"
         for e in workflow_stages
     )
+    observable = [
+        e
+        for e in workflow_stages
+        if e.get("agent_name") in {
+            "ProfilingAgent",
+            "LearningPathAgent",
+            "KnowledgeRetriever",
+            "ContentVerifierAgent",
+            "SafetyAgent",
+            "EvaluationAgent",
+        }
+    ]
+    assert observable
+    required_fields = {
+        "agent_id",
+        "agent_name",
+        "stage",
+        "status",
+        "message",
+        "timestamp",
+        "duration_ms",
+        "validation_result",
+    }
+    assert all(required_fields.issubset(event) for event in observable)
+    assert all(
+        event["status"] in {"waiting", "running", "success", "retry", "failed", "skipped"}
+        for event in observable
+    )
 
     resources = [e for e in events if e.get("type") == "resource"]
     assert len(resources) >= len(REQUIRED_FALLBACK_TYPES)
@@ -69,6 +97,12 @@ def test_generate_all_fallback_without_llm_key(monkeypatch: pytest.MonkeyPatch):
         assert meta.get("fallback_reason")
         assert meta.get("generated_by") == "TemplateFallbackAgent"
         assert isinstance(meta.get("grounded_chunks"), list)
+        assert 2 <= len(meta.get("sources") or []) <= 5
+        assert res.get("sources") == meta.get("sources")
+        verifier = meta.get("content_verification") or {}
+        assert {"passed", "warnings", "grounded_terms", "unsupported_claims"}.issubset(
+            verifier
+        )
         types_seen.add(res.get("resource_type"))
 
     assert REQUIRED_FALLBACK_TYPES.issubset(types_seen)

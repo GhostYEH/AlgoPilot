@@ -115,6 +115,31 @@ def test_chapter_metadata_on_chunks():
     assert all(h.get("chapter_id") == "ch12-backtracking" for h in hits)
 
 
+def test_retrieval_results_include_explainable_source_fields():
+    hits = retriever.search(
+        "BFS 队列 visited",
+        module_key="graph",
+        course_id="data_structures_algorithms",
+        top_k=5,
+    )
+    assert 2 <= len(hits) <= 5
+    required = {
+        "chunk_id",
+        "module_id",
+        "chapter_title",
+        "section_title",
+        "source_path",
+        "relevance_score",
+        "excerpt",
+    }
+    for hit in hits:
+        assert required.issubset(hit)
+        assert hit["chunk_id"] == hit["id"]
+        assert hit["source_path"]
+        assert hit["excerpt"]
+        assert 0.0 <= hit["relevance_score"] <= 1.0
+
+
 def test_ch13_module_keys_consistent_with_title():
     manifest = load_manifest("data_structures_algorithms")
     ch13 = next(c for c in manifest["chapters"] if c["id"] == "ch13-heap-union-find")

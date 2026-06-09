@@ -17,6 +17,7 @@ MODULE_CATALOG: list[ModuleCatalogItem] = [
     {"key": "string", "label": "字符串", "phase": "foundation", "available": True},
     {"key": "two-pointers", "label": "双指针法", "phase": "technique", "available": True},
     {"key": "stack-queue", "label": "栈与队列", "phase": "technique", "available": True},
+    {"key": "sorting", "label": "排序算法", "phase": "technique", "available": True},
     {"key": "binary-tree", "label": "二叉树", "phase": "tree", "available": True},
     {"key": "backtracking", "label": "回溯算法", "phase": "tree", "available": True},
     {"key": "greedy", "label": "贪心算法", "phase": "advanced", "available": True},
@@ -44,6 +45,7 @@ MODULE_DEPENDENCIES: dict[str, list[str]] = {
     "string": ["array"],
     "two-pointers": ["array", "linked-list", "hash-table"],
     "stack-queue": ["array"],
+    "sorting": ["array", "two-pointers"],
     "binary-tree": ["linked-list", "stack-queue"],
     "backtracking": ["binary-tree"],
     "greedy": ["binary-tree"],
@@ -66,6 +68,8 @@ REMEDIATION_BY_TOPIC: dict[str, dict[str, str]] = {
     "greedy": {"module_key": "stack-queue", "label": "栈队列巩固", "reason": "降级：贪心受挫，巩固基础结构"},
     "回溯": {"module_key": "binary-tree", "label": "二叉树巩固", "reason": "降级：回溯受挫，巩固递归与树"},
     "backtracking": {"module_key": "binary-tree", "label": "二叉树巩固", "reason": "降级：回溯受挫，巩固递归与树"},
+    "排序": {"module_key": "array", "label": "数组与下标巩固", "reason": "降级：排序受挫，先巩固数组遍历与区间边界"},
+    "sorting": {"module_key": "array", "label": "数组与下标巩固", "reason": "降级：排序受挫，先巩固数组遍历与区间边界"},
 }
 
 DEFAULT_REMEDIATION = {

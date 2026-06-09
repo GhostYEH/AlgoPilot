@@ -36,6 +36,9 @@ export async function fetchLocalProblemList(): Promise<ProblemListItem[]> {
       lc_id: p.lc_id,
       difficulty: p.difficulty,
       ready: Boolean(p.ready),
+      module_key: p.module_key,
+      tags: p.tags ?? [],
+      common_errors: p.common_errors ?? [],
     }))
     .sort((a, b) => a.lc_id - b.lc_id)
 }

@@ -30,9 +30,11 @@ import {
 import { isLoggedIn } from '@/stores/auth'
 import { usePersonaUi } from '@/composables/usePersonaUiProvider'
 import { fuzzyFilter } from '@/utils/fuzzySearch'
+import { normalizeResourceSources, relevanceLabel } from '@/utils/resourceSources'
 import ResourceContentPreview from '@/components/resources/ResourceContentPreview.vue'
 import SafetyValidationPanel from '@/components/resources/SafetyValidationPanel.vue'
 import TrustEvidenceDrawer from '@/components/resources/TrustEvidenceDrawer.vue'
+import { ALGORITHM_MODULES } from '@/constants/modules'
 
 const personaUi = usePersonaUi()
 const showWorkflowDetail = computed(() => personaUi.value.graphDetail !== 'minimal')
@@ -57,6 +59,7 @@ const progressPercent = ref(0)
 const progressText = ref('')
 const topic = ref('数据结构与算法')
 const focusHint = ref('')
+const selectedModule = ref('')
 const activeId = ref<number | null>(null)
 const workflowLogs = ref<string[]>([])
 const logFullscreen = ref(false)
@@ -78,6 +81,18 @@ function openEvidence(r: GeneratedResource) {
 const activeResource = computed(() =>
   resources.value.find((r) => r.id === activeId.value) ?? null,
 )
+const activeSources = computed(() => normalizeResourceSources(activeResource.value))
+const activeContentVerification = computed(() => {
+  const raw = activeResource.value?.meta?.content_verification
+  return raw && typeof raw === 'object'
+    ? (raw as {
+        passed?: boolean
+        warnings?: string[]
+        grounded_terms?: string[]
+        unsupported_claims?: string[]
+      })
+    : null
+})
 
 const filteredResources = computed(() => {
   let list = [...resources.value]
@@ -146,7 +161,18 @@ async function loadList() {
   }
 }
 
-onMounted(loadList)
+onMounted(() => {
+  if (typeof route.query.topic === 'string' && route.query.topic.trim()) {
+    topic.value = route.query.topic
+  }
+  if (
+    typeof route.query.module === 'string' &&
+    ALGORITHM_MODULES.some((item) => item.key === route.query.module)
+  ) {
+    selectedModule.value = route.query.module
+  }
+  void loadList()
+})
 
 function handleStreamError(msg: string) {
   progressText.value = ''
@@ -169,6 +195,7 @@ async function onGenerateOne(type: string) {
       {
         resource_type: type,
         topic: topic.value,
+        module_key: selectedModule.value || undefined,
         focus_hint: focusHint.value,
       },
       {
@@ -214,7 +241,11 @@ async function onGenerateAll() {
   progressText.value = 'DAG Pipeline：检索 → 生成 ⇄ 校验 → 安全 → 落库…'
   try {
     await streamGenerateAllResources(
-      { topic: topic.value, focus_hint: focusHint.value },
+      {
+        topic: topic.value,
+        module_key: selectedModule.value || undefined,
+        focus_hint: focusHint.value,
+      },
       {
         onProgress(p) {
           progressText.value = `[${p.step}/${p.total}] ${p.agent_name} · ${p.label}`
@@ -287,11 +318,6 @@ function verifyTag(meta: Record<string, unknown>) {
   return resourceVerifyTag(meta)
 }
 
-function humanizeRefs(refs: string[]): string {
-  return refs
-    .map((r) => r.split(':').pop() || r)
-    .join('、')
-}
 </script>
 
 <template>
@@ -322,11 +348,29 @@ function humanizeRefs(refs: string[]): string {
       <div class="gen-panel">
         <div class="gen-panel-inner">
           <el-row :gutter="12" class="gen-row">
-            <el-col :xs="24" :md="10">
+            <el-col :xs="24" :md="7">
+              <label class="field-label">课程模块</label>
+              <el-select
+                v-model="selectedModule"
+                size="large"
+                clearable
+                filterable
+                placeholder="选择模块（含排序算法）"
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="item in ALGORITHM_MODULES"
+                  :key="item.key"
+                  :label="item.label"
+                  :value="item.key"
+                />
+              </el-select>
+            </el-col>
+            <el-col :xs="24" :md="7">
               <label class="field-label">课程主题</label>
               <el-input v-model="topic" placeholder="如：数据结构与算法" size="large" />
             </el-col>
-            <el-col :xs="24" :md="10">
+            <el-col :xs="24" :md="6">
               <label class="field-label">生成侧重</label>
               <el-input
                 v-model="focusHint"
@@ -566,6 +610,53 @@ function humanizeRefs(refs: string[]): string {
                 <span class="preview-explain-label">💡 推荐原因</span>
                 <p class="preview-explain-text">{{ activeResource.explain }}</p>
               </div>
+              <section class="course-sources">
+                <div class="course-sources-head">
+                  <div>
+                    <h4>课程来源</h4>
+                    <p>本资源由课程知识库检索结果约束生成，并经内容校验智能体检查。</p>
+                  </div>
+                  <el-tag
+                    size="small"
+                    :type="activeContentVerification?.passed ? 'success' : 'warning'"
+                    effect="plain"
+                  >
+                    {{ activeContentVerification?.passed ? '校验通过' : '待复核' }}
+                  </el-tag>
+                </div>
+                <div v-if="activeSources.length" class="source-list">
+                  <article
+                    v-for="source in activeSources"
+                    :key="source.chunk_id"
+                    class="source-item"
+                  >
+                    <div class="source-title-row">
+                      <strong>{{ source.chapter_title || '课程知识库' }}</strong>
+                      <el-tag size="small" effect="plain">
+                        相关度 {{ relevanceLabel(source.relevance_score) }}
+                      </el-tag>
+                    </div>
+                    <p class="source-section">知识点：{{ source.section_title || source.module_id || '课程模块' }}</p>
+                    <p class="source-excerpt">{{ source.excerpt || '该旧资源未保存来源摘要。' }}</p>
+                    <code class="source-id">source id: {{ source.chunk_id }}</code>
+                  </article>
+                </div>
+                <div v-else class="source-empty">
+                  该资源为旧版数据，未保存详细来源；生成依据模块：
+                  {{ String(activeResource.meta?.module_key ?? '课程通用知识库') }}
+                </div>
+                <div v-if="activeContentVerification" class="verifier-summary">
+                  <p v-if="activeContentVerification.grounded_terms?.length">
+                    <strong>有依据术语：</strong>{{ activeContentVerification.grounded_terms.join('、') }}
+                  </p>
+                  <p v-if="activeContentVerification.warnings?.length">
+                    <strong>校验提醒：</strong>{{ activeContentVerification.warnings.join('；') }}
+                  </p>
+                  <p v-if="activeContentVerification.unsupported_claims?.length">
+                    <strong>缺少依据：</strong>{{ activeContentVerification.unsupported_claims.join('；') }}
+                  </p>
+                </div>
+              </section>
               <SafetyValidationPanel
                 :meta="activeResource.meta"
                 :resource-type="activeResource.resource_type"
@@ -575,15 +666,6 @@ function humanizeRefs(refs: string[]): string {
                   🔗 可信证据链
                 </el-button>
               </div>
-              <p
-                v-if="
-                  Array.isArray(activeResource.meta?.knowledge_refs) &&
-                  (activeResource.meta.knowledge_refs as string[]).length
-                "
-                class="refs"
-              >
-                知识库依据：{{ humanizeRefs(activeResource.meta.knowledge_refs as string[]) }}
-              </p>
             </el-card>
             <div v-else class="preview-placeholder">
               <el-icon :size="36"><Document /></el-icon>
@@ -1046,6 +1128,94 @@ function humanizeRefs(refs: string[]): string {
   background: var(--alp-bg-soft-block);
   color: var(--alp-color-muted);
   font-size: 14px;
+}
+
+.course-sources {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--alp-color-primary) 28%, var(--alp-color-border));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--alp-color-primary) 5%, var(--alp-bg-soft-block));
+}
+
+.course-sources-head,
+.source-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.course-sources-head h4 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: var(--alp-color-text);
+}
+
+.course-sources-head p,
+.source-section,
+.source-excerpt,
+.verifier-summary p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.course-sources-head p,
+.source-section,
+.source-excerpt {
+  color: var(--alp-color-muted);
+}
+
+.source-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.source-item {
+  padding: 10px 12px;
+  border: 1px solid var(--alp-color-border);
+  border-radius: 8px;
+  background: var(--alp-bg-surface-solid);
+}
+
+.source-title-row strong {
+  font-size: 13px;
+  color: var(--alp-color-text);
+}
+
+.source-section {
+  margin-top: 5px;
+  color: var(--alp-color-primary);
+}
+
+.source-excerpt {
+  margin-top: 4px;
+}
+
+.source-id {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--alp-color-muted);
+  word-break: break-all;
+}
+
+.source-empty {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--alp-bg-surface-solid);
+  color: var(--alp-color-muted);
+  font-size: 12px;
+}
+
+.verifier-summary {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--alp-color-border);
+  color: var(--alp-color-muted);
 }
 
 .preview-placeholder p {

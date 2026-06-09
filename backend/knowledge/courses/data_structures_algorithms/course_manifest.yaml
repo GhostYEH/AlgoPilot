@@ -30,6 +30,7 @@ module_key_aliases:
   graph: ch06-graph
   hash-table: ch07-search
   two-pointers: ch04-string
+  sorting: ch08-sorting
   greedy: ch10-greedy
   dp: ch11-dynamic-programming
   backtracking: ch12-backtracking
@@ -151,20 +152,24 @@ chapters:
       - 二分 Trace 展示 left/right/mid 指针收缩过程
 
   - id: ch08-sorting
-    title: 排序算法
+    title: 排序算法专题
     difficulty: 标准
-    prerequisites: [ch02-linear-list, ch01-introduction-complexity]
-    module_keys: [array]
+    prerequisites: [ch02-linear-list, ch04-string, ch01-introduction-complexity]
+    module_keys: [sorting]
     learning_outcomes:
-      - 掌握冒泡、选择、插入、归并、快排思想与复杂度
+      - 掌握冒泡、选择、插入、归并、快速排序与堆排序思想
       - 理解稳定排序与原地排序权衡
-      - 能将排序作为其他算法预处理步骤
-    resource_types: [document, mindmap, exercises, ppt]
+      - 能比较常见排序算法的时间复杂度、空间复杂度与适用场景
+      - 能将排序作为双指针、贪心和 TopK 问题的预处理或核心步骤
+    resource_types: [document, mindmap, exercises, code_case, trace_animation, ppt]
     recommended_problems:
-      - sort-colors
-      - merge-sorted-array
+      - sorting-basic-output
+      - sorting-inversion-count
+      - sorting-kth-largest
     oj_trace_hooks:
-      - 归并/快排可用 Trace 展示分区或合并区间（教学演示）
+      - 归并排序 Trace 展示左右区间合并与逆序对累计
+      - 快速排序或快速选择 Trace 展示 pivot、i、j 与分区边界
+      - 堆排序 Trace 展示数组堆化与堆顶交换
 
   - id: ch09-recursion-divide-conquer
     title: 递归与分治

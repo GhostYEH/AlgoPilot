@@ -113,9 +113,88 @@ export interface LearningPathPlan {
 
 export interface AgentLogItem {
   agent: string
+  agent_id?: string
+  agent_name?: string
   action: string
   detail?: string
   status?: string
+  timestamp?: string
+  duration_ms?: number | null
+  validation_result?: Record<string, unknown> | null
+  retry_count?: number
+  input_summary?: string
+  output_summary?: string
+  failure_reason?: string
+}
+
+export type AgentWorkflowStatus =
+  | 'waiting'
+  | 'running'
+  | 'success'
+  | 'retry'
+  | 'failed'
+  | 'skipped'
+
+export interface AgentWorkflowEvent {
+  agent: string
+  detail: string
+  agent_id: string
+  agent_name: string
+  stage: string
+  status: AgentWorkflowStatus
+  message: string
+  timestamp: string
+  duration_ms: number | null
+  validation_result: Record<string, unknown> | null
+  retry_count: number
+  input_summary: string
+  output_summary: string
+  failure_reason: string
+  resource_type?: string
+  percent?: number
+}
+
+function normalizeWorkflowStatus(status: unknown): AgentWorkflowStatus {
+  const value = String(status ?? '').toLowerCase()
+  if (value === 'done' || value === 'passed') return 'success'
+  if (value === 'warn' || value === 'retrying') return 'retry'
+  if (value === 'error') return 'failed'
+  if (
+    value === 'waiting' ||
+    value === 'running' ||
+    value === 'success' ||
+    value === 'retry' ||
+    value === 'failed' ||
+    value === 'skipped'
+  ) {
+    return value
+  }
+  return 'waiting'
+}
+
+function workflowEventFromSse(ev: Record<string, unknown>): AgentWorkflowEvent {
+  const agentName = String(ev.agent_name ?? ev.agent ?? ev.agent_id ?? '')
+  return {
+    agent: agentName,
+    detail: String(ev.detail ?? ev.message ?? ''),
+    agent_id: String(ev.agent_id ?? agentName),
+    agent_name: agentName,
+    stage: String(ev.stage ?? ev.event_type ?? ''),
+    status: normalizeWorkflowStatus(ev.status),
+    message: String(ev.message ?? ev.detail ?? ''),
+    timestamp: String(ev.timestamp ?? new Date().toISOString()),
+    duration_ms: typeof ev.duration_ms === 'number' ? ev.duration_ms : null,
+    validation_result:
+      ev.validation_result && typeof ev.validation_result === 'object'
+        ? (ev.validation_result as Record<string, unknown>)
+        : null,
+    retry_count: typeof ev.retry_count === 'number' ? ev.retry_count : 0,
+    input_summary: String(ev.input_summary ?? ''),
+    output_summary: String(ev.output_summary ?? ''),
+    failure_reason: String(ev.failure_reason ?? ''),
+    resource_type: typeof ev.resource_type === 'string' ? ev.resource_type : undefined,
+    percent: typeof ev.percent === 'number' ? ev.percent : undefined,
+  }
 }
 
 export interface SkillCardSummary {
@@ -163,9 +242,20 @@ export interface GeneratedResource {
   title: string
   content: string
   meta: Record<string, unknown>
+  sources?: ResourceSource[]
   created_at: string
   verification?: Record<string, unknown> | null
   explain?: string
+}
+
+export interface ResourceSource {
+  chunk_id: string
+  module_id: string
+  chapter_title: string
+  section_title: string
+  source_path: string
+  relevance_score: number
+  excerpt: string
 }
 
 
@@ -476,13 +566,7 @@ export async function streamGenerateResource(
   },
   handlers: {
     onProgress?: (p: { percent?: number }) => void
-    onWorkflow?: (w: {
-      stage: string
-      agent: string
-      status: string
-      detail: string
-      percent?: number
-    }) => void
+    onWorkflow?: (w: AgentWorkflowEvent) => void
     onResource?: (r: GeneratedResource) => void
     onDone?: (info?: {
       partial_failure?: boolean
@@ -495,13 +579,7 @@ export async function streamGenerateResource(
     await consumeSse('/api/orchestrator/resources/generate?stream=true', params, (ev) => {
       if (ev.type === 'progress') handlers.onProgress?.(ev as { percent?: number })
       if (ev.type === 'workflow') {
-        handlers.onWorkflow?.({
-          stage: String(ev.stage ?? ''),
-          agent: String(ev.agent ?? ''),
-          status: String(ev.status ?? ''),
-          detail: String(ev.detail ?? ''),
-          percent: typeof ev.percent === 'number' ? ev.percent : undefined,
-        })
+        handlers.onWorkflow?.(workflowEventFromSse(ev))
       }
       if (ev.type === 'resource' && ev.resource) {
         handlers.onResource?.(ev.resource as GeneratedResource)
@@ -562,7 +640,16 @@ export interface TrustEvidence {
   agent_name: string
   agent_role: string
   profile_summary: string
-  knowledge_chunks: Array<{ chunk_id: string; title: string; snippet: string }>
+  knowledge_chunks: Array<{
+    chunk_id: string
+    title: string
+    snippet: string
+    module_id?: string
+    chapter_title?: string
+    section_title?: string
+    source_path?: string
+    relevance_score?: number
+  }>
   verifier_status: 'passed' | 'warning' | 'failed'
   safety_status: 'passed' | 'warning' | 'failed'
   retry_count: number
@@ -594,13 +681,7 @@ export async function streamGenerateAllResources(
       percent?: number
       parallel?: boolean
     }) => void
-    onWorkflow?: (w: {
-      stage: string
-      agent: string
-      status: string
-      detail: string
-      percent?: number
-    }) => void
+    onWorkflow?: (w: AgentWorkflowEvent) => void
     onCollaboration?: (
       log: Array<{ agent: string; action: string; detail: string; role?: string; status?: string }>,
     ) => void
@@ -632,13 +713,7 @@ export async function streamGenerateAllResources(
         handlers.onProgress?.(ev as Parameters<NonNullable<typeof handlers.onProgress>>[0])
       }
       if (ev.type === 'workflow') {
-        handlers.onWorkflow?.({
-          stage: String(ev.stage ?? ''),
-          agent: String(ev.agent ?? ''),
-          status: String(ev.status ?? ''),
-          detail: String(ev.detail ?? ''),
-          percent: typeof ev.percent === 'number' ? ev.percent : undefined,
-        })
+        handlers.onWorkflow?.(workflowEventFromSse(ev))
       }
       if (ev.type === 'collaboration') {
         if (Array.isArray(ev.log)) {

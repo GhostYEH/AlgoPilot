@@ -44,6 +44,9 @@ export interface ProblemListItem {
   lc_id: number
   difficulty: string
   ready: boolean
+  module_key?: string
+  tags?: string[]
+  common_errors?: string[]
 }
 
 export interface ProblemDetail {
@@ -65,6 +68,9 @@ export interface ProblemDetail {
   ready: boolean
   time_limit_ms: number
   order_insensitive: boolean
+  module_key?: string
+  tags?: string[]
+  common_errors?: string[]
 }
 
 export type Verdict = 'AC' | 'WA' | 'TLE' | 'RE' | 'CE'

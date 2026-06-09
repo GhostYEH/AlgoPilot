@@ -15,6 +15,8 @@ class ProblemListItem(BaseModel):
     chapter_id: str = ""
     module_key: str = ""
     skill_id: str = ""
+    tags: list[str] = Field(default_factory=list)
+    common_errors: list[str] = Field(default_factory=list)
 
 
 class ProblemDetail(BaseModel):
@@ -35,6 +37,8 @@ class ProblemDetail(BaseModel):
     chapter_id: str = ""
     module_key: str = ""
     skill_id: str = ""
+    tags: list[str] = Field(default_factory=list)
+    common_errors: list[str] = Field(default_factory=list)
 
 
 class JudgeRequest(BaseModel):
@@ -203,6 +207,13 @@ class TraceBugDiagnoseResponse(BaseModel):
     diagnosis_title: str
     detailed_analysis: str
     source: str = "llm"
+    error_type: str = ""
+    error_type_label: str = ""
+    why_failed: str = ""
+    fix_suggestion: str = ""
+    recommended_knowledge_points: list[str] = Field(default_factory=list)
+    intervention_suggestion: str = ""
+    variable_evidence: list[str] = Field(default_factory=list)
     tutoring: OjTutoringPayload | None = None
 
 
@@ -224,11 +235,17 @@ class TraceStepBrief(BaseModel):
 
 class TraceDiagnosisReport(BaseModel):
     error_type: str = ""
+    error_category: str = ""
+    error_category_label: str = ""
     failed_test_point: str = ""
     key_variable_changes: list[VarChangeItem] = Field(default_factory=list)
     error_step: TraceStepBrief | None = None
     possible_cause: str = ""
+    why_failed: str = ""
     fix_suggestion: str = ""
+    recommended_knowledge_points: list[str] = Field(default_factory=list)
+    intervention_suggestion: str = ""
+    learning_intervention_generated: bool = False
     recommended_resources: list[RecommendedResourceHint] = Field(default_factory=list)
     path_rearrange_triggered: bool = False
     trace_steps: list[TraceStepBrief] = Field(default_factory=list)

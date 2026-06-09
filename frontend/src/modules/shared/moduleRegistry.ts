@@ -51,6 +51,13 @@ import {
 } from '@/modules/graph/graphCurriculum'
 import { GRAPH_SECTION_STORAGE_KEY, graphProgress } from '@/modules/graph/graphProgress'
 import {
+  SORTING_SECTIONS,
+  SORTING_INTRO,
+  SORTING_COUNT,
+  SORTING_EXTRA,
+} from '@/modules/sorting/sortingCurriculum'
+import { SORTING_SECTION_STORAGE_KEY, sortingProgress } from '@/modules/sorting/sortingProgress'
+import {
   LINKED_LIST_SECTIONS,
   LINKED_LIST_CURRICULUM_INTRO,
   LINKED_LIST_SECTION_COUNT,
@@ -224,6 +231,23 @@ export const MODULE_LEARN_CONFIGS: Record<string, ModuleLearnConfig> = {
     animationComponent: () => import('@/modules/graph/components/GraphSectionAnimation.vue'),
     animTransitionClass: 'graph-anim-fade',
     extraTables: GRAPH_EXTRA,
+  },
+  sorting: {
+    key: 'sorting',
+    routeName: 'learn-sorting',
+    breadcrumb: '排序算法学习',
+    heroTitle: '排序算法专题',
+    chapterTag: '排序篇 · ch08-sorting',
+    intro: SORTING_INTRO,
+    sections: SORTING_SECTIONS,
+    sectionCount: SORTING_COUNT,
+    storageKey: SORTING_SECTION_STORAGE_KEY,
+    loadSectionDone: sortingProgress.loadSectionDone,
+    toggleSectionDone: sortingProgress.toggleSectionDone,
+    animationComponent: () =>
+      import('@/modules/sorting/components/SortingSectionAnimation.vue'),
+    animTransitionClass: 'sorting-anim-fade',
+    extraTables: SORTING_EXTRA,
   },
 }
 

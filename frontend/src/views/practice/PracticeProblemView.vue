@@ -7,6 +7,8 @@ import { useOjWorkbenchActions } from '@/composables/useOjWorkbenchActions'
 import { resolveProblem, type JudgeResponse, type ProblemDetail, type OjLanguage } from '@/api/oj'
 import type { AiDiagnoseResponse, TraceDiagnosisReport, TraceResponse } from '@/types/codeTrace'
 import { buildFallbackProblem } from '@/api/ojLocal'
+import { getOjJudgeDemoScenario } from '@/constants/ojDemo'
+import { resetOjStruggleSession } from '@/utils/ojStruggleSession'
 
 const route = useRoute()
 const router = useRouter()
@@ -95,6 +97,21 @@ function resetCode() {
   if (!p) return
   code.value = p[language.value] ?? p.cpp ?? p.python ?? ''
 }
+
+function loadJudgeDemo() {
+  const scenario = getOjJudgeDemoScenario(slug.value)
+  if (!scenario) return
+  closeTraceSplit()
+  language.value = scenario.language
+  code.value = scenario.code
+  result.value = null
+  trace.value = null
+  diagnosis.value = null
+  traceBugDiagnosis.value = null
+  traceReport.value = null
+  traceReportLoading.value = false
+  resetOjStruggleSession(slug.value)
+}
 </script>
 
 <template>
@@ -135,6 +152,7 @@ function resetCode() {
       @narrate="onNarrate"
       @diagnose="onAiDiagnose"
       @visual-trace-diagnose="onVisualTraceDiagnose"
+      @demo="loadJudgeDemo"
       @close-trace="closeTraceSplit"
       @reset="resetCode"
     />

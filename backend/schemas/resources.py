@@ -70,6 +70,13 @@ class AgentLogEntry(BaseModel):
     detail: str = ""
     resource_type: str = ""
     status: str = "done"
+    timestamp: str = ""
+    duration_ms: int | None = None
+    validation_result: dict | None = None
+    retry_count: int = 0
+    input_summary: str = ""
+    output_summary: str = ""
+    failure_reason: str = ""
 
 
 class ResourceGenerateRequest(BaseModel):
@@ -87,6 +94,16 @@ class ResourceGenerateAllRequest(BaseModel):
     focus_hint: str = Field(default="", max_length=500)
 
 
+class ResourceSource(BaseModel):
+    chunk_id: str
+    module_id: str = ""
+    chapter_title: str = ""
+    section_title: str = ""
+    source_path: str = ""
+    relevance_score: float = 0.0
+    excerpt: str = ""
+
+
 class GeneratedResourceItem(BaseModel):
     id: int
     resource_type: str
@@ -94,6 +111,7 @@ class GeneratedResourceItem(BaseModel):
     title: str
     content: str
     meta: dict = Field(default_factory=dict)
+    sources: list[ResourceSource] = Field(default_factory=list)
     created_at: str
     verification: dict | None = Field(
         default=None,

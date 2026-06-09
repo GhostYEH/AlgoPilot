@@ -15,6 +15,11 @@ class GroundedChunkRef(BaseModel):
     id: str
     title: str = ""
     snippet: str = ""
+    module_id: str = ""
+    chapter_title: str = ""
+    section_title: str = ""
+    source_path: str = ""
+    relevance_score: float = 0.0
 
 
 class ResourceVerificationResult(BaseModel):

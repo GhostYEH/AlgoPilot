@@ -13,6 +13,11 @@ class EvidenceChunkRef(BaseModel):
     chunk_id: str = Field(default="", description="知识库 chunk_id 或 source_id")
     title: str = ""
     snippet: str = ""
+    module_id: str = ""
+    chapter_title: str = ""
+    section_title: str = ""
+    source_path: str = ""
+    relevance_score: float = 0.0
 
 
 class EvidenceTimelineStep(BaseModel):

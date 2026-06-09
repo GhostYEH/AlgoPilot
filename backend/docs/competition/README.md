@@ -47,6 +47,9 @@
 4. 我的学习 → 效果评估 → 推送策略与路径重排  
 5. 完成小节后登录态下 `patch-from-learning` 更新画像  
 
+OJ + Trace 核心答辩场景、无 Key 规则诊断与学习干预说明见
+[OJ_TRACE_DEMO.md](./OJ_TRACE_DEMO.md)。
+
 ## 6. 科大讯飞生态集成
 
 - 大模型：`services/llm/client.py` — 星火 Spark（`SPARK_API_PASSWORD` 等）

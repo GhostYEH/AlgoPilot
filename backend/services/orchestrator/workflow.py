@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
+from time import perf_counter
 from typing import Any
 
 from schemas.resources import ResourceType
@@ -12,7 +13,7 @@ from services.agents.registry import agent_for_resource
 from services.agents.resource_roles import get_role_agent
 from services.agents.resources import ResourceAgents
 from services.agents.verifier import verifier_agent
-from services.knowledge.retriever import retriever
+from services.knowledge.retriever import build_source_records, retriever
 from services.orchestrator.pipeline_context import PipelineContext
 from services.safety.content_filter import safety_agent
 
@@ -49,6 +50,7 @@ class ResourceGenerationWorkflow:
         role_agent_id = agent_for_resource(resource_type)
         role_agent = get_role_agent(resource_type)
         ctx = pipeline_ctx or PipelineContext()
+        stage_started_at: dict[tuple[str, str], float] = {}
 
         async def _emit(
             stage: str,
@@ -58,8 +60,20 @@ class ResourceGenerationWorkflow:
             *,
             retry_count: int | None = None,
             severity: str = "info",
+            validation_result: dict | None = None,
+            input_summary: str = "",
+            output_summary: str = "",
+            failure_reason: str = "",
         ) -> None:
             if emit:
+                key = (stage, agent)
+                duration_ms = None
+                if status == "running":
+                    stage_started_at[key] = perf_counter()
+                elif key in stage_started_at:
+                    duration_ms = max(
+                        0, int((perf_counter() - stage_started_at.pop(key)) * 1000)
+                    )
                 await emit(
                     {
                         "type": "workflow",
@@ -74,7 +88,12 @@ class ResourceGenerationWorkflow:
                         "message": detail,
                         "progress": None,
                         "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "duration_ms": duration_ms,
+                        "validation_result": validation_result,
                         "retry_count": retry_count,
+                        "input_summary": input_summary,
+                        "output_summary": output_summary,
+                        "failure_reason": failure_reason,
                         "severity": severity,
                     }
                 )
@@ -87,7 +106,13 @@ class ResourceGenerationWorkflow:
             resource_type=resource_type,
             status="running",
         )
-        await _emit("rag_retrieve", "KnowledgeRetriever", "running", "BM25 匹配知识库")
+        await _emit(
+            "rag_retrieve",
+            "KnowledgeRetriever",
+            "running",
+            "BM25 匹配知识库",
+            input_summary=f"{topic} | {focus_hint or module_key}",
+        )
         query = f"{topic} {focus_hint} {module_key}".strip()
         chapter_id = ""
         try:
@@ -106,8 +131,15 @@ class ResourceGenerationWorkflow:
         from services.knowledge.retriever import primary_course_context
 
         course_ctx = primary_course_context(chunks)
+        sources = build_source_records(chunks)
         ctx.log("KnowledgeRetriever", "retrieve", f"命中 {len(chunks)} 条", resource_type=resource_type)
-        await _emit("rag_retrieve", "KnowledgeRetriever", "done", f"命中 {len(chunks)} 条")
+        await _emit(
+            "rag_retrieve",
+            "KnowledgeRetriever",
+            "success",
+            f"命中 {len(chunks)} 条",
+            output_summary=f"Top-{len(chunks)} knowledge chunks",
+        )
 
         skill_route_score = 0.0
         skill_route_reasons: list[str] = []
@@ -143,7 +175,7 @@ class ResourceGenerationWorkflow:
                 await _emit(
                     "skill_route",
                     "SkillRouter",
-                    "done",
+                    "success",
                     f"命中技能卡 {matched_skill_card.id}",
                 )
         except Exception:
@@ -172,6 +204,8 @@ class ResourceGenerationWorkflow:
                 role_agent_id,
                 "running",
                 f"第 {attempt} 次生成" if attempt > 1 else role_agent.role,
+                retry_count=attempt - 1,
+                input_summary=f"{topic} | profile + knowledge chunks + collaboration context",
             )
             title, content, gen_meta = await ResourceAgents.generate_with_context(
                 resource_type,
@@ -188,7 +222,13 @@ class ResourceGenerationWorkflow:
                 role=role_agent.role,
                 resource_type=resource_type,
             )
-            await _emit("agent_generate", role_agent_id, "done")
+            await _emit(
+                "agent_generate",
+                role_agent_id,
+                "success",
+                output_summary=f"{title} | {gen_meta.get('format', 'content')}",
+                retry_count=attempt - 1,
+            )
 
             if resource_type in _SKIP_VERIFY_TYPES:
                 passed = True
@@ -196,12 +236,29 @@ class ResourceGenerationWorkflow:
                 gen_meta["verified"] = True
                 gen_meta["verify_attempts"] = 0
                 gen_meta["knowledge_refs"] = [c["id"] for c in chunks]
+                gen_meta["content_verification"] = {
+                    "passed": True,
+                    "warnings": ["该资源由专用执行管线校验，跳过文本事实对照"],
+                    "grounded_terms": [],
+                    "unsupported_claims": [],
+                }
                 verifier_structured = None
                 ctx.log("TraceAgent", "trace_record", gen_meta.get("trace_verdict", "done"), resource_type=resource_type)
-                await _emit("content_verify", "ContentVerifierAgent", "skipped", "轨迹资源跳过文本校验")
+                await _emit(
+                    "content_verify",
+                    "ContentVerifierAgent",
+                    "skipped",
+                    "轨迹资源跳过文本校验",
+                    validation_result={"status": "skipped", "reason": "trace resource"},
+                )
                 break
 
-            await _emit("content_verify", "ContentVerifierAgent", "running")
+            await _emit(
+                "content_verify",
+                "ContentVerifierAgent",
+                "running",
+                input_summary=f"{title} | {len(chunks)} evidence chunks",
+            )
             passed, content, citation_ids, revised_hint, verifier_structured = await verifier_agent.verify(
                 content, chunks, topic=topic
             )
@@ -209,19 +266,36 @@ class ResourceGenerationWorkflow:
             gen_meta["knowledge_refs"] = citation_ids
             gen_meta["verified"] = passed
             gen_meta["verify_attempts"] = attempt
+            gen_meta["content_verification"] = verifier_structured.to_display_dict()
 
             if passed:
                 ctx.log("ContentVerifierAgent", "verify_pass", "校验通过", resource_type=resource_type)
-                await _emit("content_verify", "ContentVerifierAgent", "done", "校验通过")
+                await _emit(
+                    "content_verify",
+                    "ContentVerifierAgent",
+                    "success",
+                    "校验通过",
+                    validation_result={
+                        "status": "passed",
+                        "evidence_count": len(citation_ids),
+                    },
+                    output_summary=f"passed | {len(citation_ids)} citations",
+                    retry_count=retry_count,
+                )
                 break
             ctx.log("ContentVerifierAgent", "verify_fail", revised_hint or "未通过", resource_type=resource_type, status="warn")
             await _emit(
                 "content_verify",
                 "ContentVerifierAgent",
-                "warn",
+                "retry" if attempt <= MAX_VERIFY_RETRIES else "failed",
                 revised_hint or "校验未通过",
                 retry_count=attempt - 1,
                 severity="warn",
+                validation_result={
+                    "status": "failed",
+                    "evidence_count": len(citation_ids),
+                },
+                failure_reason=revised_hint or "content verification failed",
             )
             if attempt > MAX_VERIFY_RETRIES:
                 gen_meta["status"] = "draft"
@@ -238,7 +312,12 @@ class ResourceGenerationWorkflow:
         ctx.update_from_resource(resource_type, content)
         gen_meta["collaboration_log"] = list(ctx.collaboration_log)
 
-        await _emit("safety_filter", "SafetyAgent", "running")
+        await _emit(
+            "safety_filter",
+            "SafetyAgent",
+            "running",
+            input_summary=f"{title} | verified={passed}",
+        )
         safety_structured = safety_agent.audit_structured(content, resource_type=resource_type)
         safe_text = safety_structured.text or content
         passed_safety = safety_structured.passed
@@ -257,9 +336,11 @@ class ResourceGenerationWorkflow:
             await _emit(
                 "safety_filter",
                 "SafetyAgent",
-                "error",
+                "failed",
                 safety_logs[-1].get("detail", "") if safety_logs else "审查未通过",
                 severity="error",
+                validation_result={"status": safety_structured.status},
+                failure_reason=safety_logs[-1].get("detail", "") if safety_logs else "safety audit failed",
             )
             gen_meta["status"] = "draft"
             gen_meta["draft_reason"] = safety_logs[-1].get("detail", "") if safety_logs else "内容未通过安全审查"
@@ -321,6 +402,17 @@ class ResourceGenerationWorkflow:
                 verification.final_decision = "publish"
 
         gen_meta["verification"] = verification.to_meta_dict()
+        if "content_verification" not in gen_meta:
+            gen_meta["content_verification"] = (
+                verifier_structured.to_display_dict()
+                if verifier_structured
+                else {
+                    "passed": bool(passed),
+                    "warnings": [],
+                    "grounded_terms": [],
+                    "unsupported_claims": [],
+                }
+            )
         gen_meta["safety_panel"] = {
             "shield": "green"
             if verification.final_decision == "publish"
@@ -340,6 +432,13 @@ class ResourceGenerationWorkflow:
         gen_meta["agent_logs"] = list(ctx.agent_logs)
         gen_meta["course_id"] = course_id
         gen_meta["chapter_id"] = chapter_id_final
+        gen_meta["sources"] = sources
+        gen_meta["grounding_basis"] = {
+            "course_id": course_id,
+            "module_id": module_key,
+            "chapter_id": chapter_id_final,
+            "retrieval": "BM25 + synonym expansion",
+        }
         gen_meta["knowledge_chunk_ids"] = [c["id"] for c in chunks]
         gen_meta["_evidence_version"] = 1
         gen_meta["_content_hash"] = hashlib.sha256(safe_text.encode()).hexdigest()[:16] if safe_text else ""
@@ -363,16 +462,24 @@ class ResourceGenerationWorkflow:
         await _emit(
             "safety_filter",
             "SafetyAgent",
-            "done" if passed_safety else "warn",
+            "success" if passed_safety else "failed",
             safety_logs[-1].get("detail", "") if safety_logs else "审查完成",
             severity="info" if passed_safety else "warn",
+            validation_result={
+                "status": safety_structured.status,
+                "sensitive_risks": len(safety_structured.sensitive_risks),
+                "prompt_injection_risks": len(safety_structured.prompt_injection_risks),
+            },
+            output_summary="safe content" if passed_safety else "blocked as draft",
         )
         await _emit(
             "persist",
             "Orchestrator",
-            "done" if gen_meta.get("status") == "published" else "warn",
+            "success" if gen_meta.get("status") == "published" else "failed",
             gen_meta.get("status", ""),
             severity="info" if gen_meta.get("status") == "published" else "warn",
+            validation_result={"final_decision": verification.final_decision},
+            output_summary=f"resource status={gen_meta.get('status', '')}",
         )
 
         return title, safe_text, gen_meta

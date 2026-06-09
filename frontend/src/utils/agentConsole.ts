@@ -263,8 +263,9 @@ export function traceBootstrapLines(): AgentConsoleLine[] {
 
 function mapWorkflowStatus(status: string): AgentLogStatus {
   if (status === 'running' || status === 'retry') return 'running'
-  if (status === 'error') return 'error'
+  if (status === 'error' || status === 'failed') return 'error'
   if (status === 'warn') return 'warn'
+  if (status === 'success') return 'success'
   if (status === 'skipped') return 'done'
   return 'done'
 }

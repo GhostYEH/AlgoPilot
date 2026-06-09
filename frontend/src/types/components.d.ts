@@ -11,6 +11,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AgentCollaborationFlow: typeof import('./../components/agents/AgentCollaborationFlow.vue')['default']
     AgentStatusGrid: typeof import('./../components/agents/AgentStatusGrid.vue')['default']
     AgentThinkingConsole: typeof import('./../components/agents/AgentThinkingConsole.vue')['default']
     AiTutorPanel: typeof import('./../components/learning/AiTutorPanel.vue')['default']

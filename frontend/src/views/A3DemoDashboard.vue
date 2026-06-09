@@ -2,7 +2,6 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
-  ArrowRight,
   Connection,
   DataAnalysis,
   Lock,
@@ -24,14 +23,13 @@ import {
 } from '@/api/orchestrator'
 import { fetchMasteryReport, MASTERY_LEVEL_LABELS, type MasteryOverview } from '@/api/mastery'
 import { fetchRecentEvents } from '@/api/events'
-import { fetchA3Health, fetchSystemHealth, type A3Health, type ReadinessLevel, type SystemHealth } from '@/api/health'
+import { fetchA3Health, fetchSystemHealth, type A3Health, type SystemHealth } from '@/api/health'
 import { isLoggedIn } from '@/stores/auth'
 import {
   A3_POSITIONING,
   A3_SUBTITLE,
   A3_DEMO_STEPS,
   A3_SHOWCASE_AGENTS,
-  A3_ALL_AGENTS,
   A3_COURSE_CHAPTERS,
   MOCK_VERIFICATION_SUMMARY,
   MOCK_PERSONA_DIMENSIONS,
@@ -51,7 +49,7 @@ import {
   systemLine,
   type AgentConsoleLine,
 } from '@/utils/agentConsole'
-import { getResourceVerification, verificationDisplayTag } from '@/utils/verification'
+import { getResourceVerification } from '@/utils/verification'
 
 const router = useRouter()
 const activeStep = ref(0)
@@ -99,14 +97,6 @@ const resourcePreviewTypes = [
   'trace_animation',
   'reading',
 ] as const
-
-const previewByType = computed(() => {
-  const map = new Map<string, GeneratedResource>()
-  for (const r of resources.value) {
-    if (!map.has(r.resource_type)) map.set(r.resource_type, r)
-  }
-  return map
-})
 
 const demoHints = computed(() => {
   const hints = [...(systemHealth.value?.demo_hints ?? [])]
@@ -279,7 +269,6 @@ function aggregateVerification(items: GeneratedResource[]) {
 }
 
 function mapPersonaToDimensions(profile: PersonaProfile): PersonaDimensionScore[] {
-  const dims = profile.dimensions
   const scores = profile.dimension_scores ?? {}
   const conf = profile.dimension_confidence ?? {}
   const keys: (keyof PersonaDimensions)[] = [
@@ -432,7 +421,7 @@ async function loadDashboard() {
     try {
       const recItems = await fetchRecommendedResources({ limit: 5 })
       if (recItems.length) {
-        recommendedResources.value = recItems.map((r, i) => ({
+        recommendedResources.value = recItems.map((r) => ({
           id: r.id,
           title: r.title,
           resourceType: r.resource_type,

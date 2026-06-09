@@ -46,6 +46,11 @@ export const MODULE_PATH_HINTS: Record<string, ModulePathHint> = {
     goals: ['实现基础 ADT', '理解 FILO / FIFO', '为树层序与单调栈铺垫'],
     estHours: 5,
   },
+  sorting: {
+    summary: '排序算法专题从稳定性、原地性与复杂度出发，串联分治、堆和 TopK。',
+    goals: ['比较六类经典排序', '掌握归并与快速分区', '完成逆序对和 TopK 实操'],
+    estHours: 8,
+  },
   'binary-tree': {
     summary: '二叉树是递归与分治的核心载体，覆盖遍历、路径与 BST。',
     goals: ['统一前中后序框架', '掌握层序与属性题', '独立完成 30+ 经典题'],

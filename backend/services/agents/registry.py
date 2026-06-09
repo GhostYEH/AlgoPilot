@@ -56,6 +56,18 @@ AGENT_REGISTRY: list[AgentMeta] = [
         "role": "学术/工程阅读策展人 · 基础/进阶/挑战分层阅读",
         "layer": "resource",
     },
+    {
+        "id": "PptAgent",
+        "display_name": "PptAgent",
+        "role": "演示文稿资源生成扩展节点",
+        "layer": "resource",
+    },
+    {
+        "id": "VideoScriptAgent",
+        "display_name": "VideoScriptAgent",
+        "role": "教学短视频脚本生成扩展节点",
+        "layer": "resource",
+    },
     {"id": "PlannerAgent", "display_name": "PlannerAgent", "role": "千人千面学习路径 DAG 规划", "layer": "path"},
     {
         "id": "LearningPathAgent",

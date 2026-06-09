@@ -21,7 +21,7 @@ _LC_FAKE_PATTERN = re.compile(r"力扣\s*\d{4,}|leetcode\s*#?\s*\d{4,}", re.I)
 
 _VERIFY_SYSTEM = """你是「内容校验 Agent」。根据「知识库片段」检查「待发布内容」是否存在明显事实错误或编造题号/外链。
 输出 JSON（不要 markdown 代码块）：
-{"passed": true/false, "issues": ["问题1"], "revised_hint": "若未通过，给生成 Agent 一句修改建议，无则空字符串"}
+{"passed": true/false, "issues": ["问题1"], "warnings": ["提醒1"], "grounded_terms": ["有知识库依据的术语"], "unsupported_claims": ["缺少依据的表述"], "revised_hint": "若未通过，给生成 Agent 一句修改建议，无则空字符串"}
 标准：允许教学性简化；不允许编造知识库外的具体力扣/LeetCode 四位题号、虚假 URL、与片段矛盾的复杂度结论。"""
 
 
@@ -30,9 +30,22 @@ class VerifierStructuredResult:
     status: str
     passed: bool
     grounded_chunk_ids: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    grounded_terms: list[str] = field(default_factory=list)
     hallucination_risks: list[str] = field(default_factory=list)
     unsupported_claims: list[str] = field(default_factory=list)
     revised_hint: str = ""
+
+    def to_display_dict(self) -> dict:
+        warnings = list(
+            dict.fromkeys(self.warnings + self.hallucination_risks)
+        )
+        return {
+            "passed": self.passed,
+            "warnings": warnings,
+            "grounded_terms": list(dict.fromkeys(self.grounded_terms)),
+            "unsupported_claims": list(dict.fromkeys(self.unsupported_claims)),
+        }
 
 
 class ContentVerifierAgent:
@@ -76,6 +89,15 @@ class ContentVerifierAgent:
             data = _parse_json(raw)
             passed = bool(data.get("passed", False))
             issues = [str(x) for x in (data.get("issues") or [])]
+            structured.warnings.extend(str(x) for x in (data.get("warnings") or []))
+            structured.grounded_terms.extend(
+                str(x) for x in (data.get("grounded_terms") or [])
+            )
+            structured.unsupported_claims.extend(
+                str(x) for x in (data.get("unsupported_claims") or [])
+            )
+            if structured.unsupported_claims:
+                passed = False
             hint = str(data.get("revised_hint", "")).strip()
             if passed:
                 structured.status = "passed"
@@ -112,6 +134,7 @@ def _rule_check_structured(
         status="passed",
         passed=True,
         grounded_chunk_ids=citation_ids,
+        grounded_terms=_find_grounded_terms(content, chunks),
     )
     failed = False
 
@@ -151,6 +174,34 @@ def _rule_check_structured(
     return structured, failed
 
 
+def _find_grounded_terms(
+    content: str,
+    chunks: list[KnowledgeChunk],
+    *,
+    limit: int = 12,
+) -> list[str]:
+    candidates: list[str] = []
+    for chunk in chunks:
+        candidates.extend(str(x) for x in (chunk.get("keywords") or []))
+        candidates.extend(
+            [
+                str(chunk.get("section_title") or chunk.get("section") or ""),
+                str(chunk.get("chapter_title") or ""),
+            ]
+        )
+    grounded: list[str] = []
+    content_lower = content.lower()
+    for term in candidates:
+        cleaned = term.strip()
+        if len(cleaned) < 2 or cleaned in grounded:
+            continue
+        if cleaned.lower() in content_lower:
+            grounded.append(cleaned)
+        if len(grounded) >= limit:
+            break
+    return grounded
+
+
 def _parse_json(raw: str) -> dict:
     text = raw.strip()
     fence = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
@@ -163,4 +214,3 @@ def _parse_json(raw: str) -> dict:
 
 
 verifier_agent = ContentVerifierAgent()
-

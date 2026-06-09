@@ -1160,6 +1160,33 @@ class Orchestrator:
             "total": total,
             "percent": 0,
         })
+        yield _sse(_observable_agent_event(
+            agent="ProfilingAgent",
+            stage="profile_context",
+            status="success",
+            message="已加载六维动态学习画像",
+            input_summary=f"user_id={user.id}",
+            output_summary="profile summary + persona dimensions",
+        ))
+        yield _sse(_observable_agent_event(
+            agent="LearningPathAgent",
+            stage="path_context",
+            status="success",
+            message="已读取当前学习路径，作为资源编排上下文",
+            input_summary=f"module_key={module_key or 'auto'}",
+            output_summary="current learning path context",
+        ))
+        for optional_agent, optional_stage in (
+            ("PptAgent", "ppt_generate"),
+            ("VideoScriptAgent", "video_script_generate"),
+        ):
+            yield _sse(_observable_agent_event(
+                agent=optional_agent,
+                stage=optional_stage,
+                status="skipped",
+                message="当前 generate-all 端点未启用该资源类型",
+                validation_result={"status": "not_enabled"},
+            ))
 
         if batch_fallback_reason:
             yield _sse({
@@ -1304,10 +1331,20 @@ class Orchestrator:
                     yield _sse({
                         "type": "workflow",
                         "stage": "reuse",
-                        "agent": "Orchestrator",
+                        "agent": RESOURCE_AGENT_META[rtype]["agent_name"],
+                        "agent_id": RESOURCE_AGENT_META[rtype]["agent_name"],
+                        "agent_name": RESOURCE_AGENT_META[rtype]["agent_name"],
                         "status": "skipped",
                         "resource_type": rtype,
                         "detail": reason,
+                        "message": reason,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "duration_ms": 0,
+                        "validation_result": {"status": "reused"},
+                        "retry_count": 0,
+                        "input_summary": f"{topic} | {rtype}",
+                        "output_summary": "reused latest verified resource",
+                        "failure_reason": "",
                         "percent": pct,
                     })
                     yield _sse({
@@ -1337,6 +1374,25 @@ class Orchestrator:
                             ev.setdefault("timestamp", datetime.now(timezone.utc).isoformat())
                             ev.setdefault("severity", "info")
                         yield _sse(ev)
+                    yield _sse({
+                        "type": "workflow",
+                        "stage": "agent_generate",
+                        "agent": RESOURCE_AGENT_META[rtype]["agent_name"],
+                        "agent_id": RESOURCE_AGENT_META[rtype]["agent_name"],
+                        "agent_name": RESOURCE_AGENT_META[rtype]["agent_name"],
+                        "status": "failed",
+                        "resource_type": rtype,
+                        "detail": str(error)[:300],
+                        "message": str(error)[:300],
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "duration_ms": None,
+                        "validation_result": {"status": "failed"},
+                        "retry_count": 0,
+                        "input_summary": f"{topic} | {rtype}",
+                        "output_summary": "",
+                        "failure_reason": str(error)[:300],
+                        "percent": pct,
+                    })
                     yield _sse({
                         "type": "error",
                         "message": f"{RESOURCE_AGENT_META[rtype]['agent_name']} 生成失败，跳过继续",
@@ -1373,6 +1429,19 @@ class Orchestrator:
                     "agent_logs": (item.meta or {}).get("agent_logs", []),
                 })
 
+        yield _sse(_observable_agent_event(
+            agent="EvaluationAgent",
+            stage="batch_evaluation",
+            status="success" if not phase_errors else "failed",
+            message="资源批次质量评估完成" if not phase_errors else "资源批次存在部分失败",
+            input_summary=f"completed={completed}, total={total}",
+            output_summary=f"reused={reused_count}, errors={len(phase_errors)}",
+            validation_result={
+                "status": "passed" if not phase_errors else "warning",
+                "error_count": len(phase_errors),
+            },
+            failure_reason="; ".join(e.get("error", "") for e in phase_errors[:3]),
+        ))
         yield _sse({
             "type": "done",
             "percent": 100,
@@ -1448,6 +1517,18 @@ def _path_plan_response(
 def _resource_item(row: GeneratedResource) -> GeneratedResourceItem:
     meta = dict(row.meta or {})
     verification = meta.get("verification")
+    raw_sources = meta.get("sources")
+    sources = []
+    if isinstance(raw_sources, list):
+        for source in raw_sources:
+            if not isinstance(source, dict):
+                continue
+            normalized = dict(source)
+            normalized["chunk_id"] = str(
+                normalized.get("chunk_id") or normalized.get("id") or ""
+            )
+            if normalized["chunk_id"]:
+                sources.append(normalized)
     return GeneratedResourceItem(
         id=row.id,
         resource_type=row.resource_type,
@@ -1455,6 +1536,7 @@ def _resource_item(row: GeneratedResource) -> GeneratedResourceItem:
         title=row.title,
         content=row.content,
         meta=meta,
+        sources=sources if isinstance(sources, list) else [],
         created_at=row.created_at.isoformat() if row.created_at else "",
         verification=verification if isinstance(verification, dict) else None,
     )
@@ -1462,6 +1544,40 @@ def _resource_item(row: GeneratedResource) -> GeneratedResourceItem:
 
 def _sse(payload: dict) -> str:
     return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+
+
+def _observable_agent_event(
+    *,
+    agent: str,
+    stage: str,
+    status: str,
+    message: str,
+    input_summary: str = "",
+    output_summary: str = "",
+    validation_result: dict | None = None,
+    failure_reason: str = "",
+    duration_ms: int | None = 0,
+    retry_count: int = 0,
+) -> dict:
+    return {
+        "type": "workflow",
+        "event_type": stage,
+        "agent": agent,
+        "agent_id": agent,
+        "agent_name": agent,
+        "stage": stage,
+        "status": status,
+        "detail": message,
+        "message": message,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "duration_ms": duration_ms,
+        "validation_result": validation_result,
+        "retry_count": retry_count,
+        "input_summary": input_summary,
+        "output_summary": output_summary,
+        "failure_reason": failure_reason,
+        "severity": "error" if status == "failed" else "info",
+    }
 
 
 def _resource_age_days(created_at: datetime) -> float:
