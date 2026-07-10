@@ -752,7 +752,7 @@ button.plate:disabled {
 }
 
 .plate.is-current {
-  outline: 3px solid #38bdf8;
+  outline: 3px solid #22d3ee;
   animation: pulse 1s ease infinite;
 }
 
@@ -762,7 +762,7 @@ button.plate:disabled {
 
 @keyframes pulse {
   50% {
-    box-shadow: 0 0 16px rgba(56, 189, 248, 0.6);
+    box-shadow: 0 0 16px rgba(34, 211, 238, 0.6);
   }
 }
 
@@ -827,8 +827,8 @@ button.plate:disabled {
 }
 
 .action-chip.is-ready {
-  border-color: #38bdf8;
-  background: color-mix(in srgb, #38bdf8 15%, transparent);
+  border-color: #22d3ee;
+  background: color-mix(in srgb, #22d3ee 15%, transparent);
 }
 
 .action-chip:disabled {
@@ -869,8 +869,8 @@ button.plate:disabled {
 
 .deque-bar-wrap.in-window {
   opacity: 1;
-  background: color-mix(in srgb, #38bdf8 12%, transparent);
-  outline: 2px solid color-mix(in srgb, #38bdf8 40%, transparent);
+  background: color-mix(in srgb, #22d3ee 12%, transparent);
+  outline: 2px solid color-mix(in srgb, #22d3ee 40%, transparent);
 }
 
 .deque-bar {

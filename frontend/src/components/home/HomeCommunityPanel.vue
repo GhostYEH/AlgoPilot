@@ -71,6 +71,7 @@ function avatarStyle(hue: number) {
             <span class="score">{{ e.score }} {{ e.unit }}</span>
           </li>
         </ul>
+        <el-empty v-if="!acBoard.length" description="暂无真实排行数据" :image-size="42" />
       </div>
       <div class="board">
         <div class="board-head">
@@ -85,13 +86,14 @@ function avatarStyle(hue: number) {
             <span class="score">{{ e.score }} {{ e.unit }}</span>
           </li>
         </ul>
+        <el-empty v-if="!streakBoard.length" description="暂无真实打卡数据" :image-size="42" />
       </div>
     </div>
 
     <div class="feed">
       <div class="board-head">
         <span>学习动态</span>
-        <el-tag size="small" type="success" effect="plain" round>实时</el-tag>
+        <el-tag size="small" type="info" effect="plain" round>数据库</el-tag>
       </div>
       <ul class="feed-list">
         <li v-for="item in feed" :key="item.id" class="feed-item">
@@ -100,6 +102,7 @@ function avatarStyle(hue: number) {
           <time>{{ item.time }}</time>
         </li>
       </ul>
+      <el-empty v-if="!feed.length" description="暂无公开学习动态" :image-size="42" />
     </div>
   </div>
 </template>

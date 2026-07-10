@@ -22,6 +22,9 @@ const isQueueLike = computed(
     props.viewHint === 'tree_build_queue',
 )
 const isHorizontalGrid = computed(() => props.viewHint === 'vector' || props.viewHint === 'deque')
+const isLinearSequence = computed(() =>
+  ['vector', 'array', 'list', 'forward_list', 'deque'].includes(props.viewHint),
+)
 
 /** 栈：展示栈顶在上（items 为栈底→栈顶） */
 const stackCellsTopFirst = computed(() => [...props.items].reverse())
@@ -29,6 +32,9 @@ const stackCellsTopFirst = computed(() => [...props.items].reverse())
 const label = computed(() => {
   const map: Record<SequenceViewHint, string> = {
     vector: '数组',
+    array: '定长数组',
+    list: '双向链表',
+    forward_list: '单向链表',
     deque: '双端队列',
     stack: '栈',
     queue: '队列',
@@ -42,6 +48,15 @@ function cellHot(index: number): boolean {
   if (!props.varChanged) return false
   return diff.value.added.includes(index) || diff.value.removed.includes(index)
 }
+
+function itemKey(items: string[], index: number): string {
+  const value = items[index] ?? ''
+  let occurrence = 0
+  for (let i = 0; i < index; i++) {
+    if (items[i] === value) occurrence++
+  }
+  return `${value}\u0000${occurrence}`
+}
 </script>
 
 <template>
@@ -50,7 +65,7 @@ function cellHot(index: number): boolean {
     :class="{
       'seq-trace--stack': isStack,
       'seq-trace--queue': isQueueLike && !isHorizontalGrid,
-      'seq-trace--grid': isHorizontalGrid,
+      'seq-trace--grid': isLinearSequence,
     }"
   >
     <header class="seq-head">
@@ -60,33 +75,39 @@ function cellHot(index: number): boolean {
     </header>
 
     <!-- vector / deque：水平格子 -->
-    <div v-if="isHorizontalGrid" class="seq-grid-wrap" :class="{ 'seq-wrap--hot': varChanged }">
-      <template v-if="items.length">
+    <div v-if="isLinearSequence" class="seq-grid-scroll">
+      <TransitionGroup
+        v-if="items.length"
+        name="seq-item"
+        tag="div"
+        class="seq-grid-wrap"
+        :class="{ 'seq-wrap--hot': varChanged }"
+      >
         <span
           v-for="(cell, i) in items"
-          :key="i + '-' + cell"
+          :key="itemKey(items, i)"
           class="seq-grid-cell"
           :class="{ 'seq-cell--hot': cellHot(i) }"
         >{{ cell }}</span>
-      </template>
-      <span v-else class="seq-empty">（空）</span>
+      </TransitionGroup>
+      <div v-else class="seq-grid-wrap"><span class="seq-empty">（空）</span></div>
     </div>
 
     <!-- stack：垂直桶 -->
     <div v-else-if="isStack" class="seq-stack-wrap">
       <span class="seq-cap seq-cap--top">栈顶 ↑</span>
       <div class="seq-stack-lane" :class="{ 'seq-wrap--hot': varChanged }">
-        <template v-if="stackCellsTopFirst.length">
+        <TransitionGroup v-if="stackCellsTopFirst.length" name="seq-item" tag="div" class="seq-stack-items">
           <span
             v-for="(cell, i) in stackCellsTopFirst"
-            :key="i + '-' + cell"
+            :key="itemKey(stackCellsTopFirst, i)"
             class="seq-stack-cell"
             :class="{
               'seq-cell--top': i === 0,
               'seq-cell--hot': varChanged && i === 0,
             }"
           >{{ cell }}</span>
-        </template>
+        </TransitionGroup>
         <span v-else class="seq-empty">（空栈）</span>
       </div>
       <span class="seq-cap seq-cap--bottom">栈底</span>
@@ -96,10 +117,10 @@ function cellHot(index: number): boolean {
     <div v-else class="seq-pipe-wrap">
       <span class="seq-pipe-label seq-pipe-label--in">入队 →</span>
       <div class="seq-pipe" :class="{ 'seq-wrap--hot': varChanged }">
-        <template v-if="items.length">
+        <TransitionGroup v-if="items.length" name="seq-item" tag="div" class="seq-pipe-items">
           <span
             v-for="(cell, i) in items"
-            :key="i + '-' + cell"
+            :key="itemKey(items, i)"
             class="seq-pipe-cell"
             :class="{
               'seq-pipe-cell--head': i === 0,
@@ -107,7 +128,7 @@ function cellHot(index: number): boolean {
               'seq-cell--hot': cellHot(i),
             }"
           >{{ cell }}</span>
-        </template>
+        </TransitionGroup>
         <span v-else class="seq-empty">（空队列）</span>
       </div>
       <span class="seq-pipe-label seq-pipe-label--out">→ 出队</span>
@@ -135,11 +156,11 @@ function cellHot(index: number): boolean {
 }
 
 .seq-trace--queue {
-  border-color: color-mix(in srgb, #38bdf8 35%, var(--alp-color-border));
+  border-color: color-mix(in srgb, #22d3ee 35%, var(--alp-color-border));
   background: linear-gradient(
     165deg,
     var(--alp-bg-surface) 0%,
-    color-mix(in srgb, #38bdf8 8%, var(--alp-bg-soft-block)) 100%
+    color-mix(in srgb, #22d3ee 8%, var(--alp-bg-soft-block)) 100%
   );
 }
 
@@ -161,7 +182,7 @@ function cellHot(index: number): boolean {
 }
 
 .seq-trace--queue .seq-tag {
-  color: #38bdf8;
+  color: #22d3ee;
 }
 
 .seq-badge {
@@ -174,14 +195,27 @@ function cellHot(index: number): boolean {
 
 .seq-grid-wrap {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
+  width: max-content;
+  min-width: 100%;
   padding: 10px;
   border-radius: 8px;
   border: 1px dashed var(--alp-color-border);
 }
 
+.seq-grid-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
 .seq-grid-cell {
+  flex: 0 0 auto;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   min-width: 40px;
   padding: 8px 12px;
   text-align: center;
@@ -210,6 +244,12 @@ function cellHot(index: number): boolean {
   border-radius: 8px 8px 4px 4px;
   border: 2px solid color-mix(in srgb, #f59e0b 50%, var(--alp-color-border));
   background: color-mix(in srgb, #f59e0b 6%, var(--alp-bg-surface));
+}
+
+.seq-stack-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .seq-stack-cell {
@@ -249,9 +289,15 @@ function cellHot(index: number): boolean {
   gap: 6px;
   padding: 10px 14px;
   border-radius: 999px;
-  border: 2px solid color-mix(in srgb, #38bdf8 45%, var(--alp-color-border));
-  background: color-mix(in srgb, #38bdf8 6%, var(--alp-bg-surface));
+  border: 2px solid color-mix(in srgb, #22d3ee 45%, var(--alp-color-border));
+  background: color-mix(in srgb, #22d3ee 6%, var(--alp-bg-surface));
   overflow-x: auto;
+}
+
+.seq-pipe-items {
+  display: flex;
+  gap: 6px;
+  min-width: max-content;
 }
 
 .seq-pipe-cell {
@@ -271,7 +317,7 @@ function cellHot(index: number): boolean {
 }
 
 .seq-pipe-cell--tail {
-  border-color: #38bdf8;
+  border-color: #22d3ee;
 }
 
 .seq-pipe-label {
@@ -294,6 +340,40 @@ function cellHot(index: number): boolean {
   animation: seq-pulse-cell 0.6s ease 2;
   border-color: var(--el-color-primary);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--el-color-primary) 35%, transparent);
+}
+
+.seq-item-move,
+.seq-item-enter-active,
+.seq-item-leave-active {
+  transition:
+    transform 0.32s ease,
+    opacity 0.32s ease;
+}
+
+.seq-item-enter-from {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.92);
+}
+
+.seq-pipe .seq-item-enter-from {
+  transform: translateX(14px) scale(0.92);
+}
+
+.seq-item-leave-to {
+  opacity: 0;
+  transform: translateY(10px) scale(0.88);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seq-item-move,
+  .seq-item-enter-active,
+  .seq-item-leave-active,
+  .seq-grid-cell,
+  .seq-stack-cell,
+  .seq-pipe-cell {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 @keyframes seq-drop {

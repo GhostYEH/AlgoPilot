@@ -32,11 +32,6 @@ jobs:
         env:
           JWT_SECRET: ci-test-secret
         run: pytest -q --cov=services --cov-report=term-missing
-      - name: A3 Demo main flow tests
-        env:
-          JWT_SECRET: ci-test-secret
-        run: pytest tests/test_a3_demo_main_flow.py -v
-
   frontend:
     runs-on: ubuntu-latest
     defaults:
@@ -53,5 +48,3 @@ jobs:
         run: npm ci
       - name: Typecheck & build
         run: npm run build
-      - name: A3 Demo main flow tests
-        run: npm run test:a3-demo

@@ -1,11 +1,13 @@
-"""软件杯答辩场景：链表反转 WA -> Trace -> 规则诊断 -> 学习干预。"""
+"""链表反转 WA -> Trace -> 规则诊断 -> 学习干预闭环。"""
 
 from __future__ import annotations
 
 from dataclasses import asdict
 
 import pytest
+from fastapi.testclient import TestClient
 
+from main import app
 from services.oj.ai_diagnosis import diagnose_trace_bug
 from services.oj.problem_store import get_cases, get_problem
 from services.oj.stdio_runner import run_cases_stdio
@@ -14,6 +16,7 @@ from services.oj.trace_report import generate_trace_diagnosis_report
 from services.oj.trace_runner import run_trace_stdio
 from services.oj.tutoring_pipeline import apply_oj_tutoring
 
+client = TestClient(app)
 
 DEMO_WRONG_CODE = """import sys
 
@@ -144,7 +147,13 @@ def test_reverse_linked_list_report_generates_intervention_and_resources() -> No
     topics = {item.topic for item in report.recommended_resources}
     assert report.error_category == "pointer_update_error"
     assert report.error_category_label == "指针更新顺序错误"
+    assert any(
+        item.variable_name == "nxt" and item.after == "node@None"
+        for item in report.key_variable_changes
+    )
     assert report.learning_intervention_generated is True
+    assert report.path_rearrange_triggered is True
+    assert "链表三指针循环不变量" in report.intervention_suggestion
     assert "插入" in report.intervention_suggestion
     assert topics == {"指针更新动画", "边界条件练习", "错题复盘卡"}
 
@@ -159,3 +168,31 @@ def test_reverse_linked_list_demo_narration_marks_broken_link() -> None:
 
     assert narrations is not None
     assert any("nxt 变为 null" in str(item["text"]) for item in narrations)
+
+
+def test_trace_report_replays_the_actual_failed_case() -> None:
+    response = client.post(
+        "/api/oj/problems/reverse-linked-list/trace-report",
+        json={
+            "code": DEMO_WRONG_CODE,
+            "language": "python",
+            "judge_verdict": "WA",
+            "failed_cases": [
+                {
+                    "index": 0,
+                    "verdict": "WA",
+                    "message": "答案不匹配",
+                    "input_preview": "5 1 2 3 4 5",
+                    "expected_preview": "5 4 3 2 1",
+                    "actual_preview": "1",
+                }
+            ],
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    report = response.json()
+    assert report["trace_case_reproduced"] is True
+    assert report["diagnosis_confidence"] == "high"
+    assert "复现 WA" in report["evidence_summary"]
+    assert report["source"] == "rule:reverse_linked_list_save_order"

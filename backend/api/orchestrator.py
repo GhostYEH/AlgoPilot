@@ -214,11 +214,31 @@ async def orchestrator_oj_assistant(body: OjAssistantRequest) -> OjAssistantResp
 
 
 @router.get("/learning-path/plan")
-def get_learning_path_plan(
+async def get_learning_path_plan(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict:
     plan = orchestrator.get_learning_path_plan(db, user)
+    if plan is None:
+        from services.agents.learning_path_catalog import MODULE_CATALOG
+        from schemas.learning_path import ModuleProgressInput
+
+        plan = await orchestrator.replan_learning_path(
+            db,
+            user,
+            LearningPathReplanRequest(
+                modules=[
+                    ModuleProgressInput(
+                        key=item["key"],
+                        label=item["label"],
+                        phase=item["phase"],
+                        available=item["available"],
+                    )
+                    for item in MODULE_CATALOG
+                ],
+                overall_percent=0,
+            ),
+        )
     return {"plan": plan}
 
 
@@ -367,7 +387,7 @@ async def generate_all_resources_stream(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """流式批量生成比赛展示资源（含 PPT、短视频脚本、拓展阅读）。"""
+    """流式批量生成多类型学习资源（含 PPT、短视频脚本、拓展阅读）。"""
 
     async def event_gen():
         try:

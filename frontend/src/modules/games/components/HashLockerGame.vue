@@ -196,7 +196,7 @@ const pendingQueue = computed(() => queue.value.map((q) => q.label))
 
 .bucket:hover {
   transform: translateY(-2px);
-  border-color: #38bdf8;
+  border-color: #22d3ee;
 }
 
 .bucket.is-target {

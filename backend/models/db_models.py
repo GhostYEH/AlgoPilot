@@ -41,6 +41,10 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    learning_events: Mapped[list[LearningEventLog]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
 
 class LearningProgress(Base):
@@ -143,3 +147,30 @@ class StudentLearningMemory(Base):
     )
 
     user: Mapped[User] = relationship(back_populates="learning_memories")
+
+
+class LearningEventLog(Base):
+    """可审计的学习事件与多智能体处理日志。"""
+
+    __tablename__ = "learning_event_logs"
+
+    event_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    event_type: Mapped[str] = mapped_column(String(64), index=True)
+    course_id: Mapped[str] = mapped_column(
+        String(64), default="data_structures_algorithms", index=True
+    )
+    chapter_id: Mapped[str] = mapped_column(String(80), default="", index=True)
+    skill_id: Mapped[str] = mapped_column(String(64), default="", index=True)
+    payload: Mapped[dict] = mapped_column(JSON, nullable=False, insert_default=dict)
+    handled_by: Mapped[list] = mapped_column(JSON, nullable=False, insert_default=list)
+    status: Mapped[str] = mapped_column(String(16), default="pending", index=True)
+    agent_logs: Mapped[list] = mapped_column(JSON, nullable=False, insert_default=list)
+    handler_errors: Mapped[list] = mapped_column(JSON, nullable=False, insert_default=list)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), index=True
+    )
+
+    user: Mapped[User] = relationship(back_populates="learning_events")

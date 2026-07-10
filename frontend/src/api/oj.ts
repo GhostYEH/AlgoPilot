@@ -258,6 +258,7 @@ export async function traceBugDiagnose(
     language: OjLanguage
     steps: import('@/types/codeTrace').TraceStep[]
     problem_description?: string
+    judge_verdict?: string
   },
 ) {
   const { data } = await judgeClient.post<import('@/types/codeTrace').TraceBugDiagnoseResponse>(

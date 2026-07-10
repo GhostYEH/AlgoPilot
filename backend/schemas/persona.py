@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-# 赛题标准六维动态学生画像
+# 六维动态学生画像
 PROFILE_DIMENSION_KEYS = (
     "knowledge_base",
     "cognitive_style",
@@ -23,7 +23,7 @@ _LEGACY_DIMENSION_ALIASES: dict[str, str] = {
 
 
 def migrate_dimension_payload(raw: dict | None) -> dict[str, str]:
-    """将旧版七维画像 JSON 迁移为赛题六维。"""
+    """将旧版七维画像 JSON 迁移为当前六维结构。"""
     if not raw:
         return {k: "" for k in PROFILE_DIMENSION_KEYS}
     out: dict[str, str] = {}
@@ -48,7 +48,7 @@ class ChatHistoryItem(BaseModel):
 
 
 class PersonaDimensions(BaseModel):
-    """学习画像六维（中国软件杯赛题标准）。"""
+    """学习画像六维。"""
 
     knowledge_base: str = Field(default="", description="知识基础")
     cognitive_style: str = Field(default="", description="认知风格，如视觉型/文本型")

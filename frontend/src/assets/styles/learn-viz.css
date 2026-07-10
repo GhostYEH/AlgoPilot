@@ -146,7 +146,7 @@
 .module-learn-shell .learn-viz-tag {
   font-size: 13px;
   font-weight: 700;
-  color: var(--alp-color-primary, #38bdf8);
+  color: var(--alp-color-primary, #22d3ee);
 }
 
 .module-learn-shell .learn-viz-tag--green {
@@ -232,7 +232,7 @@
 .module-learn-shell .tp-anim .cell.hot,
 .module-learn-shell .str-anim .cell.hot,
 .module-learn-shell .ht-anim .ht-cell--hot {
-  border-color: var(--alp-color-primary, #38bdf8);
+  border-color: var(--alp-color-primary, #22d3ee);
   background: color-mix(in srgb, var(--alp-color-primary) 20%, var(--alp-bg-surface-solid));
   transform: scale(1.06);
 }
@@ -394,7 +394,7 @@
 .module-learn-shell .ll-anim .arrow-mini,
 .module-learn-shell .tp-anim .arr,
 .module-learn-shell .str-anim .arr {
-  color: var(--alp-color-primary, #38bdf8);
+  color: var(--alp-color-primary, #22d3ee);
   font-weight: 700;
 }
 

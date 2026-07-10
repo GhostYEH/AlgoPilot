@@ -278,7 +278,7 @@ async function onGenerateAll() {
           } else if (reused > 0) {
             ElMessage.success(`完成：${reused} 项画像未变已复用，其余已生成/校验`)
           } else {
-            ElMessage.success('比赛展示资源已全部生成（含校验闭环）')
+            ElMessage.success('个性化资源已全部生成（含校验闭环）')
           }
           progressPercent.value = 100
         },
@@ -537,7 +537,7 @@ function verifyTag(meta: Record<string, unknown>) {
                 <div class="res-item-top">
                   <span
                     class="res-type-dot"
-                    :style="{ background: RESOURCE_TYPE_META[r.resource_type]?.color ?? '#38bdf8' }"
+                    :style="{ background: RESOURCE_TYPE_META[r.resource_type]?.color ?? '#22d3ee' }"
                   />
                   <span class="res-agent">{{ r.agent_name }}</span>
                   <el-tag size="small" :type="verifyTag(r.meta ?? {}).type" effect="plain">

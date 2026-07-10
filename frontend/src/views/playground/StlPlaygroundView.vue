@@ -463,7 +463,7 @@ watch(activeContainer, (id) => {
             <li>限时执行：样例运行与 Trace 均设置超时上限。</li>
             <li>内存限制：生产部署按题目配置 cgroup / 容器内存。</li>
             <li>危险调用：拦截 system / fork / exec 与危险头文件。</li>
-            <li>隔离策略：判题子进程执行，答辩部署建议 Docker 隔离。</li>
+            <li>隔离策略：判题子进程执行，生产部署应使用 Docker 或更强隔离。</li>
           </ul>
         </section>
 
@@ -547,7 +547,7 @@ watch(activeContainer, (id) => {
 .pg-glow--a {
   top: -80px;
   right: 10%;
-  background: #38bdf8;
+  background: #22d3ee;
 }
 
 .pg-glow--b {
@@ -584,7 +584,7 @@ watch(activeContainer, (id) => {
   margin: 0 0 10px;
   font-size: clamp(1.6rem, 3vw, 2.2rem);
   font-weight: 800;
-  background: linear-gradient(120deg, #e8eef7 30%, #38bdf8 70%, #a78bfa);
+  background: linear-gradient(120deg, #e8eef7 30%, #22d3ee 70%, #a78bfa);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

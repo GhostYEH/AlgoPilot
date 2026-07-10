@@ -69,7 +69,7 @@ function lineActive(line: GameCodeLine) {
         :percentage="progressPercent"
         :stroke-width="6"
         :show-text="false"
-        color="var(--game-accent, #38bdf8)"
+        color="var(--game-accent, #22d3ee)"
         class="game-shell__progress-bar"
       />
       <div v-if="showSteps && totalSteps > 1" class="game-shell__step-rail" aria-label="步骤进度">
@@ -193,7 +193,7 @@ function lineActive(line: GameCodeLine) {
   padding: 12px 14px;
   border-radius: 12px;
   border: 1px solid var(--alp-color-border);
-  background: color-mix(in srgb, var(--game-accent, #38bdf8) 8%, var(--alp-bg-soft-block));
+  background: color-mix(in srgb, var(--game-accent, #22d3ee) 8%, var(--alp-bg-soft-block));
 }
 
 .game-shell__header-main {
@@ -207,8 +207,8 @@ function lineActive(line: GameCodeLine) {
   padding: 3px 10px;
   font-size: 11px;
   font-weight: 700;
-  color: var(--game-accent, #38bdf8);
-  background: color-mix(in srgb, var(--game-accent, #38bdf8) 16%, transparent);
+  color: var(--game-accent, #22d3ee);
+  background: color-mix(in srgb, var(--game-accent, #22d3ee) 16%, transparent);
   border-radius: 999px;
 }
 
@@ -221,7 +221,7 @@ function lineActive(line: GameCodeLine) {
   margin-left: auto;
   font-size: 12px;
   font-weight: 600;
-  color: var(--game-accent, #38bdf8);
+  color: var(--game-accent, #22d3ee);
 }
 
 .game-shell__progress-bar {
@@ -260,9 +260,9 @@ function lineActive(line: GameCodeLine) {
 }
 
 .game-shell__step-chip.is-current {
-  border-color: var(--game-accent, #38bdf8);
-  background: color-mix(in srgb, var(--game-accent, #38bdf8) 22%, transparent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--game-accent, #38bdf8) 25%, transparent);
+  border-color: var(--game-accent, #22d3ee);
+  background: color-mix(in srgb, var(--game-accent, #22d3ee) 22%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--game-accent, #22d3ee) 25%, transparent);
 }
 
 .game-shell__step-chip.is-current .game-shell__step-num {
@@ -294,8 +294,8 @@ function lineActive(line: GameCodeLine) {
 .game-shell__hint-box {
   padding: 12px 14px;
   border-radius: 10px;
-  border-left: 4px solid var(--game-accent, #38bdf8);
-  background: color-mix(in srgb, var(--game-accent, #38bdf8) 6%, var(--alp-bg-surface-solid, #0f172a));
+  border-left: 4px solid var(--game-accent, #22d3ee);
+  background: color-mix(in srgb, var(--game-accent, #22d3ee) 6%, var(--alp-bg-surface-solid, #0f172a));
 }
 
 .game-shell__hint-box.is-fail {
@@ -336,8 +336,8 @@ function lineActive(line: GameCodeLine) {
 .game-shell__body :deep(.workbench) {
   padding: 14px;
   border-radius: 12px;
-  border: 1px dashed color-mix(in srgb, var(--game-accent, #38bdf8) 35%, var(--alp-color-border));
-  background: color-mix(in srgb, var(--game-accent, #38bdf8) 4%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--game-accent, #22d3ee) 35%, var(--alp-color-border));
+  background: color-mix(in srgb, var(--game-accent, #22d3ee) 4%, transparent);
 }
 
 .game-shell__body :deep(.workbench-head) {
@@ -421,7 +421,7 @@ function lineActive(line: GameCodeLine) {
 
 .game-shell__code-line.is-active {
   color: #e2e8f0;
-  background: color-mix(in srgb, var(--game-accent, #38bdf8) 18%, transparent);
+  background: color-mix(in srgb, var(--game-accent, #22d3ee) 18%, transparent);
 }
 
 .game-shell__state-list {
@@ -489,7 +489,7 @@ function lineActive(line: GameCodeLine) {
 }
 
 .game-shell__invariant strong {
-  color: var(--game-accent, #38bdf8);
+  color: var(--game-accent, #22d3ee);
   font-weight: 600;
 }
 
@@ -534,7 +534,7 @@ function lineActive(line: GameCodeLine) {
 
 .game-shell__footer-item::before {
   content: '◆ ';
-  color: var(--game-accent, #38bdf8);
+  color: var(--game-accent, #22d3ee);
   font-size: 8px;
 }
 

@@ -46,7 +46,7 @@ const frames = computed(() => {
         </span>
       </div>
     </div>
-    <p class="viz-note">答辩演示可结合 OJ Trace 查看指针、区间与交换位置的真实执行轨迹。</p>
+    <p class="viz-note">可结合 OJ Trace 查看指针、区间与交换位置的真实执行轨迹。</p>
   </div>
 </template>
 
@@ -92,7 +92,7 @@ const frames = computed(() => {
   font-weight: 700;
 }
 .cell--primary {
-  border-color: #38bdf8;
+  border-color: #22d3ee;
 }
 .cell--accent {
   border-color: #a78bfa;

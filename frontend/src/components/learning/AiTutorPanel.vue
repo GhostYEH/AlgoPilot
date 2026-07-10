@@ -242,17 +242,13 @@ defineExpose({
 
 <style scoped>
 .ai-tutor-aside {
-  flex: 0 0 300px;
-  width: 300px;
-  max-width: 100%;
+  width: 100%;
 }
 
 .ai-tutor-card {
-  position: sticky;
-  top: 12px;
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 88px);
+  max-height: calc(100vh - var(--alp-header-height, 60px) - 48px);
   border: 1px solid var(--alp-color-border);
   background: var(--alp-bg-aside-gradient);
   border-radius: var(--alp-radius-card);
@@ -346,7 +342,7 @@ defineExpose({
 
 .msg-row--user .msg-bubble {
   background: var(--alp-color-primary-soft);
-  border: 1px solid rgba(56, 189, 248, 0.35);
+  border: 1px solid rgba(34, 211, 238, 0.35);
 }
 
 .msg-row--assistant .msg-bubble {
@@ -474,7 +470,7 @@ defineExpose({
 
 .quick-chip:hover:not(:disabled) {
   background: var(--alp-bg-nav-hover);
-  border-color: rgba(56, 189, 248, 0.35);
+  border-color: rgba(34, 211, 238, 0.35);
 }
 
 .quick-chip:disabled {

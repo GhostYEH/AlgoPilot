@@ -231,5 +231,8 @@ export interface TraceDiagnosisReport {
   path_rearrange_triggered: boolean
   trace_steps: TraceStepBrief[]
   source: string
+  diagnosis_confidence: 'high' | 'medium' | 'low' | string
+  evidence_summary: string
+  trace_case_reproduced: boolean
   tutoring?: OjTutoringPayload | null
 }

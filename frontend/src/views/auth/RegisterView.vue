@@ -21,7 +21,6 @@ const route = useRoute()
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
-const registerRole = ref<'student' | 'teacher'>('student')
 
 const form = reactive({
   username: '',
@@ -59,23 +58,18 @@ async function submitForm() {
       username: form.username.trim(),
       password: form.password,
       email: form.email.trim() || undefined,
-      role: registerRole.value,
     })
     setSession(res.access_token, res.user)
     await syncLearningProgressAfterAuth()
     ElMessage.success('注册成功')
 
-    if (res.user.role === 'teacher') {
-      await router.replace({ name: 'teacher-dashboard' })
+    const redir = route.query.redirect as string | undefined
+    if (redir && redir.startsWith('/') && !(await needsOnboarding())) {
+      await router.replace(redir)
+    } else if (await needsOnboarding()) {
+      await router.replace({ name: 'learning-path', query: { onboarding: '1' } })
     } else {
-      const redir = route.query.redirect as string | undefined
-      if (redir && redir.startsWith('/') && !(await needsOnboarding())) {
-        await router.replace(redir)
-      } else if (await needsOnboarding()) {
-        await router.replace({ name: 'learning-path', query: { onboarding: '1' } })
-      } else {
-        await router.replace('/')
-      }
+      await router.replace('/')
     }
   } catch {
     /* axios 拦截器 */
@@ -91,27 +85,6 @@ async function submitForm() {
       <span class="auth-card-kicker">Sign Up</span>
       <h2 class="auth-card-title">创建账号</h2>
       <p class="auth-card-sub">注册后即可在数组、链表等模块中自动同步小节完成进度。</p>
-
-      <div class="role-switch">
-        <button
-          type="button"
-          class="role-btn"
-          :class="{ active: registerRole === 'student' }"
-          @click="registerRole = 'student'"
-        >
-          <el-icon :size="16"><User /></el-icon>
-          学生注册
-        </button>
-        <button
-          type="button"
-          class="role-btn"
-          :class="{ active: registerRole === 'teacher' }"
-          @click="registerRole = 'teacher'"
-        >
-          <el-icon :size="16"><User /></el-icon>
-          教师注册
-        </button>
-      </div>
 
       <el-form
         ref="formRef"
@@ -182,7 +155,7 @@ async function submitForm() {
             round
             @click="submitForm"
           >
-            {{ registerRole === 'teacher' ? '教师注册并登录' : '注册并登录' }}
+            注册并登录
           </el-button>
         </el-form-item>
       </el-form>
@@ -196,42 +169,3 @@ async function submitForm() {
     </div>
   </AuthPageFrame>
 </template>
-
-<style scoped>
-.role-switch {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 20px;
-}
-
-.role-btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px 0;
-  border: 1px solid var(--alp-color-border);
-  border-radius: 10px;
-  background: transparent;
-  color: var(--alp-color-muted);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition:
-    border-color 0.2s,
-    color 0.2s,
-    background 0.2s;
-}
-
-.role-btn:hover {
-  border-color: var(--alp-color-primary);
-  color: var(--alp-color-primary);
-}
-
-.role-btn.active {
-  border-color: var(--alp-color-primary);
-  color: var(--alp-color-primary);
-  background: var(--alp-color-primary-soft);
-}
-</style>

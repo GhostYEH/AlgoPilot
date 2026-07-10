@@ -54,7 +54,7 @@ const progressPercent = computed(() => {
   return Math.round((clearedCount(g.id, g.levels.length) / g.levels.length) * 100)
 })
 
-const accent = computed(() => moduleMeta.value?.accent ?? '#38bdf8')
+const accent = computed(() => moduleMeta.value?.accent ?? '#22d3ee')
 
 const gameTags = computed(() => (game.value ? getGameTags(game.value.id) : []))
 

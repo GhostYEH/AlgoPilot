@@ -201,7 +201,7 @@ function doReset() {
 }
 .interval-btn:hover {
   transform: translateY(-2px);
-  border-color: #38bdf8;
+  border-color: #22d3ee;
 }
 .interval-btn.picked {
   border-color: #22c55e;

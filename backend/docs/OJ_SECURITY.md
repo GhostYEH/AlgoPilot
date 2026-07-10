@@ -3,7 +3,7 @@
 > 本文档说明 AlgoPilot 课内在线评测（OJ）与 Trace Engine 的**当前安全实现**、**已知限制**以及**生产级部署增强建议**。
 > 不涉及判题逻辑变更，仅补安全边界说明。
 >
-> **定位声明**：当前 OJ / Trace 为课程演示与比赛答辩场景下的轻量执行环境，**不是生产级公网在线判题沙箱**，不承诺 seccomp / gVisor 级别的进程隔离。
+> **定位声明**：当前 OJ / Trace 为课程学习场景下的轻量执行环境，**不是生产级公网在线判题沙箱**，不承诺 seccomp / gVisor 级别的进程隔离。
 
 ---
 
@@ -201,18 +201,18 @@ docker run --rm --network none \
 
 ## 5. 演示建议
 
-### 5.1 答辩优先使用 Python Trace
+### 5.1 优先使用 Python Trace
 
 - Python Trace 基于 `sys.settrace`，**无外部依赖**，Windows / Linux / macOS 均可运行
 - Python 静态审计（`ASTAnalyzerAgent`）覆盖 `while True` 死循环、`import os` 等危险调用
 - Trace 步数上限 200 步，超时默认 3 秒，演示稳定性高
-- **建议答辩时优先演示 Python 题目的 Trace 功能**
+- **建议优先使用 Python 题目的 Trace 功能**
 
 ### 5.2 C++ Trace 作为扩展技术能力说明
 
 - C++ Trace 依赖宿主机 `g++` + `gdb`，演示前需确认环境已安装
 - GDB MI 单步追踪 + `gdb_stl_extract.py` STL 容器提取是技术亮点，可展示系统深度
-- 若答辩环境 GDB 不可用，C++ 判题仍可正常工作（仅 Trace 受限）
+- 若部署环境 GDB 不可用，C++ 判题仍可正常工作（仅 Trace 受限）
 - **建议将 C++ Trace 定位为"扩展技术能力"，而非核心演示路径**
 
 ### 5.3 安全问题应答策略

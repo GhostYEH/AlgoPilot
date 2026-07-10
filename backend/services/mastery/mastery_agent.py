@@ -3,12 +3,9 @@
 from __future__ import annotations
 
 from services.mastery.models import (
-    MasteryLevel,
     MasteryReport,
     MasteryResourceHint,
-    mastery_level_from_score,
 )
-from services.mastery.scoring import compute_component_scores, compute_mastery_score
 
 
 class MasteryAgent:

@@ -422,6 +422,81 @@ EXTRA_TEST_DEFINITIONS: dict[str, dict[str, Any]] = {
       }
     ],
   ),
+  "course-schedule": _stdio(
+    difficulty="medium",
+    tags=["graph", "topological-sort", "indegree"],
+    description=(
+      "## 课程表\n\n"
+      "给定课程数 `n` 和 `m` 条先修关系，每条关系 `a b` 表示学习课程 `a` 前必须先学习课程 `b`。"
+      "请判断是否可以完成所有课程。\n\n"
+      "**输入**：第一行 `n m`，随后 `m` 行每行两个整数 `a b`。\n\n"
+      "**输出**：可以完成输出 `true`，否则输出 `false`。"
+    ),
+    samples=[
+      {"stdin": "2 1\n1 0\n", "stdout": "true\n"},
+    ],
+    hidden=[
+      {"stdin": "2 2\n1 0\n0 1\n", "stdout": "false\n"},
+      {"stdin": "1 0\n", "stdout": "true\n"},
+      {"stdin": "3 2\n1 0\n2 1\n", "stdout": "true\n"},
+      {"stdin": "3 3\n1 0\n2 1\n0 2\n", "stdout": "false\n"},
+      {"stdin": "4 2\n1 0\n3 2\n", "stdout": "true\n"},
+      {"stdin": "4 1\n2 2\n", "stdout": "false\n"},
+      {"stdin": "4 4\n1 0\n2 0\n3 1\n3 2\n", "stdout": "true\n"},
+      {"stdin": "5 4\n1 0\n2 1\n3 2\n1 3\n", "stdout": "false\n"},
+      {"stdin": "6 6\n1 0\n2 0\n3 1\n3 2\n4 3\n5 4\n", "stdout": "true\n"},
+    ],
+  ),
+  "number-of-islands": _stdio(
+    difficulty="medium",
+    tags=["graph", "bfs", "dfs", "grid"],
+    description=(
+      "## 岛屿数量\n\n"
+      "给定由 `0` 和 `1` 组成的网格，`1` 表示陆地。上下左右相邻的陆地属于同一座岛屿，"
+      "请输出岛屿数量。\n\n"
+      "**输入**：第一行 `rows cols`，随后 `rows` 行为长度为 `cols` 的 01 字符串。\n\n"
+      "**输出**：一个整数，表示岛屿数量。"
+    ),
+    samples=[
+      {"stdin": "4 5\n11110\n11010\n11000\n00000\n", "stdout": "1\n"},
+    ],
+    hidden=[
+      {"stdin": "1 1\n1\n", "stdout": "1\n"},
+      {"stdin": "1 1\n0\n", "stdout": "0\n"},
+      {"stdin": "4 5\n11000\n11000\n00100\n00011\n", "stdout": "3\n"},
+      {"stdin": "3 3\n100\n010\n001\n", "stdout": "3\n"},
+      {"stdin": "2 4\n1111\n1111\n", "stdout": "1\n"},
+      {"stdin": "3 3\n111\n101\n111\n", "stdout": "1\n"},
+      {"stdin": "2 3\n101\n010\n", "stdout": "3\n"},
+      {"stdin": "4 4\n1100\n0100\n0011\n0011\n", "stdout": "2\n"},
+      {"stdin": "1 5\n10101\n", "stdout": "3\n"},
+    ],
+  ),
+  "rotting-oranges": _stdio(
+    difficulty="medium",
+    tags=["graph", "bfs", "multi-source-bfs", "grid"],
+    description=(
+      "## 腐烂的橘子\n\n"
+      "网格中 `0` 表示空格，`1` 表示新鲜橘子，`2` 表示腐烂橘子。每分钟腐烂橘子会使"
+      "上下左右相邻的新鲜橘子腐烂。输出所有橘子腐烂所需的最少分钟数；无法全部腐烂输出 `-1`。\n\n"
+      "**输入**：第一行 `rows cols`，随后 `rows` 行每行 `cols` 个整数。\n\n"
+      "**输出**：最少分钟数或 `-1`。"
+    ),
+    samples=[
+      {"stdin": "3 3\n2 1 1\n1 1 0\n0 1 1\n", "stdout": "4\n"},
+    ],
+    hidden=[
+      {"stdin": "3 3\n2 1 1\n0 1 1\n1 0 1\n", "stdout": "-1\n"},
+      {"stdin": "1 2\n0 2\n", "stdout": "0\n"},
+      {"stdin": "1 1\n1\n", "stdout": "-1\n"},
+      {"stdin": "1 1\n2\n", "stdout": "0\n"},
+      {"stdin": "1 2\n2 1\n", "stdout": "1\n"},
+      {"stdin": "3 3\n2 1 2\n1 1 1\n2 1 2\n", "stdout": "2\n"},
+      {"stdin": "2 3\n0 0 0\n0 0 0\n", "stdout": "0\n"},
+      {"stdin": "2 2\n2 0\n0 1\n", "stdout": "-1\n"},
+      {"stdin": "3 4\n2 1 1 0\n1 1 0 1\n0 1 1 2\n", "stdout": "2\n"},
+    ],
+  ),
   "rotate-string": _p(
     "rotateString",
     difficulty="easy",

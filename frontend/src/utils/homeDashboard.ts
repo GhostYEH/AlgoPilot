@@ -59,30 +59,6 @@ export interface ResourceCard {
   tags: string[]
 }
 
-const DEMO_LEADERBOARD_AC: LeaderboardEntry[] = [
-  { rank: 1, name: '栈间行者', avatarHue: 198, score: 47, unit: '题' },
-  { rank: 2, name: '指针双子', avatarHue: 268, score: 41, unit: '题' },
-  { rank: 3, name: 'DP 旅人', avatarHue: 32, score: 38, unit: '题' },
-  { rank: 4, name: '二叉旅者', avatarHue: 330, score: 35, unit: '题' },
-  { rank: 5, name: '哈希猎人', avatarHue: 168, score: 31, unit: '题' },
-]
-
-const DEMO_LEADERBOARD_STREAK: LeaderboardEntry[] = [
-  { rank: 1, name: '每日一题君', avatarHue: 210, score: 28, unit: '天' },
-  { rank: 2, name: '凌晨刷题人', avatarHue: 280, score: 21, unit: '天' },
-  { rank: 3, name: '赛题预备生', avatarHue: 45, score: 18, unit: '天' },
-  { rank: 4, name: '回溯练习生', avatarHue: 15, score: 14, unit: '天' },
-  { rank: 5, name: '单调栈迷', avatarHue: 300, score: 12, unit: '天' },
-]
-
-const DEMO_FEED: ActivityFeedItem[] = [
-  { id: '1', user: '栈间行者', action: '通过了「柱状图中最大的矩形」', time: '2 分钟前' },
-  { id: '2', user: '指针双子', action: '解锁成就「双指针入门」', time: '8 分钟前' },
-  { id: '3', user: 'DP 旅人', action: '完成动态规划章节 3/5', time: '15 分钟前' },
-  { id: '4', user: '二叉旅者', action: '连续打卡 14 天', time: '22 分钟前' },
-  { id: '5', user: '哈希猎人', action: '提交了「两数之和」Python 解', time: '35 分钟前' },
-]
-
 const RESOURCE_META: Record<
   string,
   { cover: string; problemCount: number; passRate: number; tags: string[] }
@@ -166,29 +142,24 @@ export function buildSkillRadar(rows: ModuleProgressRow[]): RadarAxis[] {
   return dims.map((d) => {
     const pct = avgPercent(pick(d.keys))
     const hasAny = pick(d.keys).some((r) => r.hasProgressData)
-    return { key: d.key, label: d.label, value: hasAny ? pct : Math.max(8, Math.min(22, 12 + d.keys.length * 2)) }
+    return { key: d.key, label: d.label, value: hasAny ? pct : 0 }
   })
 }
 
 export function getLeaderboardAc(): LeaderboardEntry[] {
-  return DEMO_LEADERBOARD_AC
+  return []
 }
 
 export function getLeaderboardStreak(): LeaderboardEntry[] {
-  return DEMO_LEADERBOARD_STREAK
+  return []
 }
 
 export function getActivityFeed(): ActivityFeedItem[] {
-  return DEMO_FEED
+  return []
 }
 
 export function buildPlatformStats(ojReady: number | null): PlatformStat[] {
-  const baseUsers = 1286
-  const day = new Date().getDate()
   return [
-    { key: 'users', label: '注册用户', value: baseUsers + day * 3 },
-    { key: 'submit', label: '今日提交', value: 240 + day * 7 },
-    { key: 'ac', label: '总通过题次', value: 18420 + day * 11 },
     {
       key: 'oj',
       label: '可判题目',

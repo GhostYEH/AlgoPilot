@@ -111,7 +111,17 @@ def synthesize_speech(text: str, *, voice: str | None = None) -> bytes:
         on_error=on_error,
         on_open=on_open,
     )
-    ws_app.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE})
+    ssl_opt: dict = {}
+    if settings.tts_ssl_verify:
+        ssl_opt["cert_reqs"] = ssl.CERT_REQUIRED
+    else:
+        ssl_opt["cert_reqs"] = ssl.CERT_NONE
+    ws_app.run_forever(
+        sslopt=ssl_opt,
+        ping_interval=10,
+        ping_timeout=settings.tts_timeout,
+        timeout=settings.tts_timeout,
+    )
 
     if errors:
         raise RuntimeError(errors[0])

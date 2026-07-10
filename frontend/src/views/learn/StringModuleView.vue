@@ -28,6 +28,7 @@ import { useProvideAiTutorFromPanel } from '@/composables/useProvideAiTutorFromP
 import { isLoggedIn } from '@/stores/auth'
 import { applyRemoteProgressPayload } from '@/utils/learningStorage'
 import { schedulePushLearningProgress } from '@/utils/learningRemoteSync'
+import { schedulePersonaLearningPatch } from '@/utils/personaLearningSync'
 
 const router = useRouter()
 const route = useRoute()
@@ -85,6 +86,13 @@ function setSectionDone(done: boolean | string | number) {
   const v = done === true || done === 'true'
   doneMap.value = toggleSectionDone(id, v, doneMap.value)
   schedulePushLearningProgress()
+  if (v) {
+    schedulePersonaLearningPatch({
+      event_type: 'section_done',
+      module_key: 'string',
+      detail: id,
+    })
+  }
 }
 
 function practiceLinkLabel(p: StringPracticeLink) {
@@ -310,14 +318,16 @@ watch(
         </div>
       </div>
 
-      <AiTutorPanel
-        ref="aiTutorRef"
-        module-key="string"
-        module-title="字符串学习模块"
-        chapter-tag="字符串篇"
-        :module-intro="STRING_CURRICULUM_INTRO"
-        :section="current ?? null"
-      />
+      <div class="module-layout-side">
+        <AiTutorPanel
+          ref="aiTutorRef"
+          module-key="string"
+          module-title="字符串学习模块"
+          chapter-tag="字符串篇"
+          :module-intro="STRING_CURRICULUM_INTRO"
+          :section="current ?? null"
+        />
+      </div>
     </div>
   </div>
 </template>

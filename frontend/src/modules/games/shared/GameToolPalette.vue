@@ -72,12 +72,12 @@ const emit = defineEmits<{ select: [id: string] }>()
 
 .tool-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  border-color: color-mix(in srgb, #38bdf8 50%, transparent);
+  border-color: color-mix(in srgb, #22d3ee 50%, transparent);
 }
 
 .tool-btn.is-active {
-  border-color: #38bdf8;
-  background: color-mix(in srgb, #38bdf8 18%, transparent);
+  border-color: #22d3ee;
+  background: color-mix(in srgb, #22d3ee 18%, transparent);
   color: #7dd3fc;
 }
 

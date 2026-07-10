@@ -136,18 +136,24 @@ def api_submit(
     try:
         from services.events.event_bus import event_bus
 
+        problem = get_public_problem(slug)
         message = resp.cases[0].message if resp.cases else ""
         payload = {
             "problem_slug": slug,
             "verdict": resp.verdict,
             "message": message,
             "error_pattern": message[:200] if message else resp.verdict,
+            "module_key": str(problem.get("module_key") or ""),
+            "chapter_id": str(problem.get("chapter_id") or ""),
+            "skill_id": str(problem.get("skill_id") or ""),
         }
         if resp.verdict == "AC":
             pub = event_bus.publish(
                 db,
                 event_type="on_oj_submission_accepted",
                 user_id=user.id,
+                chapter_id=payload["chapter_id"],
+                skill_id=payload["skill_id"],
                 payload=payload,
             )
         else:
@@ -155,6 +161,8 @@ def api_submit(
                 db,
                 event_type="on_oj_submission_failed",
                 user_id=user.id,
+                chapter_id=payload["chapter_id"],
+                skill_id=payload["skill_id"],
                 payload=payload,
             )
         event_id = pub.event.event_id
@@ -425,7 +433,7 @@ async def api_trace_bug_diagnose(
         body.code,
         steps_raw,
         slug=slug,
-        judge_verdict="WA",
+        judge_verdict=body.judge_verdict or "WA",
     )
     tutoring = apply_oj_tutoring(
         db,
@@ -435,7 +443,7 @@ async def api_trace_bug_diagnose(
         bug_step_index=int(result.get("bug_step_index") or 0),
         diagnosis_title=str(result.get("diagnosis_title") or ""),
         detailed_analysis=str(result.get("detailed_analysis") or ""),
-        judge_verdict="WA",
+        judge_verdict=body.judge_verdict or "WA",
         code=body.code,
     )
     if user:
@@ -793,7 +801,7 @@ async def api_trace_report(
     except ProblemNotFoundError:
         raise HTTPException(404, "题目不存在") from None
 
-    cases = get_cases(slug, mode="run")
+    cases = get_cases(slug, mode="submit")
     judge_verdict = body.judge_verdict or "WA"
     failed_raw = [
         {"index": c.index, "message": c.message, "input_preview": c.input_preview}
@@ -807,12 +815,34 @@ async def api_trace_report(
     detailed_analysis = ""
     fix_suggestion = ""
     source = "fallback"
+    trace_case_reproduced = False
+    trace_case_verdict = ""
+    trace_case_message = ""
 
     ast_gate = gate_code_before_dynamic_analysis(body.code, language=lang)
     if ast_gate.passed and cases:
         tl = min(problem.get("time_limit_ms", 3000), 5000)
-        trace_case = _pick_trace_case(cases)
+        failed_index = next(
+            (
+                c.index
+                for c in body.failed_cases
+                if c.verdict != "AC" and 0 <= c.index < len(cases)
+            ),
+            None,
+        )
+        trace_case = _resolve_trace_case(cases, failed_index)
         try:
+            trace_case_verdict, trace_case_message = _judge_single_case(
+                user_code=body.code,
+                lang=lang,
+                problem=problem_full,
+                slug=slug,
+                case=trace_case,
+                time_limit_ms=tl,
+            )
+            trace_case_reproduced = trace_case_verdict != "AC"
+            if trace_case_reproduced:
+                judge_verdict = trace_case_verdict
             summary = _run_trace_for_case(
                 slug=slug,
                 user_code=body.code,
@@ -894,6 +924,9 @@ async def api_trace_report(
         tutoring=tutoring,
         source=source,
         fix_suggestion=fix_suggestion,
+        trace_case_reproduced=trace_case_reproduced,
+        trace_case_verdict=trace_case_verdict,
+        trace_case_message=trace_case_message,
     )
 
     if user:

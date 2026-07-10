@@ -11,7 +11,7 @@ from typing import Any
 
 from services.oj.compare import values_equal
 from services.oj.runner import CaseResult, RunSummary, _preview_args, _preview_value
-from utils.security import CPP_SECURITY_MESSAGE, CppSecurityViolation, check_cpp_security
+from utils.security import CppSecurityViolation, check_cpp_security
 
 CPP_HELPERS = textwrap.dedent(
     """

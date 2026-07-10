@@ -220,8 +220,8 @@ onBeforeUnmount(() => {
 }
 
 .bar-wrap.active .bar {
-  background: linear-gradient(180deg, #38bdf8, #0ea5e9);
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.45);
+  background: linear-gradient(180deg, #22d3ee, #06b6d4);
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.4);
 }
 
 .bar-wrap.pivot .bar {

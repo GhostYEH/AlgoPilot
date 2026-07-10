@@ -351,7 +351,7 @@ function dfsBacktrack() {
 }
 
 .adj-row strong {
-  color: var(--game-accent, #38bdf8);
+  color: var(--game-accent, #22d3ee);
 }
 
 .adj-row span {
@@ -383,8 +383,8 @@ function dfsBacktrack() {
 
 .choice-btn:hover:not(:disabled),
 .graph-node:hover:not(:disabled) {
-  border-color: var(--game-accent, #38bdf8);
-  background: color-mix(in srgb, var(--game-accent, #38bdf8) 14%, transparent);
+  border-color: var(--game-accent, #22d3ee);
+  background: color-mix(in srgb, var(--game-accent, #22d3ee) 14%, transparent);
   transform: translateY(-1px);
 }
 
@@ -409,7 +409,7 @@ function dfsBacktrack() {
 }
 
 .graph-node.head {
-  outline: 2px solid var(--game-accent, #38bdf8);
+  outline: 2px solid var(--game-accent, #22d3ee);
   outline-offset: 2px;
 }
 </style>

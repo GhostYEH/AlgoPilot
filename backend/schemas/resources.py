@@ -11,7 +11,7 @@ ResourceType = Literal[
     "reading",
 ]
 
-# 赛题展示资源 ↔ 角色 Agent
+# 学习资源 ↔ 角色 Agent
 RESOURCE_AGENT_META: dict[str, dict[str, str]] = {
     "document": {
         "agent_name": "ConceptAgent",

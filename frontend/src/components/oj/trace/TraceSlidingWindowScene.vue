@@ -93,8 +93,8 @@ const windowLen = computed(() => {
 }
 
 .sw-badge--sum {
-  color: #38bdf8;
-  border: 1px solid color-mix(in srgb, #38bdf8 40%, transparent);
+  color: #22d3ee;
+  border: 1px solid color-mix(in srgb, #22d3ee 40%, transparent);
 }
 
 .sw-badge--ans {
@@ -155,8 +155,8 @@ const windowLen = computed(() => {
 }
 
 .sw-cell--right {
-  border-color: #38bdf8;
-  box-shadow: 0 0 0 2px color-mix(in srgb, #38bdf8 30%, transparent);
+  border-color: #22d3ee;
+  box-shadow: 0 0 0 2px color-mix(in srgb, #22d3ee 30%, transparent);
 }
 
 .sw-cell--pulse {
@@ -183,8 +183,8 @@ const windowLen = computed(() => {
 }
 
 .sw-ptr--r {
-  color: #38bdf8;
-  background: color-mix(in srgb, #38bdf8 20%, transparent);
+  color: #22d3ee;
+  background: color-mix(in srgb, #22d3ee 20%, transparent);
 }
 
 .sw-bracket {

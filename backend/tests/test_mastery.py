@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from core.database import SessionLocal
 from main import app
 from models.db_models import User
-from services.mastery.mastery_service import MasteryService, build_report
+from services.mastery.mastery_service import build_report
 from services.mastery.scoring import compute_component_scores, compute_mastery_score
 from services.mastery.scoring import compute_bkt_lite
 from services.mastery.models import MasterySignals

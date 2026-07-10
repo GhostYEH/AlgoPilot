@@ -13,18 +13,30 @@ const props = defineProps<{
 const label = computed(() => {
   const map: Record<AssociativeViewHint, string> = {
     map: '映射',
+    multimap: '多重映射',
     set: '集合',
+    multiset: '多重集合',
     unordered_map: '哈希映射',
+    unordered_multimap: '哈希多重映射',
     unordered_set: '哈希集合',
+    unordered_multiset: '哈希多重集合',
   }
   return map[props.viewHint] ?? '关联容器'
 })
 
-const isHash = computed(
-  () => props.viewHint === 'unordered_map' || props.viewHint === 'unordered_set',
-)
+const isHash = computed(() => props.viewHint.startsWith('unordered_'))
 
 const prevKeySet = computed(() => new Set((props.prevEntries ?? []).map((e) => e.key)))
+const isSetLike = computed(() => props.viewHint.includes('set'))
+
+function entryKey(entry: AssociativeEntry, index: number): string {
+  let occurrence = 0
+  for (let i = 0; i < index; i++) {
+    const candidate = props.entries[i]
+    if (candidate?.key === entry.key && candidate.value === entry.value) occurrence++
+  }
+  return `${entry.key}\u0000${entry.value ?? ''}\u0000${occurrence}`
+}
 
 function rowHot(entry: AssociativeEntry): boolean {
   if (!props.varChanged) return false
@@ -46,10 +58,10 @@ function entryChanged(entry: AssociativeEntry): boolean {
       <span class="assoc-count">{{ entries.length }} 项</span>
     </header>
 
-    <div v-if="isHash" class="assoc-slots">
+    <TransitionGroup v-if="isHash" name="assoc-item" tag="div" class="assoc-slots">
       <div
         v-for="(entry, i) in entries"
-        :key="entry.key + '-' + i"
+        :key="entryKey(entry, i)"
         class="assoc-slot"
         :class="{
           'assoc-slot--hot': rowHot(entry) || (varChanged && entryChanged(entry)),
@@ -60,28 +72,28 @@ function entryChanged(entry: AssociativeEntry): boolean {
         <span v-if="entry.value != null" class="assoc-slot-val">→ {{ entry.value }}</span>
       </div>
       <p v-if="!entries.length" class="assoc-empty">（空哈希表）</p>
-    </div>
+    </TransitionGroup>
 
     <table v-else class="assoc-table" :class="{ 'assoc-table--hot': varChanged }">
       <thead>
         <tr>
           <th>键</th>
-          <th v-if="viewHint !== 'set'">值</th>
+          <th v-if="!isSetLike">值</th>
         </tr>
       </thead>
       <tbody>
         <tr
           v-for="(entry, i) in entries"
-          :key="entry.key + '-' + i"
+          :key="entryKey(entry, i)"
           :class="{
             'assoc-row--hot': rowHot(entry) || (varChanged && entryChanged(entry)),
           }"
         >
           <td>{{ entry.key }}</td>
-          <td v-if="viewHint !== 'set'">{{ entry.value ?? '—' }}</td>
+          <td v-if="!isSetLike">{{ entry.value ?? '—' }}</td>
         </tr>
         <tr v-if="!entries.length">
-          <td :colspan="viewHint === 'set' ? 1 : 2" class="assoc-empty">（空）</td>
+          <td :colspan="isSetLike ? 1 : 2" class="assoc-empty">（空）</td>
         </tr>
       </tbody>
     </table>
@@ -134,6 +146,11 @@ function entryChanged(entry: AssociativeEntry): boolean {
   font-size: 13px;
 }
 
+.assoc-trace {
+  min-width: 0;
+  overflow-x: auto;
+}
+
 .assoc-table th,
 .assoc-table td {
   padding: 8px 12px;
@@ -162,6 +179,32 @@ function entryChanged(entry: AssociativeEntry): boolean {
   border-radius: 8px;
   border: 1px solid var(--alp-color-border);
   background: var(--alp-bg-surface);
+}
+
+.assoc-item-move,
+.assoc-item-enter-active,
+.assoc-item-leave-active {
+  transition:
+    transform 0.32s ease,
+    opacity 0.32s ease;
+}
+
+.assoc-item-enter-from {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.92);
+}
+
+.assoc-item-leave-to {
+  opacity: 0;
+  transform: translateY(10px) scale(0.88);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assoc-item-move,
+  .assoc-item-enter-active,
+  .assoc-item-leave-active {
+    transition: none !important;
+  }
 }
 
 .assoc-slot-idx {

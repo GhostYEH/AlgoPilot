@@ -22,7 +22,7 @@ const props = withDefaults(
 const emit = defineEmits<{ select: [index: number] }>()
 
 const pointerColors: Record<string, string> = {
-  pre: '#38bdf8',
+  pre: '#22d3ee',
   cur: '#f472b6',
   slow: '#a78bfa',
   fast: '#f97316',
@@ -58,7 +58,7 @@ const pointerColors: Record<string, string> = {
             v-show="idx === i && name !== 'dummy'"
             :key="name"
             class="ptr-tag"
-            :style="{ '--ptr-color': pointerColors[name] ?? '#38bdf8' }"
+            :style="{ '--ptr-color': pointerColors[name] ?? '#22d3ee' }"
           >{{ name }}</span>
         </span>
       </button>
@@ -80,7 +80,7 @@ const pointerColors: Record<string, string> = {
   padding: 20px 18px;
   border-radius: 12px;
   border: 1px dashed var(--alp-color-border);
-  background: color-mix(in srgb, var(--alp-color-primary, #38bdf8) 4%, transparent);
+  background: color-mix(in srgb, var(--alp-color-primary, #22d3ee) 4%, transparent);
 }
 
 .head-label {
@@ -91,7 +91,7 @@ const pointerColors: Record<string, string> = {
   text-transform: uppercase;
   color: #7dd3fc;
   border-radius: 4px;
-  background: color-mix(in srgb, #38bdf8 12%, transparent);
+  background: color-mix(in srgb, #22d3ee 12%, transparent);
 }
 
 .dummy-node {
@@ -117,7 +117,7 @@ const pointerColors: Record<string, string> = {
 
 .ll-node-wrap.is-clickable:hover .node-box {
   transform: translateY(-3px);
-  border-color: #38bdf8;
+  border-color: #22d3ee;
 }
 
 .ll-node-wrap.is-highlight .node-box {

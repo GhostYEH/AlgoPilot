@@ -221,7 +221,7 @@ function doReset() {
 }
 .cell:hover {
   transform: scale(1.04);
-  border-color: #38bdf8;
+  border-color: #22d3ee;
 }
 .cell.queen {
   background: color-mix(in srgb, #f472b6 25%, transparent);
@@ -261,7 +261,7 @@ function doReset() {
 }
 .perm-trail {
   font-size: 14px;
-  color: var(--game-accent, #38bdf8);
+  color: var(--game-accent, #22d3ee);
   margin: 0;
 }
 </style>

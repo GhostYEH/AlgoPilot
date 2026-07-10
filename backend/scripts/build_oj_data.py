@@ -1,4 +1,4 @@
-﻿"""
+"""
 从前端 *Curriculum.ts 提取题目 slug，合并测例，生成 data/oj/catalog.json 与 tests_bundle.json。
 
 用法（在后端根目录）:
@@ -58,7 +58,7 @@ def _apply_sample_overrides(definitions: dict[str, dict]) -> dict[str, dict]:
 
 
 def _apply_hidden_supplement(definitions: dict[str, dict]) -> dict[str, dict]:
-    """将 HIDDEN_SUPPLEMENT 合并进各题 hidden 测例（洛谷 stdio 格式）。"""
+    """将 HIDDEN_SUPPLEMENT 合并进各题 hidden 测例（洛谷 stdio 格式），并去重。"""
     out: dict[str, dict] = {}
     for slug, cfg in definitions.items():
         extra = HIDDEN_SUPPLEMENT.get(slug)
@@ -66,8 +66,23 @@ def _apply_hidden_supplement(definitions: dict[str, dict]) -> dict[str, dict]:
             out[slug] = cfg
             continue
         hidden = list(cfg.get("hidden") or [])
+        # 收集已有 stdin（samples + hidden）用于去重
+        seen_stdin: set[str] = set()
+        for c in cfg.get("samples") or []:
+            s = c.get("stdin")
+            if s is not None:
+                seen_stdin.add(s)
+        for c in hidden:
+            s = c.get("stdin")
+            if s is not None:
+                seen_stdin.add(s)
         for case in extra:
-            hidden.append(ensure_stdio_fields(case))
+            fixed = ensure_stdio_fields(case)
+            stdin_val = fixed.get("stdin")
+            if stdin_val in seen_stdin:
+                continue
+            seen_stdin.add(stdin_val)
+            hidden.append(fixed)
         out[slug] = {**cfg, "hidden": hidden}
     return out
 

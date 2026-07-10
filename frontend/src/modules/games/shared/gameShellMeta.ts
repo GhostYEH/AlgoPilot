@@ -36,7 +36,7 @@ export const GAME_SHELL_META: Record<string, Record<string, GameLevelShellMeta>>
         { text: 'return -1;', activeAtSteps: [2] },
       ],
       stateKeys: [
-        { key: 'L', label: 'L', color: '#38bdf8' },
+        { key: 'L', label: 'L', color: '#22d3ee' },
         { key: 'R', label: 'R', color: '#f472b6' },
         { key: 'M', label: 'mid', color: '#fbbf24' },
       ],
@@ -57,7 +57,7 @@ export const GAME_SHELL_META: Record<string, Record<string, GameLevelShellMeta>>
         { text: 'return L;', activeAtSteps: [2] },
       ],
       stateKeys: [
-        { key: 'L', label: 'L', color: '#38bdf8' },
+        { key: 'L', label: 'L', color: '#22d3ee' },
         { key: 'R', label: 'R', color: '#f472b6' },
       ],
       footer: ['与 upper_bound 对称记忆', '数组篇 · 二分边界'],
@@ -77,7 +77,7 @@ export const GAME_SHELL_META: Record<string, Record<string, GameLevelShellMeta>>
         { text: 'return L;', activeAtSteps: [2] },
       ],
       stateKeys: [
-        { key: 'L', label: 'L', color: '#38bdf8' },
+        { key: 'L', label: 'L', color: '#22d3ee' },
         { key: 'R', label: 'R', color: '#f472b6' },
       ],
       footer: ['先判哪一半有序，再二分', '数组篇 · 旋转二分'],
@@ -95,7 +95,7 @@ export const GAME_SHELL_META: Record<string, Record<string, GameLevelShellMeta>>
         { text: 'table[bucket].insert(key);', activeAtSteps: [0, 1, 2, 3] },
       ],
       stateKeys: [
-        { key: 'mod', label: '桶数', color: '#38bdf8' },
+        { key: 'mod', label: '桶数', color: '#22d3ee' },
         { key: 'key', label: '当前 key', color: '#f472b6' },
       ],
       footer: ['取模前确保 capacity 为正', '哈希表篇 · 入桶'],
@@ -113,7 +113,7 @@ export const GAME_SHELL_META: Record<string, Record<string, GameLevelShellMeta>>
         { text: 'else bucket[b] = key;', activeAtSteps: [0] },
       ],
       stateKeys: [
-        { key: 'mod', label: '桶数', color: '#38bdf8' },
+        { key: 'mod', label: '桶数', color: '#22d3ee' },
         { key: 'key', label: '当前 key', color: '#f472b6' },
       ],
       footer: ['开放寻址是另一种冲突策略', '哈希表篇 · 拉链'],
@@ -152,7 +152,7 @@ export const GAME_SHELL_META: Record<string, Record<string, GameLevelShellMeta>>
         { text: 'return true;', activeAtSteps: [4] },
       ],
       stateKeys: [
-        { key: 'L', label: 'L', color: '#38bdf8' },
+        { key: 'L', label: 'L', color: '#22d3ee' },
         { key: 'R', label: 'R', color: '#f472b6' },
       ],
       footer: ['跳过规则先写清再比较', '字符串篇 · 回文'],
@@ -191,7 +191,7 @@ export const GAME_SHELL_META: Record<string, Record<string, GameLevelShellMeta>>
         { text: '}', activeAtSteps: [2] },
       ],
       stateKeys: [
-        { key: 'L', label: 'write', color: '#38bdf8' },
+        { key: 'L', label: 'write', color: '#22d3ee' },
         { key: 'R', label: 'right', color: '#f472b6' },
         { key: 'w', label: 'write', color: '#a78bfa' },
       ],
@@ -213,7 +213,7 @@ export const GAME_SHELL_META: Record<string, Record<string, GameLevelShellMeta>>
         { text: '  }', activeAtSteps: [2] },
       ],
       stateKeys: [
-        { key: 'L', label: 'L', color: '#38bdf8' },
+        { key: 'L', label: 'L', color: '#22d3ee' },
         { key: 'R', label: 'R', color: '#f472b6' },
       ],
       footer: ['去重：跳过相同 i/L/R', '双指针篇 · 三数之和'],
@@ -254,7 +254,7 @@ export const GAME_SHELL_META: Record<string, Record<string, GameLevelShellMeta>>
         { text: '}', activeAtSteps: [2] },
       ],
       stateKeys: [
-        { key: 'pos', label: '当前位置', color: '#38bdf8' },
+        { key: 'pos', label: '当前位置', color: '#22d3ee' },
         { key: 'reach', label: '最远可达', color: '#fbbf24' },
       ],
       footer: ['能到 i 才能从 i 跳', '贪心篇 · 跳跃'],
@@ -287,7 +287,7 @@ export const GAME_SHELL_META: Record<string, Record<string, GameLevelShellMeta>>
         { text: '    dp[w] = max(dp[w], dp[w-wi]+vi);', activeAtSteps: [0, 1, 2] },
       ],
       stateKeys: [
-        { key: 'w', label: '已用容量', color: '#38bdf8' },
+        { key: 'w', label: '已用容量', color: '#22d3ee' },
         { key: 'v', label: '总价值', color: '#fbbf24' },
       ],
       footer: ['逆序枚举 w 保证每件只用一次', 'DP 篇 · 背包'],
@@ -363,7 +363,7 @@ export const GAME_SHELL_META: Record<string, Record<string, GameLevelShellMeta>>
         { text: 'preorder(root->left);', activeAtSteps: [0, 1, 2, 3] },
         { text: 'preorder(root->right);', activeAtSteps: [0, 1, 2, 3] },
       ],
-      stateKeys: [{ key: 'order', label: '已访问', color: '#38bdf8' }],
+      stateKeys: [{ key: 'order', label: '已访问', color: '#22d3ee' }],
       footer: ['口诀：根左右', '二叉树篇 · 前序'],
       stepCount: 4,
     },
@@ -395,7 +395,7 @@ export const GAME_SHELL_META: Record<string, Record<string, GameLevelShellMeta>>
       ],
       stateKeys: [
         { key: 'path', label: '路径和', color: '#fbbf24' },
-        { key: 'sum', label: '当前和', color: '#38bdf8' },
+        { key: 'sum', label: '当前和', color: '#22d3ee' },
       ],
       footer: ['回溯时减去结点值', '二叉树篇 · 路径和'],
       stepCount: 4,
@@ -415,7 +415,7 @@ export const GAME_SHELL_META: Record<string, Record<string, GameLevelShellMeta>>
         { text: '}', activeAtSteps: [6] },
       ],
       stateKeys: [
-        { key: 'processed', label: '进度', color: '#38bdf8' },
+        { key: 'processed', label: '进度', color: '#22d3ee' },
         { key: 'stack', label: '栈顶', color: '#fbbf24' },
       ],
       footer: ['弹栈时机：遇到更高温度', '单调栈篇 · 每日温度'],
@@ -433,7 +433,7 @@ export const GAME_SHELL_META: Record<string, Record<string, GameLevelShellMeta>>
         { text: '}', activeAtSteps: [5] },
       ],
       stateKeys: [
-        { key: 'processed', label: '进度', color: '#38bdf8' },
+        { key: 'processed', label: '进度', color: '#22d3ee' },
         { key: 'stack', label: '栈', color: '#a78bfa' },
       ],
       footer: ['宽度由左右第一个更矮柱决定', '单调栈篇 · 矩形'],
@@ -499,7 +499,7 @@ export const GAME_SHELL_META: Record<string, Record<string, GameLevelShellMeta>>
         { text: 'else if (match(stack.top,c)) pop;', activeAtSteps: [0, 1, 2, 3, 4, 5] },
       ],
       stateKeys: [
-        { key: 'cursor', label: '扫描位置', color: '#38bdf8' },
+        { key: 'cursor', label: '扫描位置', color: '#22d3ee' },
         { key: 'stack', label: '栈深', color: '#a78bfa' },
       ],
       footer: ['三种括号成对匹配', '栈队列篇 · 有效括号'],
@@ -538,7 +538,7 @@ export const GAME_SHELL_META: Record<string, Record<string, GameLevelShellMeta>>
         { text: '}', activeAtSteps: [5] },
       ],
       stateKeys: [
-        { key: 'edge', label: '当前边', color: '#38bdf8' },
+        { key: 'edge', label: '当前边', color: '#22d3ee' },
         { key: 'done', label: '已补方向', color: '#22c55e' },
       ],
       footer: ['建图先确认有向/无向', '图论篇 · 表示法'],
@@ -564,7 +564,7 @@ export const GAME_SHELL_META: Record<string, Record<string, GameLevelShellMeta>>
         { text: '}', activeAtSteps: [5] },
       ],
       stateKeys: [
-        { key: 'queue', label: '队列', color: '#38bdf8' },
+        { key: 'queue', label: '队列', color: '#22d3ee' },
         { key: 'dist', label: '目标距离', color: '#fbbf24' },
       ],
       footer: ['无权最短路：BFS 第一次到达', '图论篇 · BFS'],

@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowRight, QuestionFilled, Reading, Trophy } from '@element-plus/icons-vue'
+import { ArrowRight, QuestionFilled, Reading } from '@element-plus/icons-vue'
 import {
   FAQ_CATEGORIES,
-  HELP_COMPETITION,
   HELP_FAQ,
   HELP_GUIDE_STEPS,
   HELP_QUICK_LINKS,
@@ -35,8 +34,6 @@ function syncTabFromRoute() {
   }
   if (route.hash === '#faq') {
     activeTab.value = 'faq'
-  } else if (route.hash === '#competition') {
-    activeTab.value = 'competition'
   }
 }
 
@@ -65,7 +62,7 @@ function goTo(link: { name: string; query?: Record<string, string> }) {
     <el-divider />
 
     <p class="muted">
-      汇集平台使用指南、常见问题与软件杯 A3 赛题说明。如需快速上手，可从下方入口直达各功能模块。
+      汇集平台使用指南与常见问题。如需快速上手，可从下方入口直达各功能模块。
     </p>
 
     <el-row :gutter="16" class="quick-row">
@@ -153,32 +150,6 @@ function goTo(link: { name: string; query?: Record<string, string> }) {
         </div>
       </el-tab-pane>
 
-      <el-tab-pane label="赛题说明" name="competition">
-        <div class="section-head">
-          <el-icon class="section-icon"><Trophy /></el-icon>
-          <div>
-            <h3 class="section-title">软件杯 A3 赛题说明</h3>
-            <p class="section-sub">算法智能学习平台 — 多智能体个性化学习系统。</p>
-          </div>
-        </div>
-
-        <el-alert
-          title="中国软件杯 · A3 赛道"
-          type="info"
-          show-icon
-          :closable="false"
-          class="comp-alert"
-        >
-          本平台以多 Agent 编排驱动个性化学习全流程，涵盖画像、路径、资源生成与在线判题。
-        </el-alert>
-
-        <div v-for="section in HELP_COMPETITION" :key="section.title" class="comp-section">
-          <h4 class="comp-title">{{ section.title }}</h4>
-          <ul class="comp-list">
-            <li v-for="(line, idx) in section.items" :key="idx">{{ line }}</li>
-          </ul>
-        </div>
-      </el-tab-pane>
     </el-tabs>
   </el-card>
 </template>
@@ -217,7 +188,7 @@ function goTo(link: { name: string; query?: Record<string, string> }) {
 .quick-card:hover,
 .quick-card:focus-visible {
   border-color: var(--alp-color-primary);
-  background: rgba(56, 189, 248, 0.06);
+  background: rgba(34, 211, 238, 0.06);
   outline: none;
 }
 
@@ -335,34 +306,4 @@ function goTo(link: { name: string; query?: Record<string, string> }) {
   line-height: 1.65;
 }
 
-.comp-alert {
-  margin-bottom: 20px;
-}
-
-.comp-section {
-  margin-bottom: 22px;
-  padding: 16px 18px;
-  border-radius: var(--alp-radius-card);
-  background: var(--alp-bg-soft-block);
-  border: 1px solid var(--alp-color-border);
-}
-
-.comp-title {
-  margin: 0 0 10px;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--alp-color-text);
-}
-
-.comp-list {
-  margin: 0;
-  padding-left: 20px;
-  font-size: 13px;
-  color: var(--alp-color-muted);
-  line-height: 1.75;
-}
-
-.comp-list li + li {
-  margin-top: 6px;
-}
 </style>

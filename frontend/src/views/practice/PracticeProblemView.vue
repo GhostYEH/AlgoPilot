@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import OjPracticeRow from '@/components/oj/OjPracticeRow.vue'
@@ -98,7 +98,7 @@ function resetCode() {
   code.value = p[language.value] ?? p.cpp ?? p.python ?? ''
 }
 
-function loadJudgeDemo() {
+async function loadJudgeDemo() {
   const scenario = getOjJudgeDemoScenario(slug.value)
   if (!scenario) return
   closeTraceSplit()
@@ -111,6 +111,8 @@ function loadJudgeDemo() {
   traceReport.value = null
   traceReportLoading.value = false
   resetOjStruggleSession(slug.value)
+  await nextTick()
+  await onRun()
 }
 </script>
 

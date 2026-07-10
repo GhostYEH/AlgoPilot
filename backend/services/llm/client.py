@@ -65,11 +65,11 @@ async def chat_completion(
         "model": settings.spark_model,
         "messages": messages,
         "temperature": temperature,
-        "max_tokens": min(max_tokens, 4096),
+        "max_tokens": min(max_tokens, settings.spark_max_tokens_limit),
         "stream": False,
     }
     try:
-        async with httpx.AsyncClient(timeout=90.0) as client:
+        async with httpx.AsyncClient(timeout=settings.spark_timeout) as client:
             resp = await client.post(settings.spark_chat_url, json=payload, headers=_headers())
     except httpx.TimeoutException:
         raise HTTPException(status.HTTP_504_GATEWAY_TIMEOUT, "AI 响应超时，请稍后重试") from None
@@ -107,11 +107,11 @@ async def chat_completion_stream(
         "model": settings.spark_model,
         "messages": messages,
         "temperature": temperature,
-        "max_tokens": min(max_tokens, 4096),
+        "max_tokens": min(max_tokens, settings.spark_max_tokens_limit),
         "stream": True,
     }
     try:
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        async with httpx.AsyncClient(timeout=settings.spark_stream_timeout) as client:
             async with client.stream(
                 "POST",
                 settings.spark_chat_url,

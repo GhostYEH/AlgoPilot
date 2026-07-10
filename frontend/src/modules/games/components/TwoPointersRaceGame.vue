@@ -273,6 +273,6 @@ function onTool(id: string) {
   margin: 12px 0 0;
   font-size: 14px;
   font-weight: 600;
-  color: var(--game-accent, #38bdf8);
+  color: var(--game-accent, #22d3ee);
 }
 </style>

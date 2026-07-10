@@ -137,14 +137,14 @@ const cellsTopFirst = computed(() => [...props.scene.items].reverse())
   margin-bottom: 10px;
   padding: 6px 10px;
   border-radius: 8px;
-  background: color-mix(in srgb, #38bdf8 10%, var(--alp-bg-soft-block));
-  border: 1px solid color-mix(in srgb, #38bdf8 35%, var(--alp-color-border));
+  background: color-mix(in srgb, #22d3ee 10%, var(--alp-bg-soft-block));
+  border: 1px solid color-mix(in srgb, #22d3ee 35%, var(--alp-color-border));
 }
 
 .ts-cursor-label {
   font-size: 12px;
   font-weight: 600;
-  color: #38bdf8;
+  color: #22d3ee;
 }
 
 .ts-cursor-val {

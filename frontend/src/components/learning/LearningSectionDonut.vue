@@ -40,7 +40,7 @@ const slices = computed<PhaseSlice[]>(() => {
     .sort((a, b) => PHASE_ORDER.indexOf(a.phase) - PHASE_ORDER.indexOf(b.phase))
 })
 
-const colors = ['#38bdf8', '#a78bfa', '#f472b6', '#f97316']
+const colors = ['#22d3ee', '#a78bfa', '#f472b6', '#f97316']
 
 function render() {
   const svgEl = svgRef.value

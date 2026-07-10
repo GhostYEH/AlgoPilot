@@ -34,3 +34,9 @@ def get_optional_user(
     if uid is None:
         return None
     return db.get(User, uid)
+
+
+def require_teacher(user: User = Depends(get_current_user)) -> User:
+    if user.role != "teacher":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "仅教师账号可访问")
+    return user

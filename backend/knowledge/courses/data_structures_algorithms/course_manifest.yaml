@@ -10,7 +10,7 @@ target_majors:
   - 信息安全
 target_audience: 高校计算机类专业一年级至二年级学生
 
-# 全局适合生成的资源类型（赛题多智能体）
+# 全局适合生成的资源类型
 default_resource_types:
   - document
   - mindmap

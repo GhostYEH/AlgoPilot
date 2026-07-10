@@ -25,6 +25,7 @@ function diffType(d: string) {
 
 <template>
   <div class="training-grid">
+    <!-- 第一行：每日一题（主卡）+ 靶向训练 -->
     <div class="training-card daily-card">
       <div class="tc-head">
         <el-icon><Star /></el-icon>
@@ -47,10 +48,11 @@ function diffType(d: string) {
       <p v-else class="tc-empty">OJ 题目加载中或暂无可用题目</p>
     </div>
 
-    <div class="training-card">
+    <div class="training-card targeted-card">
       <div class="tc-head">
         <el-icon><Collection /></el-icon>
         <span>今日靶向训练</span>
+        <span class="tc-sub">薄弱项推荐</span>
       </div>
       <ul v-if="targeted.length" class="target-list">
         <li v-for="p in targeted" :key="p.slug" class="target-item">
@@ -69,7 +71,8 @@ function diffType(d: string) {
       <p v-else class="tc-empty">完成章节学习后，将按薄弱项推荐题目</p>
     </div>
 
-    <div class="training-card">
+    <!-- 第二行：待复习 + 最近访问 -->
+    <div class="training-card review-card">
       <div class="tc-head">
         <el-icon><RefreshRight /></el-icon>
         <span>待复习</span>
@@ -105,12 +108,35 @@ function diffType(d: string) {
 <style scoped>
 .training-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+  grid-template-columns: 2fr 3fr;
+  grid-template-rows: auto auto;
+  gap: 14px;
+}
+
+/* 第一行：每日一题 + 靶向训练 */
+.daily-card {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.targeted-card {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+/* 第二行：待复习 + 最近访问 */
+.review-card {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.recent-card {
+  grid-column: 2;
+  grid-row: 2;
 }
 
 .training-card {
-  padding: 14px;
+  padding: 18px;
   border-radius: 12px;
   border: 1px solid var(--alp-color-border);
   background: var(--alp-bg-surface);
@@ -120,23 +146,54 @@ function diffType(d: string) {
 }
 
 .daily-card {
-  background: linear-gradient(160deg, rgba(56, 189, 248, 0.12), transparent 55%),
+  background: linear-gradient(160deg, rgba(34, 211, 238, 0.12), transparent 55%),
     var(--alp-bg-surface);
-  border-color: rgba(56, 189, 248, 0.35);
+  border-color: rgba(34, 211, 238, 0.35);
+  justify-content: center;
+}
+
+.daily-card .tc-title {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.daily-card .tc-reason {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.targeted-card {
+  background: linear-gradient(160deg, rgba(167, 139, 250, 0.08), transparent 55%),
+    var(--alp-bg-surface);
+  border-color: rgba(167, 139, 250, 0.25);
+}
+
+.review-card {
+  background: linear-gradient(160deg, rgba(251, 191, 36, 0.06), transparent 55%),
+    var(--alp-bg-surface);
+  border-color: rgba(251, 191, 36, 0.2);
 }
 
 .tc-head {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 10px;
-  font-size: 13px;
+  margin-bottom: 12px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--alp-color-text);
 }
 
 .tc-head .el-icon {
   color: var(--alp-color-primary);
+}
+
+.tc-sub {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--alp-color-muted);
+  letter-spacing: 0.02em;
 }
 
 .tc-title {
@@ -159,10 +216,11 @@ function diffType(d: string) {
 }
 
 .tc-reason {
-  margin: 0 0 12px;
+  margin: 0 0 14px;
   font-size: 12px;
   color: var(--alp-color-muted);
   flex: 1;
+  line-height: 1.5;
 }
 
 .tc-empty {
@@ -252,13 +310,21 @@ function diffType(d: string) {
 
 @media (max-width: 1200px) {
   .training-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr 1fr;
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .training-grid {
     grid-template-columns: 1fr;
+  }
+
+  .daily-card,
+  .targeted-card,
+  .review-card,
+  .recent-card {
+    grid-column: 1;
+    grid-row: auto;
   }
 }
 </style>

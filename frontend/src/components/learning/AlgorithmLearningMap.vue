@@ -354,8 +354,8 @@ function stepNo(index: number): string {
 .map-node.is-active .node-ring {
   border-color: var(--node-accent, var(--alp-color-primary));
   box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--node-accent, #38bdf8) 22%, transparent),
-    0 8px 20px color-mix(in srgb, var(--node-accent, #38bdf8) 28%, transparent);
+    0 0 0 3px color-mix(in srgb, var(--node-accent, #22d3ee) 22%, transparent),
+    0 8px 20px color-mix(in srgb, var(--node-accent, #22d3ee) 28%, transparent);
 }
 
 .map-node.is-active .node-label {

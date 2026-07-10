@@ -253,12 +253,12 @@ function doReset() {
 .item-card:hover,
 .house-card:hover {
   transform: translateY(-2px);
-  border-color: #38bdf8;
+  border-color: #22d3ee;
 }
 .item-card.selected,
 .house-card.selected {
-  border-color: #38bdf8;
-  background: color-mix(in srgb, #38bdf8 18%, transparent);
+  border-color: #22d3ee;
+  background: color-mix(in srgb, #22d3ee 18%, transparent);
 }
 .item-name,
 .house-idx {

@@ -15,7 +15,7 @@ from services.oj.error_patterns import ERROR_TYPE_LABELS
 
 _MODULE_LABELS = {m["key"]: m["label"] for m in MODULE_CATALOG}
 
-# 错因类型 → 主要影响维度（赛题随学随新映射）
+# 错因类型 → 主要影响维度
 ERROR_TO_PERSONA_DIMENSIONS: dict[str, list[str]] = {
     "initialization_error": ["coding_ability", "error_preference"],
     "boundary_condition_error": ["coding_ability", "error_preference"],

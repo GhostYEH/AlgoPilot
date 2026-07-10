@@ -1043,7 +1043,7 @@ const SUMMARY_GROUPS = [
 .ht-struct-tag {
   font-size: 14px;
   font-weight: 700;
-  color: var(--alp-color-primary, #38bdf8);
+  color: var(--alp-color-primary, #22d3ee);
 }
 
 .ht-struct-tag--set {

@@ -139,6 +139,20 @@ def _parse_json_array(raw: str) -> list[Any]:
     return json.loads(text)
 
 
+def _mentions_code_line(text: str, line: object) -> bool:
+    line_text = str(line or "").strip()
+    if not line_text:
+        return False
+    return bool(
+        re.search(
+            rf"(?:第\s*{re.escape(line_text)}\s*行|code\s+line\s+{re.escape(line_text)}\b|"
+            rf"line\s+{re.escape(line_text)}\b|L{re.escape(line_text)}\b)",
+            text,
+            re.IGNORECASE,
+        )
+    )
+
+
 def _estimate_input_size(case: dict[str, Any], steps: list[dict[str, Any]]) -> int:
     stdin = case.get("stdin") or ""
     if stdin:
@@ -264,6 +278,14 @@ def _parse_trace_bug_diagnosis(
     if not title or not analysis:
         raise ValueError("missing diagnosis fields")
     idx = _normalize_bug_step_index(idx, steps)
+    step = steps[idx]
+    line = step.get("line")
+    changed = [str(name) for name in (step.get("changed") or []) if str(name)]
+    evidence_text = f"{title} {analysis}"
+    if line and not _mentions_code_line(evidence_text, line):
+        raise ValueError("diagnosis does not reference the selected code line")
+    if changed and not any(name in evidence_text for name in changed):
+        raise ValueError("diagnosis does not reference a changed variable")
     return {
         "bug_step_index": idx,
         "diagnosis_title": title[:80],
@@ -278,106 +300,54 @@ def _fallback_trace_bug_diagnosis(
     user_code: str = "",
     judge_verdict: str = "",
 ) -> dict[str, Any]:
-    """无 LLM 时：基于规则和代码结构分析定位 bug。"""
+    """无 LLM 时仅返回可由轨迹直接支持的诊断线索。"""
     pointer_keys = ("left", "right", "l", "r", "i", "j", "slow", "fast", "curr", "prev", "head", "tail")
-    stagnant: dict[str, int] = {}
-    bug_idx = -1
+    last_value: dict[str, str] = {}
+    stagnant_count: dict[str, int] = {}
+    first_changed_idx = -1
 
-    # 策略1：检测指针/循环变量停滞（死循环/漏步）
     for i, s in enumerate(steps):
         changed = s.get("changed") or []
         if not changed:
             continue
-        if bug_idx < 0 and i >= max(1, len(steps) // 4):
-            bug_idx = i
+        if first_changed_idx < 0:
+            first_changed_idx = i
+        vars_map = s.get("vars") or {}
         for k in changed:
-            if k in pointer_keys:
-                stagnant[k] = stagnant.get(k, 0) + 1
-                if stagnant[k] >= 3:
-                    bug_idx = i
-                    return {
-                        "bug_step_index": i,
-                        "diagnosis_title": f"变量 {k} 未按预期推进，可能存在死循环",
-                        "detailed_analysis": (
-                            f"第 {s.get('line')} 步（Step {i}）起，变量 {k} 多次重复出现在 changed 中但值未有效推进，"
-                            f"常见于循环条件未更新、窗口未收缩或指针未移动，可能导致 WA 或 TLE。"
-                            f"请检查 {k} 的更新语句是否在正确的分支中执行。"
-                        ),
-                        "source": "fallback",
-                    }
+            if k not in pointer_keys:
+                continue
+            current = _format_snap_brief(vars_map.get(k))
+            if current == last_value.get(k):
+                stagnant_count[k] = stagnant_count.get(k, 0) + 1
             else:
-                stagnant.pop(k, None)
+                stagnant_count[k] = 0
+            last_value[k] = current
+            if stagnant_count[k] >= 2:
+                return {
+                    "bug_step_index": i,
+                    "diagnosis_title": f"变量 {k} 连续保持 {current}，存在停滞证据",
+                    "detailed_analysis": (
+                        f"Step {i + 1}（代码第 {s.get('line')} 行）中 {k}={current}，"
+                        f"且连续至少 3 次相关快照保持同值。该事实支持“{k} 未推进”的判断；"
+                        f"若判题结果为 {judge_verdict or '未通过'}，应核对循环条件和更新分支，"
+                        "但仍需结合题目不变量确认它是否为最终根因。"
+                    ),
+                    "source": "fallback",
+                }
 
-    # 策略2：基于代码结构的常见 bug 模式
-    if user_code:
-        code_lower = user_code.lower()
-        code_lines = user_code.splitlines()
-
-        # 检测 off-by-one：range(n) vs range(n+1)
-        import re as _re
-        for li, line in enumerate(code_lines):
-            stripped = line.strip()
-            if "range(" in stripped:
-                m = _re.search(r"range\((\w+)\)", stripped)
-                if m and m.group(1) in ("n", "N", "len(arr)", "len(nums)"):
-                    for si, s in enumerate(steps):
-                        if int(s.get("line") or 0) == li + 1:
-                            return {
-                                "bug_step_index": si,
-                                "diagnosis_title": f"第 {li + 1} 行 range 边界可能 off-by-one",
-                                "detailed_analysis": (
-                                    f"第 {li + 1} 行使用 {stripped.strip()}，"
-                                    f"常见错误是 range 上界少 1（应为 range(n+1)）或多 1（应为 range(n-1)）。"
-                                    f"请对照题目确认循环是否应包含最后一个元素。"
-                                ),
-                                "source": "fallback",
-                            }
-
-        # 检测未初始化的变量使用
-        assigned_vars: set[str] = set()
-        for li, line in enumerate(code_lines):
-            stripped = line.strip()
-            if "=" in stripped and not stripped.startswith("#") and "==" not in stripped:
-                var_part = stripped.split("=")[0].strip().split()[-1]
-                if var_part.isidentifier():
-                    assigned_vars.add(var_part)
-            for si, s in enumerate(steps):
-                if int(s.get("line") or 0) == li + 1:
-                    changed = s.get("changed") or []
-                    for k in changed:
-                        if k not in assigned_vars and k not in pointer_keys:
-                            return {
-                                "bug_step_index": si,
-                                "diagnosis_title": f"变量 {k} 可能在使用前未正确初始化",
-                                "detailed_analysis": (
-                                    f"第 {li + 1} 步使用了变量 {k}，但在之前的代码中未找到对其的赋值。"
-                                    f"未初始化的变量可能导致运行时错误或逻辑偏差。"
-                                ),
-                                "source": "fallback",
-                            }
-
-    # 策略3：默认选中后段有 changed 的步
-    if bug_idx < 0:
-        for i, s in enumerate(steps):
-            if s.get("changed"):
-                bug_idx = i
-                break
-
-    if bug_idx < 0:
-        bug_idx = 0
-
+    bug_idx = first_changed_idx if first_changed_idx >= 0 else 0
     s = steps[bug_idx] if bug_idx < len(steps) else steps[0]
     ch = s.get("changed") or []
     line = s.get("line", "?")
     return {
         "bug_step_index": bug_idx,
-        "diagnosis_title": "关键变量状态异常",
+        "diagnosis_title": "现有规则无法唯一确定根因",
         "detailed_analysis": (
-            f"在第 {line} 步（Step {bug_idx}）处，"
-            f"{('、'.join(ch[:5]) if ch else '程序状态')} 发生变化，"
-            f"请对照题目检查此处逻辑是否与预期一致。"
-            f"建议使用可视化调试逐步检查变量变化，定位逻辑偏差。"
-            + (f" 压缩轨迹共 {len(compressed_lines)} 个有效步。" if compressed_lines else "")
+            f"Step {bug_idx + 1}（代码第 {line} 行）记录到"
+            f"{('、'.join(ch[:5]) if ch else '程序状态')}变化，但轨迹只给出实际状态，"
+            "没有足够证据自动推导该题此处的唯一期望值。请先用失败输入手算关键不变量，"
+            "再对照后续 Trace 找到首次偏离；当前结论仅是定位起点，不是已证实根因。"
+            + (f" 压缩轨迹共有 {len(compressed_lines)} 个有效步。" if compressed_lines else "")
         ),
         "source": "fallback",
     }

@@ -251,10 +251,10 @@ const spiralDelays = [0, 0.1, 0.2, 0.7, 0.8, 0.3, 0.6, 0.5, 0.4]
 @keyframes mid-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.35);
+    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.35);
   }
   50% {
-    box-shadow: 0 0 0 6px rgba(56, 189, 248, 0);
+    box-shadow: 0 0 0 6px rgba(34, 211, 238, 0);
   }
 }
 
@@ -346,7 +346,7 @@ const spiralDelays = [0, 0.1, 0.2, 0.7, 0.8, 0.3, 0.6, 0.5, 0.4]
 }
 
 .sq-j {
-  background: linear-gradient(145deg, var(--alp-color-primary), rgba(56, 189, 248, 0.75));
+  background: linear-gradient(145deg, var(--alp-color-primary), rgba(34, 211, 238, 0.75));
 }
 
 .sq-gap {
@@ -439,7 +439,7 @@ const spiralDelays = [0, 0.1, 0.2, 0.7, 0.8, 0.3, 0.6, 0.5, 0.4]
   }
   22%,
   100% {
-    background: rgba(56, 189, 248, 0.35);
+    background: rgba(34, 211, 238, 0.35);
     transform: scale(1);
   }
 }
@@ -456,7 +456,7 @@ const spiralDelays = [0, 0.1, 0.2, 0.7, 0.8, 0.3, 0.6, 0.5, 0.4]
   padding: 6px 12px;
   border-radius: 999px;
   background: var(--alp-bg-nav-active);
-  border: 1px solid rgba(56, 189, 248, 0.35);
+  border: 1px solid rgba(34, 211, 238, 0.35);
   font-size: 13px;
   font-weight: 600;
   color: var(--alp-color-primary);
@@ -481,10 +481,10 @@ const spiralDelays = [0, 0.1, 0.2, 0.7, 0.8, 0.3, 0.6, 0.5, 0.4]
 @keyframes flow-glow {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0);
+    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0);
   }
   50% {
-    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2);
   }
 }
 
@@ -528,7 +528,7 @@ const spiralDelays = [0, 0.1, 0.2, 0.7, 0.8, 0.3, 0.6, 0.5, 0.4]
   }
 
   .sg {
-    background: rgba(56, 189, 248, 0.35);
+    background: rgba(34, 211, 238, 0.35);
   }
 }
 </style>

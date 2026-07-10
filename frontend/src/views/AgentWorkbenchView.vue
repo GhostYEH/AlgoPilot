@@ -19,7 +19,6 @@ import AgentStatusGrid from '@/components/agents/AgentStatusGrid.vue'
 import type { AgentTaskStatus } from '@/components/agents/AgentStatusGrid.vue'
 import PersonalizedResourceDashboard from '@/components/agents/PersonalizedResourceDashboard.vue'
 import type { AgentConsoleLine } from '@/utils/agentConsole'
-import { A3_SHOWCASE_AGENTS, DEMO_RESOURCE_PIPELINE } from '@/constants/a3Demo'
 import {
   lineFromCollaboration,
   lineFromProgress,
@@ -31,6 +30,47 @@ import {
 import { ALGORITHM_MODULES } from '@/constants/modules'
 
 const router = useRouter()
+
+const FALLBACK_AGENTS: AgentInfo[] = [
+  {
+    id: 'ProfilingAgent',
+    display_name: 'ProfilingAgent',
+    role: '提取并更新六维学习画像',
+    layer: 'profile',
+  },
+  {
+    id: 'LearningPathAgent',
+    display_name: 'LearningPathAgent',
+    role: '规划先修 DAG 与巩固节点',
+    layer: 'planning',
+  },
+  {
+    id: 'KnowledgeRetriever',
+    display_name: 'KnowledgeRetriever',
+    role: '检索课程知识库证据',
+    layer: 'knowledge',
+  },
+  {
+    id: 'ContentVerifierAgent',
+    display_name: 'ContentVerifierAgent',
+    role: '校验生成内容与知识证据的一致性',
+    layer: 'verification',
+  },
+  {
+    id: 'SafetyAgent',
+    display_name: 'SafetyAgent',
+    role: '执行内容安全审查',
+    layer: 'safety',
+  },
+]
+
+const FALLBACK_PIPELINE = [
+  { stage: 'rag_retrieve', agent: 'KnowledgeRetriever', label: '课程知识检索' },
+  { stage: 'agent_generate', agent: 'Role Agents', label: '个性化资源生成' },
+  { stage: 'content_verify', agent: 'ContentVerifierAgent', label: '事实与引用校验' },
+  { stage: 'safety_filter', agent: 'SafetyAgent', label: '安全审查' },
+  { stage: 'persist', agent: 'Orchestrator', label: '资源落库' },
+]
 
 const agents = ref<AgentInfo[]>([])
 const pipeline = ref<Array<{ stage: string; agent: string; label: string }>>([])
@@ -73,13 +113,8 @@ onMounted(async () => {
     dagMermaid.value = r.dag_mermaid ?? ''
   } catch {
     catalogError.value = true
-    agents.value = A3_SHOWCASE_AGENTS.map((a) => ({
-      id: a.id,
-      display_name: a.id,
-      role: a.role,
-      layer: a.layer,
-    }))
-    pipeline.value = [...DEMO_RESOURCE_PIPELINE]
+    agents.value = [...FALLBACK_AGENTS]
+    pipeline.value = [...FALLBACK_PIPELINE]
     note.value = '后端 catalog 暂不可用，已加载演示用 Pipeline 说明'
   }
 })
@@ -253,8 +288,8 @@ async function runResourceGeneration() {
             pushLine(systemLine(`部分资源生成失败（${failed}），其余已装配完毕`, 'warn'))
             ElMessage.warning(`${failed} 生成失败，其余资源已就绪`)
           } else {
-            pushLine(systemLine('比赛展示型个性化资源装配完毕！', 'success'))
-            ElMessage.success('比赛展示资源已全部生成')
+            pushLine(systemLine('个性化学习资源装配完毕！', 'success'))
+            ElMessage.success('个性化学习资源已全部生成')
           }
         },
         onError(msg) {
@@ -282,7 +317,7 @@ function agentStatus(id: string): 'running' | 'idle' {
   <div class="workbench-page">
     <div class="wb-hero">
       <el-page-header title="多智能体协同工作台" @back="router.push({ name: 'home' })" />
-      <p class="wb-desc">{{ note || 'ProfilingAgent 驱动比赛展示资源 Agent 协同生成 · 赛题答辩演示入口' }}</p>
+      <p class="wb-desc">{{ note || 'ProfilingAgent 结合学习画像，驱动资源 Agent 协同生成并完成校验落库' }}</p>
       <el-alert
         v-if="catalogError"
         type="warning"
@@ -366,7 +401,7 @@ function agentStatus(id: string): 'running' | 'idle' {
     />
 
     <el-collapse v-else class="wb-collapse">
-      <el-collapse-item title="架构说明 · DAG Pipeline（答辩备用）" name="arch">
+      <el-collapse-item title="架构说明 · DAG Pipeline" name="arch">
         <div class="dag-visual">
           <div class="dag-node">KnowledgeRetriever</div>
           <span class="dag-arrow">→</span>

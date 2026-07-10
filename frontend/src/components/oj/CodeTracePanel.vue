@@ -152,6 +152,7 @@ async function onTraceBugDiagnose() {
       language: props.language ?? 'python',
       steps: props.trace.steps,
       problem_description: props.problemDescription,
+      judge_verdict: props.judgeVerdict ?? undefined,
     })
     const idx = clampBugStepIndex(res.bug_step_index)
     traceDiagnosis.value = { ...res, bug_step_index: idx }
@@ -1136,7 +1137,7 @@ const showNarrateBtn = computed(
 }
 
 .trace-line-bar__line {
-  color: #38bdf8;
+  color: #22d3ee;
   font-weight: 700;
 }
 
@@ -1192,8 +1193,8 @@ const showNarrateBtn = computed(
 }
 
 .code-line--active {
-  background: rgba(56, 189, 248, 0.18);
-  box-shadow: inset 3px 0 0 #38bdf8;
+  background: rgba(34, 211, 238, 0.18);
+  box-shadow: inset 3px 0 0 #22d3ee;
 }
 
 .ln {

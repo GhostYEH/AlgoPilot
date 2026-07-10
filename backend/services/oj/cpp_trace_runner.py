@@ -13,7 +13,10 @@ from typing import Any, Literal
 from services.oj.cpp_runner import _build_cpp_source, _find_gpp, _toolchain_roots, ensure_toolchain_on_path
 from services.oj.trace_runner import TraceStepOut, TraceSummary
 from utils.security import CPP_SECURITY_MESSAGE, CppSecurityViolation, check_cpp_security
-from services.oj.trace_steps_filter import filter_meaningful_steps
+from services.oj.trace_steps_filter import (
+    collapse_consecutive_same_line_steps,
+    filter_meaningful_steps,
+)
 from services.oj.trace_line_refine import refine_trace_step_lines
 
 TraceVerdict = Literal["OK", "RE", "TLE", "CE"]
@@ -690,6 +693,7 @@ def _finalize_cpp_steps(
     empty_msg: str,
     source: str = "",
 ) -> TraceSummary:
+    steps = collapse_consecutive_same_line_steps(steps)
     refine_trace_step_lines(steps, source)
     steps = filter_meaningful_steps(steps, max_steps=MAX_CPP_TRACE_STEPS)
     if len(steps) < 2:

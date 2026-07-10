@@ -49,6 +49,5 @@ class TeacherDashboardSummaryResponse(BaseModel):
     error_types: list[ErrorTypeStat] = Field(default_factory=list)
     teaching_suggestions: list[TeachingSuggestion] = Field(default_factory=list)
     reinforcement_packs: list[ReinforcementPack] = Field(default_factory=list)
-    is_demo: bool = False
     data_note: str = ""
     generated_at: str

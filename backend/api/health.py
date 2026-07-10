@@ -4,15 +4,12 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from schemas.a3_health import A3HealthResponse
-from services.health.a3_health import build_a3_health_report
-
 router = APIRouter()
 
 
 @router.get("/health")
 async def health() -> dict:
-    """前后端联调探活；比赛演示前可据此预检 LLM / TTS / Trace 子系统。"""
+    """前后端联调探活，并检查 LLM、TTS 与 Trace 子系统。"""
     from core.config import settings
 
     trace_cpp = False
@@ -38,7 +35,7 @@ async def health() -> dict:
     if not tts_ok:
         hints.append("未配置 TTS：视频脚本分镜与试听文案仍可展示，语音合成不可用")
     if not trace_cpp:
-        hints.append("C++ Trace 不可用：请使用 Python 语言进行 Trace/OJ 演示")
+        hints.append("C++ Trace 不可用：可使用 Python Trace，或安装 g++/gdb")
 
     return {
         "status": "ok",
@@ -47,11 +44,5 @@ async def health() -> dict:
         "trace_python": True,
         "trace_cpp": trace_cpp,
         "cpp_compiler": cpp_compiler,
-        "demo_hints": hints,
+        "hints": hints,
     }
-
-
-@router.get("/a3/health", response_model=A3HealthResponse)
-async def a3_health() -> A3HealthResponse:
-    """A3 赛题核心流程自检：课程知识、SkillCard、辅导闭环、EventBus 等（轻量、不暴露密钥）。"""
-    return build_a3_health_report()

@@ -101,7 +101,7 @@ const props = defineProps<{
 .ht-trace-tag {
   font-size: 12px;
   font-weight: 700;
-  color: #38bdf8;
+  color: #22d3ee;
 }
 
 .ht-trace-tag--violet {
@@ -146,9 +146,9 @@ const props = defineProps<{
 }
 
 .ht-cell--hot {
-  border-color: #38bdf8;
-  background: color-mix(in srgb, #38bdf8 18%, var(--alp-bg-soft-block));
-  box-shadow: 0 0 0 3px color-mix(in srgb, #38bdf8 25%, transparent);
+  border-color: #22d3ee;
+  background: color-mix(in srgb, #22d3ee 18%, var(--alp-bg-soft-block));
+  box-shadow: 0 0 0 3px color-mix(in srgb, #22d3ee 25%, transparent);
   transform: scale(1.06);
 }
 

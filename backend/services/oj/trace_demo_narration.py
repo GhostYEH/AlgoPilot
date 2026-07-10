@@ -1,4 +1,4 @@
-"""演示用固定旁白：按题号 slug 预置 + 规则生成，答辩/无 LLM 时可完整走通流程。"""
+"""确定性固定旁白：按题号 slug 预置，并在无 LLM 时由规则生成。"""
 
 from __future__ import annotations
 

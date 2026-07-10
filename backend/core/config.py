@@ -1,3 +1,4 @@
+import logging
 import re
 import sys
 from pathlib import Path
@@ -6,9 +7,13 @@ from typing import Self
 from pydantic import AliasChoices, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+_logger = logging.getLogger(__name__)
+
 # .env 示例占位符，勿当作真实密钥
 _LLM_PLACEHOLDER_RE = re.compile(
-    r"请替换|你的星火|你的百炼|你的讯飞|changeme|replace.?me|xxx+",
+    r"请替换|你的星火|你的百炼|你的讯飞|changeme|replace.?me|xxx+"
+    r"|your[-_]?spark|your[-_]?iflytek|your[-_]?api[-_]?password"
+    r"|your[-_]?app[-_]?id|your[-_]?api[-_]?key|your[-_]?api[-_]?secret",
     re.IGNORECASE,
 )
 
@@ -54,13 +59,29 @@ class Settings(BaseSettings):
         default="https://spark-api-open.xf-yun.com/v1/chat/completions",
         validation_alias=AliasChoices("SPARK_CHAT_URL", "LLM_CHAT_URL"),
     )
+    spark_max_tokens_limit: int = Field(
+        default=4096,
+        validation_alias="SPARK_MAX_TOKENS_LIMIT",
+    )
+    spark_timeout: float = Field(
+        default=90.0,
+        validation_alias="SPARK_TIMEOUT",
+    )
+    spark_stream_timeout: float = Field(
+        default=180.0,
+        validation_alias="SPARK_STREAM_TIMEOUT",
+    )
 
     @model_validator(mode="after")
     def _validate_llm_config(self) -> Self:
-        """验证讯飞星火配置是否有效。"""
+        """验证讯飞星火配置是否有效，占位符时发出警告。"""
         api_password = self.spark_api_password.strip()
-        if api_password and not _is_llm_placeholder(api_password):
-            return self
+        if api_password and _is_llm_placeholder(api_password):
+            _logger.warning(
+                "SPARK_API_PASSWORD 仍为示例占位符，AI 功能将不可用，请在 .env 中填入真实密钥"
+            )
+        if not api_password:
+            _logger.info("SPARK_API_PASSWORD 未设置，AI 功能将不可用")
         return self
 
     @property
@@ -88,6 +109,14 @@ class Settings(BaseSettings):
     tts_voice: str = Field(
         default="x4_xiaoyan",
         validation_alias=AliasChoices("TTS_VOICE", "TTS_VCN", "IFLYTEK_TTS_VCN"),
+    )
+    tts_timeout: int = Field(
+        default=30,
+        validation_alias="TTS_TIMEOUT",
+    )
+    tts_ssl_verify: bool = Field(
+        default=True,
+        validation_alias="TTS_SSL_VERIFY",
     )
 
     cors_origins: str = Field(

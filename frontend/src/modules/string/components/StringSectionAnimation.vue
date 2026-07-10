@@ -652,9 +652,9 @@ onUnmounted(() => {
 }
 
 .seg-hot {
-  border-color: #38bdf8;
+  border-color: #22d3ee;
   color: #0369a1;
-  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.28);
+  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.28);
 }
 
 .seg-hot2 {
@@ -837,7 +837,7 @@ onUnmounted(() => {
   font-size: 16px;
   letter-spacing: 0.06em;
   background: linear-gradient(90deg, #e0f2fe 0%, #fef3c7 100%);
-  border: 2px solid #38bdf8;
+  border: 2px solid #22d3ee;
   color: #0f172a;
 }
 
@@ -868,7 +868,7 @@ onUnmounted(() => {
 }
 
 .step.on {
-  border-color: #38bdf8;
+  border-color: #22d3ee;
   background: #e0f2fe;
   color: #0369a1;
   font-weight: 700;
@@ -899,7 +899,7 @@ onUnmounted(() => {
 .k-pat {
   color: #0f172a;
   font-weight: 700;
-  border-bottom: 2px solid #38bdf8;
+  border-bottom: 2px solid #22d3ee;
 }
 
 .kmp-phases {

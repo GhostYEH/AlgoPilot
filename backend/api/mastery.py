@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 from api.deps import get_current_user
 from core.database import get_db
 from models.db_models import User
-from schemas.learning_path import ModuleProgressInput
 from schemas.mastery import (
     MasteryRecalculateRequest,
     MasteryRecalculateResponse,

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from services.agents.ast_analyzer import ASTAnalyzerAgent, AstAuditResult
 from services.oj.runner import CaseResult, RunSummary
-from services.oj.trace_runner import TraceStepOut, TraceSummary
+from services.oj.trace_runner import TraceSummary
 
 
 def audit_user_code(user_code: str, *, language: str = "python") -> AstAuditResult:

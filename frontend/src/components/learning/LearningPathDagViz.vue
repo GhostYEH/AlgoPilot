@@ -104,7 +104,7 @@ const layout = computed(() => {
 })
 
 function scoreColor(score: number): string {
-  if (score >= 8) return '#38bdf8'
+  if (score >= 8) return '#22d3ee'
   if (score >= 6) return '#4ade80'
   if (score >= 4) return '#fbbf24'
   return '#f87171'
@@ -288,7 +288,7 @@ onUnmounted(() => {
 }
 
 .swatch--high {
-  background: #38bdf8;
+  background: #22d3ee;
 }
 .swatch--mid {
   background: #fbbf24;

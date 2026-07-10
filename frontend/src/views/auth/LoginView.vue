@@ -166,8 +166,8 @@ async function submitForm() {
 <style scoped>
 .role-switch {
   display: flex;
-  gap: 8px;
-  margin-bottom: 20px;
+  gap: 10px;
+  margin-bottom: 22px;
 }
 
 .role-btn {
@@ -175,29 +175,32 @@ async function submitForm() {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 10px 0;
+  gap: 7px;
+  padding: 11px 0;
   border: 1px solid var(--alp-color-border);
-  border-radius: 10px;
+  border-radius: var(--alp-radius-sm);
   background: transparent;
   color: var(--alp-color-muted);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition:
-    border-color 0.2s,
-    color 0.2s,
-    background 0.2s;
+    border-color var(--alp-transition-fast),
+    color var(--alp-transition-fast),
+    background var(--alp-transition-fast),
+    box-shadow var(--alp-transition-fast);
 }
 
 .role-btn:hover {
   border-color: var(--alp-color-primary);
   color: var(--alp-color-primary);
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.1);
 }
 
 .role-btn.active {
   border-color: var(--alp-color-primary);
   color: var(--alp-color-primary);
   background: var(--alp-color-primary-soft);
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.12);
 }
 </style>

@@ -200,6 +200,7 @@ class TraceBugDiagnoseRequest(BaseModel):
     steps: list[TraceStepOut] = Field(default_factory=list)
     """可选：覆盖题库描述（默认使用题目 description）"""
     problem_description: str = ""
+    judge_verdict: str = Field(default="WA", max_length=8)
 
 
 class TraceBugDiagnoseResponse(BaseModel):
@@ -250,6 +251,9 @@ class TraceDiagnosisReport(BaseModel):
     path_rearrange_triggered: bool = False
     trace_steps: list[TraceStepBrief] = Field(default_factory=list)
     source: str = "fallback"
+    diagnosis_confidence: str = "low"
+    evidence_summary: str = ""
+    trace_case_reproduced: bool = False
     tutoring: OjTutoringPayload | None = None
 
 

@@ -44,11 +44,11 @@ def _request_summary(db: Session, current_user: User) -> dict:
     return response.json()
 
 
-def test_dashboard_summary_uses_demo_fallback_without_class_data(
+def test_dashboard_summary_returns_empty_state_without_class_data(
     dashboard_db: Session,
 ) -> None:
     teacher = User(
-        username="teacher_demo",
+        username="teacher_empty",
         hashed_password="not-used",
         role="teacher",
     )
@@ -57,16 +57,18 @@ def test_dashboard_summary_uses_demo_fallback_without_class_data(
 
     data = _request_summary(dashboard_db, teacher)
 
-    assert data["is_demo"] is True
-    assert data["overview"]["student_count"] > 0
-    assert len(data["teaching_suggestions"]) == 3
-    assert len(data["reinforcement_packs"]) == 3
-    assert {item["label"] for item in data["error_types"]} == {
-        "边界条件错误",
-        "指针更新错误",
-        "复杂度过高",
-        "空栈/空指针",
+    assert data["overview"] == {
+        "student_count": 0,
+        "profile_count": 0,
+        "average_mastery": 0.0,
+        "resource_count": 0,
+        "oj_submission_count": 0,
     }
+    assert data["weak_knowledge_points"] == []
+    assert data["error_types"] == []
+    assert data["teaching_suggestions"] == []
+    assert data["reinforcement_packs"] == []
+    assert data["data_note"]
 
 
 def test_dashboard_summary_aggregates_existing_learning_records(
@@ -155,7 +157,6 @@ def test_dashboard_summary_aggregates_existing_learning_records(
 
     data = _request_summary(dashboard_db, teacher)
 
-    assert data["is_demo"] is False
     assert data["overview"] == {
         "student_count": 2,
         "profile_count": 2,
@@ -168,4 +169,7 @@ def test_dashboard_summary_aggregates_existing_learning_records(
         "dp",
     }
     assert len(data["teaching_suggestions"]) == 3
-    assert len(data["reinforcement_packs"]) == 3
+    assert {item["module_key"] for item in data["reinforcement_packs"]} == {
+        "linked-list",
+        "dp",
+    }

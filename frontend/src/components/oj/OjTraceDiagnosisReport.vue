@@ -33,7 +33,7 @@ const errorTag = computed(() => {
 const sourceLabel = computed(() => {
   const s = props.report?.source
   if (s === 'llm') return 'AI 诊断'
-  if (s === 'demo') return '演示诊断'
+  if (s === 'demo') return '静态兜底'
   return '规则诊断'
 })
 
@@ -42,6 +42,13 @@ const sourceTagType = computed(() => {
   if (s === 'llm') return 'success'
   if (s === 'demo') return 'info'
   return 'warning'
+})
+
+const confidenceMeta = computed(() => {
+  const confidence = props.report?.diagnosis_confidence
+  if (confidence === 'high') return { label: '高置信度', type: 'success' as const }
+  if (confidence === 'medium') return { label: '中等置信度', type: 'warning' as const }
+  return { label: '线索级', type: 'info' as const }
 })
 
 const RESOURCE_TYPE_LABEL: Record<string, string> = {
@@ -68,10 +75,22 @@ const errorStepDisplay = computed(() => {
       <el-tag v-if="report" size="small" :type="sourceTagType" effect="plain">
         {{ sourceLabel }}
       </el-tag>
+      <el-tag v-if="report" size="small" :type="confidenceMeta.type" effect="plain">
+        {{ confidenceMeta.label }}
+      </el-tag>
     </header>
 
     <template v-if="report">
-      <p class="trace-report__competition-note">
+      <el-alert
+        v-if="report.evidence_summary"
+        :type="report.trace_case_reproduced ? 'success' : 'warning'"
+        :title="report.trace_case_reproduced ? '失败用例已复现' : '诊断证据有限'"
+        :description="report.evidence_summary"
+        :closable="false"
+        show-icon
+        class="trace-report__evidence"
+      />
+      <p class="trace-report__learning-loop-note">
         系统不仅判断对错，还基于 Trace 捕捉学生错误发生的具体步骤，并反向更新学习画像与路径规划。
       </p>
       <div class="trace-report__meta">
@@ -195,7 +214,16 @@ const errorStepDisplay = computed(() => {
 
       <div v-if="report.path_rearrange_triggered" class="trace-report__path-alert">
         <el-icon><Guide /></el-icon>
-        <span>检测到连续受挫，已建议插入巩固节点。</span>
+        <div>
+          <strong>学习路径调整建议</strong>
+          <p>
+            {{
+              report.intervention_suggestion ||
+              report.tutoring?.path_adjustment_hint ||
+              '检测到知识薄弱点，建议在当前路径前插入对应巩固节点。'
+            }}
+          </p>
+        </div>
       </div>
       <div
         v-else-if="report.learning_intervention_generated && report.intervention_suggestion"
@@ -226,6 +254,7 @@ const errorStepDisplay = computed(() => {
   align-items: center;
   gap: 8px;
   margin-bottom: 14px;
+  flex-wrap: wrap;
 }
 
 .trace-report__icon {
@@ -250,7 +279,7 @@ const errorStepDisplay = computed(() => {
   border: 1px solid var(--alp-color-border);
 }
 
-.trace-report__competition-note {
+.trace-report__learning-loop-note {
   margin: 0 0 12px;
   padding: 10px 12px;
   border-radius: 8px;
@@ -259,6 +288,10 @@ const errorStepDisplay = computed(() => {
   font-size: 13px;
   line-height: 1.65;
   color: var(--el-text-color-primary);
+}
+
+.trace-report__evidence {
+  margin-bottom: 12px;
 }
 
 .trace-report__meta-row {
@@ -417,6 +450,18 @@ const errorStepDisplay = computed(() => {
   font-weight: 600;
   color: var(--el-color-warning);
   animation: path-alert-pulse 1.5s ease-in-out 2;
+}
+
+.trace-report__path-alert strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.trace-report__path-alert p {
+  margin: 0;
+  line-height: 1.6;
+  color: var(--el-text-color-regular);
+  font-weight: 400;
 }
 
 .trace-report__intervention {

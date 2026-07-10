@@ -10,7 +10,6 @@ const prefetchByPath: Record<string, () => Promise<unknown>> = {
   '/my-learning': () => import('@/views/MyLearningView.vue'),
   '/agent-workbench': () => import('@/views/AgentWorkbenchView.vue'),
   '/teacher-dashboard': () => import('@/views/TeacherDashboardView.vue'),
-  '/a3-demo': () => import('@/views/A3DemoDashboard.vue'),
   '/help': () => import('@/views/HelpCenterView.vue'),
   '/learn/array': () => import('@/views/learn/ArrayModuleView.vue'),
   '/learn/hash-table': () => import('@/views/learn/HashTableModuleView.vue'),

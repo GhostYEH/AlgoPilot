@@ -4,12 +4,10 @@ from __future__ import annotations
 
 import json
 import math
-import re
-from functools import lru_cache
 from pathlib import Path
 from typing import Any, TypedDict
 
-from services.knowledge.retriever import KnowledgeRetriever, _load_chunks, _tokenize
+from services.knowledge.retriever import KnowledgeRetriever, _tokenize
 from services.oj.problem_store import list_problems
 
 _KB_DIR = Path(__file__).resolve().parents[2] / "knowledge_base"

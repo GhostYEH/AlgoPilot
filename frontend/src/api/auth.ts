@@ -17,7 +17,6 @@ export function registerApi(data: {
   username: string
   password: string
   email?: string
-  role?: string
 }) {
   return request.post<unknown, TokenResponse>('/api/auth/register', data)
 }

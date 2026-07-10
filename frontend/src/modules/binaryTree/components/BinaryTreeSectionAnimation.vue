@@ -437,12 +437,12 @@ const checkpointGroups = computed(() => CHECKPOINT_GROUPS[props.sectionId] ?? []
 .bt-tag {
   font-size: 9px;
   font-weight: 700;
-  fill: var(--alp-color-primary, #38bdf8);
+  fill: var(--alp-color-primary, #22d3ee);
 }
 
 .bt-node--hot {
   fill: color-mix(in srgb, var(--alp-color-primary) 25%, var(--alp-bg-surface-solid));
-  stroke: var(--alp-color-primary, #38bdf8);
+  stroke: var(--alp-color-primary, #22d3ee);
   stroke-width: 2.5;
 }
 
@@ -602,7 +602,7 @@ const checkpointGroups = computed(() => CHECKPOINT_GROUPS[props.sectionId] ?? []
 }
 
 .bt-checkpoint-card--blue {
-  border-top: 3px solid var(--alp-color-primary, #38bdf8);
+  border-top: 3px solid var(--alp-color-primary, #22d3ee);
 }
 
 .bt-checkpoint-card--cyan {

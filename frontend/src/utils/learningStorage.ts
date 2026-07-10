@@ -9,6 +9,8 @@ import { BACKTRACKING_SECTION_STORAGE_KEY } from '@/modules/backtracking/backtra
 import { GREEDY_SECTION_STORAGE_KEY } from '@/modules/greedy/greedyProgress'
 import { DP_SECTION_STORAGE_KEY } from '@/modules/dp/dpProgress'
 import { MONOTONIC_STACK_SECTION_STORAGE_KEY } from '@/modules/monotonicStack/monotonicStackProgress'
+import { GRAPH_SECTION_STORAGE_KEY } from '@/modules/graph/graphProgress'
+import { SORTING_SECTION_STORAGE_KEY } from '@/modules/sorting/sortingProgress'
 import {
   applyRemoteGameProgress,
   exportGameProgressPayload,
@@ -28,6 +30,8 @@ export const LEARNING_STORAGE_KEYS = [
   GREEDY_SECTION_STORAGE_KEY,
   DP_SECTION_STORAGE_KEY,
   MONOTONIC_STACK_SECTION_STORAGE_KEY,
+  GRAPH_SECTION_STORAGE_KEY,
+  SORTING_SECTION_STORAGE_KEY,
 ] as const
 
 export type LearningStorageKey = (typeof LEARNING_STORAGE_KEYS)[number]
@@ -107,4 +111,11 @@ export function applyRemoteProgressPayload(remote: Record<string, unknown>) {
       /* ignore quota */
     }
   }
+}
+
+export function clearLocalLearningProgress() {
+  for (const key of LEARNING_STORAGE_KEYS) {
+    localStorage.removeItem(key)
+  }
+  localStorage.removeItem(GAME_PROGRESS_PAYLOAD_KEY)
 }

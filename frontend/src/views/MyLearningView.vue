@@ -112,6 +112,26 @@ const weeklyActivity = computed(() => {
   return { total, days: recent7.length }
 })
 
+const recentVisitGroups = computed(() => {
+  const todayStart = new Date(new Date().toISOString().slice(0, 10)).getTime()
+  const yesterdayStart = todayStart - 86400_000
+  const groups: { label: string; items: RecentVisit[] }[] = [
+    { label: '今天', items: [] },
+    { label: '昨天', items: [] },
+    { label: '更早', items: [] },
+  ]
+  for (const v of recentVisits.value) {
+    if (v.visitedAt >= todayStart) {
+      groups[0].items.push(v)
+    } else if (v.visitedAt >= yesterdayStart) {
+      groups[1].items.push(v)
+    } else {
+      groups[2].items.push(v)
+    }
+  }
+  return groups.filter((g) => g.items.length > 0)
+})
+
 function onToggleFavorite(key: string) {
   toggleFavorite(key)
   favRevision.value += 1
@@ -435,63 +455,84 @@ function getModuleHint(key: string) {
       </el-tab-pane>
 
       <el-tab-pane label="效果评估" name="evaluation">
-        <div class="eval-grid">
-          <MasteryEvaluationCard />
-          <LearningEvaluationPanel />
-          <LearningEffectivenessCard v-if="isLoggedIn" />
+        <div class="eval-layout">
+          <div class="eval-left">
+            <MasteryEvaluationCard />
+          </div>
+          <div class="eval-right">
+            <LearningEvaluationPanel />
+            <LearningEffectivenessCard v-if="isLoggedIn" />
+          </div>
         </div>
       </el-tab-pane>
 
       <el-tab-pane label="收藏" name="favorites">
-        <div v-if="favoriteRows.length" class="module-grid-compact">
+        <div v-if="favoriteRows.length" class="fav-grid">
           <div
             v-for="row in favoriteRows"
             :key="row.key"
-            class="module-card-compact module-card-compact--favorite"
+            class="fav-card"
           >
-            <div class="card-header">
-              <span class="card-name" :style="{ color: row.accent }">{{ row.label }}</span>
+            <div class="fav-card-top">
+              <span class="fav-card-dot" :style="{ background: row.accent }" />
+              <span class="fav-card-name" :style="{ color: row.accent }">{{ row.label }}</span>
+              <el-tag size="small" effect="plain" type="info">{{ phaseLabel(row.phase) }}</el-tag>
               <el-button
                 text
                 size="small"
                 :icon="StarFilled"
+                class="fav-unstar-btn"
                 @click.stop="onToggleFavorite(row.key)"
               />
             </div>
-            <p class="card-desc">
+            <p class="fav-card-desc">
               {{ MODULE_PATH_HINTS[row.key]?.summary ?? '算法学习模块' }}
             </p>
-            <div class="card-progress" v-if="row.hasProgressData">
+            <div class="fav-card-progress" v-if="row.hasProgressData">
               <el-progress
                 :percentage="row.percent"
                 :stroke-width="6"
                 :show-text="false"
                 :color="row.accent"
               />
-              <span class="card-pct">{{ row.percent }}%</span>
+              <span class="fav-card-pct">{{ row.percent }}%</span>
             </div>
-            <div class="card-actions">
-              <el-button type="primary" size="small" plain @click="goModule(row.key)">进入学习</el-button>
+            <div class="fav-card-meta" v-if="row.hasProgressData">
+              <span class="fav-card-meta-item">
+                <el-icon><Collection /></el-icon>
+                {{ row.doneCount }}/{{ row.totalCount }} 节
+              </span>
             </div>
+            <el-button type="primary" size="small" plain class="fav-card-action" @click="goModule(row.key)">进入学习</el-button>
           </div>
         </div>
-        <el-empty v-else description="暂无收藏，在学习路径页可收藏模块" :image-size="80" />
+        <el-empty v-else description="暂无收藏，在学习路径页可收藏模块" :image-size="80">
+          <el-button type="primary" size="small" @click="router.push({ name: 'learning-path' })">去收藏</el-button>
+        </el-empty>
       </el-tab-pane>
 
       <el-tab-pane label="小游戏" name="games">
-        <div class="game-stats-bar">
-          <div class="game-stat">
-            <el-icon><Trophy /></el-icon>
-            <strong>{{ gameOverview.totalLevelsCleared }}</strong>
-            <span>已通关卡</span>
+        <div class="game-stats-row">
+          <div class="game-stat-card">
+            <el-icon class="game-stat-icon game-stat-icon--trophy"><Trophy /></el-icon>
+            <div class="game-stat-info">
+              <strong class="game-stat-value">{{ gameOverview.totalLevelsCleared }}</strong>
+              <span class="game-stat-label">已通关卡</span>
+            </div>
           </div>
-          <div class="game-stat">
-            <strong>{{ gameOverview.overallPercent }}%</strong>
-            <span>总完成度</span>
+          <div class="game-stat-card">
+            <el-icon class="game-stat-icon game-stat-icon--percent"><TrendCharts /></el-icon>
+            <div class="game-stat-info">
+              <strong class="game-stat-value">{{ gameOverview.overallPercent }}%</strong>
+              <span class="game-stat-label">总完成度</span>
+            </div>
           </div>
-          <div class="game-stat">
-            <strong>{{ gameOverview.rows.filter(r => r.cleared > 0).length }}</strong>
-            <span>已解锁游戏</span>
+          <div class="game-stat-card">
+            <el-icon class="game-stat-icon game-stat-icon--unlock"><DataLine /></el-icon>
+            <div class="game-stat-info">
+              <strong class="game-stat-value">{{ gameOverview.rows.filter(r => r.cleared > 0).length }}</strong>
+              <span class="game-stat-label">已解锁游戏</span>
+            </div>
           </div>
         </div>
 
@@ -551,22 +592,32 @@ function getModuleHint(key: string) {
       </el-tab-pane>
 
       <el-tab-pane label="最近学习" name="history">
-        <div v-if="recentVisits.length" class="history-list-compact">
+        <div v-if="recentVisits.length" class="recent-groups">
           <div
-            v-for="visit in recentVisits"
-            :key="`${visit.moduleKey}-${visit.visitedAt}`"
-            class="history-row"
-            role="button"
-            tabindex="0"
-            @click="openRecent(visit)"
-            @keydown.enter.prevent="openRecent(visit)"
+            v-for="group in recentVisitGroups"
+            :key="group.label"
+            class="recent-group"
           >
-            <div class="history-row-left">
-              <span class="history-row-title">{{ visit.label }}</span>
-            </div>
-            <div class="history-row-right">
-              <span class="history-row-time">{{ formatVisitTime(visit.visitedAt) }}</span>
-              <el-button text type="primary" size="small">继续</el-button>
+            <div class="recent-group-label">{{ group.label }}</div>
+            <div class="recent-group-list">
+              <div
+                v-for="visit in group.items"
+                :key="`${visit.moduleKey}-${visit.visitedAt}`"
+                class="recent-item"
+                role="button"
+                tabindex="0"
+                @click="openRecent(visit)"
+                @keydown.enter.prevent="openRecent(visit)"
+              >
+                <div class="recent-item-left">
+                  <span class="recent-item-dot" />
+                  <span class="recent-item-title">{{ visit.label }}</span>
+                </div>
+                <div class="recent-item-right">
+                  <span class="recent-item-time">{{ formatVisitTime(visit.visitedAt) }}</span>
+                  <el-button text type="primary" size="small">继续</el-button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -585,25 +636,47 @@ function getModuleHint(key: string) {
           登录后可使用流式画像对话
           <el-button type="primary" link @click="router.push({ name: 'login' })">去登录</el-button>
         </el-alert>
-        <PersonaChatPanel v-else />
-        <div v-if="isLoggedIn" class="persona-viz">
-          <div class="persona-viz-head">
-            <h3 class="section-title">模块掌握概览</h3>
-            <el-tag size="small" effect="plain">雷达图</el-tag>
+        <div v-if="isLoggedIn" class="persona-layout">
+          <div class="persona-left">
+            <PersonaChatPanel />
           </div>
-          <LearningModuleRadar :rows="overview.rows" />
-        </div>
-        <div v-if="isLoggedIn && overview.weakModules.length" class="persona-hints">
-          <span class="hints-label">建议优先加强：</span>
-          <el-tag
-            v-for="r in overview.weakModules.slice(0, 3)"
-            :key="r.key"
-            type="warning"
-            effect="plain"
-            size="small"
-          >
-            {{ r.label }}
-          </el-tag>
+          <div class="persona-right">
+            <div class="persona-viz">
+              <div class="persona-viz-head">
+                <h3 class="section-title">模块掌握概览</h3>
+                <el-tag size="small" effect="plain">雷达图</el-tag>
+              </div>
+              <LearningModuleRadar :rows="overview.rows" />
+            </div>
+            <div v-if="overview.weakModules.length" class="persona-hints">
+              <span class="hints-label">建议优先加强：</span>
+              <div class="hints-tags">
+                <el-tag
+                  v-for="r in overview.weakModules.slice(0, 3)"
+                  :key="r.key"
+                  type="warning"
+                  effect="plain"
+                  size="small"
+                >
+                  {{ r.label }}
+                </el-tag>
+              </div>
+            </div>
+            <div v-if="overview.strongModules.length" class="persona-hints persona-hints--success">
+              <span class="hints-label">掌握较好：</span>
+              <div class="hints-tags">
+                <el-tag
+                  v-for="r in overview.strongModules.slice(0, 3)"
+                  :key="r.key"
+                  type="success"
+                  effect="plain"
+                  size="small"
+                >
+                  {{ r.label }}
+                </el-tag>
+              </div>
+            </div>
+          </div>
         </div>
       </el-tab-pane>
     </el-tabs>
@@ -734,6 +807,7 @@ function getModuleHint(key: string) {
   margin-top: 4px;
 }
 
+/* ===== 学习概览 ===== */
 .dashboard-section {
   margin-bottom: 20px;
 }
@@ -880,7 +954,7 @@ function getModuleHint(key: string) {
 .module-card-compact:hover,
 .module-card-compact:focus-visible {
   transform: translateY(-2px);
-  border-color: rgba(56, 189, 248, 0.35);
+  border-color: rgba(34, 211, 238, 0.35);
   box-shadow: var(--alp-shadow-card-hover);
   outline: none;
 }
@@ -1018,8 +1092,9 @@ function getModuleHint(key: string) {
 }
 
 .module-list-compact {
-  columns: 3 220px;
-  column-gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
   max-height: 400px;
   overflow-y: auto;
   padding: 10px;
@@ -1039,8 +1114,6 @@ function getModuleHint(key: string) {
   border: 1px solid var(--alp-color-border);
   cursor: pointer;
   transition: background 0.2s, border-color 0.2s, transform 0.2s;
-  break-inside: avoid;
-  margin-bottom: 8px;
 }
 
 .module-row:hover,
@@ -1090,43 +1163,189 @@ function getModuleHint(key: string) {
   color: var(--alp-color-muted);
 }
 
-.eval-grid {
+.overview-rec {
+  margin-top: 16px;
+}
+
+/* ===== 效果评估 ===== */
+.eval-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.eval-left {
+  min-width: 0;
+}
+
+.eval-right {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.game-stats-bar {
+@media (max-width: 900px) {
+  .eval-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== 收藏 ===== */
+.fav-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.fav-card {
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: var(--alp-radius-card);
+  background: var(--alp-bg-soft-block);
+  border: 1px solid var(--alp-color-border);
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.fav-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(34, 211, 238, 0.35);
+  box-shadow: var(--alp-shadow-card-hover);
+}
+
+.fav-card-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fav-card-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.fav-card-name {
+  font-weight: 600;
+  font-size: 14px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fav-unstar-btn {
+  margin-left: auto;
+  color: #fbbf24;
+}
+
+.fav-card-desc {
+  margin: 0;
+  font-size: 12px;
+  color: var(--alp-color-muted);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.fav-card-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fav-card-pct {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--alp-color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.fav-card-meta {
+  display: flex;
+  gap: 12px;
+}
+
+.fav-card-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--alp-color-muted);
+}
+
+.fav-card-meta-item .el-icon {
+  font-size: 12px;
+}
+
+.fav-card-action {
+  margin-top: auto;
+  align-self: flex-start;
+}
+
+/* ===== 小游戏 ===== */
+.game-stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   margin-bottom: 16px;
 }
 
-.game-stat {
+.game-stat-card {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 12px 16px;
+  gap: 12px;
+  padding: 14px 16px;
   border-radius: var(--alp-radius-card);
   background: var(--alp-bg-soft-block);
   border: 1px solid var(--alp-color-border);
-  flex: 1;
 }
 
-.game-stat .el-icon {
-  font-size: 18px;
-  color: #4ade80;
+.game-stat-icon {
+  font-size: 24px;
+  flex-shrink: 0;
 }
 
-.game-stat strong {
-  font-size: 18px;
+.game-stat-icon--trophy {
+  color: #fbbf24;
+}
+
+.game-stat-icon--percent {
+  color: var(--alp-color-primary);
+}
+
+.game-stat-icon--unlock {
+  color: #a78bfa;
+}
+
+.game-stat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.game-stat-value {
+  font-size: 20px;
   color: var(--alp-color-text);
+  font-variant-numeric: tabular-nums;
 }
 
-.game-stat span {
+.game-stat-label {
   font-size: 11px;
   color: var(--alp-color-muted);
+}
+
+@media (max-width: 600px) {
+  .game-stats-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .game-grid {
@@ -1144,6 +1363,12 @@ function getModuleHint(key: string) {
   border-radius: var(--alp-radius-card);
   background: var(--alp-bg-soft-block);
   border: 1px solid var(--alp-color-border);
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.game-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(74, 222, 128, 0.35);
 }
 
 .game-card-head {
@@ -1164,6 +1389,99 @@ function getModuleHint(key: string) {
   color: var(--alp-color-muted);
 }
 
+/* ===== 最近学习 ===== */
+.recent-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.recent-group-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--alp-color-muted);
+  padding-left: 4px;
+  margin-bottom: 6px;
+  position: relative;
+}
+
+.recent-group-label::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 32px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--alp-color-primary);
+  opacity: 0.4;
+}
+
+.recent-group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.recent-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--alp-bg-soft-block);
+  border: 1px solid var(--alp-color-border);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.recent-item:hover,
+.recent-item:focus-visible {
+  background: var(--alp-color-primary-soft);
+  border-color: color-mix(in srgb, var(--alp-color-primary) 30%, var(--alp-color-border));
+  outline: none;
+}
+
+.recent-item-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.recent-item-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--alp-color-primary);
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.recent-item-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--alp-color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-item-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.recent-item-time {
+  font-size: 11px;
+  color: var(--alp-color-muted);
+}
+
+/* ===== 通关记录（小游戏子区域） ===== */
 .history-list-compact {
   display: flex;
   flex-direction: column;
@@ -1214,8 +1532,32 @@ function getModuleHint(key: string) {
   color: var(--alp-color-muted);
 }
 
+/* ===== 学习画像 ===== */
+.persona-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.persona-left {
+  min-width: 0;
+}
+
+.persona-right {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .persona-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
 .persona-viz {
-  margin-top: 16px;
   padding: 12px 14px;
   border-radius: var(--alp-radius-card);
   background: var(--alp-bg-soft-block);
@@ -1230,19 +1572,27 @@ function getModuleHint(key: string) {
 }
 
 .persona-hints {
-  margin-top: 12px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
+  padding: 10px 12px;
+  border-radius: var(--alp-radius-card);
+  background: color-mix(in srgb, var(--el-color-warning-light-9) 40%, var(--alp-bg-soft-block));
+  border: 1px solid color-mix(in srgb, var(--el-color-warning) 20%, var(--alp-color-border));
+}
+
+.persona-hints--success {
+  background: color-mix(in srgb, var(--el-color-success-light-9) 40%, var(--alp-bg-soft-block));
+  border-color: color-mix(in srgb, var(--el-color-success) 20%, var(--alp-color-border));
 }
 
 .hints-label {
   font-size: 12px;
   color: var(--alp-color-muted);
+  display: block;
+  margin-bottom: 6px;
 }
 
-.overview-rec {
-  margin-top: 16px;
+.hints-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 </style>

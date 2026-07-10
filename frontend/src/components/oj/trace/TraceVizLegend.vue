@@ -96,7 +96,7 @@ defineProps<{
   width: 18px;
   height: 10px;
   border: none;
-  background: #38bdf8;
+  background: #22d3ee;
 }
 
 .trace-legend-swatch--node-hot {
@@ -113,7 +113,7 @@ defineProps<{
 }
 
 .trace-legend-swatch--stack {
-  border-left: 3px solid #38bdf8;
+  border-left: 3px solid #22d3ee;
   border-radius: 2px;
 }
 

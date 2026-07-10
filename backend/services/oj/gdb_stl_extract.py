@@ -43,6 +43,14 @@ def _gdb_print_text(val: gdb.Value) -> str:
 
 def _read_cpp_string(val: gdb.Value) -> str | None:
     """读取 std::string / basic_string（MinGW libstdc++ 多种布局）。"""
+    text = _gdb_print_text(val).strip()
+    if len(text) >= 2 and text[0] == text[-1] == '"':
+        try:
+            decoded = json.loads(text)
+            if isinstance(decoded, str):
+                return decoded
+        except Exception:
+            return text[1:-1]
     try:
         s = val.string()
         if s is not None:
@@ -81,8 +89,8 @@ def _read_cpp_string(val: gdb.Value) -> str | None:
                 continue
     except Exception:
         pass
-    text = _gdb_print_text(val)
     for pat in (
+        r'^"((?:\\.|[^"\\])*)"$',
         r'std::(?:basic_)?string[^"]*"([^"]*)"',
         r'=\s*"([^"]*)"',
         r'\[(\d+)\]\s*=\s*"([^"]*)"',
@@ -291,29 +299,29 @@ def _elem_display(child_val: gdb.Value) -> str | int | float | bool:
         return "?"
 
 
-def _children_from_pp(val: gdb.Value) -> list:
+def _raw_children_from_pp(val: gdb.Value) -> list[tuple[str, gdb.Value]]:
     try:
         pp = gdb.default_visualizer(val)
     except Exception:
         pp = None
     if pp is None:
         return []
-    items: list = []
+    items: list[tuple[str, gdb.Value]] = []
     try:
-        if hasattr(pp, "children"):
-            for i, child in enumerate(pp.children()):
-                if i >= MAX_ITEMS:
-                    break
-                try:
-                    items.append(_elem_display(child[1] if isinstance(child, tuple) else child))
-                except Exception:
-                    items.append("?")
-        elif hasattr(pp, "display_hint") and pp.display_hint() == "array":
-            for i in range(min(int(val.type.sizeof() // val[0].type.sizeof() if False else 0), 0)):
-                pass
+        if not hasattr(pp, "children"):
+            return []
+        for i, child in enumerate(pp.children()):
+            if i >= MAX_ITEMS * 2:
+                break
+            if isinstance(child, tuple) and len(child) >= 2:
+                items.append((str(child[0]), child[1]))
     except Exception:
         pass
     return items
+
+
+def _children_from_pp(val: gdb.Value) -> list:
+    return [_elem_display(child) for _, child in _raw_children_from_pp(val)[:MAX_ITEMS]]
 
 
 def _vector_elements(val: gdb.Value) -> list:
@@ -364,6 +372,23 @@ def _deque_elements(val: gdb.Value) -> list:
     return []
 
 
+def _generic_sequence_elements(val: gdb.Value) -> list:
+    t = _type_str(val)
+    if "array" in t:
+        for field in ("_M_elems", "_Elems"):
+            try:
+                storage = val[field]
+                match = re.search(r"(?:std::)?array\s*<.*,\s*(\d+)\s*>\s*&?$", t)
+                if not match:
+                    continue
+                size = int(match.group(1))
+                if 0 <= size <= MAX_ITEMS:
+                    return [_elem_display(storage[i]) for i in range(size)]
+            except Exception:
+                continue
+    return _children_from_pp(val)[:MAX_ITEMS]
+
+
 def _unwrap_adapter(val: gdb.Value) -> gdb.Value:
     t = _type_str(val)
     if not any(x in t for x in ("stack", "queue", "priority_queue")):
@@ -383,25 +408,41 @@ def _map_entries(val: gdb.Value) -> list[dict]:
     if not any(x in t for x in ("map", "unordered_map", "set", "unordered_set")):
         return []
     hint_unordered = "unordered" in t
-    is_set = re.search(r"::set\b", t) is not None and "map" not in t.split("::")[-1]
+    is_set = "set" in t and "map" not in t
     entries: list[dict] = []
-    pp_items = _children_from_pp(val)
+    pp_items = _raw_children_from_pp(val)
     if pp_items:
-        for item in pp_items[:MAX_ITEMS]:
-            if isinstance(item, dict) and "key" in item:
-                entries.append(item)
-            elif isinstance(item, (list, tuple)) and len(item) >= 2:
-                k, v = item[0], item[1]
-                entries.append({"key": k, "value": v})
-            else:
-                s = str(item)
-                m = re.match(r"\[([^\]]+)\]\s*=\s*(.+)", s)
-                if m:
-                    entries.append({"key": m.group(1).strip(), "value": m.group(2).strip()})
-                elif is_set:
-                    entries.append({"key": str(item), "value": None})
+        if is_set:
+            entries = [
+                {"key": _elem_display(child), "value": None}
+                for _, child in pp_items[:MAX_ITEMS]
+            ]
+        else:
+            pair_buf: list[object] = []
+            for child_name, child in pp_items:
+                display = _elem_display(child)
+                if re.fullmatch(r"\[\d+\]", child_name):
+                    pair_buf.append(display)
+                    if len(pair_buf) == 2:
+                        entries.append({"key": pair_buf[0], "value": pair_buf[1]})
+                        pair_buf = []
+                else:
+                    text = _gdb_print_text(child)
+                    try:
+                        entries.append(
+                            {
+                                "key": _elem_display(child["first"]),
+                                "value": _elem_display(child["second"]),
+                            }
+                        )
+                    except Exception:
+                        m = re.match(r"\[([^\]]+)\]\s*=\s*(.+)", text)
+                        if m:
+                            entries.append(
+                                {"key": m.group(1).strip(), "value": m.group(2).strip()}
+                            )
         if entries:
-            return entries
+            return entries[:MAX_ITEMS]
     try:
         tree = val["_M_t"]
         node = tree["_M_impl"]["_M_header"]["_M_left"]
@@ -468,6 +509,12 @@ def _view_hint_for_sequence(val: gdb.Value) -> str:
         return "queue"
     if "deque" in t:
         return "deque"
+    if "forward_list" in t:
+        return "forward_list"
+    if re.search(r"\b(?:std::)?list\s*<", t):
+        return "list"
+    if "array" in t:
+        return "array"
     if "vector" in t:
         return "vector"
     return "vector"
@@ -481,10 +528,18 @@ _TREE_POINTER_NAMES = frozenset(
 
 def _view_hint_for_associative(val: gdb.Value) -> str:
     t = _type_str(val)
+    if "unordered_multimap" in t:
+        return "unordered_multimap"
+    if "unordered_multiset" in t:
+        return "unordered_multiset"
     if "unordered_map" in t:
         return "unordered_map"
     if "unordered_set" in t:
         return "unordered_set"
+    if "multimap" in t:
+        return "multimap"
+    if "multiset" in t:
+        return "multiset"
     if "map" in t:
         return "map"
     if "set" in t:
@@ -680,7 +735,14 @@ def _serialize_value(
             "value": _deque_elements(val),
         }
 
-    if any(x in t for x in ("map", "unordered_map", "set", "unordered_set")):
+    if any(x in t for x in ("forward_list", "list<", "list <", "array<", "array <")):
+        return {
+            "type": "sequence",
+            "view_hint": _view_hint_for_sequence(val),
+            "value": _generic_sequence_elements(val),
+        }
+
+    if any(x in t for x in ("map", "set")):
         entries = _map_entries(val)
         return {
             "type": "associative",

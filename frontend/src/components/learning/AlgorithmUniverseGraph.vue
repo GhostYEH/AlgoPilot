@@ -181,7 +181,7 @@ const universeNodes = computed((): UniverseGraphNode[] => {
     return {
       id: key,
       label: row?.label ?? mod?.label ?? key,
-      accent: row?.accent ?? mod?.accent ?? '#38bdf8',
+      accent: row?.accent ?? mod?.accent ?? '#22d3ee',
       weight,
       radius,
       score,
@@ -316,7 +316,7 @@ function drawStars() {
     ctx.fillStyle = '#020617'
     ctx.fillRect(0, 0, w, h)
     const grad = ctx.createRadialGradient(w * 0.5, h * 0.35, 0, w * 0.5, h * 0.35, w * 0.65)
-    grad.addColorStop(0, 'rgba(56, 189, 248, 0.08)')
+    grad.addColorStop(0, 'rgba(34, 211, 238, 0.08)')
     grad.addColorStop(1, 'transparent')
     ctx.fillStyle = grad
     ctx.fillRect(0, 0, w, h)
@@ -346,7 +346,7 @@ function nodeStroke(n: UniverseGraphNode): string {
   if (n.status === 'locked') return '#475569'
   if (n.status === 'remediation') return '#fb923c'
   if (n.status === 'mastered') return '#4ade80'
-  if (n.status === 'next') return '#38bdf8'
+  if (n.status === 'next') return '#22d3ee'
   return n.accent
 }
 
@@ -569,7 +569,7 @@ function initGraph() {
     )
     .data(links)
     .join('line')
-    .attr('stroke', 'rgba(56, 189, 248, 0.35)')
+    .attr('stroke', 'rgba(34, 211, 238, 0.35)')
     .attr('stroke-width', 1.5)
     .attr('stroke-opacity', 0.6)
 
@@ -638,7 +638,7 @@ function initGraph() {
     .append('text')
     .attr('y', (d) => -d.radius - 6)
     .attr('text-anchor', 'middle')
-    .attr('fill', '#38bdf8')
+    .attr('fill', '#22d3ee')
     .attr('font-size', 9)
     .attr('pointer-events', 'none')
     .text((d) => `#${d.rank}`)
@@ -760,7 +760,7 @@ function renderMiniRadar(svgRoot: SVGSVGElement, dims: Array<{ label: string; sc
     g.append('circle')
       .attr('r', rScale(lvl))
       .attr('fill', 'none')
-      .attr('stroke', 'rgba(56, 189, 248, 0.2)')
+      .attr('stroke', 'rgba(34, 211, 238, 0.2)')
       .attr('stroke-dasharray', '2,2')
   })
 
@@ -780,8 +780,8 @@ function renderMiniRadar(svgRoot: SVGSVGElement, dims: Array<{ label: string; sc
 
   g.append('path')
     .datum(dims.map((d) => ({ score: d.score })))
-    .attr('fill', 'rgba(56, 189, 248, 0.25)')
-    .attr('stroke', '#38bdf8')
+    .attr('fill', 'rgba(34, 211, 238, 0.25)')
+    .attr('stroke', '#22d3ee')
     .attr('stroke-width', 1.5)
     .attr('d', area)
 }
@@ -1126,9 +1126,9 @@ onUnmounted(() => {
   min-height: min(72vh, 720px);
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid rgba(56, 189, 248, 0.25);
+  border: 1px solid rgba(34, 211, 238, 0.25);
   box-shadow:
-    0 0 60px rgba(56, 189, 248, 0.08),
+    0 0 60px rgba(34, 211, 238, 0.08),
     inset 0 0 80px rgba(2, 6, 23, 0.9);
 }
 
@@ -1167,7 +1167,7 @@ onUnmounted(() => {
 }
 
 .graph-layer :deep(.universe-node--next .node-core) {
-  filter: drop-shadow(0 0 14px rgba(56, 189, 248, 0.85));
+  filter: drop-shadow(0 0 14px rgba(34, 211, 238, 0.85));
 }
 
 .graph-layer :deep(.universe-node--locked .node-core) {
@@ -1184,14 +1184,14 @@ onUnmounted(() => {
 }
 
 .graph-layer :deep(.universe-node--focused .node-core) {
-  filter: drop-shadow(0 0 22px rgba(56, 189, 248, 1));
+  filter: drop-shadow(0 0 22px rgba(34, 211, 238, 1));
   animation: focus-pulse 1.2s ease-in-out infinite;
 }
 
 @keyframes focus-pulse {
   0%,
   100% {
-    filter: drop-shadow(0 0 18px rgba(56, 189, 248, 0.85));
+    filter: drop-shadow(0 0 18px rgba(34, 211, 238, 0.85));
   }
   50% {
     filter: drop-shadow(0 0 28px rgba(167, 139, 250, 0.95));
@@ -1216,7 +1216,7 @@ onUnmounted(() => {
     filter: drop-shadow(0 0 8px rgba(74, 222, 128, 0.5));
   }
   50% {
-    filter: drop-shadow(0 0 18px rgba(56, 189, 248, 0.85));
+    filter: drop-shadow(0 0 18px rgba(34, 211, 238, 0.85));
   }
 }
 
@@ -1251,7 +1251,7 @@ onUnmounted(() => {
   font-size: 14px;
   font-weight: 600;
   color: #e2e8f0;
-  text-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+  text-shadow: 0 0 12px rgba(34, 211, 238, 0.5);
   pointer-events: auto;
 }
 
@@ -1263,7 +1263,7 @@ onUnmounted(() => {
 
 .hud-actions :deep(.el-button) {
   background: rgba(15, 23, 42, 0.75);
-  border-color: rgba(56, 189, 248, 0.35);
+  border-color: rgba(34, 211, 238, 0.35);
   color: #e2e8f0;
 }
 
@@ -1294,8 +1294,8 @@ onUnmounted(() => {
 }
 
 .dot--next {
-  background: #38bdf8;
-  box-shadow: 0 0 8px #38bdf8;
+  background: #22d3ee;
+  box-shadow: 0 0 8px #22d3ee;
 }
 
 .dot--locked {
@@ -1324,9 +1324,9 @@ onUnmounted(() => {
   padding: 12px 14px;
   border-radius: 10px;
   background: linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.98));
-  border: 1px solid rgba(56, 189, 248, 0.45);
+  border: 1px solid rgba(34, 211, 238, 0.45);
   box-shadow:
-    0 0 24px rgba(56, 189, 248, 0.2),
+    0 0 24px rgba(34, 211, 238, 0.2),
     0 8px 32px rgba(0, 0, 0, 0.5);
   pointer-events: none;
   backdrop-filter: blur(8px);
@@ -1373,7 +1373,7 @@ onUnmounted(() => {
 }
 
 .tooltip-dims li.is-highlight {
-  color: #38bdf8;
+  color: #22d3ee;
 }
 
 .tooltip-dims strong {
@@ -1428,7 +1428,7 @@ onUnmounted(() => {
   margin: 0 0 8px;
   padding: 8px 10px;
   border-radius: 8px;
-  background: rgba(56, 189, 248, 0.1);
+  background: rgba(34, 211, 238, 0.1);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -1476,7 +1476,7 @@ onUnmounted(() => {
 
 .resource-card--filled:hover {
   border-color: var(--alp-color-primary);
-  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.12);
+  box-shadow: 0 4px 16px rgba(34, 211, 238, 0.12);
 }
 
 .resource-icon {
@@ -1539,7 +1539,7 @@ onUnmounted(() => {
   max-height: 160px;
   overflow: auto;
   background: rgba(15, 23, 42, 0.92);
-  border: 1px solid rgba(56, 189, 248, 0.3);
+  border: 1px solid rgba(34, 211, 238, 0.3);
   border-radius: 8px;
 }
 
@@ -1551,7 +1551,7 @@ onUnmounted(() => {
 }
 
 .search-results li:hover {
-  background: rgba(56, 189, 248, 0.1);
+  background: rgba(34, 211, 238, 0.1);
 }
 
 .hit-kind {
@@ -1575,7 +1575,7 @@ onUnmounted(() => {
   padding: 12px 14px;
   border-radius: 12px;
   background: rgba(15, 23, 42, 0.94);
-  border: 1px solid rgba(56, 189, 248, 0.4);
+  border: 1px solid rgba(34, 211, 238, 0.4);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 

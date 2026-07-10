@@ -5,15 +5,30 @@ from __future__ import annotations
 import shutil
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 from typing import Any, Literal
 
-from services.oj.runner import CaseResult, RunSummary, _preview_value
+from services.oj.runner import CaseResult, RunSummary
 from services.oj.stdio_io import case_input_text, case_output_text, stdout_equal
 from services.oj.cpp_runner import ensure_toolchain_on_path
 from utils import python_exec_args
 
 Verdict = Literal["AC", "WA", "TLE", "RE", "CE"]
+
+
+def _timeout_seconds(time_limit_ms: int) -> float:
+    return max(0.001, time_limit_ms / 1000)
+
+
+def _invalid_summary(message: str, *, total: int) -> RunSummary:
+    return RunSummary(
+        verdict="CE",
+        passed=0,
+        total=total,
+        cases=[],
+        compile_error=message,
+    )
 
 
 def _preview_stdio(case: dict[str, Any], field: str) -> str:
@@ -32,6 +47,12 @@ def run_cases_stdio(
     from services.oj.static_audit import audit_user_code, run_summary_rejected
 
     lang = (language or "python").lower()
+    if not cases:
+        return _invalid_summary("No test cases configured", total=0)
+    if time_limit_ms <= 0:
+        return _invalid_summary("time_limit_ms must be positive", total=len(cases))
+    if lang not in ("python", "py", "python3", "cpp", "c++", "cxx"):
+        return _invalid_summary(f"Unsupported language: {language}", total=len(cases))
     audit = audit_user_code(user_code, language=lang)
     if not audit.passed:
         return run_summary_rejected(audit, total=max(1, len(cases)))
@@ -49,7 +70,7 @@ def _run_python_stdio(
 ) -> RunSummary:
     results: list[CaseResult] = []
     passed = 0
-    timeout_s = max(1, time_limit_ms / 1000)
+    timeout_s = _timeout_seconds(time_limit_ms)
 
     with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False, encoding="utf-8") as f:
         f.write(user_code)
@@ -69,6 +90,7 @@ def _run_python_stdio(
                 expected = ensure_stdio_fields(case)["stdout"]
 
             try:
+                started = time.perf_counter()
                 proc = subprocess.run(
                     python_exec_args(str(path)),
                     input=stdin,
@@ -77,6 +99,7 @@ def _run_python_stdio(
                     timeout=timeout_s,
                     cwd=str(path.parent),
                 )
+                runtime_ms = max(0, round((time.perf_counter() - started) * 1000))
             except subprocess.TimeoutExpired:
                 results.append(
                     CaseResult(
@@ -117,7 +140,7 @@ def _run_python_stdio(
                         input_preview=_preview_stdio(case, "in"),
                         expected_preview=_preview_stdio(case, "out"),
                         actual_preview=actual.strip()[:400],
-                        runtime_ms=0,
+                        runtime_ms=runtime_ms,
                     )
                 )
             else:
@@ -129,7 +152,7 @@ def _run_python_stdio(
                         input_preview=_preview_stdio(case, "in"),
                         expected_preview=_preview_stdio(case, "out"),
                         actual_preview=actual.strip()[:400],
-                        runtime_ms=0,
+                        runtime_ms=runtime_ms,
                     )
                 )
                 return RunSummary(verdict="WA", passed=passed, total=len(cases), cases=results)
@@ -164,7 +187,7 @@ def _run_cpp_stdio(
 
     results: list[CaseResult] = []
     passed = 0
-    timeout_s = max(1, time_limit_ms / 1000)
+    timeout_s = _timeout_seconds(time_limit_ms)
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
@@ -172,12 +195,21 @@ def _run_cpp_stdio(
         cpp_file.write_text(user_code, encoding="utf-8")
         exe = tmp_path / "main.exe" if "g++" in Path(gpp).name.lower() else tmp_path / "main"
 
-        compile = subprocess.run(
-            [gpp, "-std=c++17", "-O2", str(cpp_file), "-o", str(exe)],
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
+        try:
+            compile = subprocess.run(
+                [gpp, "-std=c++17", "-O2", str(cpp_file), "-o", str(exe)],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+        except subprocess.TimeoutExpired:
+            return RunSummary(
+                verdict="CE",
+                passed=0,
+                total=len(cases),
+                cases=[],
+                compile_error="Compilation timed out after 30 seconds",
+            )
         if compile.returncode != 0:
             err = (compile.stderr or compile.stdout or "编译失败").strip()
             return RunSummary(
@@ -199,6 +231,7 @@ def _run_cpp_stdio(
                 expected = fixed["stdout"]
 
             try:
+                started = time.perf_counter()
                 proc = subprocess.run(
                     [str(exe)],
                     input=stdin,
@@ -207,6 +240,7 @@ def _run_cpp_stdio(
                     timeout=timeout_s,
                     cwd=str(tmp_path),
                 )
+                runtime_ms = max(0, round((time.perf_counter() - started) * 1000))
             except subprocess.TimeoutExpired:
                 results.append(
                     CaseResult(
@@ -246,7 +280,7 @@ def _run_cpp_stdio(
                         input_preview=_preview_stdio(case, "in"),
                         expected_preview=_preview_stdio(case, "out"),
                         actual_preview=actual.strip()[:400],
-                        runtime_ms=0,
+                        runtime_ms=runtime_ms,
                     )
                 )
             else:
@@ -258,7 +292,7 @@ def _run_cpp_stdio(
                         input_preview=_preview_stdio(case, "in"),
                         expected_preview=_preview_stdio(case, "out"),
                         actual_preview=actual.strip()[:400],
-                        runtime_ms=0,
+                        runtime_ms=runtime_ms,
                     )
                 )
                 return RunSummary(verdict="WA", passed=passed, total=len(cases), cases=results)

@@ -193,7 +193,13 @@ export function classifyStepVars(step: TraceStep | null) {
         break
       case 'other':
         if (typeof snap.value === 'string') {
-          if (/std::(stack|deque|vector|map|unordered_map)/i.test(snap.value)) break
+          if (
+            /std::(array|vector|deque|list|forward_list|stack|queue|priority_queue|map|multimap|set|multiset|unordered_)/i.test(
+              snap.value,
+            )
+          ) {
+            break
+          }
           scalars.push({
             name,
             snap: { type: 'str', value: snap.value },

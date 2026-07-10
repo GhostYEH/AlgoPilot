@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Grid, Reading, FolderOpened, User, QuestionFilled, Cpu, Moon, Sunny, Trophy, ArrowDown, DataLine } from '@element-plus/icons-vue'
+import { Grid, Reading, FolderOpened, User, QuestionFilled, Cpu, Moon, Sunny, ArrowDown, DataLine } from '@element-plus/icons-vue'
 import { useTheme } from '@/composables/useTheme'
 import { providePersonaUi } from '@/composables/usePersonaUiProvider'
 import { ALGORITHM_MODULES, MODULE_ROUTE_NAMES } from '@/constants/modules'
 import { recordModuleVisit } from '@/utils/learningBookmarks'
-import { isLoggedIn, getUser, logout } from '@/stores/auth'
+import { isLoggedIn, isTeacher, getUser, logout } from '@/stores/auth'
 import PageTransition from '@/components/layout/PageTransition.vue'
 import LearningQuickPanel from '@/components/layout/LearningQuickPanel.vue'
 import { prefetchRoute } from '@/router/prefetch'
@@ -129,13 +129,13 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
           </template>
         </el-dropdown>
 
-        <el-menu-item index="/teacher-dashboard" @mouseenter="prefetchRoute('/teacher-dashboard')">
+        <el-menu-item
+          v-if="isTeacher"
+          index="/teacher-dashboard"
+          @mouseenter="prefetchRoute('/teacher-dashboard')"
+        >
           <el-icon><DataLine /></el-icon>
           <span>教师教学看板</span>
-        </el-menu-item>
-        <el-menu-item index="/a3-demo" @mouseenter="prefetchRoute('/a3-demo')">
-          <el-icon><Trophy /></el-icon>
-          <span>比赛演示</span>
         </el-menu-item>
         <el-menu-item index="/help" @mouseenter="prefetchRoute('/help')">
           <el-icon><QuestionFilled /></el-icon>
@@ -188,15 +188,18 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
 .app-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 0 var(--alp-layout-padding-x);
+  gap: 18px;
+  padding: 0 max(18px, var(--alp-layout-padding-x));
   border-bottom: 1px solid var(--alp-color-border);
-  background: var(--alp-bg-header);
-  backdrop-filter: blur(14px);
+  background:
+    linear-gradient(90deg, rgba(45, 212, 191, 0.08), transparent 32%),
+    var(--alp-bg-header);
+  backdrop-filter: blur(18px) saturate(1.08);
   position: sticky;
   top: 0;
   z-index: 20;
   min-width: 0;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .header-brand {
@@ -205,19 +208,39 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
   gap: 10px;
   cursor: pointer;
   flex-shrink: 0;
+  transition: opacity var(--alp-transition-fast);
+}
+
+.header-brand:hover {
+  opacity: 0.85;
 }
 
 .logo-mark {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--alp-color-primary), var(--alp-color-accent));
-  color: #fff;
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid rgba(var(--alp-color-primary-rgb), 0.36);
+  background:
+    linear-gradient(135deg, rgba(var(--alp-color-primary-rgb), 0.18), transparent 48%),
+    var(--alp-bg-code-ish);
+  color: var(--alp-color-text);
   font-weight: 700;
   font-size: 13px;
   display: grid;
   place-items: center;
-  letter-spacing: 0.5px;
+  letter-spacing: 0;
+  box-shadow: inset 0 -10px 18px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.logo-mark::after {
+  content: '';
+  position: absolute;
+  inset: auto 8px 7px 8px;
+  height: 2px;
+  background: var(--alp-color-accent);
+  opacity: 0.88;
 }
 
 .brand-text {
@@ -228,13 +251,15 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
 
 .brand-title {
   font-weight: 600;
-  font-size: 15px;
+  font-size: 16px;
   color: var(--alp-color-text);
+  letter-spacing: 0;
 }
 
 .brand-sub {
   font-size: 11px;
   color: var(--alp-color-muted);
+  letter-spacing: 0;
 }
 
 .header-menu {
@@ -247,6 +272,7 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
   scrollbar-width: none;
   display: flex;
   align-items: center;
+  gap: 3px;
 }
 
 .header-menu::-webkit-scrollbar {
@@ -254,26 +280,42 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
 }
 
 .header-menu :deep(.el-menu-item) {
+  height: 38px;
+  margin: 0 1px;
+  padding: 0 13px;
+  border-radius: 8px;
   font-weight: 500;
   border-bottom-color: transparent !important;
+  letter-spacing: 0;
+  transition:
+    color var(--alp-transition-fast),
+    background var(--alp-transition-fast),
+    box-shadow var(--alp-transition-fast);
+}
+
+.header-menu :deep(.el-menu-item:hover) {
+  background: var(--alp-bg-nav-hover) !important;
 }
 
 .header-menu :deep(.el-menu-item.is-active) {
   color: var(--alp-color-primary) !important;
-  border-bottom-color: var(--alp-color-primary) !important;
-  background: transparent !important;
+  border-bottom-color: transparent !important;
+  background: var(--alp-bg-nav-active) !important;
+  box-shadow: inset 0 0 0 1px rgba(var(--alp-color-primary-rgb), 0.18);
 }
 
 .nav-dropdown-trigger {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 0 20px;
-  height: var(--alp-header-height, 60px);
+  height: 38px;
+  margin: 0 1px;
+  padding: 0 13px;
+  border-radius: 8px;
   font-weight: 500;
   color: var(--alp-color-text);
   cursor: pointer;
-  transition: color 0.2s;
+  transition: color 0.2s, background 0.2s, box-shadow 0.2s;
   position: relative;
 }
 
@@ -290,14 +332,17 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
 
 .nav-dropdown-trigger.is-active {
   color: var(--alp-color-primary);
+  background: var(--alp-bg-nav-active);
+  box-shadow: inset 0 0 0 1px rgba(var(--alp-color-primary-rgb), 0.18);
 }
 
 .nav-dropdown-trigger.is-active::after {
-  background: var(--alp-color-primary);
+  background: transparent;
 }
 
 .nav-dropdown-trigger:hover {
   color: var(--alp-color-primary);
+  background: var(--alp-bg-nav-hover);
 }
 
 .arrow-icon {
@@ -317,6 +362,15 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
   min-width: 0;
 }
 
+.header-actions :deep(.theme-btn) {
+  transition: transform var(--alp-transition-fast), box-shadow var(--alp-transition-fast);
+}
+
+.header-actions :deep(.theme-btn:hover) {
+  transform: translateY(-1px);
+  box-shadow: var(--alp-shadow-glow);
+}
+
 .user-name {
   font-size: 13px;
   color: var(--alp-color-text, #334155);
@@ -327,18 +381,27 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
 }
 
 .user-avatar {
-  background: var(--alp-color-primary-soft);
-  color: var(--alp-color-primary);
+  background: var(--alp-bg-code-ish);
+  border: 1px solid rgba(var(--alp-color-primary-rgb), 0.36);
+  color: var(--alp-color-text);
   font-size: 13px;
+  box-shadow: none;
+  transition: transform var(--alp-transition-fast), box-shadow var(--alp-transition-fast);
+}
+
+.user-avatar:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--alp-shadow-glow);
 }
 
 .app-main {
   flex: 1;
   width: 100%;
-  padding: var(--alp-layout-padding-y) var(--alp-layout-padding-x) 32px;
+  padding: 22px var(--alp-layout-padding-x) 34px;
   box-sizing: border-box;
   position: relative;
   overflow-x: clip;
+  scroll-behavior: smooth;
 }
 
 .app-main:has(.home-layout) {

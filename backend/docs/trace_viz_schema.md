@@ -49,7 +49,7 @@ C++ 追踪由 `gdb_stl_extract.py`（GDB Python + Pretty-Printers）注入生成
 
 矩阵单元格高亮：前端对比相邻两步的 `cells`，不依赖后端逐格 `changed`。
 
-## 演示旁白（答辩 / 无 LLM）
+## 确定性旁白（无 LLM）
 
 见 `services/oj/trace_demo_narration.py`：`reverse-linked-list` → 链表旁白；`unique-paths` → DP 填表旁白。
 

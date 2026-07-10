@@ -84,6 +84,8 @@ export function useOjWorkbenchActions(options: {
   }
 
   function inferModuleKey(): string {
+    const declared = options.problem.value?.module_key?.trim()
+    if (declared) return declared
     const slug = options.slug.value
     const title = options.problem.value?.title ?? ''
     const pairs: [string, string][] = [
@@ -93,7 +95,11 @@ export function useOjWorkbenchActions(options: {
       ['tree', 'binary-tree'],
       ['graph', 'graph'],
       ['greedy', 'greedy'],
-      ['stack', 'monotonic-stack'],
+      ['monotonic', 'monotonic-stack'],
+      ['sorting', 'sorting'],
+      ['sort', 'sorting'],
+      ['queue', 'stack-queue'],
+      ['stack', 'stack-queue'],
       ['hash', 'hash-table'],
     ]
     for (const [hint, key] of pairs) {
@@ -142,16 +148,21 @@ export function useOjWorkbenchActions(options: {
     onStruggleComplete,
   })
 
-  let traceReportInFlight = false
+  let traceReportRequestId = 0
+
+  function invalidateTraceReport() {
+    traceReportRequestId += 1
+    options.traceReportLoading.value = false
+    options.traceReport.value = null
+  }
 
   async function autoTriggerTraceReport(verdict: Verdict | undefined) {
     if (!verdict || verdict === 'AC') return
-    if (traceReportInFlight) return
     if (!options.apiOnline.value) return
     if (!options.problem.value?.ready) return
     if (!options.code.value.trim()) return
 
-    traceReportInFlight = true
+    const requestId = ++traceReportRequestId
     options.traceReportLoading.value = true
     options.traceReport.value = null
     try {
@@ -162,12 +173,17 @@ export function useOjWorkbenchActions(options: {
         judge_verdict: verdict,
         failed_cases: failed,
       })
-      options.traceReport.value = report
+      if (requestId === traceReportRequestId) {
+        options.traceReport.value = report
+      }
     } catch {
-      options.traceReport.value = null
+      if (requestId === traceReportRequestId) {
+        options.traceReport.value = null
+      }
     } finally {
-      options.traceReportLoading.value = false
-      traceReportInFlight = false
+      if (requestId === traceReportRequestId) {
+        options.traceReportLoading.value = false
+      }
     }
   }
 
@@ -183,6 +199,7 @@ export function useOjWorkbenchActions(options: {
   watch(options.slug, () => {
     traceSplitOpen.value = false
     agentConsoleLines.value = []
+    invalidateTraceReport()
     resetStruggleForSlug(options.slug.value)
   })
 
@@ -209,6 +226,7 @@ export function useOjWorkbenchActions(options: {
       return
     }
     running.value = true
+    invalidateTraceReport()
     options.result.value = null
     options.traceBugDiagnosis.value = null
     try {
@@ -243,6 +261,7 @@ export function useOjWorkbenchActions(options: {
       return
     }
     submitting.value = true
+    invalidateTraceReport()
     options.result.value = null
     options.traceBugDiagnosis.value = null
     try {
@@ -313,6 +332,7 @@ export function useOjWorkbenchActions(options: {
           language: options.language.value,
           steps: traceRes.steps,
           problem_description: options.problem.value?.description,
+          judge_verdict: options.result.value?.verdict ?? 'WA',
         })
         const idx = clampBugStepIndex(bugRes.bug_step_index, traceRes.steps.length)
         options.traceBugDiagnosis.value = { ...bugRes, bug_step_index: idx }

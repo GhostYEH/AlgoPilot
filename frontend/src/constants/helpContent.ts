@@ -8,7 +8,7 @@ import {
   Collection,
 } from '@element-plus/icons-vue'
 
-export type HelpTabId = 'guide' | 'faq' | 'competition'
+export type HelpTabId = 'guide' | 'faq'
 
 export interface HelpQuickLink {
   key: string
@@ -33,15 +33,9 @@ export interface HelpFaqItem {
   answer: string
 }
 
-export interface HelpCompetitionSection {
-  title: string
-  items: string[]
-}
-
 export const HELP_TABS: Array<{ id: HelpTabId; label: string }> = [
   { id: 'guide', label: '使用指南' },
   { id: 'faq', label: '常见问题' },
-  { id: 'competition', label: '赛题说明' },
 ]
 
 export const HELP_QUICK_LINKS: HelpQuickLink[] = [
@@ -203,44 +197,6 @@ export const HELP_FAQ: HelpFaqItem[] = [
     question: '如何本地启动完整环境？',
     answer:
       '后端：cd backend，激活虚拟环境后 uvicorn main:app --reload --port 9000。前端：cd frontend，npm install && npm run dev。也可在仓库根目录运行 start.bat 一键启动。需在 backend/.env 配置 JWT_SECRET 与 SPARK_API_PASSWORD 等。',
-  },
-]
-
-export const HELP_COMPETITION: HelpCompetitionSection[] = [
-  {
-    title: '赛题背景',
-    items: [
-      '本项目面向「中国软件杯」A3 赛道 — 算法智能学习平台，主题为多智能体个性化学习系统。',
-      '平台将大语言模型与多 Agent 编排结合，覆盖学习画像构建、路径规划、资源生成、内容校验与在线判题等完整链路。',
-      '目标用户为算法初学者与面试备考者，提供从知识讲解到实战刷题的一站式体验。',
-    ],
-  },
-  {
-    title: '核心能力亮点',
-    items: [
-      '多智能体协同：DocAgent、MindMapAgent、QuizAgent、CodeAgent 等角色 Agent 分工协作，编排层统一调度。',
-      '个性化学习路径：基于 6 维画像与模块进度动态重排推荐顺序，而非固定课表。',
-      'RAG + 校验闭环：BM25 检索知识库切片，ContentVerifierAgent 校验生成内容后再落库发布。',
-      '可视化学习体验：算法动画、代码执行追踪、模块闯关小游戏与交互式知识地图。',
-      '在线 OJ 判题：Python / C++ 双语言支持，题目与学习路径深度联动。',
-    ],
-  },
-  {
-    title: '技术架构概览',
-    items: [
-      '前端：Vue 3 + TypeScript + Vite + Element Plus，暗色 IDE 风格 UI。',
-      '后端：FastAPI + SQLAlchemy + MySQL，JWT 鉴权，SiliconFlow 大模型接入。',
-      '智能体层：Orchestrator 编排 DAG，支持流式资源生成与协作日志追踪。',
-      '判题层：独立 OJ 服务，支持多语言沙箱执行与测试用例比对。',
-    ],
-  },
-  {
-    title: '评审与演示建议',
-    items: [
-      '建议演示路径：注册登录 → 构建画像 → 规划路径 → 进入模块学习 → OJ 刷题 → 资源库生成 → 多智能体工作台 DAG 演示。',
-      '重点展示 Agent 协作流水线各阶段输入/输出，以及画像变化对学习路径推荐的影响。',
-      '可在首页查看学习热力图、技能雷达与平台统计等数据可视化面板。',
-    ],
   },
 ]
 

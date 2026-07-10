@@ -1,4 +1,4 @@
-"""五类个性化资源生成角色 Agent（赛题多智能体协同）。"""
+"""个性化资源生成角色 Agent。"""
 
 from __future__ import annotations
 
@@ -259,7 +259,7 @@ def _convert_flowchart_to_mindmap(flowchart: str, hints: PersonaHints) -> str:
         return _build_fallback_mindmap(hints.learning_goals[:20] or "学习主题")
     root = roots[0]
     root_label = label_map.get(root, root)
-    lines = [f"mindmap", f"  root(({root_label}))"]
+    lines = ["mindmap", f"  root(({root_label}))"]
     visited: set[str] = set()
 
     def _walk(node: str, depth: int) -> None:

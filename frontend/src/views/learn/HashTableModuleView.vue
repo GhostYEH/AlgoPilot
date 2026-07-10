@@ -25,6 +25,11 @@ import {
   HASH_VS_TWOPOINTERS_COMPARE,
   HASH_SECTION_IDS,
 } from '@/modules/hashTable/hashTableCurriculum'
+import { hashTableProgress } from '@/modules/hashTable/hashTableProgress'
+import { isLoggedIn } from '@/stores/auth'
+import { applyRemoteProgressPayload } from '@/utils/learningStorage'
+import { schedulePushLearningProgress } from '@/utils/learningRemoteSync'
+import { schedulePersonaLearningPatch } from '@/utils/personaLearningSync'
 
 const router = useRouter()
 const route = useRoute()
@@ -33,6 +38,7 @@ const aiTutorRef = ref<InstanceType<typeof AiTutorPanel> | null>(null)
 useProvideAiTutorFromPanel(aiTutorRef)
 
 const activeSection = ref(HASH_TABLE_SECTIONS[0]?.id ?? 'theory')
+const doneMap = ref<Record<string, boolean>>({})
 
 const current = computed(() => HASH_TABLE_SECTIONS.find((s) => s.id === activeSection.value))
 
@@ -62,10 +68,11 @@ const sectionIndex = computed(() =>
 )
 
 const progressPercent = computed(() => {
-  const n = HASH_TABLE_SECTIONS.length
-  if (n <= 0) return 0
-  return Math.round(((sectionIndex.value + 1) / n) * 100)
+  if (!HASH_TABLE_SECTIONS.length) return 0
+  const done = HASH_TABLE_SECTIONS.filter((section) => doneMap.value[section.id]).length
+  return Math.round((done / HASH_TABLE_SECTIONS.length) * 100)
 })
+const sectionDone = computed(() => !!doneMap.value[activeSection.value])
 
 const isFirst = computed(() => sectionIndex.value <= 0)
 const isLast = computed(() => sectionIndex.value >= HASH_TABLE_SECTIONS.length - 1)
@@ -109,6 +116,20 @@ function onJumpSelect(id: string) {
   activeSection.value = id
 }
 
+function setSectionDone(done: boolean | string | number) {
+  const id = activeSection.value
+  const value = done === true || done === 'true'
+  doneMap.value = hashTableProgress.toggleSectionDone(id, value, doneMap.value)
+  schedulePushLearningProgress()
+  if (value) {
+    schedulePersonaLearningPatch({
+      event_type: 'section_done',
+      module_key: 'hash-table',
+      detail: id,
+    })
+  }
+}
+
 async function copySectionLink() {
   const id = activeSection.value
   const url = new URL(window.location.href)
@@ -121,7 +142,18 @@ async function copySectionLink() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  doneMap.value = hashTableProgress.loadSectionDone()
+  if (isLoggedIn.value) {
+    try {
+      const { fetchLearningProgress } = await import('@/api/learning')
+      const remote = await fetchLearningProgress()
+      applyRemoteProgressPayload(remote.payload || {})
+      doneMap.value = hashTableProgress.loadSectionDone()
+    } catch {
+      /* request interceptor handles errors */
+    }
+  }
   const q = route.query.section
   if (typeof q === 'string' && HASH_SECTION_IDS.includes(q)) {
     activeSection.value = q
@@ -246,6 +278,12 @@ watch(
                   </div>
                   <p class="card-goal">{{ current.goal }}</p>
                 </div>
+                <el-checkbox
+                  :model-value="sectionDone"
+                  @update:model-value="setSectionDone"
+                >
+                  本节已完成
+                </el-checkbox>
               </div>
             </template>
 
@@ -670,12 +708,12 @@ watch(
   0%,
   100% {
     transform: translateY(0);
-    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0);
+    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0);
   }
 
   40% {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(56, 189, 248, 0.18);
+    box-shadow: 0 4px 12px rgba(34, 211, 238, 0.18);
   }
 }
 
@@ -698,7 +736,7 @@ watch(
   border-radius: 2px;
   background: linear-gradient(
     90deg,
-    rgba(56, 189, 248, 0.25),
+    rgba(34, 211, 238, 0.25),
     var(--alp-color-primary)
   );
   background-size: 200% 100%;
@@ -742,7 +780,7 @@ watch(
   gap: 4px;
   padding: 10px 14px;
   border-radius: 8px;
-  border: 2px dashed rgba(56, 189, 248, 0.45);
+  border: 2px dashed rgba(34, 211, 238, 0.45);
   background: var(--alp-bg-code-ish);
   animation: htSlotBreathe 2.4s ease-in-out infinite;
 }
@@ -767,7 +805,7 @@ watch(
 @keyframes htSlotBreathe {
   0%,
   100% {
-    border-color: rgba(56, 189, 248, 0.35);
+    border-color: rgba(34, 211, 238, 0.35);
   }
 
   50% {
@@ -803,8 +841,8 @@ watch(
 .viz-node {
   padding: 8px 14px;
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.18), var(--alp-bg-surface-solid));
-  border: 1px solid rgba(56, 189, 248, 0.35);
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.18), var(--alp-bg-surface-solid));
+  border: 1px solid rgba(34, 211, 238, 0.35);
   animation: htChainNode 2.4s ease-in-out infinite;
 }
 
@@ -825,7 +863,7 @@ watch(
   border-radius: 2px;
   background: linear-gradient(
     90deg,
-    rgba(56, 189, 248, 0.35),
+    rgba(34, 211, 238, 0.35),
     var(--alp-color-primary)
   );
   background-size: 200% 100%;
@@ -893,23 +931,23 @@ watch(
 .twosum-cell--active {
   border-color: var(--alp-color-primary);
   transform: scale(1.06);
-  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.28);
+  box-shadow: 0 4px 14px rgba(34, 211, 238, 0.28);
   z-index: 1;
 }
 
 .twosum-cell--pair {
-  background: linear-gradient(145deg, rgba(56, 189, 248, 0.22), var(--alp-bg-surface-solid));
-  border-color: rgba(56, 189, 248, 0.55);
+  background: linear-gradient(145deg, rgba(34, 211, 238, 0.22), var(--alp-bg-surface-solid));
+  border-color: rgba(34, 211, 238, 0.55);
   animation: htPairGlow 0.85s ease-in-out infinite alternate;
 }
 
 @keyframes htPairGlow {
   from {
-    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.2);
+    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.2);
   }
 
   to {
-    box-shadow: 0 0 0 6px rgba(56, 189, 248, 0.08);
+    box-shadow: 0 0 0 6px rgba(34, 211, 238, 0.08);
   }
 }
 
@@ -918,7 +956,7 @@ watch(
   min-width: 200px;
   padding: 10px 12px;
   border-radius: 8px;
-  border: 1px dashed rgba(56, 189, 248, 0.35);
+  border: 1px dashed rgba(34, 211, 238, 0.35);
   background: var(--alp-bg-code-ish);
 }
 

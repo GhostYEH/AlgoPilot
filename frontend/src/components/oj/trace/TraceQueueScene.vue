@@ -145,8 +145,8 @@ const inWindow = (i: number) => {
 }
 
 .tq-cell--idx {
-  border-color: #38bdf8;
-  box-shadow: 0 0 0 2px color-mix(in srgb, #38bdf8 30%, transparent);
+  border-color: #22d3ee;
+  box-shadow: 0 0 0 2px color-mix(in srgb, #22d3ee 30%, transparent);
 }
 
 .tq-cell--pulse {

@@ -17,7 +17,7 @@ withDefaults(
 const emit = defineEmits<{ select: [index: number] }>()
 
 const pointerColors: Record<string, string> = {
-  L: '#38bdf8',
+  L: '#22d3ee',
   R: '#f472b6',
   M: '#fbbf24',
   slow: '#a78bfa',
@@ -51,7 +51,7 @@ const pointerColors: Record<string, string> = {
           v-show="idx === i"
           :key="name"
           class="ptr-badge"
-          :style="{ '--ptr-color': pointerColors[name] ?? '#38bdf8' }"
+          :style="{ '--ptr-color': pointerColors[name] ?? '#22d3ee' }"
         >{{ name }}</span>
       </span>
     </button>
@@ -86,12 +86,12 @@ const pointerColors: Record<string, string> = {
 
 .game-array-cell.is-clickable:hover {
   transform: translateY(-3px);
-  border-color: color-mix(in srgb, #38bdf8 55%, transparent);
+  border-color: color-mix(in srgb, #22d3ee 55%, transparent);
 }
 
 .game-array-cell.is-active {
-  border-color: #38bdf8;
-  box-shadow: 0 0 0 3px color-mix(in srgb, #38bdf8 28%, transparent);
+  border-color: #22d3ee;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #22d3ee 28%, transparent);
 }
 
 .game-array-cell.is-correct {

@@ -1,4 +1,4 @@
-"""Deterministic OJ diagnosis rules for stable competition demos."""
+"""Deterministic OJ diagnosis rules for stable production fallback."""
 
 from __future__ import annotations
 

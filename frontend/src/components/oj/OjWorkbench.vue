@@ -5,6 +5,8 @@ import CodeEditor from '@/components/oj/CodeEditor.vue'
 import OjAiDiagnosisPanel from '@/components/oj/OjAiDiagnosisPanel.vue'
 import OjStruggleInterventionPanel from '@/components/oj/OjStruggleInterventionPanel.vue'
 import OjTraceDiagnosisReport from '@/components/oj/OjTraceDiagnosisReport.vue'
+import OjDsHintCard from '@/components/oj/OjDsHintCard.vue'
+import OjCodeHintCard from '@/components/oj/OjCodeHintCard.vue'
 import AgentThinkingConsole from '@/components/agents/AgentThinkingConsole.vue'
 import type { OjStruggleInterventionView } from '@/composables/useOjStruggleIntervention'
 import type { AgentConsoleLine } from '@/utils/agentConsole'
@@ -188,6 +190,16 @@ function onReset() {
           力扣判题格式：在 <code>class Solution</code> 中实现
           <code>{{ problem.entry.method }}</code>（方法名需与题目一致，{{ langHint }}）
         </p>
+
+        <div class="ai-hint-stack">
+          <OjDsHintCard :problem="problem" :language="language" class="ai-hint-card" />
+          <OjCodeHintCard
+            :problem="problem"
+            :language="language"
+            :user-code="code"
+            class="ai-hint-card"
+          />
+        </div>
       </div>
     </aside>
 
@@ -214,7 +226,7 @@ function onReset() {
             :icon="Medal"
             @click="emit('demo')"
           >
-            评委演示模式
+            一键演示：错误代码 → OJ → Trace 诊断
           </el-button>
           <el-button size="small" :icon="Refresh" @click="onReset">重置代码</el-button>
         </div>
@@ -282,7 +294,7 @@ function onReset() {
       </footer>
 
       <div v-if="result" class="console-panel">
-        <div v-if="result.verdict !== 'AC'" class="competition-closed-loop-note">
+        <div v-if="result.verdict !== 'AC'" class="learning-loop-note">
           系统不仅判断对错，还基于 Trace 捕捉学生错误发生的具体步骤，并反向更新学习画像与路径规划。
         </div>
         <div class="verdict-line">
@@ -340,15 +352,21 @@ function onReset() {
           class="case-line"
         >用例 {{ c.index + 1 }}：{{ c.message }}</pre>
 
-        <OjStruggleInterventionPanel v-if="!traceLayout" :state="struggleView ?? null" />
-
-        <OjTraceDiagnosisReport
-          v-if="!traceLayout && (traceReport || traceReportLoading)"
-          :report="traceReport ?? null"
-          :loading="traceReportLoading"
-          :consecutive-failures="consecutiveFailures"
-        />
       </div>
+    </section>
+
+    <section
+      v-if="!traceLayout && (traceReport || traceReportLoading || struggleView)"
+      class="oj-diagnosis-workspace"
+      aria-label="AI Trace 诊断结果"
+    >
+      <OjTraceDiagnosisReport
+        v-if="traceReport || traceReportLoading"
+        :report="traceReport ?? null"
+        :loading="traceReportLoading"
+        :consecutive-failures="consecutiveFailures"
+      />
+      <OjStruggleInterventionPanel :state="struggleView ?? null" />
     </section>
 
     <AgentThinkingConsole
@@ -379,7 +397,7 @@ function onReset() {
 .oj-workbench {
   display: grid;
   grid-template-columns: minmax(0, 38%) minmax(0, 62%);
-  grid-template-rows: auto auto auto;
+  grid-template-rows: auto auto auto auto;
   min-height: 520px;
   width: 100%;
   border: 1px solid var(--alp-color-border);
@@ -409,15 +427,33 @@ function onReset() {
 
 .oj-workbench-agent-console {
   grid-column: 1 / -1;
-  grid-row: 2;
+  grid-row: 3;
   min-width: 0;
   max-height: 220px;
 }
 
 .oj-workbench-diagnosis {
   grid-column: 1 / -1;
-  grid-row: 3;
+  grid-row: 4;
   min-width: 0;
+}
+
+.oj-diagnosis-workspace {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  min-width: 0;
+  padding: 18px clamp(14px, 2vw, 28px) 24px;
+  border-top: 1px solid var(--alp-color-border);
+  background: var(--alp-bg-surface-muted);
+}
+
+.oj-diagnosis-workspace :deep(.trace-report) {
+  margin-top: 0;
+  min-height: 360px;
+}
+
+.oj-diagnosis-workspace :deep(.oj-struggle-intervention) {
+  margin-top: 16px;
 }
 
 .oj-workbench--trace-layout {
@@ -524,6 +560,22 @@ function onReset() {
   font-size: 13px;
   color: var(--el-text-color-secondary);
 }
+
+.ai-hint-stack {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ai-hint-card {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.ai-hint-stack :deep(.oj-agent-card) {
+  margin-top: 0;
+}
 .code-pane-header {
   display: flex;
   align-items: center;
@@ -584,10 +636,10 @@ function onReset() {
   padding: 10px 12px;
   background: #1a1a1a;
   border-top: 1px solid #333;
-  max-height: 320px;
+  max-height: min(420px, 46vh);
   overflow: auto;
 }
-.competition-closed-loop-note {
+.learning-loop-note {
   margin-bottom: 10px;
   padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--el-color-primary) 40%, #444);
@@ -765,6 +817,14 @@ function onReset() {
   .code-pane-footer :deep(.el-button) {
     flex: 1 1 calc(50% - 8px);
     margin-left: 0;
+  }
+
+  .oj-diagnosis-workspace {
+    padding: 12px;
+  }
+
+  .oj-diagnosis-workspace :deep(.trace-report) {
+    min-height: 0;
   }
 }
 </style>

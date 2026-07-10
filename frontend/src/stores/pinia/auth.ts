@@ -1,7 +1,11 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
-import { applyRemoteProgressPayload, exportProgressPayload } from '@/utils/learningStorage'
+import {
+  applyRemoteProgressPayload,
+  clearLocalLearningProgress,
+  exportProgressPayload,
+} from '@/utils/learningStorage'
 import type { UserInfo } from '@/api/auth'
 import { ACCESS_TOKEN_KEY, USER_JSON_KEY } from '@/constants/authStorage'
 
@@ -16,6 +20,8 @@ function readUserFromStorage(): UserInfo | null {
     return null
   }
 }
+
+const PROGRESS_OWNER_KEY = 'alp_progress_owner_user_id'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(localStorage.getItem(ACCESS_TOKEN_KEY))
@@ -38,16 +44,23 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function setSession(accessToken: string, u: UserInfo) {
+    const owner = localStorage.getItem(PROGRESS_OWNER_KEY)
+    if (owner && owner !== String(u.id)) {
+      clearLocalLearningProgress()
+    }
     token.value = accessToken
     user.value = u
     localStorage.setItem(ACCESS_TOKEN_KEY, accessToken)
     localStorage.setItem(USER_JSON_KEY, JSON.stringify(u))
+    localStorage.setItem(PROGRESS_OWNER_KEY, String(u.id))
   }
 
   function clearSession() {
     clearRefs()
     localStorage.removeItem(ACCESS_TOKEN_KEY)
     localStorage.removeItem(USER_JSON_KEY)
+    localStorage.removeItem(PROGRESS_OWNER_KEY)
+    clearLocalLearningProgress()
   }
 
   async function syncLearningProgressAfterAuth() {

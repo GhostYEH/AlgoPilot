@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
@@ -340,6 +338,46 @@ def record_gamified_practice(
                 "attempts": attempts,
                 "time_spent_seconds": time_spent_seconds,
                 "evidence_text": evidence_text,
+                "persona_dimension": "knowledge_base",
+            },
+        ),
+    )
+
+
+def record_section_completion(
+    db: Session,
+    user_id: int,
+    *,
+    module_key: str,
+    section_id: str,
+) -> MemoryEventRecord:
+    """幂等记录课程小节完成，供画像、掌握度与效果分析共同使用。"""
+    problem_slug = f"section:{module_key}:{section_id}"
+    existing = db.scalar(
+        select(StudentLearningMemory)
+        .where(
+            StudentLearningMemory.user_id == user_id,
+            StudentLearningMemory.event_type == "section_done",
+            StudentLearningMemory.problem_slug == problem_slug,
+        )
+        .order_by(desc(StudentLearningMemory.created_at))
+        .limit(1)
+    )
+    if existing is not None:
+        return MemoryEventRecord.from_orm_row(existing)
+
+    chapter_id = resolve_chapter_id(module_key)
+    return MemoryService(db).record_event(
+        user_id,
+        MemoryEventInput(
+            event_type="section_done",
+            chapter_id=chapter_id,
+            problem_slug=problem_slug,
+            trace_summary=f"完成 {module_key} 模块小节 {section_id}",
+            mastery_delta=1,
+            evidence_json={
+                "module_key": module_key,
+                "section_id": section_id,
                 "persona_dimension": "knowledge_base",
             },
         ),

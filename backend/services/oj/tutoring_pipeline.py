@@ -136,6 +136,30 @@ def _recommended_resources(
     return out
 
 
+def _fallback_path_adjustment_hint(
+    *,
+    slug: str,
+    error_type: ErrorType,
+    module_key: str,
+) -> str:
+    if slug == "reverse-linked-list" and error_type == "pointer_update_error":
+        return (
+            "LearningPathAgent 建议：将“链表三指针循环不变量与断链风险”巩固节点"
+            "前置到当前路径，完成 Trace 动画和空链表/单节点/双节点练习后，再继续后续模块。"
+        )
+    if error_type == "boundary_condition_error":
+        return (
+            f"LearningPathAgent 建议：在{module_key or '当前模块'}前插入边界条件巩固节点，"
+            "完成空输入、单元素与极值用例后再继续原路径。"
+        )
+    if error_type == "recursion_base_case_error":
+        return (
+            "LearningPathAgent 建议：前置递归终止条件与区间定义巩固节点，"
+            "通过最小规模用例后再恢复原学习路径。"
+        )
+    return ""
+
+
 def apply_oj_tutoring(
     db: Session | None,
     user: User | None,
@@ -223,7 +247,11 @@ def apply_oj_tutoring(
 
     memory_event_id: int | None = None
     mastery_summary = ""
-    path_hint = ""
+    path_hint = _fallback_path_adjustment_hint(
+        slug=slug,
+        error_type=error_type,
+        module_key=ctx.get("module_key") or "",
+    )
     memory_recorded = False
     mastery_updated = False
     persona_updated = False

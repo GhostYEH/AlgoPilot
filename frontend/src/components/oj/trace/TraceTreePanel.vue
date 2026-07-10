@@ -21,7 +21,8 @@ interface DraftNode {
   id: string
   label: string
   hidden?: boolean
-  children: DraftNode[]
+  left: DraftNode | null
+  right: DraftNode | null
 }
 
 interface RenderNode {
@@ -61,18 +62,22 @@ function buildDraft(id: string | null, depth = 0): DraftNode | null {
     return {
       id: node.id,
       label: formatNodeLabel(node.val),
-      children: [{ id: `${node.id}-more`, label: '...', hidden: true, children: [] }],
+      left: {
+        id: `${node.id}-more`,
+        label: '...',
+        hidden: true,
+        left: null,
+        right: null,
+      },
+      right: null,
     }
   }
-
-  const children = [buildDraft(node.left, depth + 1), buildDraft(node.right, depth + 1)].filter(
-    Boolean,
-  ) as DraftNode[]
 
   return {
     id: node.id,
     label: formatNodeLabel(node.val),
-    children,
+    left: buildDraft(node.left, depth + 1),
+    right: buildDraft(node.right, depth + 1),
   }
 }
 
@@ -92,13 +97,14 @@ const layout = computed(() => {
   const nodes: RenderNode[] = []
   const edges: RenderEdge[] = []
   const nodeById = new Map<string, RenderNode>()
-  let leafCursor = 0
+  let inorderCursor = 0
   let maxDepth = 0
 
-  function walk(node: DraftNode, depth: number): number {
+  function walk(node: DraftNode | null, depth: number): void {
+    if (!node) return
     maxDepth = Math.max(maxDepth, depth)
-    const childXs = node.children.map((child) => walk(child, depth + 1))
-    const x = childXs.length ? (childXs[0]! + childXs[childXs.length - 1]!) / 2 : leafCursor++
+    walk(node.left, depth + 1)
+    const x = inorderCursor++
     const rendered = {
       id: node.id,
       label: node.label,
@@ -108,17 +114,18 @@ const layout = computed(() => {
     }
     nodes.push(rendered)
     nodeById.set(node.id, rendered)
-    return x
+    walk(node.right, depth + 1)
   }
 
   function connect(node: DraftNode) {
     const from = nodeById.get(node.id)
     if (!from) return
-    for (const child of node.children) {
+    for (const child of [node.left, node.right]) {
+      if (!child) continue
       const to = nodeById.get(child.id)
       if (to) {
         edges.push({
-          id: `${node.id}-${child.id}`,
+          id: `${node.id}->${child.id}`,
           x1: from.x,
           y1: from.y + NODE_HEIGHT / 2,
           x2: to.x,
@@ -132,11 +139,11 @@ const layout = computed(() => {
   walk(draft, 0)
   connect(draft)
 
-  const leafCount = Math.max(1, leafCursor)
+  const positionedCount = Math.max(1, inorderCursor)
   return {
     nodes,
     edges,
-    width: Math.max(320, PAD_X * 2 + (leafCount - 1) * LEAF_GAP + NODE_WIDTH),
+    width: Math.max(320, PAD_X * 2 + (positionedCount - 1) * LEAF_GAP + NODE_WIDTH),
     height: Math.max(220, PAD_Y * 2 + maxDepth * LEVEL_GAP + NODE_HEIGHT),
   }
 })
@@ -148,6 +155,11 @@ function nodeClass(node: RenderNode) {
     'trace-tree-node--hot': props.hotNodeIds?.has(node.id),
     'trace-tree-node--hidden': node.hidden,
   }
+}
+
+function edgeHot(edge: RenderEdge): boolean {
+  const childId = edge.id.split('->')[1]
+  return Boolean(childId && props.hotNodeIds?.has(childId))
 }
 </script>
 
@@ -182,6 +194,7 @@ function nodeClass(node: RenderNode) {
           <path
             v-for="edge in layout.edges"
             :key="edge.id"
+            :class="{ 'trace-tree-edge--hot': edgeHot(edge) }"
             :d="`M ${edge.x1} ${edge.y1} C ${edge.x1} ${(edge.y1 + edge.y2) / 2}, ${edge.x2} ${(edge.y1 + edge.y2) / 2}, ${edge.x2} ${edge.y2}`"
           />
         </g>
@@ -263,7 +276,7 @@ function nodeClass(node: RenderNode) {
   border-radius: 8px;
   background:
     linear-gradient(var(--alp-bg-soft-block), var(--alp-bg-soft-block)) padding-box,
-    radial-gradient(circle at 20% 0%, rgba(56, 189, 248, 0.22), transparent 34%) border-box;
+    radial-gradient(circle at 20% 0%, rgba(34, 211, 238, 0.22), transparent 34%) border-box;
   border: 1px solid var(--alp-color-border);
   width: 100%;
   max-height: min(520px, 56vh);
@@ -280,6 +293,18 @@ function nodeClass(node: RenderNode) {
   stroke: color-mix(in srgb, var(--alp-color-muted) 54%, transparent);
   stroke-width: 2;
   stroke-linecap: round;
+  transition:
+    stroke 0.24s ease,
+    stroke-width 0.24s ease,
+    opacity 0.24s ease;
+  animation: tree-edge-in 0.36s ease-out both;
+}
+
+.trace-tree-edges path.trace-tree-edge--hot {
+  stroke: #fbbf24;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, #fbbf24 55%, transparent));
+  animation: tree-edge-pulse 0.7s ease-in-out 2;
 }
 
 .trace-tree-node rect {
@@ -291,6 +316,11 @@ function nodeClass(node: RenderNode) {
     fill 0.16s ease,
     stroke 0.16s ease,
     filter 0.16s ease;
+}
+
+.trace-tree-node {
+  transition: transform 0.36s ease;
+  animation: tree-node-in 0.32s ease-out both;
 }
 
 .trace-tree-node text {
@@ -307,6 +337,10 @@ function nodeClass(node: RenderNode) {
   filter: drop-shadow(0 0 12px color-mix(in srgb, #fbbf24 45%, transparent));
 }
 
+.trace-tree-node--hot {
+  animation: tree-node-pulse 0.72s ease-in-out 2;
+}
+
 .trace-tree-node--hidden rect {
   fill: color-mix(in srgb, var(--alp-color-muted) 12%, var(--alp-bg-surface-solid));
   stroke-dasharray: 5 4;
@@ -321,6 +355,46 @@ function nodeClass(node: RenderNode) {
   margin: 0;
   font-size: 12px;
   color: var(--alp-color-muted);
+}
+
+@keyframes tree-node-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes tree-node-pulse {
+  50% {
+    filter: drop-shadow(0 0 8px color-mix(in srgb, #fbbf24 60%, transparent));
+  }
+}
+
+@keyframes tree-edge-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes tree-edge-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trace-tree-node,
+  .trace-tree-node--hot,
+  .trace-tree-edges path,
+  .trace-tree-edges path.trace-tree-edge--hot {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 @media (max-width: 720px) {

@@ -188,14 +188,14 @@ function finish() {
   cursor: pointer;
 }
 .bar-wrap.is-next {
-  border-color: #38bdf8;
+  border-color: #22d3ee;
 }
 .bar-wrap.is-done {
   opacity: 0.55;
 }
 .bar {
   width: 36px;
-  background: linear-gradient(180deg, #38bdf8, #6366f1);
+  background: linear-gradient(180deg, #22d3ee, #6366f1);
   border-radius: 4px 4px 0 0;
 }
 .bar-val {

@@ -229,7 +229,7 @@ function ptrHot(name: string) {
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 4px;
-  background: #38bdf8;
+  background: #22d3ee;
   color: #0f172a;
   transition:
     transform 0.2s,
@@ -259,8 +259,8 @@ function ptrHot(name: string) {
 }
 
 .trace-ll-node--has-ptr {
-  border-color: #38bdf8;
-  box-shadow: 0 0 0 2px color-mix(in srgb, #38bdf8 35%, transparent);
+  border-color: #22d3ee;
+  box-shadow: 0 0 0 2px color-mix(in srgb, #22d3ee 35%, transparent);
 }
 
 .trace-ll-node--hot {

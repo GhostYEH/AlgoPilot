@@ -46,7 +46,6 @@ export interface TeacherDashboardSummary {
   error_types: ErrorTypeStat[]
   teaching_suggestions: TeachingSuggestion[]
   reinforcement_packs: ReinforcementPack[]
-  is_demo: boolean
   data_note: string
   generated_at: string
 }

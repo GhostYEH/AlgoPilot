@@ -1,4 +1,4 @@
-"""多智能体注册表（赛题角色对齐）。"""
+"""多智能体注册表。"""
 
 from __future__ import annotations
 

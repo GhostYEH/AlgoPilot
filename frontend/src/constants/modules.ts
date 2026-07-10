@@ -25,7 +25,7 @@ export const MODULE_PHASE_LABELS: Record<ModulePhase, string> = {
 }
 
 export const ALGORITHM_MODULES: AlgorithmModuleItem[] = [
-  { key: 'array', label: '数组', phase: 'foundation', available: true, accent: '#38bdf8' },
+  { key: 'array', label: '数组', phase: 'foundation', available: true, accent: '#22d3ee' },
   { key: 'linked-list', label: '链表', phase: 'foundation', available: true, accent: '#22d3ee' },
   { key: 'hash-table', label: '哈希表', phase: 'foundation', available: true, accent: '#2dd4bf' },
   { key: 'string', label: '字符串', phase: 'foundation', available: true, accent: '#34d399' },

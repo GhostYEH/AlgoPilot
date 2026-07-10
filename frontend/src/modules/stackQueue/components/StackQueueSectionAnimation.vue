@@ -923,7 +923,7 @@ const parenOpIsPop = computed(
 .struct-tag {
   font-size: 15px;
   font-weight: 700;
-  color: var(--alp-color-primary, #38bdf8);
+  color: var(--alp-color-primary, #22d3ee);
   letter-spacing: 0.02em;
 }
 
@@ -1417,7 +1417,7 @@ const parenOpIsPop = computed(
 
 .sq-paren-cursor {
   font-size: 12px;
-  color: var(--alp-color-primary, #38bdf8);
+  color: var(--alp-color-primary, #22d3ee);
   line-height: 1;
 }
 
@@ -1565,7 +1565,7 @@ const parenOpIsPop = computed(
 
 :deep(.learn-viz-cell--stack-top),
 :deep(.learn-viz-cell--push-new) {
-  border-color: var(--alp-color-primary, #38bdf8);
+  border-color: var(--alp-color-primary, #22d3ee);
   background: color-mix(in srgb, var(--alp-color-primary) 20%, var(--alp-bg-surface-solid));
   transform: scale(1.06);
 }
@@ -1749,7 +1749,7 @@ const parenOpIsPop = computed(
 .sq-topk-bar {
   height: 8px;
   border-radius: 4px;
-  background: var(--alp-color-primary, #38bdf8);
+  background: var(--alp-color-primary, #22d3ee);
   transition: width 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 

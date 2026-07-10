@@ -25,7 +25,7 @@ const CARDS = [
     rule: '根 → 左 → 右',
     formula: '先 visit 根，再左子树，再右子树',
     order: ['1', '2', '4', '5', '3'] as string[],
-    accent: '#38bdf8',
+    accent: '#22d3ee',
   },
   {
     key: 'inorder',
@@ -159,7 +159,7 @@ function pos(id: string) {
   border-radius: 12px;
   background: var(--alp-bg-code-ish, rgba(15, 23, 42, 0.55));
   border: 1px solid var(--alp-color-border);
-  border-top: 3px solid var(--card-accent, #38bdf8);
+  border-top: 3px solid var(--card-accent, #22d3ee);
   min-width: 0;
 }
 

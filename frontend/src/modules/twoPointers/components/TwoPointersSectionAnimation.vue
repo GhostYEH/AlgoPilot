@@ -622,7 +622,7 @@ const staticLabel = computed(() => {
   inset: -4px -6px auto;
   height: calc(100% + 8px);
   border-radius: 10px;
-  border: 1px dashed color-mix(in srgb, #38bdf8 50%, transparent);
+  border: 1px dashed color-mix(in srgb, #22d3ee 50%, transparent);
   pointer-events: none;
   z-index: 0;
 }
@@ -671,13 +671,13 @@ const staticLabel = computed(() => {
   width: min(100%, 320px);
   padding: 4px 12px;
   text-align: center;
-  border-top: 1px solid color-mix(in srgb, #38bdf8 30%, transparent);
+  border-top: 1px solid color-mix(in srgb, #22d3ee 30%, transparent);
 }
 
 .tp-3sum-zone-label {
   font-size: 10px;
   font-weight: 600;
-  color: #38bdf8;
+  color: #22d3ee;
 }
 
 .tp-3sum-sum-line {

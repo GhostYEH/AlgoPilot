@@ -97,31 +97,42 @@
   margin-bottom: 0;
 }
 
-/* 章节目录：可向左收起，主内容区自动变宽 */
+/* 章节目录：3 列栅格布局 — 目录 / 主内容 / 右侧辅助 */
 .module-learn-shell .module-layout-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr) 320px;
   gap: 20px;
-  align-items: flex-start;
+  align-items: start;
+}
+
+/* 目录侧栏：收起时让整列同步缩小，让网格自动收缩到 52px，不留空白 */
+.module-learn-shell .module-layout-row:has(.section-aside-col.is-collapsed) {
+  grid-template-columns: 52px minmax(0, 1fr) 320px;
 }
 
 .module-learn-shell .section-aside-col {
-  flex: 0 0 260px;
-  width: 260px;
-  max-width: 100%;
-  align-self: flex-start;
-  transition:
-    flex-basis 0.28s ease,
-    width 0.28s ease;
-}
-
-.module-learn-shell .section-aside-col.is-collapsed {
-  flex: 0 0 52px;
-  width: 52px;
+  width: 100%;
+  align-self: start;
 }
 
 .module-learn-shell .module-layout-main {
-  flex: 1;
   min-width: 0;
+}
+
+/* 右侧辅助列：sticky 整体吸顶，子面板纵向紧凑堆叠 */
+.module-learn-shell .module-layout-side {
+  position: sticky;
+  top: calc(var(--alp-header-height, 60px) + 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-self: start;
+}
+
+/* 右侧子面板：让每个子面板也能独立滚动 */
+.module-learn-shell .module-layout-side > * {
+  min-width: 0;
+  overflow: visible;
 }
 
 .module-learn-shell .aside-head-text {
@@ -176,15 +187,15 @@
 
 .module-learn-shell .mini-nav-btn:hover {
   background: var(--alp-bg-nav-hover);
-  border-color: rgba(56, 189, 248, 0.35);
+  border-color: rgba(34, 211, 238, 0.35);
   color: var(--alp-color-text);
 }
 
 .module-learn-shell .mini-nav-btn.active {
   background: var(--alp-bg-nav-active);
-  border-color: var(--alp-color-primary, #38bdf8);
-  color: var(--alp-color-primary, #38bdf8);
-  box-shadow: 0 2px 10px rgba(56, 189, 248, 0.2);
+  border-color: var(--alp-color-primary, #22d3ee);
+  color: var(--alp-color-primary, #22d3ee);
+  box-shadow: 0 2px 10px rgba(34, 211, 238, 0.2);
 }
 
 .module-learn-shell .mini-nav-btn.done:not(.active) {
@@ -262,14 +273,14 @@
 
 .module-learn-shell .nav-btn:hover {
   background: var(--alp-bg-nav-hover);
-  border-color: rgba(56, 189, 248, 0.35);
+  border-color: rgba(34, 211, 238, 0.35);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 .module-learn-shell .nav-btn.active {
   background: var(--alp-bg-nav-active);
-  border-color: var(--alp-color-primary, #38bdf8);
-  box-shadow: 0 2px 12px rgba(56, 189, 248, 0.2);
+  border-color: var(--alp-color-primary, #22d3ee);
+  box-shadow: 0 2px 12px rgba(34, 211, 238, 0.2);
 }
 
 .module-learn-shell .nav-btn:active {
@@ -294,7 +305,7 @@
 }
 
 .module-learn-shell .nav-btn.active .nav-idx {
-  background: var(--alp-color-primary, #38bdf8);
+  background: var(--alp-color-primary, #22d3ee);
   color: #0f172a;
 }
 
@@ -636,8 +647,8 @@
 }
 
 .module-learn-shell .points li:hover {
-  border-color: rgba(56, 189, 248, 0.35);
-  background: rgba(56, 189, 248, 0.06);
+  border-color: rgba(34, 211, 238, 0.35);
+  background: rgba(34, 211, 238, 0.06);
 }
 
 .module-learn-shell .pitfall-group {
@@ -708,7 +719,7 @@
   color: var(--alp-color-muted);
   background: var(--alp-bg-code-ish);
   border-radius: 8px;
-  border-left: 3px solid var(--alp-color-primary, #38bdf8);
+  border-left: 3px solid var(--alp-color-primary, #22d3ee);
 }
 
 .module-learn-shell .practice-main {
@@ -718,7 +729,7 @@
   padding: 14px 16px;
   border-radius: 10px;
   background: var(--alp-color-primary-soft);
-  border: 1px solid rgba(56, 189, 248, 0.28);
+  border: 1px solid rgba(34, 211, 238, 0.28);
   max-width: var(--alp-content-prose-max);
 }
 
@@ -751,7 +762,7 @@
 }
 
 .module-learn-shell .related-link:hover {
-  border-color: rgba(56, 189, 248, 0.4);
+  border-color: rgba(34, 211, 238, 0.4);
   background: var(--alp-color-primary-soft);
   transform: translateY(-1px);
 }
@@ -898,15 +909,47 @@
   }
 }
 
-@media (max-width: 992px) {
+/* 中等屏：收起右侧辅助面板为单列并堆叠在底部；目录与主内容保持两列 */
+@media (max-width: 1280px) {
   .module-learn-shell .module-layout-row {
-    flex-direction: column;
+    grid-template-columns: 240px minmax(0, 1fr);
   }
 
-  .module-learn-shell .section-aside-col,
-  .module-learn-shell .section-aside-col.is-collapsed {
-    flex: none;
+  .module-learn-shell .module-layout-row:has(.section-aside-col.is-collapsed) {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+
+  .module-learn-shell .module-layout-side {
+    grid-column: 1 / -1;
+    position: static;
+    max-height: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .module-learn-shell .module-layout-side > * {
+    flex: 1 1 320px;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 992px) {
+  .module-learn-shell .module-layout-row,
+  .module-learn-shell .module-layout-row:has(.section-aside-col.is-collapsed) {
+    grid-template-columns: 1fr;
+  }
+
+  .module-learn-shell .section-aside-col {
     width: 100%;
+  }
+
+  .module-learn-shell .module-layout-side {
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+
+  .module-learn-shell .module-layout-side > * {
+    flex: none;
   }
 
   .module-learn-shell .aside-sticky {

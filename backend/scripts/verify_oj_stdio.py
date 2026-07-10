@@ -1,4 +1,4 @@
-﻿"""
+"""
 校验全站 OJ 洛谷 stdio 配置与测例格式。
 
 用法（后端根目录）:
@@ -47,7 +47,7 @@ def check_config(bundle: dict) -> list[str]:
         for label, cases in [("samples", cfg.get("samples") or []), ("hidden", cfg.get("hidden") or [])]:
             for i, c in enumerate(cases):
                 fixed = ensure_stdio_fields(c)
-                if not fixed.get("stdin") or fixed.get("stdout") is None:
+                if fixed.get("stdin") is None or fixed.get("stdout") is None:
                     errors.append(f"{slug}: {label}[{i}] missing stdin/stdout")
         try:
             p = get_public_problem(slug)

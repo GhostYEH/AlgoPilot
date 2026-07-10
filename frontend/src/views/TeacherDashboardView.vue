@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import {
   Aim,
   Collection,
@@ -19,7 +18,6 @@ import {
   type TeacherDashboardSummary,
 } from '@/api/teacherDashboard'
 
-const router = useRouter()
 const loading = ref(false)
 const loadError = ref('')
 const summary = ref<TeacherDashboardSummary | null>(null)
@@ -77,7 +75,6 @@ onMounted(loadDashboard)
           将学生侧学习证据转化为可执行的课堂教学建议。
         </p>
         <div class="hero-meta">
-          <el-tag v-if="summary?.is_demo" type="warning" effect="dark">比赛演示数据</el-tag>
           <span>数据更新时间：{{ formatGeneratedAt(summary?.generated_at) }}</span>
           <span>课程：数据结构与算法</span>
         </div>
@@ -85,9 +82,6 @@ onMounted(loadDashboard)
       <div class="hero-actions">
         <el-button :loading="loading" :icon="RefreshRight" @click="loadDashboard">
           刷新数据
-        </el-button>
-        <el-button type="primary" plain @click="router.push({ name: 'a3-demo' })">
-          返回比赛演示
         </el-button>
       </div>
     </section>
@@ -244,6 +238,11 @@ onMounted(loadDashboard)
             </div>
           </article>
         </div>
+        <el-empty
+          v-if="!summary.teaching_suggestions.length"
+          description="暂无足够数据生成教学建议"
+          :image-size="72"
+        />
       </section>
 
       <section class="dashboard-section">
@@ -292,6 +291,11 @@ onMounted(loadDashboard)
             </div>
           </article>
         </div>
+        <el-empty
+          v-if="!summary.reinforcement_packs.length"
+          description="暂无需要巩固的共性模块"
+          :image-size="72"
+        />
       </section>
     </template>
   </main>
@@ -314,7 +318,7 @@ onMounted(loadDashboard)
   border: 1px solid color-mix(in srgb, var(--alp-color-primary) 32%, var(--alp-color-border));
   border-radius: 18px;
   background:
-    radial-gradient(circle at 82% 18%, rgba(56, 189, 248, 0.2), transparent 28%),
+    radial-gradient(circle at 82% 18%, rgba(34, 211, 238, 0.2), transparent 28%),
     linear-gradient(135deg, rgba(14, 116, 144, 0.22), rgba(79, 70, 229, 0.14)),
     var(--alp-bg-surface);
   box-shadow: var(--alp-shadow-card);
@@ -327,9 +331,9 @@ onMounted(loadDashboard)
   width: 260px;
   height: 260px;
   content: '';
-  border: 1px solid rgba(56, 189, 248, 0.16);
+  border: 1px solid rgba(34, 211, 238, 0.16);
   border-radius: 50%;
-  box-shadow: 0 0 0 34px rgba(56, 189, 248, 0.04), 0 0 0 70px rgba(129, 140, 248, 0.03);
+  box-shadow: 0 0 0 34px rgba(34, 211, 238, 0.04), 0 0 0 70px rgba(129, 140, 248, 0.03);
   pointer-events: none;
 }
 
@@ -461,7 +465,7 @@ onMounted(loadDashboard)
   border-color: color-mix(in srgb, var(--metric-color) 55%, var(--alp-color-border));
 }
 
-.metric-card--blue { --metric-color: #38bdf8; }
+.metric-card--blue { --metric-color: #22d3ee; }
 .metric-card--purple { --metric-color: #a78bfa; }
 .metric-card--green { --metric-color: #4ade80; }
 .metric-card--orange { --metric-color: #f59e0b; }
@@ -562,7 +566,7 @@ onMounted(loadDashboard)
 .bar-fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #38bdf8, #818cf8);
+  background: linear-gradient(90deg, #22d3ee, #818cf8);
   transition: width 0.5s ease;
 }
 

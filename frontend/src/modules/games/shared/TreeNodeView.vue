@@ -63,7 +63,7 @@ const emit = defineEmits<{ pick: [node: TreeNodeData] }>()
 }
 .tree-node-btn:hover {
   transform: scale(1.06);
-  border-color: #38bdf8;
+  border-color: #22d3ee;
 }
 .tree-node-btn.visited {
   background: color-mix(in srgb, #22c55e 20%, transparent);

@@ -177,7 +177,7 @@ function doReset() {
   transition: border-color 0.12s, background 0.12s, transform 0.12s;
 }
 .step:hover {
-  border-color: #38bdf8;
+  border-color: #22d3ee;
   transform: translateX(4px);
 }
 .step.is-flagged {

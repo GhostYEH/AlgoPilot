@@ -1,5 +1,5 @@
 .alp-game-panel {
-  --game-accent: var(--alp-color-primary, #38bdf8);
+  --game-accent: var(--alp-color-primary, #22d3ee);
   padding: 12px 14px;
   border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--game-accent) 35%, var(--alp-color-border));
@@ -153,8 +153,8 @@
 .workbench {
   padding: 14px;
   border-radius: 12px;
-  border: 1px dashed color-mix(in srgb, var(--game-accent, #38bdf8) 35%, var(--alp-color-border));
-  background: color-mix(in srgb, var(--game-accent, #38bdf8) 4%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--game-accent, #22d3ee) 35%, var(--alp-color-border));
+  background: color-mix(in srgb, var(--game-accent, #22d3ee) 4%, transparent);
 }
 
 .workbench-head {

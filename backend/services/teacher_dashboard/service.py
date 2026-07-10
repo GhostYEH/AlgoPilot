@@ -108,70 +108,10 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _demo_summary() -> TeacherDashboardSummaryResponse:
-    weak = [
-        WeakKnowledgePoint(
-            module_key="linked-list",
-            module_label="链表",
-            error_count=31,
-            affected_students=18,
-        ),
-        WeakKnowledgePoint(
-            module_key="binary-tree",
-            module_label="二叉树",
-            error_count=26,
-            affected_students=15,
-        ),
-        WeakKnowledgePoint(
-            module_key="dp",
-            module_label="动态规划",
-            error_count=24,
-            affected_students=14,
-        ),
-        WeakKnowledgePoint(
-            module_key="sorting",
-            module_label="排序",
-            error_count=17,
-            affected_students=11,
-        ),
-    ]
-    errors = [
-        ErrorTypeStat(error_type="boundary_condition", label="边界条件错误", count=29, percentage=33.0),
-        ErrorTypeStat(error_type="pointer_update", label="指针更新错误", count=24, percentage=27.3),
-        ErrorTypeStat(error_type="complexity", label="复杂度过高", count=20, percentage=22.7),
-        ErrorTypeStat(error_type="null_access", label="空栈/空指针", count=15, percentage=17.0),
-    ]
-    suggestions = [
-        TeachingSuggestion(
-            title="补讲链表指针更新顺序",
-            reason="链表是当前影响学生人数最多的薄弱模块，指针更新错误集中出现。",
-            focus=MODULE_FOCUS["linked-list"],
-        ),
-        TeachingSuggestion(
-            title="补讲动态规划边界与状态转移",
-            reason="边界条件错误位居首位，且动态规划模块错误频次较高。",
-            focus=MODULE_FOCUS["dp"],
-        ),
-        TeachingSuggestion(
-            title="组织复杂度与排序策略对比课",
-            reason="复杂度过高问题占比较高，适合结合排序算法进行横向比较。",
-            focus=MODULE_FOCUS["sorting"],
-        ),
-    ]
+def _empty_summary() -> TeacherDashboardSummaryResponse:
     return TeacherDashboardSummaryResponse(
-        overview=ClassLearningOverview(
-            student_count=42,
-            profile_count=37,
-            average_mastery=68.4,
-            resource_count=128,
-            oj_submission_count=356,
-        ),
-        weak_knowledge_points=weak,
-        error_types=errors,
-        teaching_suggestions=suggestions,
-        reinforcement_packs=[_build_pack(item.module_key) for item in weak[:3]],
-        is_demo=True,
-        data_note="当前缺少可形成班级统计的真实记录，已自动展示比赛演示数据。",
+        overview=ClassLearningOverview(),
+        data_note="暂无可统计的真实学生学习记录。",
         generated_at=_now_iso(),
     )
 
@@ -363,7 +303,7 @@ def get_dashboard_summary(
 ) -> TeacherDashboardSummaryResponse:
     student_ids = _student_ids(db)
     if not student_ids:
-        return _demo_summary()
+        return _empty_summary()
 
     profiles = (
         db.query(StudentProfile)
@@ -388,10 +328,6 @@ def get_dashboard_summary(
         .filter(GeneratedResource.user_id.in_(student_ids))
         .count()
     )
-
-    learning_record_count = len(profiles) + len(progress_rows) + len(memories) + resource_count
-    if len(student_ids) < 2 or learning_record_count < 3:
-        return _demo_summary()
 
     oj_submission_count = sum(
         1
@@ -439,13 +375,8 @@ def get_dashboard_summary(
     ]
     error_stats.sort(key=lambda item: item.count, reverse=True)
 
-    suggestions = _build_suggestions(weak_points, error_stats)
+    suggestions = _build_suggestions(weak_points, error_stats) if weak_points else []
     pack_modules = [point.module_key for point in weak_points[:3]]
-    for module_key in ("linked-list", "dp", "sorting", "binary-tree"):
-        if len(pack_modules) >= 3:
-            break
-        if module_key not in pack_modules:
-            pack_modules.append(module_key)
     reinforcement_packs = [_build_pack(key) for key in pack_modules]
 
     return TeacherDashboardSummaryResponse(
@@ -460,7 +391,6 @@ def get_dashboard_summary(
         error_types=error_stats,
         teaching_suggestions=suggestions,
         reinforcement_packs=reinforcement_packs,
-        is_demo=False,
         data_note="统计结果由现有用户、学习进度、Evaluation/掌握度、OJ 学习记忆和资源记录实时聚合。",
         generated_at=_now_iso(),
     )

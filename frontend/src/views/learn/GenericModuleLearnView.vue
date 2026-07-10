@@ -255,6 +255,7 @@ watch(
 
     <div class="module-layout-row layout-row">
       <SectionDirectoryAside
+        class="section-aside-col"
         :sections="sections"
         :active-section="activeSection"
         :done-map="doneMap"
@@ -409,18 +410,20 @@ watch(
           <el-divider content-position="left">
             <span class="divider-label">刷题 · 在线练习</span>
           </el-divider>
-          <div class="inline-oj-layout">
-            <OjDsHintCard
-              v-if="inlineOjRef?.problem"
-              class="inline-oj-hint inline-oj-hint--ds"
-              :problem="inlineOjRef.problem"
-              :language="inlineOjRef.language"
-            />
+          <div class="inline-oj-editor">
             <InlineOjPractice
               ref="inlineOjRef"
               :main="current.main"
               :related="current.related"
               class="inline-oj-center"
+            />
+          </div>
+          <div class="inline-oj-hints">
+            <OjDsHintCard
+              v-if="inlineOjRef?.problem"
+              class="inline-oj-hint inline-oj-hint--ds"
+              :problem="inlineOjRef.problem"
+              :language="inlineOjRef.language"
             />
             <OjCodeHintCard
               v-if="inlineOjRef?.problem"
@@ -433,35 +436,37 @@ watch(
         </section>
 
         <div v-if="current" class="pager">
-            <el-button :disabled="!prevSection" @click="prevSection && selectSection(prevSection.id)">
-              <el-icon><ArrowLeft /></el-icon>
-              上一节
-            </el-button>
-            <span v-if="prevSection" class="pager-hint">{{ shortTitle(prevSection) }}</span>
-            <span class="pager-spacer" />
-            <span v-if="nextSection" class="pager-hint">{{ shortTitle(nextSection) }}</span>
-            <el-button :disabled="!nextSection" @click="nextSection && selectSection(nextSection.id)">
-              下一节
-              <el-icon><ArrowRight /></el-icon>
-            </el-button>
+          <el-button :disabled="!prevSection" @click="prevSection && selectSection(prevSection.id)">
+            <el-icon><ArrowLeft /></el-icon>
+            上一节
+          </el-button>
+          <span v-if="prevSection" class="pager-hint">{{ shortTitle(prevSection) }}</span>
+          <span class="pager-spacer" />
+          <span v-if="nextSection" class="pager-hint">{{ shortTitle(nextSection) }}</span>
+          <el-button :disabled="!nextSection" @click="nextSection && selectSection(nextSection.id)">
+            下一节
+            <el-icon><ArrowRight /></el-icon>
+          </el-button>
         </div>
       </div>
 
-      <RecommendedResourcesPanel
-        v-if="moduleKey === 'graph' && isLoggedIn"
-        class="graph-rec-panel"
-        module-key="graph"
-        title="图论 · 个性化资源推荐（ch06-graph / graph-bfs-dfs）"
-      />
+      <div class="module-layout-side">
+        <RecommendedResourcesPanel
+          v-if="moduleKey === 'graph' && isLoggedIn"
+          class="graph-rec-panel"
+          module-key="graph"
+          title="图论 · 个性化资源推荐（ch06-graph / graph-bfs-dfs）"
+        />
 
-      <AiTutorPanel
-        ref="aiTutorRef"
-        :module-key="moduleKey"
-        :module-title="config.heroTitle"
-        :chapter-tag="config.chapterTag"
-        :module-intro="config.intro"
-        :section="current ?? null"
-      />
+        <AiTutorPanel
+          ref="aiTutorRef"
+          :module-key="moduleKey"
+          :module-title="config.heroTitle"
+          :chapter-tag="config.chapterTag"
+          :module-intro="config.intro"
+          :section="current ?? null"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -542,15 +547,28 @@ watch(
   margin-top: 16px;
 }
 
-.inline-oj-layout {
+/* OJ 编译器整行显示，充分利用横向空间 */
+.inline-oj-editor {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.inline-oj-editor .inline-oj-center {
+  min-width: 0;
+  width: 100%;
+}
+
+/* 两个提示卡片：在 OJ 编译器下方，左右两栏 */
+.inline-oj-hints {
   display: grid;
-  grid-template-columns: 220px 1fr 220px;
+  grid-template-columns: 1fr 1fr;
   gap: 16px;
+  margin-top: 16px;
   width: 100%;
 }
 
 .inline-oj-hint {
-  max-height: calc(100vh - var(--alp-header-height, 60px) - 120px);
+  max-height: 320px;
   overflow: hidden;
 }
 
@@ -575,12 +593,8 @@ watch(
   overflow-y: auto;
 }
 
-.inline-oj-center {
-  min-width: 0;
-}
-
 @media (max-width: 1100px) {
-  .inline-oj-layout {
+  .inline-oj-hints {
     grid-template-columns: 1fr;
   }
 

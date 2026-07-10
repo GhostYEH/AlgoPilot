@@ -7,7 +7,7 @@ import {
   needsOnboarding,
   ONBOARDING_ALLOWED_ROUTE_NAMES,
 } from '@/composables/usePersonaGate'
-import { isLoggedIn } from '@/stores/auth'
+import { isLoggedIn, isTeacher } from '@/stores/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -65,12 +65,6 @@ const router = createRouter({
           meta: { title: '多智能体工作台' },
         },
         {
-          path: 'a3-demo',
-          name: 'a3-demo',
-          component: () => import('@/views/A3DemoDashboard.vue'),
-          meta: { title: '比赛演示', public: true },
-        },
-        {
           path: 'teacher-dashboard',
           name: 'teacher-dashboard',
           component: () => import('@/views/TeacherDashboardView.vue'),
@@ -112,6 +106,9 @@ router.beforeEach(async (to) => {
   if (!isLoggedIn.value) {
     if (to.meta.public) return true
     return { name: 'login', query: { redirect: to.fullPath } }
+  }
+  if (to.name === 'teacher-dashboard' && !isTeacher.value) {
+    return { name: 'home' }
   }
   const routeName = typeof to.name === 'string' ? to.name : ''
   if (ONBOARDING_ALLOWED_ROUTE_NAMES.has(routeName)) return true

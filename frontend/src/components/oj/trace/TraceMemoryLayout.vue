@@ -81,7 +81,7 @@ function isHot(id: string) {
   margin-bottom: 12px;
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid color-mix(in srgb, #38bdf8 25%, var(--alp-color-border));
+  border: 1px solid color-mix(in srgb, #22d3ee 25%, var(--alp-color-border));
   background: color-mix(in srgb, #0f172a 6%, var(--alp-bg-soft-block));
 }
 
@@ -104,8 +104,8 @@ function isHot(id: string) {
   font-weight: 500;
   padding: 1px 6px;
   border-radius: 4px;
-  background: color-mix(in srgb, #38bdf8 15%, transparent);
-  color: #38bdf8;
+  background: color-mix(in srgb, #22d3ee 15%, transparent);
+  color: #22d3ee;
 }
 
 .trace-memory-regions {
@@ -145,7 +145,7 @@ function isHot(id: string) {
 }
 
 .memory-slot--stack {
-  border-left: 3px solid #38bdf8;
+  border-left: 3px solid #22d3ee;
 }
 
 .memory-slot--heap {
@@ -183,7 +183,7 @@ function isHot(id: string) {
 }
 
 .slot-addr {
-  color: #38bdf8;
+  color: #22d3ee;
   font-variant-numeric: tabular-nums;
 }
 

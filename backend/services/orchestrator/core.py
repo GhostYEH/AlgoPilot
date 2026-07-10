@@ -81,10 +81,26 @@ def _profile_to_response(
     user_id: int | None = None,
 ) -> PersonaProfileResponse:
     if row is None:
+        baseline = PersonaDimensions(
+            knowledge_base="默认按算法初学者基线评估，待结合课程进度补充",
+            cognitive_style="默认采用图示、文字和动手练习混合方式，待访谈确认",
+            coding_ability="默认按可完成入门代码练习评估，待 OJ 记录校准",
+            learning_goals="默认目标为掌握数据结构与算法基础，待访谈确认",
+            error_preference="暂无稳定错因偏好，待 OJ 与 Trace 记录识别",
+            grit_level="默认提供分步提示与适中挑战，待学习行为校准",
+        )
         return PersonaProfileResponse(
-            summary="",
-            dimensions=PersonaDimensions(),
+            summary="尚未完成画像访谈，当前使用可运行的六维初始画像。",
+            dimensions=baseline,
             updated_at=None,
+            dimension_scores={key: 4 for key in PersonaDimensions.model_fields},
+            dimension_confidence={
+                key: "inferred" for key in PersonaDimensions.model_fields
+            },
+            coverage_missing=list(PersonaDimensions.model_fields),
+            fallback=True,
+            fallback_reason="No stored persona; using deterministic baseline",
+            generated_by="BaselinePersonaFallback",
         )
     raw = dict(row.dimensions or {})
     persona_fallback = bool(raw.pop("_persona_fallback", False))
@@ -289,6 +305,21 @@ class Orchestrator:
         if row is None:
             row = StudentProfile(user_id=user.id, dimensions={}, summary="")
             db.add(row)
+        for signal in body.signals:
+            if signal.event_type != "section_done" or not signal.module_key:
+                continue
+            try:
+                from services.memory.memory_service import record_section_completion
+
+                record_section_completion(
+                    db,
+                    user.id,
+                    module_key=signal.module_key,
+                    section_id=signal.detail or "unknown",
+                )
+            except Exception:
+                logger.warning("记录小节完成学习记忆失败", exc_info=True)
+                db.rollback()
         dims = PersonaDimensions.from_storage(row.dimensions or {})
         summary, new_dims = apply_learning_patch(row.summary or "", dims, body)
         payload = new_dims.model_dump()
@@ -770,15 +801,39 @@ class Orchestrator:
     ) -> GeneratedResourceItem:
         row = db.get(StudentProfile, user.id)
         profile_block = _format_profile_block(row, db=db, user_id=user.id)
-        title, content, gen_meta = await resource_workflow.run(
-            body.resource_type,
-            topic=body.topic,
-            profile_block=profile_block,
-            module_key=body.module_key,
-            focus_hint=body.focus_hint,
-            emit=emit,
-            pipeline_ctx=pipeline_ctx,
-        )
+        from core.config import settings
+
+        if not settings.llm_configured:
+            return await self.generate_resource_fallback(
+                db,
+                user,
+                body,
+                fallback_reason=llm_unavailable_reason(),
+                emit=emit,
+                pipeline_ctx=pipeline_ctx,
+            )
+        try:
+            title, content, gen_meta = await resource_workflow.run(
+                body.resource_type,
+                topic=body.topic,
+                profile_block=profile_block,
+                module_key=body.module_key,
+                focus_hint=body.focus_hint,
+                emit=emit,
+                pipeline_ctx=pipeline_ctx,
+            )
+        except Exception as exc:
+            if not is_llm_related_error(exc):
+                raise
+            db.rollback()
+            return await self.generate_resource_fallback(
+                db,
+                user,
+                body,
+                fallback_reason=str(exc)[:300] or llm_unavailable_reason(),
+                emit=emit,
+                pipeline_ctx=pipeline_ctx,
+            )
         agent_name = agent_for_resource(body.resource_type)
         meta = {
             "topic": body.topic,
@@ -1126,7 +1181,7 @@ class Orchestrator:
         module_key: str = "",
         focus_hint: str = "",
     ) -> AsyncIterator[str]:
-        """SSE：按并行阶段生成比赛展示资源，无依赖的 Agent 并行执行。
+        """SSE：按并行阶段生成多类型学习资源，无依赖的 Agent 并行执行。
 
         阶段拓扑（来自 README DAG）：
           Phase 1: document            ← 无依赖

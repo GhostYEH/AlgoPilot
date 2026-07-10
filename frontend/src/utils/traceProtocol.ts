@@ -2,13 +2,24 @@ import type { TraceVarSnapshot } from '@/types/codeTrace'
 
 export type SequenceViewHint =
   | 'vector'
+  | 'array'
+  | 'list'
+  | 'forward_list'
   | 'deque'
   | 'stack'
   | 'queue'
   | 'priority_queue'
   | 'tree_build_queue'
 
-export type AssociativeViewHint = 'map' | 'set' | 'unordered_map' | 'unordered_set'
+export type AssociativeViewHint =
+  | 'map'
+  | 'multimap'
+  | 'set'
+  | 'multiset'
+  | 'unordered_map'
+  | 'unordered_multimap'
+  | 'unordered_set'
+  | 'unordered_multiset'
 
 export type AssociativeEntry = { key: string; value: string | null }
 
@@ -40,6 +51,9 @@ export function sequenceViewHint(snap: TraceVarSnapshot): SequenceViewHint {
   const hint = (snap as TraceVarSnapshot & { view_hint?: string }).view_hint
   if (
     hint === 'vector' ||
+    hint === 'array' ||
+    hint === 'list' ||
+    hint === 'forward_list' ||
     hint === 'deque' ||
     hint === 'stack' ||
     hint === 'queue' ||
@@ -57,9 +71,13 @@ export function associativeViewHint(snap: TraceVarSnapshot): AssociativeViewHint
   const hint = (snap as TraceVarSnapshot & { view_hint?: string }).view_hint
   if (
     hint === 'map' ||
+    hint === 'multimap' ||
     hint === 'set' ||
+    hint === 'multiset' ||
     hint === 'unordered_map' ||
-    hint === 'unordered_set'
+    hint === 'unordered_multimap' ||
+    hint === 'unordered_set' ||
+    hint === 'unordered_multiset'
   ) {
     return hint
   }

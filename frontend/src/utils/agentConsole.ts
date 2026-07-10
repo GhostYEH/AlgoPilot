@@ -286,7 +286,7 @@ export function resourceBootstrapLines(topic: string): AgentConsoleLine[] {
       id: nextLogId(),
       icon: '💡',
       agent: 'PlannerAgent',
-      message: '评估完成：结合 error_preference 与 learning_goals 调度比赛展示资源 Agent…',
+      message: '评估完成：结合 error_preference 与 learning_goals 调度个性化资源 Agent…',
       status: 'running',
       ts: Date.now(),
       indent: 0,

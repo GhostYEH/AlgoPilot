@@ -40,16 +40,16 @@ const stepHint = computed(() => {
     return ['当前元素入栈', '与栈顶比较，破坏单调则 pop', '被 pop 的下标得到答案', ''][i] ?? ''
   }
   if (s === 'daily-temperatures') {
-    return ['栈存下标，单调递增对应温度', 'T[i] 更大：弹栈写等待天数', '栈内剩余无更高温', ''][i] ?? ''
+    return ['单调递减栈存下标', '74>73：弹0，ans[0]=1', '75>74：弹1，ans[1]=1', '71,69入栈，剩余无更高温'][i] ?? ''
   }
   if (s === 'next-greater') {
     return ['从 nums2 末尾向左扫', '弹栈直到栈顶 > 当前', 'map 记录下一个更大', ''][i] ?? ''
   }
   if (s === 'largest-rectangle') {
-    return ['递增栈存高度下标', '遇更小 h：pop 算宽度', '更新 maxArea', ''][i] ?? ''
+    return ['递增栈存高度下标', '5,6 依次入栈', 'h=2 触发 pop 5,6', 'maxArea = 10'][i] ?? ''
   }
   if (s === 'trapping-rain') {
-    return ['形成凹槽：左右墙高于底', '底为栈顶高度', '累加 (min(墙)-底)×宽', ''][i] ?? ''
+    return ['柱状图，求能接多少雨水', '凹槽①：(min(1,2)-0)×1 = 1', '凹槽②：(2-1)+(2-0)+(2-1) = 4', '凹槽③：(min(2,2)-1)×1 = 1，总计 6'][i] ?? ''
   }
   return ''
 })
@@ -57,12 +57,38 @@ const stepHint = computed(() => {
 const stackTop = computed(() => {
   const frames: Record<string, string[]> = {
     theory: ['4', '2', '1'],
-    'daily-temperatures': ['1', '1,2', '2,3', '3'],
-    'next-greater': ['1', '3,4', '4', '2'],
-    'largest-rectangle': ['0,1', '1,2', '2', ''],
-    'trapping-rain': ['1,3', '3', '3,4', ''],
+    'daily-temperatures': ['0', '1', '2', '2,3,4'],
+    'next-greater': ['2', '4', '4,3', '4,3,1'],
+    'largest-rectangle': ['0', '1,2', '1,4', '1,4,5'],
+    'trapping-rain': ['—', '3', '7', '7,8,10'],
   }
   return (frames[props.sectionId] ?? [])[step.value] ?? ''
+})
+
+const rainCols = computed(() => {
+  const heights = [0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1]
+  const s = step.value
+  const scale = 20
+  const base = 12
+  // 三个凹槽：左墙、右墙、水位线、有水的列
+  const slots = [
+    { minStep: 1, left: 1, right: 3, level: 1, waterIndices: new Set([2]) },
+    { minStep: 2, left: 3, right: 7, level: 2, waterIndices: new Set([4, 5, 6]) },
+    { minStep: 3, left: 8, right: 10, level: 2, waterIndices: new Set([9]) },
+  ]
+  return heights.map((h, i) => {
+    const barH = base + h * scale
+    let waterH = 0
+    let isWall = false
+    let isHot = false
+    for (const slot of slots) {
+      if (s >= slot.minStep) {
+        if (i === slot.left || i === slot.right) { isWall = true; isHot = true }
+        if (slot.waterIndices.has(i)) { waterH = Math.max(waterH, (slot.level - h) * scale) }
+      }
+    }
+    return { height: h, barH, waterH, isWall, isHot, index: i }
+  })
 })
 </script>
 
@@ -116,10 +142,13 @@ const stackTop = computed(() => {
         v-for="(t, i) in ['73', '74', '75', '71', '69']"
         :key="i"
         class="cell bar-cell"
-        :class="{ hot: step >= 1 && i === 2, done: step >= 2 && i < 2 }"
-        :style="{ height: 20 + i * 10 + 'px' }"
+        :class="{
+          hot: (step === 1 && i <= 1) || (step === 2 && i <= 2) || (step === 3 && i >= 2),
+          done: (step >= 2 && i < 2) || (step === 3 && i >= 3),
+        }"
+        :style="{ height: (Number(t) - 64) * 4 + 'px' }"
       >{{ t }}</span>
-      <p v-if="stackTop" class="sub">栈顶下标: {{ stackTop }}</p>
+      <p v-if="stackTop" class="sub">栈下标: {{ stackTop }}</p>
     </div>
 
     <!-- 496：nums2 + 栈 -->
@@ -141,22 +170,32 @@ const stackTop = computed(() => {
         v-for="(h, i) in [2, 1, 5, 6, 2, 3]"
         :key="i"
         class="cell bar-cell"
-        :class="{ hot: step >= 1 && i === 2, pop: step >= 2 && i === 2 }"
+        :class="{
+          hot: (step === 1 && i === 2) || (step === 2 && (i === 2 || i === 3)),
+          pop: step === 2 && (i === 2 || i === 3),
+        }"
         :style="{ height: 12 + h * 12 + 'px' }"
       >{{ h }}</span>
-      <p v-if="step >= 2" class="sub">pop h=5，宽=?</p>
+      <p v-if="step === 1" class="sub">递增栈：5 入栈</p>
+      <p v-if="step === 2" class="sub">h=2 触发 pop：5,6 出栈，面积 10</p>
+      <p v-if="step === 3" class="sub">maxArea = 10</p>
     </div>
 
     <!-- 42：接雨水 -->
     <div v-else-if="sectionId === 'trapping-rain'" class="panel bars rain">
-      <div v-for="(h, i) in [0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1]" :key="i" class="col">
-        <span v-if="step >= 1 && i >= 3 && i <= 6" class="water" />
+      <div v-for="col in rainCols" :key="col.index" class="col">
+        <span
+          v-if="col.waterH > 0"
+          class="water"
+          :style="{ height: col.waterH + 'px' }"
+        />
         <span
           class="cell bar-cell"
-          :class="{ hot: step >= 0 && (i === 3 || i === 6), wall: step >= 1 && (i === 3 || i === 6) }"
-          :style="{ height: 8 + h * 10 + 'px' }"
-        />
+          :class="{ hot: col.isHot, wall: col.isWall }"
+          :style="{ height: col.barH + 'px' }"
+        >{{ col.height > 0 ? col.height : '' }}</span>
       </div>
+      <p v-if="stackTop && stackTop !== '—'" class="sub">栈: {{ stackTop }}</p>
     </div>
   </SteppedAnimShell>
 </template>
@@ -201,15 +240,13 @@ const stackTop = computed(() => {
   gap: 4px;
 }
 .bars {
-  flex-direction: column;
-  align-items: center;
+  flex-direction: row;
+  align-items: flex-end;
   gap: 6px;
 }
 .bars.hist,
 .bars.rain {
-  flex-direction: row;
-  align-items: flex-end;
-  min-height: 88px;
+  min-height: 120px;
 }
 .rain .col {
   position: relative;
@@ -217,18 +254,26 @@ const stackTop = computed(() => {
   flex-direction: column;
   justify-content: flex-end;
   align-items: center;
-  width: 14px;
+  width: 24px;
+  margin: 0 2px;
+}
+.rain .cell.bar-cell {
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  font-size: 10px;
 }
 .water {
-  position: absolute;
-  bottom: 0;
   width: 100%;
-  height: 28px;
-  background: rgba(59, 130, 246, 0.35);
+  background: rgba(59, 130, 246, 0.45);
   border-radius: 2px 2px 0 0;
 }
 .bar-cell.wall {
   outline: 2px solid #2563eb;
+}
+.cell.done {
+  border-color: #4ade80;
+  background: rgba(74, 222, 128, 0.15);
 }
 .cell.pop {
   opacity: 0.35;
@@ -250,5 +295,7 @@ const stackTop = computed(() => {
   font-size: 10px;
   color: var(--alp-color-primary, #2563eb);
   font-weight: 600;
+  width: 100%;
+  text-align: center;
 }
 </style>

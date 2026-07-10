@@ -195,7 +195,7 @@ def test_oj_struggle_below_threshold_observation_only(auth_headers: dict[str, st
     )
     _assert_struggle_closed_loop(body, strong=False)
     joined_logs = " ".join(
-        f"{l.get('action', '')} {l.get('detail', '')}" for l in body.get("agent_logs") or []
+        f"{log.get('action', '')} {log.get('detail', '')}" for log in body.get("agent_logs") or []
     )
     assert "未达降级阈值" in joined_logs or "学情监测" in joined_logs
     assert not body.get("remediation_module_key")

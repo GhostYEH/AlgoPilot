@@ -1,38 +1,38 @@
 /**
- * 登录 / 注册页公共样式（AuthPageFrame + 表单卡片）
+ * 登录 / 注册页公共样式 — Algorithmic Cosmos 风格
  */
 
 .auth-card {
   width: 100%;
   max-width: 440px;
-  padding: 28px 28px 26px;
-  border-radius: 16px;
-  border: 1px solid var(--alp-color-border);
+  padding: 32px 32px 28px;
+  border-radius: 18px;
+  border: 1px solid var(--alp-color-border-strong);
   background: linear-gradient(
     165deg,
-    rgba(30, 41, 59, 0.92) 0%,
-    rgba(15, 23, 42, 0.96) 100%
+    rgba(20, 30, 55, 0.92) 0%,
+    rgba(10, 17, 40, 0.96) 100%
   );
   box-shadow:
     var(--alp-shadow-card),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(16px);
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
 }
 
 .auth-card-kicker {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 12px;
-  padding: 4px 10px;
+  margin-bottom: 14px;
+  padding: 5px 12px;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--alp-color-primary);
   background: var(--alp-color-primary-soft);
-  border: 1px solid rgba(56, 189, 248, 0.28);
-  border-radius: 999px;
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  border-radius: var(--alp-radius-pill);
 }
 
 .auth-card-title {
@@ -44,10 +44,10 @@
 }
 
 .auth-card-sub {
-  margin: 0 0 22px;
+  margin: 0 0 24px;
   font-size: 14px;
   color: var(--alp-color-muted);
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
 .auth-form {
@@ -55,23 +55,24 @@
 }
 
 .auth-form .el-form-item {
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 
 .auth-form .btn-row {
   margin-bottom: 0;
-  margin-top: 6px;
+  margin-top: 8px;
 }
 
 .auth-form .submit {
   width: 100%;
-  height: 44px;
+  height: 46px;
   font-size: 15px;
   font-weight: 600;
   letter-spacing: 0.02em;
   border: none;
-  background: linear-gradient(135deg, var(--alp-color-primary), #0ea5e9);
-  box-shadow: 0 4px 20px rgba(56, 189, 248, 0.35);
+  border-radius: 12px;
+  background: var(--alp-gradient-accent);
+  box-shadow: 0 4px 24px rgba(34, 211, 238, 0.3);
   transition:
     transform var(--alp-transition-fast),
     box-shadow var(--alp-transition-fast),
@@ -79,8 +80,8 @@
 }
 
 .auth-form .submit:hover {
-  filter: brightness(1.06);
-  box-shadow: 0 6px 28px rgba(56, 189, 248, 0.45);
+  filter: brightness(1.1);
+  box-shadow: 0 6px 32px rgba(34, 211, 238, 0.4);
   transform: translateY(-1px);
 }
 
@@ -89,7 +90,7 @@
 }
 
 .auth-card-footer {
-  margin-top: 22px;
+  margin-top: 24px;
   padding-top: 18px;
   border-top: 1px solid var(--alp-color-border);
   font-size: 13px;
@@ -109,14 +110,14 @@
 }
 
 .auth-card-footer .link:hover {
-  color: #7dd3fc;
+  color: #67e8f9;
   text-decoration: underline;
 }
 
 .auth-card-footer .sep {
   margin: 0 10px;
   color: var(--alp-color-muted);
-  opacity: 0.45;
+  opacity: 0.4;
 }
 
 .auth-form .el-form-item__label {
@@ -127,7 +128,7 @@
 }
 
 .auth-form .el-input__wrapper {
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--alp-bg-code-ish) !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   transition:
@@ -138,13 +139,13 @@
 .auth-form .el-input__wrapper:hover {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 0 0 1px rgba(56, 189, 248, 0.2);
+    0 0 0 1px rgba(34, 211, 238, 0.18);
 }
 
 .auth-form .el-input__wrapper.is-focus {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 0 0 2px rgba(56, 189, 248, 0.35);
+    0 0 0 2px rgba(34, 211, 238, 0.3);
 }
 
 .auth-form .el-input__prefix {

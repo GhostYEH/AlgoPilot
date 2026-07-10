@@ -8,6 +8,64 @@
 @import './auth-page.css';
 @import './page-transitions.css';
 @import './games.css';
+
 html.dark {
   color-scheme: dark;
+}
+
+/* ── 全局排版基准 ── */
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei',
+    system-ui, -apple-system, 'Segoe UI', sans-serif;
+  line-height: 1.6;
+  color: var(--alp-color-text);
+  background: var(--alp-bg-page);
+}
+
+/* ── 选区 ── */
+::selection {
+  background: rgba(var(--alp-color-primary-rgb), 0.25);
+  color: #fff;
+}
+
+html:not(.dark) ::selection {
+  background: rgba(8, 145, 178, 0.2);
+  color: #0f172a;
+}
+
+/* ── 焦点环 ── */
+:focus-visible {
+  outline: 2px solid var(--alp-color-primary);
+  outline-offset: 2px;
+}
+
+/* ── Element Plus 全局覆盖 ── */
+.el-card {
+  --el-card-border-color: var(--alp-color-border);
+}
+
+.el-button--primary {
+  --el-button-bg-color: var(--alp-color-primary);
+  --el-button-border-color: var(--alp-color-primary);
+  --el-button-hover-bg-color: #5eead4;
+  --el-button-hover-border-color: #5eead4;
+  --el-button-active-bg-color: #0f766e;
+  --el-button-active-border-color: #0f766e;
+}
+
+.el-progress__text {
+  color: var(--alp-color-text) !important;
+}
+
+.el-tag--info {
+  --el-tag-bg-color: var(--alp-bg-soft-block);
+  --el-tag-border-color: var(--alp-color-border);
+  --el-tag-text-color: var(--alp-color-muted);
 }

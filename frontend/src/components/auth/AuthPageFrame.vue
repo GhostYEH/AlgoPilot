@@ -50,7 +50,7 @@ function goHome() {
         <span class="logo" aria-hidden="true">AL</span>
         <span class="brand-text">
           <span class="brand-title">算法智能学习平台</span>
-          <span class="brand-sub">软件杯 · 个性化学习</span>
+          <span class="brand-sub">个性化算法学习平台</span>
         </span>
       </button>
       <el-button class="home-btn" type="primary" plain round size="small" @click="goHome">
@@ -108,33 +108,40 @@ function goHome() {
 .auth-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.55;
+  filter: blur(100px);
+  opacity: 0.5;
 }
 
 .auth-orb-a {
-  width: 420px;
-  height: 420px;
-  top: -120px;
-  left: -80px;
-  background: rgba(56, 189, 248, 0.22);
+  width: 480px;
+  height: 480px;
+  top: -140px;
+  left: -100px;
+  background: rgba(34, 211, 238, 0.18);
+  animation: orbFloat 12s ease-in-out infinite alternate;
 }
 
 .auth-orb-b {
-  width: 380px;
-  height: 380px;
-  bottom: -100px;
-  right: 10%;
-  background: rgba(129, 140, 248, 0.18);
+  width: 400px;
+  height: 400px;
+  bottom: -120px;
+  right: 8%;
+  background: rgba(167, 139, 250, 0.15);
+  animation: orbFloat 10s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes orbFloat {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(20px, -15px) scale(1.05); }
 }
 
 .auth-grid {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
-  background-size: 48px 48px;
+    linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+  background-size: 52px 52px;
   mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 20%, transparent 75%);
 }
 
@@ -173,15 +180,15 @@ function goHome() {
   width: 42px;
   height: 42px;
   border-radius: 12px;
-  background: linear-gradient(135deg, var(--alp-color-primary), var(--alp-color-accent));
-  color: #0f172a;
+  background: var(--alp-gradient-accent);
+  color: #fff;
   font-weight: 800;
   font-size: 14px;
   display: grid;
   place-items: center;
   letter-spacing: 0.5px;
   flex-shrink: 0;
-  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.35);
+  box-shadow: 0 4px 20px rgba(34, 211, 238, 0.3);
 }
 
 .brand-text {
@@ -192,7 +199,7 @@ function goHome() {
 }
 
 .brand-title {
-  font-weight: 600;
+  font-weight: 700;
   font-size: 15px;
 }
 
@@ -228,7 +235,7 @@ function goHome() {
   margin: 0 0 12px;
   font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--alp-color-primary);
 }
@@ -236,10 +243,14 @@ function goHome() {
 .hero-title {
   margin: 0 0 14px;
   font-size: clamp(1.75rem, 3.5vw, 2.25rem);
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1.2;
   letter-spacing: -0.03em;
   max-width: 14ch;
+  background: var(--alp-gradient-text);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .hero-desc {
@@ -270,11 +281,11 @@ function goHome() {
 .feature-icon {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
   background: var(--alp-color-primary-soft);
-  border: 1px solid rgba(56, 189, 248, 0.25);
+  border: 1px solid rgba(34, 211, 238, 0.2);
   color: var(--alp-color-primary);
   flex-shrink: 0;
 }
@@ -283,11 +294,11 @@ function goHome() {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 14px 16px;
-  border-radius: 12px;
+  padding: 16px 18px;
+  border-radius: var(--alp-radius-card);
   border: 1px solid var(--alp-color-border);
   background: var(--alp-bg-code-ish);
-  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-family: 'Cascadia Code', ui-monospace, Consolas, monospace;
   font-size: 12px;
   line-height: 1.55;
   max-width: 360px;

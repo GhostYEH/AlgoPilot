@@ -34,7 +34,8 @@ def _build_key_variable_changes(
     bug_step_index: int,
     max_items: int = 6,
 ) -> list[VarChangeItem]:
-    out: list[VarChangeItem] = []
+    context_items: list[VarChangeItem] = []
+    bug_items: list[VarChangeItem] = []
     start = max(0, bug_step_index - 3)
     end = min(len(steps), bug_step_index + 2)
     for i in range(start, end):
@@ -45,18 +46,24 @@ def _build_key_variable_changes(
         for k in changed[:4]:
             before_snap = prev_vars.get(k) if isinstance(prev_vars, dict) else None
             after_snap = vars_dict.get(k) if isinstance(vars_dict, dict) else None
-            out.append(
-                VarChangeItem(
-                    step_index=i,
-                    line=int(s.get("line", 0)),
-                    variable_name=k,
-                    before=_format_snap_brief(before_snap) if before_snap else "—",
-                    after=_format_snap_brief(after_snap) if after_snap else "?",
-                )
+            item = VarChangeItem(
+                step_index=i,
+                line=int(s.get("line", 0)),
+                variable_name=k,
+                before=_format_snap_brief(before_snap) if before_snap else "—",
+                after=_format_snap_brief(after_snap) if after_snap else "?",
             )
-        if len(out) >= max_items:
-            break
-    return out[:max_items]
+            if i == bug_step_index:
+                bug_items.append(item)
+            else:
+                context_items.append(item)
+
+    # 错误步骤的变量证据必须保留，不能被前置上下文挤出报告。
+    kept_context = context_items[: max(0, max_items - len(bug_items))]
+    return sorted(
+        [*kept_context, *bug_items[:max_items]],
+        key=lambda item: (item.step_index, item.variable_name),
+    )
 
 
 def _build_trace_steps_brief(
@@ -139,27 +146,27 @@ def _fallback_cause_and_fix(
         for k in changed:
             if k in pointer_keys:
                 return (
-                    f"第 {line} 步（Step {bug_step_index}）起变量 {k} 未按预期推进，"
-                    f"可能导致逻辑偏差或漏解。"
-                    f"请检查 {k} 的更新条件是否在正确的分支中执行，以及循环不变量是否保持。",
-                    f"检查 {k} 的更新条件是否正确（如 while 循环中是否遗漏了 {k} 的递增），"
-                    f"确保循环不变量在每步保持。",
+                    f"轨迹在 Step {bug_step_index + 1}（代码第 {line} 行）记录到变量 {k} 更新。"
+                    "仅凭该次状态变化还不能证明它就是根因，需要结合失败输入与题目不变量核对"
+                    f" {k} 的期望值和实际值。",
+                    f"在代码第 {line} 行前后增加边界输入的逐步核对，确认 {k} 每次更新后的值"
+                    "是否满足题目不变量；证据不足时不要直接改动无关逻辑。",
                 )
         if changed:
             var_list = "、".join(changed[:4])
             return (
-                f"第 {line} 步（Step {bug_step_index}）处 "
-                f"{var_list} 状态异常，与题目要求不一致。"
-                f"请对照题目不变量，检查该步的赋值或判断逻辑。",
-                f"对照题目不变量，检查第 {line} 行 {var_list} 的赋值或判断逻辑是否正确。"
-                f"建议用可视化调试逐步检查变量变化。",
+                f"轨迹在 Step {bug_step_index + 1}（代码第 {line} 行）记录到 "
+                f"{var_list} 发生变化，但当前规则无法从轨迹本身推导出唯一的正确期望值，"
+                "因此不能把该步直接判定为确定根因。",
+                f"使用报告中的失败用例，在代码第 {line} 行核对 {var_list} 的实际值与手算期望值；"
+                "确认首次偏离后再修改对应赋值或分支条件。",
             )
 
     return (
-        f"在 {len(compressed_lines)} 个有效执行步中检测到逻辑偏差。"
-        f"请使用可视化调试逐步检查变量变化，对照题目要求定位错误。",
-        "建议使用可视化调试逐步检查变量变化，对照题目要求定位错误。"
-        "重点关注循环边界、指针更新和边界条件。",
+        f"当前仅获得 {len(compressed_lines)} 个有效执行步，尚不足以从规则中唯一确定根因。"
+        "报告保留失败用例和轨迹事实，但不会把任意中间步骤描述为已证实错误。",
+        "先用最小失败用例手算期望状态，再逐步对照 Trace；优先检查首次出现差异的"
+        "循环边界、指针更新或状态转移。",
     )
 
 
@@ -205,6 +212,9 @@ def generate_trace_diagnosis_report(
     tutoring=None,
     source: str = "fallback",
     fix_suggestion: str = "",
+    trace_case_reproduced: bool = False,
+    trace_case_verdict: str = "",
+    trace_case_message: str = "",
 ) -> TraceDiagnosisReport:
     known = diagnose_known_error_pattern(
         slug=slug,
@@ -237,7 +247,7 @@ def generate_trace_diagnosis_report(
 
     compressed_lines, _ = compress_trace_steps_to_text(trace_steps)
     possible_cause = ""
-    fix_suggestion = ""
+    resolved_fix_suggestion = fix_suggestion
     error_category = ""
     error_category_label = ""
     why_failed = ""
@@ -246,7 +256,7 @@ def generate_trace_diagnosis_report(
 
     if known:
         possible_cause = str(known["detailed_analysis"])
-        fix_suggestion = str(known["fix_suggestion"])
+        resolved_fix_suggestion = str(known["fix_suggestion"])
         error_category = str(known["error_type"])
         error_category_label = str(known["error_type_label"])
         why_failed = str(known["why_failed"])
@@ -254,9 +264,9 @@ def generate_trace_diagnosis_report(
         intervention_suggestion = str(known["intervention_suggestion"])
     elif source == "llm" and detailed_analysis:
         possible_cause = detailed_analysis[:400]
-        # fix_suggestion 优先使用外部传入的 LLM 生成结果
-        if not fix_suggestion:
-            fix_suggestion = diagnosis_title[:200]
+        # 优先使用外部传入的 LLM 生成结果。
+        if not resolved_fix_suggestion:
+            resolved_fix_suggestion = diagnosis_title[:200]
         # 为 LLM 诊断生成 why_failed
         if bug_step_index < len(trace_steps):
             s = trace_steps[bug_step_index]
@@ -273,16 +283,44 @@ def generate_trace_diagnosis_report(
         possible_cause, fallback_fix = _fallback_cause_and_fix(
             judge_verdict, bug_step_index, trace_steps, compressed_lines
         )
-        if not fix_suggestion:
-            fix_suggestion = fallback_fix
+        if not resolved_fix_suggestion:
+            resolved_fix_suggestion = fallback_fix
 
     recommended_resources = []
     if tutoring and tutoring.recommended_resources:
         recommended_resources = tutoring.recommended_resources
 
-    path_rearrange_triggered = False
-    if tutoring and tutoring.path_adjustment_hint:
-        path_rearrange_triggered = "巩固" in tutoring.path_adjustment_hint or "插入" in tutoring.path_adjustment_hint
+    path_adjustment_hint = (
+        tutoring.path_adjustment_hint if tutoring and tutoring.path_adjustment_hint else ""
+    )
+    combined_intervention = " ".join(
+        part for part in (intervention_suggestion, path_adjustment_hint) if part
+    )
+
+    path_rearrange_triggered = bool(
+        path_adjustment_hint
+        and any(
+            keyword in path_adjustment_hint
+            for keyword in ("巩固", "插入", "前置", "重排")
+        )
+    )
+    if source.startswith("rule:"):
+        diagnosis_confidence = "high" if trace_case_reproduced else "medium"
+    elif source == "llm":
+        diagnosis_confidence = "medium" if trace_case_reproduced else "low"
+    else:
+        diagnosis_confidence = "low"
+
+    if trace_case_reproduced:
+        evidence_summary = (
+            f"服务端已重新执行目标失败用例并复现 {trace_case_verdict or judge_verdict}。"
+            "报告中的代码行、变量变化和执行步骤来自该次真实 Trace。"
+        )
+    else:
+        detail = trace_case_message[:120] if trace_case_message else "目标失败未在诊断阶段稳定复现"
+        evidence_summary = (
+            f"{detail}。当前报告仅提供静态或规则线索，不应把“可能原因”视为已证实根因。"
+        )
 
     return TraceDiagnosisReport(
         error_type=judge_verdict or "WA",
@@ -295,19 +333,20 @@ def generate_trace_diagnosis_report(
         error_step=error_step_brief,
         possible_cause=possible_cause,
         why_failed=why_failed or possible_cause,
-        fix_suggestion=fix_suggestion,
+        fix_suggestion=resolved_fix_suggestion,
         recommended_knowledge_points=recommended_knowledge_points,
-        intervention_suggestion=intervention_suggestion or (
-            tutoring.path_adjustment_hint if tutoring else ""
-        ),
+        intervention_suggestion=combined_intervention,
         learning_intervention_generated=bool(
-            intervention_suggestion
-            or (tutoring and (tutoring.recommended_resources or tutoring.path_adjustment_hint))
+            combined_intervention
+            or (tutoring and tutoring.recommended_resources)
         ),
         recommended_resources=recommended_resources,
         path_rearrange_triggered=path_rearrange_triggered,
         trace_steps=trace_steps_brief,
         source=source,
+        diagnosis_confidence=diagnosis_confidence,
+        evidence_summary=evidence_summary,
+        trace_case_reproduced=trace_case_reproduced,
         tutoring=tutoring,
     )
 
@@ -342,6 +381,7 @@ async def generate_llm_cause_and_fix(
         )
 
     user_body = (
+        f"## 题目描述\n{problem_description[:2000] or '（无描述）'}\n\n"
         f"## 判题结果：{judge_verdict}\n"
         f"## Bug 起源步：Step {bug_step_index}（代码第 {bug_line} 行）\n"
         f"## Bug 步变量变化：{bug_var_summary}\n\n"
@@ -368,9 +408,15 @@ async def generate_llm_cause_and_fix(
         if start >= 0 and end > start:
             text = text[start : end + 1]
         parsed = json.loads(text)
-        return (
-            str(parsed.get("possible_cause", ""))[:300],
-            str(parsed.get("fix_suggestion", ""))[:200],
-        )
+        cause = str(parsed.get("possible_cause", ""))[:300]
+        fix = str(parsed.get("fix_suggestion", ""))[:200]
+        evidence_text = f"{cause} {fix}"
+        from services.oj.ai_diagnosis import _mentions_code_line
+
+        if not _mentions_code_line(evidence_text, bug_line):
+            return "", ""
+        if bug_changed and not any(str(name) in evidence_text for name in bug_changed):
+            return "", ""
+        return cause, fix
     except Exception:
         return "", ""
