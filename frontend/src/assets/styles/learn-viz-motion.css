@@ -105,13 +105,13 @@
   100% {
     box-shadow:
       0 4px 14px rgba(0, 0, 0, 0.28),
-      0 0 0 4px color-mix(in srgb, var(--alp-color-primary, #22d3ee) 20%, transparent);
+      0 0 0 4px color-mix(in srgb, var(--alp-color-primary, #3a8a9e) 20%, transparent);
   }
 
   50% {
     box-shadow:
       0 6px 18px rgba(0, 0, 0, 0.32),
-      0 0 0 7px color-mix(in srgb, var(--alp-color-primary, #22d3ee) 32%, transparent);
+      0 0 0 7px color-mix(in srgb, var(--alp-color-primary, #3a8a9e) 32%, transparent);
   }
 }
 
@@ -216,11 +216,11 @@
 @keyframes lv-deque-active {
   0%,
   100% {
-    box-shadow: 0 0 0 4px color-mix(in srgb, #a78bfa 12%, transparent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, #7a6e9e 12%, transparent);
   }
 
   50% {
-    box-shadow: 0 0 0 6px color-mix(in srgb, #a78bfa 22%, transparent);
+    box-shadow: 0 0 0 6px color-mix(in srgb, #7a6e9e 22%, transparent);
   }
 }
 

@@ -122,7 +122,7 @@ const label = computed(() => {
           stroke-width="2.5"
           stroke-linecap="round"
         />
-        <circle class="pulse-dot" cx="100" cy="58" r="5" fill="#22c55e" />
+        <circle class="pulse-dot" cx="100" cy="58" r="5" fill="#4a8a5e" />
       </svg>
     </div>
 
@@ -548,7 +548,7 @@ const label = computed(() => {
 }
 
 .ring-dot--fast {
-  background: #f97316;
+  background: #9e6e4a;
   width: 9px;
   height: 9px;
   margin-left: -4.5px;

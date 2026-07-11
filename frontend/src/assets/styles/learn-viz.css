@@ -146,11 +146,11 @@
 .module-learn-shell .learn-viz-tag {
   font-size: 13px;
   font-weight: 700;
-  color: var(--alp-color-primary, #22d3ee);
+  color: var(--alp-color-primary, #3a8a9e);
 }
 
 .module-learn-shell .learn-viz-tag--green {
-  color: #4ade80;
+  color: #6aa878;
 }
 
 .module-learn-shell .learn-viz-tag--violet {
@@ -168,9 +168,9 @@
 }
 
 .module-learn-shell .learn-viz-badge--green {
-  color: #4ade80;
-  background: color-mix(in srgb, #4ade80 12%, transparent);
-  border-color: color-mix(in srgb, #4ade80 35%, transparent);
+  color: #6aa878;
+  background: color-mix(in srgb, #6aa878 12%, transparent);
+  border-color: color-mix(in srgb, #6aa878 35%, transparent);
 }
 
 .module-learn-shell .learn-viz-stage {
@@ -232,7 +232,7 @@
 .module-learn-shell .tp-anim .cell.hot,
 .module-learn-shell .str-anim .cell.hot,
 .module-learn-shell .ht-anim .ht-cell--hot {
-  border-color: var(--alp-color-primary, #22d3ee);
+  border-color: var(--alp-color-primary, #3a8a9e);
   background: color-mix(in srgb, var(--alp-color-primary) 20%, var(--alp-bg-surface-solid));
   transform: scale(1.06);
 }
@@ -260,21 +260,13 @@
   padding: 0 8px 8px;
   border-radius: 14px;
   border: 2px solid color-mix(in srgb, var(--alp-color-primary) 45%, var(--alp-color-border));
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--alp-color-primary) 8%, transparent),
-    var(--alp-bg-surface-solid, rgba(15, 23, 42, 0.6))
-  );
+  background: var(--alp-bg-surface-solid, rgba(15, 23, 42, 0.6));
   box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.25);
 }
 
 .module-learn-shell .learn-stack-well--green {
-  border-color: color-mix(in srgb, #4ade80 45%, var(--alp-color-border));
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, #4ade80 8%, transparent),
-    var(--alp-bg-surface-solid, rgba(15, 23, 42, 0.6))
-  );
+  border-color: color-mix(in srgb, #6aa878 45%, var(--alp-color-border));
+  background: var(--alp-bg-surface-solid, rgba(15, 23, 42, 0.6));
 }
 
 .module-learn-shell .learn-well-cap {
@@ -330,7 +322,7 @@
 }
 
 .module-learn-shell .learn-stack-well--green .learn-well-cap--right {
-  color: #4ade80;
+  color: #6aa878;
 }
 
 .module-learn-shell .learn-stack-axis-arrow {
@@ -360,7 +352,7 @@
   max-width: 100%;
   padding: 10px 8px;
   border-radius: 14px;
-  border: 2px dashed color-mix(in srgb, #4ade80 40%, var(--alp-color-border));
+  border: 2px dashed color-mix(in srgb, #6aa878 40%, var(--alp-color-border));
   background: var(--alp-bg-surface-solid, rgba(15, 23, 42, 0.5));
   box-sizing: border-box;
 }
@@ -394,7 +386,7 @@
 .module-learn-shell .ll-anim .arrow-mini,
 .module-learn-shell .tp-anim .arr,
 .module-learn-shell .str-anim .arr {
-  color: var(--alp-color-primary, #22d3ee);
+  color: var(--alp-color-primary, #3a8a9e);
   font-weight: 700;
 }
 
@@ -419,7 +411,7 @@
 }
 
 .module-learn-shell .learn-viz-op--push {
-  color: #4ade80;
+  color: #6aa878;
   background: rgba(74, 222, 128, 0.14);
   border: 1px solid rgba(74, 222, 128, 0.35);
 }

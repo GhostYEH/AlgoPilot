@@ -54,7 +54,7 @@ const progressPercent = computed(() => {
   return Math.round((clearedCount(g.id, g.levels.length) / g.levels.length) * 100)
 })
 
-const accent = computed(() => moduleMeta.value?.accent ?? '#22d3ee')
+const accent = computed(() => moduleMeta.value?.accent ?? '#3a8a9e')
 
 const gameTags = computed(() => (game.value ? getGameTags(game.value.id) : []))
 
@@ -256,11 +256,8 @@ watch(
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  background: radial-gradient(
-      ellipse 80% 50% at 50% -20%,
-      color-mix(in srgb, var(--game-accent) 18%, transparent),
-      transparent
-    ),
+  background:
+    color-mix(in srgb, var(--game-accent) 18%, transparent),
     var(--alp-bg-shell);
   border-radius: 0;
   overflow: hidden;
@@ -324,7 +321,7 @@ watch(
 
 .stars {
   font-size: 12px;
-  color: #fbbf24;
+  color: #9c8540;
   letter-spacing: 2px;
 }
 
@@ -390,8 +387,8 @@ watch(
 }
 
 .level-btn.is-done .level-index {
-  background: color-mix(in srgb, #22c55e 25%, transparent);
-  color: #86efac;
+  background: color-mix(in srgb, #4a8a5e 25%, transparent);
+  color: #8ab896;
 }
 
 .level-index {
@@ -414,7 +411,7 @@ watch(
 }
 
 .level-trophy {
-  color: #fbbf24;
+  color: #9c8540;
   font-size: 16px;
 }
 

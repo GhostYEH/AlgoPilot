@@ -142,17 +142,13 @@ const stepHints = computed(() => structure.value?.step_hints ?? [])
 }
 
 .ds-panel--domain {
-  background: linear-gradient(
-    160deg,
-    color-mix(in srgb, #a78bfa 12%, var(--alp-bg-surface)),
-    color-mix(in srgb, #38bdf8 8%, var(--alp-bg-soft-block))
-  );
-  border-color: color-mix(in srgb, #a78bfa 35%, var(--alp-color-border));
+  background: color-mix(in srgb, var(--alp-color-accent) 12%, var(--alp-bg-surface));
+  border-color: color-mix(in srgb, var(--alp-color-accent) 35%, var(--alp-color-border));
 }
 
 .ds-panel--structure {
-  background: linear-gradient(180deg, #0f172a 0%, #020617 100%);
-  border-color: color-mix(in srgb, #38bdf8 30%, #334155);
+  background: #0f172a;
+  border-color: color-mix(in srgb, var(--alp-color-primary) 30%, #334155);
   color: #e2e8f0;
   font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
 }
@@ -188,14 +184,14 @@ const stepHints = computed(() => structure.value?.step_hints ?? [])
   font-size: 10px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, #a78bfa 20%, transparent);
+  background: color-mix(in srgb, var(--alp-color-accent) 20%, transparent);
   color: var(--alp-color-primary);
   letter-spacing: 0.04em;
 }
 
 .ds-panel-tag--geek {
-  background: color-mix(in srgb, #38bdf8 18%, transparent);
-  color: #7dd3fc;
+  background: color-mix(in srgb, var(--alp-color-primary) 18%, transparent);
+  color: #6a9eb0;
 }
 
 .ds-illustration {
@@ -205,9 +201,9 @@ const stepHints = computed(() => structure.value?.step_hints ?? [])
   border-radius: 12px;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 80% 70% at 50% 30%, rgba(56, 189, 248, 0.25), transparent 60%),
-    radial-gradient(ellipse 60% 50% at 80% 80%, rgba(167, 139, 250, 0.2), transparent 50%),
-    linear-gradient(135deg, #0f172a, #1e1b4b);
+    rgba(74, 126, 148, 0.25),
+    rgba(var(--alp-color-accent-rgb), 0.2),
+    #0f172a;
   display: flex;
   align-items: flex-end;
   padding: 14px 16px;
@@ -216,13 +212,7 @@ const stepHints = computed(() => structure.value?.step_hints ?? [])
 .ds-illustration-glow {
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(
-    90deg,
-    transparent,
-    transparent 40px,
-    rgba(56, 189, 248, 0.03) 40px,
-    rgba(56, 189, 248, 0.03) 41px
-  );
+  background: transparent;
   pointer-events: none;
 }
 
@@ -280,9 +270,9 @@ const stepHints = computed(() => structure.value?.step_hints ?? [])
   padding: 4px 10px;
   border-radius: 6px;
   font-size: 12px;
-  background: rgba(56, 189, 248, 0.12);
-  border: 1px solid rgba(56, 189, 248, 0.35);
-  color: #7dd3fc;
+  background: var(--alp-color-primary-soft);
+  border: 1px solid var(--alp-color-primary-glow);
+  color: #6a9eb0;
 }
 
 .ds-complexity {
@@ -295,8 +285,8 @@ const stepHints = computed(() => structure.value?.step_hints ?? [])
 .ds-complexity code {
   display: block;
   font-size: 12px;
-  color: #4ade80;
-  background: rgba(15, 23, 42, 0.8);
+  color: #6aa878;
+  background: var(--alp-bg-surface);
   padding: 6px 8px;
   border-radius: 6px;
   border: 1px solid #334155;
@@ -313,7 +303,7 @@ const stepHints = computed(() => structure.value?.step_hints ?? [])
   margin: 0 0 12px;
   padding-left: 18px;
   font-size: 12px;
-  color: #fbbf24;
+  color: #9c8540;
 }
 
 .ds-sandbox {
@@ -325,7 +315,7 @@ const stepHints = computed(() => structure.value?.step_hints ?? [])
 .ds-sandbox-title {
   margin: 0 0 10px;
   font-size: 13px;
-  color: #38bdf8;
+  color: var(--alp-color-primary);
 }
 
 .ds-code-readonly {

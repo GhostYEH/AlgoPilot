@@ -71,6 +71,30 @@ const router = createRouter({
           meta: { title: '教师教学看板' },
         },
         {
+          path: 'student-roster',
+          name: 'student-roster',
+          component: () => import('@/views/StudentRosterView.vue'),
+          meta: { title: '学情管理' },
+        },
+        {
+          path: 'oj-analytics',
+          name: 'oj-analytics',
+          component: () => import('@/views/OjAnalyticsView.vue'),
+          meta: { title: 'OJ 学情分析' },
+        },
+        {
+          path: 'teacher-workbench',
+          name: 'teacher-workbench',
+          component: () => import('@/views/TeacherWorkbenchView.vue'),
+          meta: { title: '教学资源工作台' },
+        },
+        {
+          path: 'teacher-guide',
+          name: 'teacher-guide',
+          component: () => import('@/views/TeacherGuideView.vue'),
+          meta: { title: '教师指南' },
+        },
+        {
           path: 'help',
           name: 'help',
           component: () => import('@/views/HelpCenterView.vue'),
@@ -94,6 +118,12 @@ const router = createRouter({
           component: () => import('@/views/practice/PracticeProblemView.vue'),
           meta: { title: '做题', transition: 'page-instant' },
         },
+        {
+          path: 'oj-admin',
+          name: 'oj-admin',
+          component: () => import('@/views/practice/OjAdminView.vue'),
+          meta: { title: 'OJ 题目管理' },
+        },
       ],
     },
   ],
@@ -107,7 +137,24 @@ router.beforeEach(async (to) => {
     if (to.meta.public) return true
     return { name: 'login', query: { redirect: to.fullPath } }
   }
-  if (to.name === 'teacher-dashboard' && !isTeacher.value) {
+  // 教师访问学生专属页面时重定向到教师看板
+  if (isTeacher.value) {
+    const studentOnlyNames = new Set(['home', 'learning-path', 'my-learning'])
+    if (studentOnlyNames.has(typeof to.name === 'string' ? to.name : '')) {
+      return { name: 'teacher-dashboard' }
+    }
+    return true
+  }
+  // 学生访问教师专属页面时重定向到首页
+  const teacherOnlyNames = new Set([
+    'teacher-dashboard',
+    'oj-admin',
+    'student-roster',
+    'oj-analytics',
+    'teacher-workbench',
+    'teacher-guide',
+  ])
+  if (teacherOnlyNames.has(typeof to.name === 'string' ? to.name : '')) {
     return { name: 'home' }
   }
   const routeName = typeof to.name === 'string' ? to.name : ''

@@ -85,7 +85,7 @@ const gridLevels = [0.25, 0.5, 0.75, 1]
               .join(' ')
           "
           fill="none"
-          stroke="rgba(148,163,184,0.25)"
+          stroke="rgba(145,161,154,0.25)"
           stroke-width="1"
         />
       </g>
@@ -96,13 +96,13 @@ const gridLevels = [0.25, 0.5, 0.75, 1]
         y1="120"
         :x2="p.lx"
         :y2="p.ly"
-        stroke="rgba(148,163,184,0.2)"
+        stroke="rgba(145,161,154,0.2)"
       />
       <polygon
         :points="polygon"
         class="radar-fill"
-        fill="rgba(56,189,248,0.25)"
-        stroke="#38bdf8"
+        fill="rgba(61,138,126,0.25)"
+        stroke="#3d8a7e"
         stroke-width="2"
       />
       <circle
@@ -111,7 +111,7 @@ const gridLevels = [0.25, 0.5, 0.75, 1]
         :cx="p.x"
         :cy="p.y"
         r="3"
-        fill="#38bdf8"
+        fill="#3d8a7e"
       />
       <text
         v-for="p in points"

@@ -671,21 +671,13 @@ function onReset() {
   padding: 14px 16px;
   border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--el-color-danger) 45%, #444);
-  background: linear-gradient(
-    145deg,
-    color-mix(in srgb, var(--el-color-danger) 14%, #1a1a1a),
-    color-mix(in srgb, #a78bfa 10%, #252525)
-  );
+  background: color-mix(in srgb, var(--el-color-danger) 14%, #1a1a1a);
   box-shadow: 0 6px 24px color-mix(in srgb, var(--el-color-danger) 15%, transparent);
 }
 
 .visual-diagnose-cta--loading {
   border-color: color-mix(in srgb, var(--el-color-primary) 40%, #444);
-  background: linear-gradient(
-    145deg,
-    color-mix(in srgb, var(--el-color-primary) 12%, #1a1a1a),
-    color-mix(in srgb, #a78bfa 8%, #252525)
-  );
+  background: color-mix(in srgb, var(--el-color-primary) 12%, #1a1a1a);
 }
 
 .visual-diagnose-cta__copy {
@@ -711,11 +703,7 @@ function onReset() {
   width: 100%;
   font-weight: 600;
   border: none !important;
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--el-color-danger) 85%, #7c3aed),
-    color-mix(in srgb, #a78bfa 70%, var(--el-color-danger))
-  ) !important;
+  background: color-mix(in srgb, var(--el-color-danger) 85%, #7c3aed) !important;
 }
 
 .visual-diagnose-loading {

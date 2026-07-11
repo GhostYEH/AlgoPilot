@@ -209,11 +209,7 @@ watch(
 .tpc-bug-jump {
   margin-left: auto;
   border-color: color-mix(in srgb, var(--el-color-danger) 55%, transparent) !important;
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--el-color-danger) 12%, transparent),
-    color-mix(in srgb, #a78bfa 14%, transparent)
-  ) !important;
+  background: color-mix(in srgb, var(--el-color-danger) 12%, transparent) !important;
 }
 
 .tpc-slider-row {

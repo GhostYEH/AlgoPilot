@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ChatDotRound, Promotion, Refresh } from '@element-plus/icons-vue'
@@ -62,6 +62,9 @@ const showProfileNudge = computed(
   () => userTurnCount.value >= 4 && !profile.value?.updated_at && !autoFlowRunning.value,
 )
 
+const hasProfile = computed(
+  () => !!profile.value?.dimensions && !!profile.value?.updated_at,
+)
 function scrollBottom() {
   nextTick(() => {
     const el = listRef.value
@@ -245,7 +248,7 @@ const dimensionEntries = (dims: PersonaDimensions) =>
 </script>
 
 <template>
-  <div class="persona-layout">
+  <div class="persona-layout" :class="{ 'persona-layout--single': !hasProfile }">
     <div class="persona-chat">
       <el-alert
         v-if="personaFallbackMode || profile?.fallback"
@@ -313,6 +316,7 @@ const dimensionEntries = (dims: PersonaDimensions) =>
       </div>
     </div>
 
+    <template v-if="hasProfile">
     <aside class="persona-dims">
       <div class="dims-head">
         <el-icon><ChatDotRound /></el-icon>
@@ -360,6 +364,7 @@ const dimensionEntries = (dims: PersonaDimensions) =>
       :error="profileError"
       @retry="loadProfile"
     />
+    </template>
   </div>
 </template>
 
@@ -369,6 +374,11 @@ const dimensionEntries = (dims: PersonaDimensions) =>
   grid-template-columns: 1fr 320px;
   grid-template-rows: auto 1fr;
   gap: 16px;
+}
+
+.persona-layout--single {
+  grid-template-columns: 1fr;
+  grid-template-rows: auto;
 }
 
 .persona-chat {
@@ -411,8 +421,8 @@ const dimensionEntries = (dims: PersonaDimensions) =>
 
 .chat-list {
   flex: 1;
-  min-height: 180px;
-  max-height: 480px;
+  min-height: 80px;
+  max-height: 420px;
   overflow-y: auto;
   padding: 8px;
 }

@@ -78,8 +78,8 @@ defineProps<{
 }
 
 .trace-legend-swatch--cursor {
-  border-color: #f59e0b;
-  background: color-mix(in srgb, #f59e0b 25%, transparent);
+  border-color: #9c7a3d;
+  background: color-mix(in srgb, #9c7a3d 25%, transparent);
 }
 
 .trace-legend-swatch--cell-hot {
@@ -88,7 +88,7 @@ defineProps<{
 }
 
 .trace-legend-swatch--axis {
-  background: color-mix(in srgb, #f59e0b 20%, transparent);
+  background: color-mix(in srgb, #9c7a3d 20%, transparent);
 }
 
 .trace-legend-swatch--ptr {
@@ -96,7 +96,7 @@ defineProps<{
   width: 18px;
   height: 10px;
   border: none;
-  background: #22d3ee;
+  background: var(--alp-color-primary);
 }
 
 .trace-legend-swatch--node-hot {
@@ -113,12 +113,12 @@ defineProps<{
 }
 
 .trace-legend-swatch--stack {
-  border-left: 3px solid #22d3ee;
+  border-left: 3px solid var(--alp-color-primary);
   border-radius: 2px;
 }
 
 .trace-legend-swatch--heap {
-  border-left: 3px solid #a78bfa;
+  border-left: 3px solid var(--alp-color-accent);
   border-radius: 2px;
 }
 </style>

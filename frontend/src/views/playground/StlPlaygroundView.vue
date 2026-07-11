@@ -528,10 +528,8 @@ watch(activeContainer, (id) => {
 .pg-grid {
   position: absolute;
   inset: 0;
-  background-image:
-    linear-gradient(color-mix(in srgb, var(--alp-color-primary) 8%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--alp-color-primary) 8%, transparent) 1px, transparent 1px);
-  background-size: 48px 48px;
+  background-image: transparent;
+  background-size: auto;
   mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, black 20%, transparent 75%);
 }
 
@@ -547,13 +545,13 @@ watch(activeContainer, (id) => {
 .pg-glow--a {
   top: -80px;
   right: 10%;
-  background: #22d3ee;
+  background: #3a8a9e;
 }
 
 .pg-glow--b {
   bottom: -120px;
   left: 5%;
-  background: #a78bfa;
+  background: #7a6e9e;
 }
 
 .pg-hero,
@@ -584,7 +582,7 @@ watch(activeContainer, (id) => {
   margin: 0 0 10px;
   font-size: clamp(1.6rem, 3vw, 2.2rem);
   font-weight: 800;
-  background: linear-gradient(120deg, #e8eef7 30%, #22d3ee 70%, #a78bfa);
+  background: #e8eef7;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -700,7 +698,7 @@ watch(activeContainer, (id) => {
   font-family: ui-monospace, Consolas, monospace;
   background: var(--alp-bg-code-ish);
   border: 1px solid var(--alp-color-border);
-  color: #7dd3fc;
+  color: #6a9eb0;
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -746,11 +744,7 @@ watch(activeContainer, (id) => {
   padding: 20px 22px 24px;
   border-radius: 16px;
   border: 1px solid color-mix(in srgb, var(--alp-color-accent) 30%, var(--alp-color-border));
-  background: linear-gradient(
-    160deg,
-    color-mix(in srgb, var(--alp-bg-surface) 92%, transparent) 0%,
-    color-mix(in srgb, var(--alp-color-primary) 6%, var(--alp-bg-soft-block)) 100%
-  );
+  background: color-mix(in srgb, var(--alp-bg-surface) 92%, transparent);
   backdrop-filter: blur(14px);
   box-shadow:
     var(--alp-shadow-card),

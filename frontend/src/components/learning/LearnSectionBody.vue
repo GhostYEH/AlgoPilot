@@ -160,8 +160,8 @@ const recallLabel = computed(() => (hasTopics.value ? '本章脉络（速记）'
   height: 1.375rem;
   font-size: 0.75rem;
   font-weight: 700;
-  color: var(--alp-color-primary, #22d3ee);
-  background: color-mix(in srgb, var(--alp-color-primary, #22d3ee) 14%, transparent);
+  color: var(--alp-color-primary, #3d8a7e);
+  background: color-mix(in srgb, var(--alp-color-primary, #3d8a7e) 14%, transparent);
   border-radius: 6px;
 }
 
@@ -187,14 +187,14 @@ const recallLabel = computed(() => (hasTopics.value ? '本章脉络（速记）'
 }
 
 .topic-point-list li::marker {
-  color: var(--alp-color-primary, #22d3ee);
+  color: var(--alp-color-primary, #3d8a7e);
 }
 
 .recall-panel {
   padding: 0.75rem 1rem;
   border-radius: 10px;
   background: var(--alp-bg-code-ish, rgba(15, 23, 42, 0.45));
-  border: 1px dashed color-mix(in srgb, var(--alp-color-primary, #22d3ee) 35%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--alp-color-primary, #3d8a7e) 35%, transparent);
 }
 
 .recall-panel--solo {
@@ -254,7 +254,7 @@ const recallLabel = computed(() => (hasTopics.value ? '本章脉络（速记）'
   height: 7px;
   border-radius: 50%;
   background: var(--alp-color-primary);
-  box-shadow: 0 0 0 3px var(--alp-color-primary-soft, rgba(34, 211, 238, 0.2));
+  box-shadow: 0 0 0 3px var(--alp-color-primary-soft, rgba(61, 138, 126, 0.2));
   transform: translateY(-50%);
 }
 </style>

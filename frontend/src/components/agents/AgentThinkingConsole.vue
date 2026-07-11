@@ -163,24 +163,22 @@ function formatTime(ts: number): string {
 
 <style scoped>
 .agent-console {
-  --term-bg: #0a0e17;
-  --term-border: color-mix(in srgb, #38bdf8 35%, #1e293b);
-  --term-glow: color-mix(in srgb, #38bdf8 25%, transparent);
-  --term-text: #e2e8f0;
-  --term-muted: #64748b;
-  --term-accent: #38bdf8;
-  --term-success: #4ade80;
-  --term-warn: #fbbf24;
-  --term-error: #f87171;
+  --term-bg: var(--alp-bg-code-ish);
+  --term-border: color-mix(in srgb, var(--alp-color-primary) 35%, var(--alp-bg-surface-solid));
+  --term-glow: var(--alp-color-primary-glow);
+  --term-text: var(--alp-color-text-secondary);
+  --term-muted: var(--alp-color-muted);
+  --term-accent: var(--alp-color-primary);
+  --term-success: var(--alp-color-success);
+  --term-warn: var(--alp-color-warning);
+  --term-error: var(--alp-color-danger);
 
   position: relative;
   border-radius: 16px;
   border: 1px solid var(--term-border);
-  background:
-    radial-gradient(ellipse 80% 60% at 50% 0%, var(--term-glow), transparent 55%),
-    linear-gradient(165deg, #0f172a 0%, var(--term-bg) 45%, #020617 100%);
+  background: var(--term-bg);
   box-shadow:
-    0 0 0 1px color-mix(in srgb, #38bdf8 8%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--alp-color-primary) 8%, transparent),
     0 24px 48px color-mix(in srgb, #000 45%, transparent),
     inset 0 1px 0 color-mix(in srgb, #fff 6%, transparent);
   overflow: hidden;
@@ -192,13 +190,7 @@ function formatTime(ts: number): string {
   inset: 0;
   pointer-events: none;
   z-index: 4;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.14) 2px,
-    rgba(0, 0, 0, 0.14) 4px
-  );
+  background: transparent;
   opacity: 0.45;
   mix-blend-mode: overlay;
 }
@@ -207,14 +199,7 @@ function formatTime(ts: number): string {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    180deg,
-    transparent 0%,
-    rgba(56, 189, 248, 0.04) 48%,
-    rgba(56, 189, 248, 0.08) 50%,
-    rgba(56, 189, 248, 0.04) 52%,
-    transparent 100%
-  );
+  background: transparent;
   background-size: 100% 220%;
   animation: crt-scan 6s linear infinite;
 }
@@ -236,15 +221,15 @@ function formatTime(ts: number): string {
   0%,
   100% {
     box-shadow:
-      0 0 0 1px color-mix(in srgb, #38bdf8 12%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--alp-color-primary) 12%, transparent),
       0 24px 48px color-mix(in srgb, #000 45%, transparent),
-      0 0 40px color-mix(in srgb, #38bdf8 8%, transparent);
+      0 0 40px color-mix(in srgb, var(--alp-color-primary) 8%, transparent);
   }
   50% {
     box-shadow:
-      0 0 0 1px color-mix(in srgb, #38bdf8 22%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--alp-color-primary) 22%, transparent),
       0 24px 48px color-mix(in srgb, #000 45%, transparent),
-      0 0 56px color-mix(in srgb, #a78bfa 12%, transparent);
+      0 0 56px color-mix(in srgb, var(--alp-color-accent) 12%, transparent);
   }
 }
 
@@ -324,9 +309,9 @@ function formatTime(ts: number): string {
 .progress-fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #38bdf8, #a78bfa);
+  background: var(--alp-color-primary);
   transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-  box-shadow: 0 0 12px #38bdf8;
+  box-shadow: 0 0 12px var(--alp-color-primary-glow);
 }
 
 .progress-pct {
@@ -380,7 +365,7 @@ function formatTime(ts: number): string {
   overflow-y: auto;
   padding: 14px 0;
   scrollbar-width: thin;
-  scrollbar-color: #334155 transparent;
+  scrollbar-color: var(--alp-color-muted) transparent;
 }
 
 .console-empty {
@@ -432,7 +417,7 @@ function formatTime(ts: number): string {
 
 .log-line.line--running {
   border-left-color: var(--term-accent);
-  background: color-mix(in srgb, #38bdf8 6%, transparent);
+  background: color-mix(in srgb, var(--alp-color-primary) 6%, transparent);
 }
 
 .log-line.line--done {
@@ -441,7 +426,7 @@ function formatTime(ts: number): string {
 
 .log-line.line--success {
   border-left-color: var(--term-success);
-  background: color-mix(in srgb, #4ade80 5%, transparent);
+  background: color-mix(in srgb, #6aa878 5%, transparent);
 }
 
 .log-line.line--warn {
@@ -453,7 +438,7 @@ function formatTime(ts: number): string {
 }
 
 .log-line--typing .log-msg {
-  color: #a5f3fc;
+  color: var(--alp-color-primary);
 }
 
 .log-line--typing .log-msg::after {

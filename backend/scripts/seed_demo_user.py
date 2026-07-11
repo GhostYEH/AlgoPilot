@@ -151,7 +151,8 @@ def seed() -> None:
         # 检查是否已存在 demo 用户
         existing = db.query(User).filter(User.username == "demo").first()
         if existing:
-            print("用户 demo 已存在（id={}），跳过创建。".format(existing.id))
+            print("用户 demo 已存在（id={}），跳过 demo 学习数据创建。".format(existing.id))
+            seed_teacher_demo(db)
             return
 
         # ── 1. 创建用户 ──
@@ -239,19 +240,19 @@ def seed() -> None:
                 "greedy", "dp", "monotonic-stack", "graph",
             ],
             steps=[
-                {"key": "array", "label": "数组", "status": "done", "phase": "foundation"},
-                {"key": "linked-list", "label": "链表", "status": "done", "phase": "foundation"},
-                {"key": "hash-table", "label": "哈希表", "status": "in_progress", "phase": "foundation"},
-                {"key": "string", "label": "字符串", "status": "in_progress", "phase": "foundation"},
-                {"key": "two-pointers", "label": "双指针法", "status": "in_progress", "phase": "technique"},
-                {"key": "stack-queue", "label": "栈与队列", "status": "done", "phase": "technique"},
-                {"key": "sorting", "label": "排序算法", "status": "in_progress", "phase": "technique"},
-                {"key": "binary-tree", "label": "二叉树", "status": "current", "phase": "tree"},
-                {"key": "backtracking", "label": "回溯算法", "status": "locked", "phase": "tree"},
-                {"key": "greedy", "label": "贪心算法", "status": "locked", "phase": "advanced"},
-                {"key": "dp", "label": "动态规划", "status": "locked", "phase": "advanced"},
-                {"key": "monotonic-stack", "label": "单调栈", "status": "locked", "phase": "advanced"},
-                {"key": "graph", "label": "图论", "status": "locked", "phase": "advanced"},
+                {"module_key": "array", "rank": 1, "reason": "已完成，可复习巩固", "phase": "foundation", "prerequisites": [], "difficulty": "入门", "is_remediation": False},
+                {"module_key": "linked-list", "rank": 2, "reason": "已完成，可复习巩固", "phase": "foundation", "prerequisites": ["array"], "difficulty": "入门", "is_remediation": False},
+                {"module_key": "hash-table", "rank": 3, "reason": "进行中，建议优先推进", "phase": "foundation", "prerequisites": ["array"], "difficulty": "标准", "is_remediation": False},
+                {"module_key": "string", "rank": 4, "reason": "进行中，建议优先推进", "phase": "foundation", "prerequisites": ["array"], "difficulty": "标准", "is_remediation": False},
+                {"module_key": "two-pointers", "rank": 5, "reason": "进行中，建议优先推进", "phase": "technique", "prerequisites": ["array", "linked-list", "hash-table"], "difficulty": "标准", "is_remediation": False},
+                {"module_key": "stack-queue", "rank": 6, "reason": "已完成，可复习巩固", "phase": "technique", "prerequisites": ["array"], "difficulty": "标准", "is_remediation": False},
+                {"module_key": "sorting", "rank": 7, "reason": "进行中，建议优先推进", "phase": "technique", "prerequisites": ["array", "two-pointers"], "difficulty": "标准", "is_remediation": False},
+                {"module_key": "binary-tree", "rank": 8, "reason": "当前推荐模块", "phase": "tree", "prerequisites": ["linked-list", "stack-queue"], "difficulty": "进阶", "is_remediation": False},
+                {"module_key": "backtracking", "rank": 9, "reason": "课程规划中", "phase": "tree", "prerequisites": ["binary-tree"], "difficulty": "进阶", "is_remediation": False},
+                {"module_key": "greedy", "rank": 10, "reason": "课程规划中", "phase": "advanced", "prerequisites": ["binary-tree"], "difficulty": "进阶", "is_remediation": False},
+                {"module_key": "dp", "rank": 11, "reason": "课程规划中", "phase": "advanced", "prerequisites": ["greedy", "backtracking"], "difficulty": "进阶", "is_remediation": False},
+                {"module_key": "monotonic-stack", "rank": 12, "reason": "课程规划中", "phase": "advanced", "prerequisites": ["stack-queue"], "difficulty": "进阶", "is_remediation": False},
+                {"module_key": "graph", "rank": 13, "reason": "课程规划中", "phase": "advanced", "prerequisites": ["stack-queue", "binary-tree"], "difficulty": "进阶", "is_remediation": False},
             ],
             progress_snapshot=LEARNING_PROGRESS_PAYLOAD,
         )
@@ -535,11 +536,35 @@ def seed() -> None:
         print(f"  事件日志: 10条")
         print(f"  生成资源: 3条")
 
+        seed_teacher_demo(db)
+
     except Exception:
         db.rollback()
         raise
     finally:
         db.close()
+
+
+def seed_teacher_demo(db) -> None:
+    """创建教师测试账号 teacher_demo / 123456（如已存在则跳过）。"""
+    teacher_existing = db.query(User).filter(User.username == "teacher_demo").first()
+    if teacher_existing:
+        print(f"用户 teacher_demo 已存在（id={teacher_existing.id}），跳过创建。")
+        return
+    teacher = User(
+        username="teacher_demo",
+        email="teacher_demo@alp-learning.example",
+        hashed_password=hash_password("123456"),
+        role="teacher",
+        created_at=datetime.now(timezone.utc) - timedelta(days=60),
+    )
+    db.add(teacher)
+    db.commit()
+    db.refresh(teacher)
+    print(f"用户 teacher_demo 创建成功，id={teacher.id}")
+    print(f"  用户名: teacher_demo")
+    print(f"  密码: 123456")
+    print(f"  角色: teacher")
 
 
 if __name__ == "__main__":

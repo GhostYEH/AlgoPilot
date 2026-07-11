@@ -126,18 +126,18 @@ const hasRisks = computed(
   margin-top: 16px;
   padding: 14px;
   border-radius: 10px;
-  border: 1px solid color-mix(in srgb, #22c55e 38%, var(--alp-color-border));
-  background: color-mix(in srgb, #22c55e 8%, var(--alp-bg-soft-block));
+  border: 1px solid color-mix(in srgb, var(--alp-color-success) 38%, var(--alp-color-border));
+  background: color-mix(in srgb, var(--alp-color-success) 8%, var(--alp-bg-soft-block));
 }
 
 .safety-panel.shield-yellow {
-  border-color: color-mix(in srgb, #f59e0b 40%, var(--alp-color-border));
-  background: color-mix(in srgb, #f59e0b 8%, var(--alp-bg-soft-block));
+  border-color: color-mix(in srgb, var(--alp-color-warning) 40%, var(--alp-color-border));
+  background: color-mix(in srgb, var(--alp-color-warning) 8%, var(--alp-bg-soft-block));
 }
 
 .safety-panel.shield-red {
-  border-color: color-mix(in srgb, #ef4444 40%, var(--alp-color-border));
-  background: color-mix(in srgb, #ef4444 8%, var(--alp-bg-soft-block));
+  border-color: color-mix(in srgb, var(--alp-color-danger) 40%, var(--alp-color-border));
+  background: color-mix(in srgb, var(--alp-color-danger) 8%, var(--alp-bg-soft-block));
 }
 
 .safety-head {
@@ -146,7 +146,7 @@ const hasRisks = computed(
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 10px;
-  color: #22c55e;
+  color: var(--alp-color-success);
 }
 
 .shield-yellow .safety-head,
@@ -172,7 +172,7 @@ const hasRisks = computed(
 }
 
 .safety-badge.ok {
-  color: #22c55e;
+  color: var(--alp-color-success);
 }
 
 .evidence-num {
@@ -211,11 +211,11 @@ const hasRisks = computed(
 }
 
 .warn-block {
-  color: #d97706;
+  color: var(--alp-color-warning);
 }
 
 .danger-block {
-  color: #dc2626;
+  color: var(--alp-color-danger);
 }
 
 .safety-detail {

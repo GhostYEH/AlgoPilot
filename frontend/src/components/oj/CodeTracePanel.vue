@@ -1137,7 +1137,7 @@ const showNarrateBtn = computed(
 }
 
 .trace-line-bar__line {
-  color: #22d3ee;
+  color: var(--alp-color-primary);
   font-weight: 700;
 }
 
@@ -1193,8 +1193,8 @@ const showNarrateBtn = computed(
 }
 
 .code-line--active {
-  background: rgba(34, 211, 238, 0.18);
-  box-shadow: inset 3px 0 0 #22d3ee;
+  background: rgba(var(--alp-color-primary-rgb), 0.18);
+  box-shadow: inset 3px 0 0 var(--alp-color-primary);
 }
 
 .ln {
@@ -1280,11 +1280,7 @@ const showNarrateBtn = computed(
 .trace-diagnose-btn {
   margin-left: 4px;
   border-color: color-mix(in srgb, var(--el-color-danger) 55%, transparent) !important;
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--el-color-danger) 12%, transparent),
-    color-mix(in srgb, #a78bfa 14%, transparent)
-  ) !important;
+  background: color-mix(in srgb, var(--el-color-danger) 12%, transparent) !important;
 }
 
 .trace-ai-diagnosis-card {
@@ -1295,23 +1291,21 @@ const showNarrateBtn = computed(
   text-align: left;
   border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--el-color-danger) 45%, var(--alp-color-border));
-  background: linear-gradient(
-    145deg,
-    color-mix(in srgb, var(--el-color-danger) 10%, var(--alp-bg-surface)),
-    color-mix(in srgb, #a78bfa 8%, var(--alp-bg-soft-block))
-  );
+  background: color-mix(in srgb, var(--el-color-danger) 10%, var(--alp-bg-surface));
   box-shadow: 0 8px 28px color-mix(in srgb, var(--el-color-danger) 12%, transparent);
   cursor: pointer;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
-    border-color 0.2s ease;
+    border-color 0.2s ease,
+    filter var(--alp-transition-fast);
 }
 
 .trace-ai-diagnosis-card:hover {
   transform: translateY(-1px);
   border-color: var(--el-color-danger);
-  box-shadow: 0 10px 32px color-mix(in srgb, var(--el-color-danger) 22%, transparent);
+  box-shadow: var(--alp-shadow-card-hover);
+  filter: brightness(1.06);
 }
 
 .trace-ai-diagnosis-card--focused {
@@ -1326,7 +1320,7 @@ const showNarrateBtn = computed(
   font-size: 11px;
   font-weight: 700;
   color: #fff;
-  background: linear-gradient(90deg, var(--el-color-danger), #a78bfa);
+  background: var(--el-color-danger);
 }
 
 .trace-ai-diagnosis-title {

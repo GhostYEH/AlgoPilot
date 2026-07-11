@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Grid, Reading, FolderOpened, User, QuestionFilled, Cpu, Moon, Sunny, ArrowDown, DataLine } from '@element-plus/icons-vue'
+import { Grid, Reading, FolderOpened, User, QuestionFilled, Cpu, Moon, Sunny, ArrowDown, DataLine, MagicStick } from '@element-plus/icons-vue'
 import { useTheme } from '@/composables/useTheme'
 import { providePersonaUi } from '@/composables/usePersonaUiProvider'
 import { ALGORITHM_MODULES, MODULE_ROUTE_NAMES } from '@/constants/modules'
@@ -39,7 +39,7 @@ const activeMenu = computed(() => {
 })
 
 function goHome() {
-  router.push({ name: 'home' })
+  router.push({ name: isTeacher.value ? 'teacher-dashboard' : 'home' })
 }
 
 const displayName = computed(() => {
@@ -82,62 +82,82 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
         router
         background-color="transparent"
       >
-        <el-menu-item index="/" @mouseenter="prefetchRoute('/')">
-          <el-icon><Grid /></el-icon>
-          <span>首页</span>
-        </el-menu-item>
-        <el-menu-item index="/learning-path" @mouseenter="prefetchRoute('/learning-path')">
-          <el-icon><Reading /></el-icon>
-          <span>学习路径</span>
-        </el-menu-item>
-        <el-menu-item index="/resources" @mouseenter="prefetchRoute('/resources')">
-          <el-icon><FolderOpened /></el-icon>
-          <span>资源库</span>
-        </el-menu-item>
-        <el-menu-item index="/practice" @mouseenter="prefetchRoute('/practice')">
-          <el-icon><Cpu /></el-icon>
-          <span>在线 OJ</span>
-        </el-menu-item>
-        <el-menu-item
-          index="/agent-workbench"
-          @mouseenter="prefetchRoute('/agent-workbench')"
-        >
-          <el-icon><Cpu /></el-icon>
-          <span>多智能体</span>
-        </el-menu-item>
-
-        <el-dropdown
-          trigger="hover"
-          placement="bottom-start"
-          :popper-class="isMyLearningActive ? 'nav-dropdown nav-dropdown--active' : 'nav-dropdown'"
-          @mouseenter="prefetchRoute('/my-learning')"
-        >
-          <div
-            class="nav-dropdown-trigger"
-            :class="{ 'is-active': isMyLearningActive }"
-            role="button"
-            tabindex="0"
-          >
+        <template v-if="isTeacher">
+          <el-menu-item index="/teacher-dashboard" @mouseenter="prefetchRoute('/teacher-dashboard')">
+            <el-icon><DataLine /></el-icon>
+            <span>教学看板</span>
+          </el-menu-item>
+          <el-menu-item index="/student-roster" @mouseenter="prefetchRoute('/student-roster')">
             <el-icon><User /></el-icon>
-            <span>我的学习</span>
-            <el-icon class="arrow-icon"><ArrowDown /></el-icon>
-          </div>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <LearningQuickPanel />
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
+            <span>学情管理</span>
+          </el-menu-item>
+          <el-menu-item index="/oj-analytics" @mouseenter="prefetchRoute('/oj-analytics')">
+            <el-icon><Cpu /></el-icon>
+            <span>OJ 学情</span>
+          </el-menu-item>
+          <el-menu-item index="/oj-admin" @mouseenter="prefetchRoute('/oj-admin')">
+            <el-icon><Cpu /></el-icon>
+            <span>OJ 管理</span>
+          </el-menu-item>
+          <el-menu-item index="/teacher-workbench" @mouseenter="prefetchRoute('/teacher-workbench')">
+            <el-icon><MagicStick /></el-icon>
+            <span>资源工作台</span>
+          </el-menu-item>
+        </template>
+        <template v-else>
+          <el-menu-item index="/" @mouseenter="prefetchRoute('/')">
+            <el-icon><Grid /></el-icon>
+            <span>首页</span>
+          </el-menu-item>
+          <el-menu-item index="/learning-path" @mouseenter="prefetchRoute('/learning-path')">
+            <el-icon><Reading /></el-icon>
+            <span>学习路径</span>
+          </el-menu-item>
+          <el-menu-item index="/resources" @mouseenter="prefetchRoute('/resources')">
+            <el-icon><FolderOpened /></el-icon>
+            <span>资源库</span>
+          </el-menu-item>
+          <el-menu-item index="/practice" @mouseenter="prefetchRoute('/practice')">
+            <el-icon><Cpu /></el-icon>
+            <span>在线 OJ</span>
+          </el-menu-item>
+          <el-menu-item
+            index="/agent-workbench"
+            @mouseenter="prefetchRoute('/agent-workbench')"
+          >
+            <el-icon><Cpu /></el-icon>
+            <span>多智能体</span>
+          </el-menu-item>
 
-        <el-menu-item
-          v-if="isTeacher"
-          index="/teacher-dashboard"
-          @mouseenter="prefetchRoute('/teacher-dashboard')"
-        >
-          <el-icon><DataLine /></el-icon>
-          <span>教师教学看板</span>
+          <el-dropdown
+            trigger="hover"
+            placement="bottom-start"
+            :popper-class="isMyLearningActive ? 'nav-dropdown nav-dropdown--active' : 'nav-dropdown'"
+            @mouseenter="prefetchRoute('/my-learning')"
+          >
+            <div
+              class="nav-dropdown-trigger"
+              :class="{ 'is-active': isMyLearningActive }"
+              role="button"
+              tabindex="0"
+            >
+              <el-icon><User /></el-icon>
+              <span>我的学习</span>
+              <el-icon class="arrow-icon"><ArrowDown /></el-icon>
+            </div>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <LearningQuickPanel />
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </template>
+
+        <el-menu-item v-if="isTeacher" index="/teacher-guide" @mouseenter="prefetchRoute('/teacher-guide')">
+          <el-icon><QuestionFilled /></el-icon>
+          <span>教师指南</span>
         </el-menu-item>
-        <el-menu-item index="/help" @mouseenter="prefetchRoute('/help')">
+        <el-menu-item v-else index="/help" @mouseenter="prefetchRoute('/help')">
           <el-icon><QuestionFilled /></el-icon>
           <span>帮助中心</span>
         </el-menu-item>
@@ -159,7 +179,8 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
             <el-avatar :size="32" class="user-avatar">{{ displayName }}</el-avatar>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item @click="router.push({ name: 'my-learning' })">我的学习</el-dropdown-item>
+                <el-dropdown-item v-if="isTeacher" @click="router.push({ name: 'teacher-dashboard' })">教学看板</el-dropdown-item>
+                <el-dropdown-item v-else @click="router.push({ name: 'my-learning' })">我的学习</el-dropdown-item>
                 <el-dropdown-item divided @click="onLogout">退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -191,9 +212,7 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
   gap: 18px;
   padding: 0 max(18px, var(--alp-layout-padding-x));
   border-bottom: 1px solid var(--alp-color-border);
-  background:
-    linear-gradient(90deg, rgba(45, 212, 191, 0.08), transparent 32%),
-    var(--alp-bg-header);
+  background: rgba(61, 138, 126, 0.08), var(--alp-bg-header);
   backdrop-filter: blur(18px) saturate(1.08);
   position: sticky;
   top: 0;
@@ -221,9 +240,7 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
   height: 40px;
   border-radius: 8px;
   border: 1px solid rgba(var(--alp-color-primary-rgb), 0.36);
-  background:
-    linear-gradient(135deg, rgba(var(--alp-color-primary-rgb), 0.18), transparent 48%),
-    var(--alp-bg-code-ish);
+  background: rgba(var(--alp-color-primary-rgb), 0.18), var(--alp-bg-code-ish);
   color: var(--alp-color-text);
   font-weight: 700;
   font-size: 13px;
@@ -290,18 +307,23 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
   transition:
     color var(--alp-transition-fast),
     background var(--alp-transition-fast),
-    box-shadow var(--alp-transition-fast);
+    box-shadow var(--alp-transition-fast),
+    filter var(--alp-transition-fast);
 }
 
 .header-menu :deep(.el-menu-item:hover) {
   background: var(--alp-bg-nav-hover) !important;
+  transform: translateY(-1px);
+  box-shadow: var(--alp-shadow-btn);
+  filter: brightness(1.1);
 }
 
 .header-menu :deep(.el-menu-item.is-active) {
   color: var(--alp-color-primary) !important;
   border-bottom-color: transparent !important;
   background: var(--alp-bg-nav-active) !important;
-  box-shadow: inset 0 0 0 1px rgba(var(--alp-color-primary-rgb), 0.18);
+  box-shadow: inset 3px 0 0 var(--alp-color-primary), var(--alp-shadow-btn);
+  filter: brightness(1.06);
 }
 
 .nav-dropdown-trigger {
@@ -315,7 +337,7 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
   font-weight: 500;
   color: var(--alp-color-text);
   cursor: pointer;
-  transition: color 0.2s, background 0.2s, box-shadow 0.2s;
+  transition: color 0.2s, background 0.2s, box-shadow 0.2s, filter var(--alp-transition-fast);
   position: relative;
 }
 
@@ -333,7 +355,8 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
 .nav-dropdown-trigger.is-active {
   color: var(--alp-color-primary);
   background: var(--alp-bg-nav-active);
-  box-shadow: inset 0 0 0 1px rgba(var(--alp-color-primary-rgb), 0.18);
+  box-shadow: inset 3px 0 0 var(--alp-color-primary), var(--alp-shadow-btn);
+  filter: brightness(1.06);
 }
 
 .nav-dropdown-trigger.is-active::after {
@@ -343,6 +366,9 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
 .nav-dropdown-trigger:hover {
   color: var(--alp-color-primary);
   background: var(--alp-bg-nav-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--alp-shadow-btn);
+  filter: brightness(1.1);
 }
 
 .arrow-icon {

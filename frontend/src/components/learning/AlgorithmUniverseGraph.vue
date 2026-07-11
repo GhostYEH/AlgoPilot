@@ -181,7 +181,7 @@ const universeNodes = computed((): UniverseGraphNode[] => {
     return {
       id: key,
       label: row?.label ?? mod?.label ?? key,
-      accent: row?.accent ?? mod?.accent ?? '#22d3ee',
+      accent: row?.accent ?? mod?.accent ?? '#3d8a7e',
       weight,
       radius,
       score,
@@ -316,7 +316,7 @@ function drawStars() {
     ctx.fillStyle = '#020617'
     ctx.fillRect(0, 0, w, h)
     const grad = ctx.createRadialGradient(w * 0.5, h * 0.35, 0, w * 0.5, h * 0.35, w * 0.65)
-    grad.addColorStop(0, 'rgba(34, 211, 238, 0.08)')
+    grad.addColorStop(0, 'rgba(61, 138, 126, 0.08)')
     grad.addColorStop(1, 'transparent')
     ctx.fillStyle = grad
     ctx.fillRect(0, 0, w, h)
@@ -344,9 +344,9 @@ function nodeFill(n: UniverseGraphNode): string {
 
 function nodeStroke(n: UniverseGraphNode): string {
   if (n.status === 'locked') return '#475569'
-  if (n.status === 'remediation') return '#fb923c'
-  if (n.status === 'mastered') return '#4ade80'
-  if (n.status === 'next') return '#22d3ee'
+  if (n.status === 'remediation') return '#a87a52'
+  if (n.status === 'mastered') return '#6aa878'
+  if (n.status === 'next') return '#3d8a7e'
   return n.accent
 }
 
@@ -569,7 +569,7 @@ function initGraph() {
     )
     .data(links)
     .join('line')
-    .attr('stroke', 'rgba(34, 211, 238, 0.35)')
+    .attr('stroke', 'rgba(61, 138, 126, 0.35)')
     .attr('stroke-width', 1.5)
     .attr('stroke-opacity', 0.6)
 
@@ -612,7 +612,7 @@ function initGraph() {
     .attr('class', 'remediation-halo')
     .attr('r', (d) => d.radius + 10)
     .attr('fill', 'none')
-    .attr('stroke', '#fb923c')
+    .attr('stroke', '#a87a52')
     .attr('stroke-width', 2)
     .attr('pointer-events', 'none')
 
@@ -638,7 +638,7 @@ function initGraph() {
     .append('text')
     .attr('y', (d) => -d.radius - 6)
     .attr('text-anchor', 'middle')
-    .attr('fill', '#22d3ee')
+    .attr('fill', '#3d8a7e')
     .attr('font-size', 9)
     .attr('pointer-events', 'none')
     .text((d) => `#${d.rank}`)
@@ -760,7 +760,7 @@ function renderMiniRadar(svgRoot: SVGSVGElement, dims: Array<{ label: string; sc
     g.append('circle')
       .attr('r', rScale(lvl))
       .attr('fill', 'none')
-      .attr('stroke', 'rgba(34, 211, 238, 0.2)')
+      .attr('stroke', 'rgba(61, 138, 126, 0.2)')
       .attr('stroke-dasharray', '2,2')
   })
 
@@ -769,7 +769,7 @@ function renderMiniRadar(svgRoot: SVGSVGElement, dims: Array<{ label: string; sc
     g.append('line')
       .attr('x2', radius * Math.cos(angle))
       .attr('y2', radius * Math.sin(angle))
-      .attr('stroke', d.highlight ? 'rgba(56,189,248,0.6)' : 'rgba(71,85,105,0.5)')
+      .attr('stroke', d.highlight ? 'rgba(74,126,148,0.6)' : 'rgba(71,85,105,0.5)')
   })
 
   const area = d3
@@ -780,8 +780,8 @@ function renderMiniRadar(svgRoot: SVGSVGElement, dims: Array<{ label: string; sc
 
   g.append('path')
     .datum(dims.map((d) => ({ score: d.score })))
-    .attr('fill', 'rgba(34, 211, 238, 0.25)')
-    .attr('stroke', '#22d3ee')
+    .attr('fill', 'rgba(61, 138, 126, 0.25)')
+    .attr('stroke', '#3d8a7e')
     .attr('stroke-width', 1.5)
     .attr('d', area)
 }
@@ -1126,9 +1126,9 @@ onUnmounted(() => {
   min-height: min(72vh, 720px);
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid rgba(34, 211, 238, 0.25);
+  border: 1px solid var(--alp-color-primary-glow);
   box-shadow:
-    0 0 60px rgba(34, 211, 238, 0.08),
+    0 0 60px rgba(var(--alp-color-primary-rgb), 0.08),
     inset 0 0 80px rgba(2, 6, 23, 0.9);
 }
 
@@ -1157,17 +1157,17 @@ onUnmounted(() => {
 }
 
 .graph-layer :deep(.universe-node--remediation .node-core) {
-  filter: drop-shadow(0 0 16px rgba(251, 146, 60, 0.95));
+  filter: drop-shadow(0 0 16px rgba(168, 122, 82,0.95));
   animation: warn-pulse 1.1s ease-in-out infinite;
 }
 
 .graph-layer :deep(.universe-node--mastered-glow .node-core) {
-  filter: drop-shadow(0 0 14px rgba(74, 222, 128, 0.85));
+  filter: drop-shadow(0 0 14px rgba(106, 168, 120,0.85));
   animation: breathe-glow 2.8s ease-in-out infinite;
 }
 
 .graph-layer :deep(.universe-node--next .node-core) {
-  filter: drop-shadow(0 0 14px rgba(34, 211, 238, 0.85));
+  filter: drop-shadow(0 0 14px rgba(var(--alp-color-primary-rgb), 0.85));
 }
 
 .graph-layer :deep(.universe-node--locked .node-core) {
@@ -1184,17 +1184,17 @@ onUnmounted(() => {
 }
 
 .graph-layer :deep(.universe-node--focused .node-core) {
-  filter: drop-shadow(0 0 22px rgba(34, 211, 238, 1));
+  filter: drop-shadow(0 0 22px rgba(var(--alp-color-primary-rgb), 1));
   animation: focus-pulse 1.2s ease-in-out infinite;
 }
 
 @keyframes focus-pulse {
   0%,
   100% {
-    filter: drop-shadow(0 0 18px rgba(34, 211, 238, 0.85));
+    filter: drop-shadow(0 0 18px rgba(var(--alp-color-primary-rgb), 0.85));
   }
   50% {
-    filter: drop-shadow(0 0 28px rgba(167, 139, 250, 0.95));
+    filter: drop-shadow(0 0 28px rgba(var(--alp-color-accent-rgb), 0.95));
   }
 }
 
@@ -1202,21 +1202,21 @@ onUnmounted(() => {
   0%,
   100% {
     stroke-opacity: 0.35;
-    stroke: #fb923c;
+    stroke: #a87a52;
   }
   50% {
     stroke-opacity: 1;
-    stroke: #ef4444;
+    stroke: #9e5a5a;
   }
 }
 
 @keyframes breathe-glow {
   0%,
   100% {
-    filter: drop-shadow(0 0 8px rgba(74, 222, 128, 0.5));
+    filter: drop-shadow(0 0 8px rgba(106, 168, 120,0.5));
   }
   50% {
-    filter: drop-shadow(0 0 18px rgba(34, 211, 238, 0.85));
+    filter: drop-shadow(0 0 18px rgba(var(--alp-color-primary-rgb), 0.85));
   }
 }
 
@@ -1224,11 +1224,11 @@ onUnmounted(() => {
   0%,
   100% {
     stroke-width: 2;
-    filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.6));
+    filter: drop-shadow(0 0 8px rgba(158, 90, 90,0.6));
   }
   50% {
     stroke-width: 3.5;
-    filter: drop-shadow(0 0 22px rgba(251, 146, 60, 1));
+    filter: drop-shadow(0 0 22px rgba(168, 122, 82,1));
   }
 }
 
@@ -1251,7 +1251,7 @@ onUnmounted(() => {
   font-size: 14px;
   font-weight: 600;
   color: #e2e8f0;
-  text-shadow: 0 0 12px rgba(34, 211, 238, 0.5);
+  text-shadow: 0 0 12px rgba(var(--alp-color-primary-rgb), 0.5);
   pointer-events: auto;
 }
 
@@ -1263,7 +1263,7 @@ onUnmounted(() => {
 
 .hud-actions :deep(.el-button) {
   background: rgba(15, 23, 42, 0.75);
-  border-color: rgba(34, 211, 238, 0.35);
+  border-color: var(--alp-color-primary-glow);
   color: #e2e8f0;
 }
 
@@ -1289,13 +1289,13 @@ onUnmounted(() => {
 }
 
 .dot--mastered {
-  background: #4ade80;
-  box-shadow: 0 0 8px #4ade80;
+  background: #6aa878;
+  box-shadow: 0 0 8px #6aa878;
 }
 
 .dot--next {
-  background: #22d3ee;
-  box-shadow: 0 0 8px #22d3ee;
+  background: var(--alp-color-primary);
+  box-shadow: 0 0 8px var(--alp-color-primary-glow);
 }
 
 .dot--locked {
@@ -1303,7 +1303,7 @@ onUnmounted(() => {
 }
 
 .dot--remediation {
-  background: #fb923c;
+  background: #a87a52;
   animation: warn-pulse 1.1s ease-in-out infinite;
 }
 
@@ -1323,10 +1323,10 @@ onUnmounted(() => {
   max-width: 280px;
   padding: 12px 14px;
   border-radius: 10px;
-  background: linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.98));
-  border: 1px solid rgba(34, 211, 238, 0.45);
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid var(--alp-color-primary-glow);
   box-shadow:
-    0 0 24px rgba(34, 211, 238, 0.2),
+    0 0 24px rgba(var(--alp-color-primary-rgb), 0.2),
     0 8px 32px rgba(0, 0, 0, 0.5);
   pointer-events: none;
   backdrop-filter: blur(8px);
@@ -1373,7 +1373,7 @@ onUnmounted(() => {
 }
 
 .tooltip-dims li.is-highlight {
-  color: #22d3ee;
+  color: var(--alp-color-primary);
 }
 
 .tooltip-dims strong {
@@ -1397,19 +1397,19 @@ onUnmounted(() => {
   justify-content: space-between;
   padding: 14px 16px;
   border-radius: 10px;
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.6));
+  background: rgba(15, 23, 42, 0.9);
   border: 1px solid color-mix(in srgb, var(--node-accent) 40%, transparent);
   margin-bottom: 12px;
 }
 
 .drawer-node-preview--remediation {
-  border-color: #fb923c;
-  box-shadow: 0 0 20px rgba(251, 146, 60, 0.25);
+  border-color: #a87a52;
+  box-shadow: 0 0 20px rgba(168, 122, 82,0.25);
   animation: warn-pulse 1.2s ease-in-out infinite;
 }
 
 .drawer-node-preview--mastered {
-  box-shadow: 0 0 20px rgba(74, 222, 128, 0.2);
+  box-shadow: 0 0 20px rgba(106, 168, 120,0.2);
 }
 
 .preview-label {
@@ -1428,7 +1428,7 @@ onUnmounted(() => {
   margin: 0 0 8px;
   padding: 8px 10px;
   border-radius: 8px;
-  background: rgba(34, 211, 238, 0.1);
+  background: rgba(var(--alp-color-primary-rgb), 0.1);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -1476,7 +1476,7 @@ onUnmounted(() => {
 
 .resource-card--filled:hover {
   border-color: var(--alp-color-primary);
-  box-shadow: 0 4px 16px rgba(34, 211, 238, 0.12);
+  box-shadow: 0 4px 16px rgba(var(--alp-color-primary-rgb), 0.12);
 }
 
 .resource-icon {
@@ -1539,7 +1539,7 @@ onUnmounted(() => {
   max-height: 160px;
   overflow: auto;
   background: rgba(15, 23, 42, 0.92);
-  border: 1px solid rgba(34, 211, 238, 0.3);
+  border: 1px solid var(--alp-color-primary-glow);
   border-radius: 8px;
 }
 
@@ -1551,7 +1551,7 @@ onUnmounted(() => {
 }
 
 .search-results li:hover {
-  background: rgba(34, 211, 238, 0.1);
+  background: rgba(var(--alp-color-primary-rgb), 0.1);
 }
 
 .hit-kind {
@@ -1575,7 +1575,7 @@ onUnmounted(() => {
   padding: 12px 14px;
   border-radius: 12px;
   background: rgba(15, 23, 42, 0.94);
-  border: 1px solid rgba(34, 211, 238, 0.4);
+  border: 1px solid var(--alp-color-primary-glow);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
@@ -1608,7 +1608,7 @@ onUnmounted(() => {
 
 .tour-encourage {
   margin-top: 6px !important;
-  color: #fbbf24 !important;
+  color: #9c8540 !important;
 }
 
 .impact-ripple,

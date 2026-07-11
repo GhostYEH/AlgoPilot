@@ -21,9 +21,9 @@ const fail = ref(false)
 
 const intervals = [
   { start: 1, end: 3 },
-  { start: 2, end: 4 },
   { start: 3, end: 5 },
-  { start: 1, end: 2 },
+  { start: 2, end: 4 },
+  { start: 5, end: 6 },
 ]
 
 watch(
@@ -201,11 +201,11 @@ function doReset() {
 }
 .interval-btn:hover {
   transform: translateY(-2px);
-  border-color: #22d3ee;
+  border-color: #3a8a9e;
 }
 .interval-btn.picked {
-  border-color: #22c55e;
-  background: color-mix(in srgb, #22c55e 15%, transparent);
+  border-color: #4a8a5e;
+  background: color-mix(in srgb, #4a8a5e 15%, transparent);
 }
 .iv-label {
   display: block;

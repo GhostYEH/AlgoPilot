@@ -63,14 +63,14 @@ const emit = defineEmits<{ pick: [node: TreeNodeData] }>()
 }
 .tree-node-btn:hover {
   transform: scale(1.06);
-  border-color: #22d3ee;
+  border-color: #3a8a9e;
 }
 .tree-node-btn.visited {
-  background: color-mix(in srgb, #22c55e 20%, transparent);
-  border-color: #22c55e;
+  background: color-mix(in srgb, #4a8a5e 20%, transparent);
+  border-color: #4a8a5e;
 }
 .tree-node-btn.picked {
-  border-color: #fbbf24;
+  border-color: #9c8540;
 }
 .tree-node-btn.shake {
   animation: shake 0.35s ease;

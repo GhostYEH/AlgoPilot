@@ -274,7 +274,7 @@ onMounted(async () => {
   margin-bottom: 20px;
   padding: 16px 18px;
   border-radius: var(--alp-radius-card);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--alp-color-primary) 8%, var(--alp-bg-soft-block)), var(--alp-bg-soft-block));
+  background: color-mix(in srgb, var(--alp-color-primary) 8%, var(--alp-bg-soft-block));
   border: 1px solid color-mix(in srgb, var(--alp-color-primary) 25%, var(--alp-color-border));
 }
 

@@ -94,11 +94,11 @@ function onCharClick(i: number) {
     emit('cleared')
     return
   }
-  const a = filtered.value[i]
+  const a = filtered.value[leftCharIdx.value!]
   const b = filtered.value[rightCharIdx.value!]
   if (a !== b) {
     fail.value = true
-    msg.value = `不匹配：${chars.value[i]} vs ${chars.value[rightCharIdx.value!]}`
+    msg.value = `不匹配：${chars.value[leftCharIdx.value!]} vs ${chars.value[rightCharIdx.value!]}`
     pushLog(`不匹配 ${a} vs ${b}`)
     return
   }
@@ -256,12 +256,12 @@ function doReset() {
   cursor: not-allowed;
 }
 .char-cell.is-l {
-  border-color: #22d3ee;
-  box-shadow: 0 0 0 2px color-mix(in srgb, #22d3ee 30%, transparent);
+  border-color: #3a8a9e;
+  box-shadow: 0 0 0 2px color-mix(in srgb, #3a8a9e 30%, transparent);
 }
 .char-cell.is-r {
-  border-color: #f472b6;
-  box-shadow: 0 0 0 2px color-mix(in srgb, #f472b6 30%, transparent);
+  border-color: #9e6e88;
+  box-shadow: 0 0 0 2px color-mix(in srgb, #9e6e88 30%, transparent);
 }
 .char-cell.is-done {
   opacity: 0.5;
@@ -288,8 +288,8 @@ function doReset() {
   font-weight: 600;
 }
 .kmp-next-cell.is-current {
-  border-color: #fbbf24;
-  background: color-mix(in srgb, #fbbf24 15%, transparent);
+  border-color: #9c8540;
+  background: color-mix(in srgb, #9c8540 15%, transparent);
 }
 .sub {
   font-size: 12px;

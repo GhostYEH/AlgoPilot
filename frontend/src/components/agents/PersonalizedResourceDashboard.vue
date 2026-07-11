@@ -597,16 +597,12 @@ function openEvidence() {
 .dash-tab.active {
   border-color: var(--alp-color-primary);
   box-shadow: 0 0 24px color-mix(in srgb, var(--alp-color-primary) 18%, transparent);
-  background: linear-gradient(
-    145deg,
-    color-mix(in srgb, var(--alp-color-primary) 8%, var(--alp-bg-surface)),
-    var(--alp-bg-surface)
-  );
+  background: color-mix(in srgb, var(--alp-color-primary) 8%, var(--alp-bg-surface));
 }
 
 .dash-tab.ready .tab-dot {
-  background: #4ade80;
-  box-shadow: 0 0 8px #4ade80;
+  background: var(--alp-color-success);
+  box-shadow: 0 0 8px var(--alp-color-primary-glow);
 }
 
 .tab-icon {
@@ -685,7 +681,7 @@ function openEvidence() {
   align-items: center;
   padding: 24px;
   border-radius: 12px;
-  background: #0f172a;
+  background: var(--alp-bg-surface-solid);
   overflow: auto;
 }
 
@@ -707,12 +703,12 @@ function openEvidence() {
 }
 
 .mermaid-host :deep(.mermaid-placeholder) {
-  color: #94a3b8;
+  color: var(--alp-color-muted);
   font-size: 13px;
 }
 
 .mermaid-err {
-  color: #f87171;
+  color: var(--alp-color-danger);
   font-size: 12px;
   margin-top: 8px;
 }
@@ -853,7 +849,7 @@ function openEvidence() {
 .trace-verdict {
   font-size: 11px;
   font-family: ui-monospace, monospace;
-  color: #4ade80;
+  color: var(--alp-color-success);
 }
 
 .trace-viz-wrap {

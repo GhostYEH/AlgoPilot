@@ -342,7 +342,7 @@ defineExpose({
 
 .msg-row--user .msg-bubble {
   background: var(--alp-color-primary-soft);
-  border: 1px solid rgba(34, 211, 238, 0.35);
+  border: 1px solid var(--alp-color-primary-glow);
 }
 
 .msg-row--assistant .msg-bubble {
@@ -415,7 +415,7 @@ defineExpose({
   font-family: ui-monospace, Consolas, monospace;
   background: var(--alp-bg-code-ish);
   border-radius: 4px;
-  color: #7dd3fc;
+  color: var(--alp-color-primary);
 }
 
 .msg-text--md :deep(.ai-md-pre) {
@@ -470,7 +470,7 @@ defineExpose({
 
 .quick-chip:hover:not(:disabled) {
   background: var(--alp-bg-nav-hover);
-  border-color: rgba(34, 211, 238, 0.35);
+  border-color: var(--alp-color-primary-glow);
 }
 
 .quick-chip:disabled {

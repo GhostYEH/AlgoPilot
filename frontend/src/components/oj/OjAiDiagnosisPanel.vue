@@ -84,11 +84,7 @@ const edgeVerdictLabel = computed(() => {
   padding: 14px 16px;
   border-radius: var(--alp-radius-card);
   border: 1px solid color-mix(in srgb, var(--el-color-danger) 35%, var(--alp-color-border));
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--el-color-danger) 6%, var(--alp-bg-surface-muted)) 0%,
-    var(--alp-bg-surface-muted) 100%
-  );
+  background: color-mix(in srgb, var(--el-color-danger) 6%, var(--alp-bg-surface-muted));
 }
 
 .ai-diagnosis-head {

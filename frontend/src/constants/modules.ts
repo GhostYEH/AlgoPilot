@@ -25,19 +25,19 @@ export const MODULE_PHASE_LABELS: Record<ModulePhase, string> = {
 }
 
 export const ALGORITHM_MODULES: AlgorithmModuleItem[] = [
-  { key: 'array', label: '数组', phase: 'foundation', available: true, accent: '#22d3ee' },
-  { key: 'linked-list', label: '链表', phase: 'foundation', available: true, accent: '#22d3ee' },
-  { key: 'hash-table', label: '哈希表', phase: 'foundation', available: true, accent: '#2dd4bf' },
+  { key: 'array', label: '数组', phase: 'foundation', available: true, accent: '#3a8a9e' },
+  { key: 'linked-list', label: '链表', phase: 'foundation', available: true, accent: '#3a8a9e' },
+  { key: 'hash-table', label: '哈希表', phase: 'foundation', available: true, accent: '#3d8a7e' },
   { key: 'string', label: '字符串', phase: 'foundation', available: true, accent: '#34d399' },
-  { key: 'two-pointers', label: '双指针法', phase: 'technique', available: true, accent: '#a78bfa' },
-  { key: 'stack-queue', label: '栈与队列', phase: 'technique', available: true, accent: '#818cf8' },
-  { key: 'sorting', label: '排序算法', phase: 'technique', available: true, accent: '#06b6d4' },
-  { key: 'binary-tree', label: '二叉树', phase: 'tree', available: true, accent: '#f472b6' },
-  { key: 'backtracking', label: '回溯算法', phase: 'tree', available: true, accent: '#fb7185' },
-  { key: 'greedy', label: '贪心算法', phase: 'advanced', available: true, accent: '#fbbf24' },
-  { key: 'dp', label: '动态规划', phase: 'advanced', available: true, accent: '#f97316' },
-  { key: 'monotonic-stack', label: '单调栈', phase: 'advanced', available: true, accent: '#c084fc' },
-  { key: 'graph', label: '图论', phase: 'advanced', available: true, accent: '#ef4444' },
+  { key: 'two-pointers', label: '双指针法', phase: 'technique', available: true, accent: '#7a6e9e' },
+  { key: 'stack-queue', label: '栈与队列', phase: 'technique', available: true, accent: '#6b7a9e' },
+  { key: 'sorting', label: '排序算法', phase: 'technique', available: true, accent: '#2e6b78' },
+  { key: 'binary-tree', label: '二叉树', phase: 'tree', available: true, accent: '#9e6e88' },
+  { key: 'backtracking', label: '回溯算法', phase: 'tree', available: true, accent: '#9e6470' },
+  { key: 'greedy', label: '贪心算法', phase: 'advanced', available: true, accent: '#9c8540' },
+  { key: 'dp', label: '动态规划', phase: 'advanced', available: true, accent: '#9e6e4a' },
+  { key: 'monotonic-stack', label: '单调栈', phase: 'advanced', available: true, accent: '#7a6e8e' },
+  { key: 'graph', label: '图论', phase: 'advanced', available: true, accent: '#9e5a5a' },
 ]
 
 /** 具名学习路由（与 HomeView / 地图点击逻辑一致） */

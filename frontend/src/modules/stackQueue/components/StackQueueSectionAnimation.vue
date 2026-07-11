@@ -923,12 +923,12 @@ const parenOpIsPop = computed(
 .struct-tag {
   font-size: 15px;
   font-weight: 700;
-  color: var(--alp-color-primary, #22d3ee);
+  color: var(--alp-color-primary, #3a8a9e);
   letter-spacing: 0.02em;
 }
 
 .struct-tag--queue {
-  color: #4ade80;
+  color: #6aa878;
 }
 
 .struct-tag--deque {
@@ -946,15 +946,15 @@ const parenOpIsPop = computed(
 }
 
 .struct-badge--queue {
-  color: #4ade80;
-  background: color-mix(in srgb, #4ade80 12%, transparent);
-  border-color: color-mix(in srgb, #4ade80 35%, transparent);
+  color: #6aa878;
+  background: color-mix(in srgb, #6aa878 12%, transparent);
+  border-color: color-mix(in srgb, #6aa878 35%, transparent);
 }
 
 .struct-badge--deque {
   color: #c4b5fd;
-  background: color-mix(in srgb, #a78bfa 12%, transparent);
-  border-color: color-mix(in srgb, #a78bfa 35%, transparent);
+  background: color-mix(in srgb, #7a6e9e 12%, transparent);
+  border-color: color-mix(in srgb, #7a6e9e 35%, transparent);
 }
 
 .viz-stage {
@@ -1024,11 +1024,7 @@ const parenOpIsPop = computed(
   padding: 0 10px 10px;
   border-radius: 14px;
   border: 2px solid color-mix(in srgb, var(--alp-color-primary) 45%, var(--alp-color-border));
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--alp-color-primary) 8%, transparent),
-    var(--alp-bg-surface-solid, rgba(15, 23, 42, 0.6))
-  );
+  background: var(--alp-bg-surface-solid, rgba(15, 23, 42, 0.6));
   box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.25);
 }
 
@@ -1125,7 +1121,7 @@ const parenOpIsPop = computed(
 }
 
 .op-badge--push {
-  color: #4ade80;
+  color: #6aa878;
   background: rgba(74, 222, 128, 0.14);
   border: 1px solid rgba(74, 222, 128, 0.35);
 }
@@ -1146,7 +1142,7 @@ const parenOpIsPop = computed(
   max-width: 100%;
   padding: 10px 8px;
   border-radius: 14px;
-  border: 2px dashed color-mix(in srgb, #4ade80 40%, var(--alp-color-border));
+  border: 2px dashed color-mix(in srgb, #6aa878 40%, var(--alp-color-border));
   background: var(--alp-bg-surface-solid, rgba(15, 23, 42, 0.5));
   box-sizing: border-box;
 }
@@ -1194,7 +1190,7 @@ const parenOpIsPop = computed(
 }
 
 .axis-tag--back {
-  color: #4ade80;
+  color: #6aa878;
   background: rgba(74, 222, 128, 0.12);
 }
 
@@ -1249,8 +1245,8 @@ const parenOpIsPop = computed(
 }
 
 .deque-well--active {
-  border-color: color-mix(in srgb, #a78bfa 55%, transparent);
-  box-shadow: 0 0 0 4px color-mix(in srgb, #a78bfa 15%, transparent);
+  border-color: color-mix(in srgb, #7a6e9e 55%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, #7a6e9e 15%, transparent);
 }
 
 .deque-port {
@@ -1268,7 +1264,7 @@ const parenOpIsPop = computed(
 }
 
 .deque-well--active .deque-port {
-  border-color: color-mix(in srgb, #a78bfa 40%, transparent);
+  border-color: color-mix(in srgb, #7a6e9e 40%, transparent);
 }
 
 .port-label {
@@ -1368,7 +1364,7 @@ const parenOpIsPop = computed(
 .heap {
   font-size: 10px;
   font-weight: 700;
-  color: #a78bfa;
+  color: #7a6e9e;
   text-align: center;
 }
 .sum {
@@ -1417,7 +1413,7 @@ const parenOpIsPop = computed(
 
 .sq-paren-cursor {
   font-size: 12px;
-  color: var(--alp-color-primary, #22d3ee);
+  color: var(--alp-color-primary, #3a8a9e);
   line-height: 1;
 }
 
@@ -1479,7 +1475,7 @@ const parenOpIsPop = computed(
 }
 
 .sq-sbq-incoming strong {
-  color: #4ade80;
+  color: #6aa878;
 }
 
 .sq-sbq-queue {
@@ -1487,7 +1483,7 @@ const parenOpIsPop = computed(
   max-width: 360px;
   padding: 10px 12px;
   border-radius: 14px;
-  border: 2px dashed color-mix(in srgb, #4ade80 40%, var(--alp-color-border));
+  border: 2px dashed color-mix(in srgb, #6aa878 40%, var(--alp-color-border));
   background: var(--alp-bg-surface-solid, rgba(15, 23, 42, 0.5));
   box-sizing: border-box;
 }
@@ -1523,7 +1519,7 @@ const parenOpIsPop = computed(
 }
 
 .sq-axis-tag--back {
-  color: #4ade80;
+  color: #6aa878;
   background: rgba(74, 222, 128, 0.12);
 }
 
@@ -1565,14 +1561,14 @@ const parenOpIsPop = computed(
 
 :deep(.learn-viz-cell--stack-top),
 :deep(.learn-viz-cell--push-new) {
-  border-color: var(--alp-color-primary, #22d3ee);
+  border-color: var(--alp-color-primary, #3a8a9e);
   background: color-mix(in srgb, var(--alp-color-primary) 20%, var(--alp-bg-surface-solid));
   transform: scale(1.06);
 }
 
 :deep(.learn-viz-cell--push-new) {
-  border-color: #4ade80;
-  background: color-mix(in srgb, #4ade80 18%, var(--alp-bg-surface-solid));
+  border-color: #6aa878;
+  background: color-mix(in srgb, #6aa878 18%, var(--alp-bg-surface-solid));
 }
 
 .sq-adj-viz .sq-adj-pop {
@@ -1625,8 +1621,8 @@ const parenOpIsPop = computed(
   padding: 2px 8px;
   border-radius: 999px;
   color: #c4b5fd;
-  background: color-mix(in srgb, #a78bfa 12%, transparent);
-  border: 1px solid color-mix(in srgb, #a78bfa 35%, transparent);
+  background: color-mix(in srgb, #7a6e9e 12%, transparent);
+  border: 1px solid color-mix(in srgb, #7a6e9e 35%, transparent);
 }
 
 .sq-sw-k-badge--violet {
@@ -1690,7 +1686,7 @@ const parenOpIsPop = computed(
 }
 
 .sq-sw-note--warn {
-  color: #fbbf24;
+  color: #9c8540;
 }
 
 .sq-sw-max {
@@ -1749,7 +1745,7 @@ const parenOpIsPop = computed(
 .sq-topk-bar {
   height: 8px;
   border-radius: 4px;
-  background: var(--alp-color-primary, #22d3ee);
+  background: var(--alp-color-primary, #3a8a9e);
   transition: width 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -1841,13 +1837,13 @@ const parenOpIsPop = computed(
 }
 
 .sq-summary-card--cyan.sq-summary-card--active {
-  border-color: color-mix(in srgb, #4ade80 50%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, #4ade80 12%, transparent);
+  border-color: color-mix(in srgb, #6aa878 50%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, #6aa878 12%, transparent);
 }
 
 .sq-summary-card--violet.sq-summary-card--active {
-  border-color: color-mix(in srgb, #a78bfa 50%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, #a78bfa 12%, transparent);
+  border-color: color-mix(in srgb, #7a6e9e 50%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, #7a6e9e 12%, transparent);
 }
 
 .sq-summary-title {

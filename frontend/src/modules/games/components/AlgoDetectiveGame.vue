@@ -174,19 +174,21 @@ function doReset() {
   cursor: pointer;
   font-size: 14px;
   line-height: 1.5;
-  transition: border-color 0.12s, background 0.12s, transform 0.12s;
+  transition: border-color 0.12s, background 0.12s, transform 0.12s, filter var(--alp-transition-fast);
 }
 .step:hover {
-  border-color: #22d3ee;
+  border-color: #3a8a9e;
   transform: translateX(4px);
+  box-shadow: var(--alp-shadow-btn);
+  filter: brightness(1.06);
 }
 .step.is-flagged {
-  border-color: #fbbf24;
-  background: color-mix(in srgb, #fbbf24 12%, transparent);
+  border-color: #9c8540;
+  background: color-mix(in srgb, #9c8540 12%, transparent);
 }
 .step.is-right {
-  border-color: #22c55e;
-  background: color-mix(in srgb, #22c55e 14%, transparent);
+  border-color: #4a8a5e;
+  background: color-mix(in srgb, #4a8a5e 14%, transparent);
 }
 .step.is-wrong-step {
   opacity: 0.5;

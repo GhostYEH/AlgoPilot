@@ -48,3 +48,36 @@ export function getEffectivenessCsvUrl(params?: {
   })
   return `${base}/api/analytics/effectiveness/export.csv?${sp.toString()}`
 }
+
+export interface CommunityStats {
+  student_count: number
+  resource_count: number
+  week_ac_count: number
+  week_active_count: number
+}
+
+export interface CommunityLeaderboardEntry {
+  rank: number
+  name: string
+  avatarHue: number
+  score: number
+  unit: string
+}
+
+export interface CommunityActivityItem {
+  id: string
+  user: string
+  action: string
+  time: string
+}
+
+export interface CommunityResponse {
+  stats: CommunityStats
+  ac_board: CommunityLeaderboardEntry[]
+  streak_board: CommunityLeaderboardEntry[]
+  feed: CommunityActivityItem[]
+}
+
+export async function fetchCommunity(): Promise<CommunityResponse> {
+  return request.get('/api/analytics/community') as Promise<CommunityResponse>
+}

@@ -76,12 +76,8 @@ const inWindow = (i: number) => {
   margin-bottom: 12px;
   padding: 14px 16px;
   border-radius: 12px;
-  border: 1px solid color-mix(in srgb, #a78bfa 35%, var(--alp-color-border));
-  background: linear-gradient(
-    165deg,
-    var(--alp-bg-surface) 0%,
-    color-mix(in srgb, #a78bfa 8%, var(--alp-bg-soft-block)) 100%
-  );
+  border: 1px solid color-mix(in srgb, var(--alp-color-accent) 35%, var(--alp-color-border));
+  background: var(--alp-bg-surface);
   box-shadow: var(--alp-shadow-card);
 }
 
@@ -95,19 +91,19 @@ const inWindow = (i: number) => {
 .tq-tag {
   font-size: 12px;
   font-weight: 700;
-  color: #a78bfa;
+  color: var(--alp-color-accent);
 }
 
 .tq-badge {
   font-size: 11px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, #a78bfa 14%, transparent);
+  background: color-mix(in srgb, var(--alp-color-accent) 14%, transparent);
   color: var(--alp-color-muted);
 }
 
 .tq-badge--max {
-  color: #4ade80;
+  color: #6aa878;
   font-weight: 600;
 }
 
@@ -140,13 +136,13 @@ const inWindow = (i: number) => {
 }
 
 .tq-cell--win {
-  border-color: color-mix(in srgb, #2dd4bf 50%, var(--alp-color-border));
-  background: color-mix(in srgb, #2dd4bf 12%, var(--alp-bg-soft-block));
+  border-color: color-mix(in srgb, #3d8a7e 50%, var(--alp-color-border));
+  background: color-mix(in srgb, #3d8a7e 12%, var(--alp-bg-soft-block));
 }
 
 .tq-cell--idx {
-  border-color: #22d3ee;
-  box-shadow: 0 0 0 2px color-mix(in srgb, #22d3ee 30%, transparent);
+  border-color: var(--alp-color-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--alp-color-primary) 30%, transparent);
 }
 
 .tq-cell--pulse {
@@ -178,13 +174,13 @@ const inWindow = (i: number) => {
   gap: 8px;
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px dashed color-mix(in srgb, #a78bfa 40%, var(--alp-color-border));
+  border: 1px dashed color-mix(in srgb, var(--alp-color-accent) 40%, var(--alp-color-border));
   background: var(--alp-bg-soft-block);
 }
 
 .tq-deque-lane--hot {
   border-style: solid;
-  border-color: #a78bfa;
+  border-color: var(--alp-color-accent);
 }
 
 .tq-port {
@@ -206,8 +202,8 @@ const inWindow = (i: number) => {
 }
 
 .tq-dq-cell--front {
-  border-color: #4ade80;
-  background: color-mix(in srgb, #4ade80 14%, transparent);
+  border-color: #6aa878;
+  background: color-mix(in srgb, #6aa878 14%, transparent);
 }
 
 .tq-dq-cell--hot {

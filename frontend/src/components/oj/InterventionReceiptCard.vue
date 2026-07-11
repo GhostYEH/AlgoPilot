@@ -296,11 +296,7 @@ const doneCount = computed(() => agentChain.value.filter((n) => n.status === 'do
   padding: 14px 16px;
   border-radius: var(--alp-radius-card);
   border: 1px solid color-mix(in srgb, var(--el-color-success) 35%, var(--alp-color-border));
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--el-color-success) 5%, var(--alp-bg-surface-muted)) 0%,
-    var(--alp-bg-surface-muted) 100%
-  );
+  background: color-mix(in srgb, var(--el-color-success) 5%, var(--alp-bg-surface-muted));
 }
 
 .receipt-head {

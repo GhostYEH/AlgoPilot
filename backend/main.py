@@ -48,6 +48,7 @@ from api.auth import router as auth_router
 from api.health import router as health_router
 from api.learning import router as learning_router
 from api.oj import router as oj_router
+from api.oj_admin import router as oj_admin_router
 from api.search import router as search_router
 from api.skills import router as skills_router
 from api.memory import router as memory_router
@@ -91,6 +92,17 @@ async def lifespan(_app: FastAPI):
     import models.db_models  # noqa: F401 — 注册 ORM 元数据
 
     Base.metadata.create_all(bind=engine)
+
+    # 数据自愈：把旧格式学习路径计划 steps 升级为新格式，避免 schema 演进导致 500
+    try:
+        from core.database import SessionLocal
+        from services.orchestrator.core import migrate_legacy_learning_path_plans
+
+        with SessionLocal() as session:
+            migrate_legacy_learning_path_plans(session)
+    except Exception:
+        _logger.warning("学习路径计划数据迁移失败", exc_info=True)
+
     yield
 
 
@@ -112,6 +124,7 @@ app.include_router(ai_tutor_router, prefix="/api/ai", tags=["ai"])
 app.include_router(tts_router, prefix="/api/ai/tts", tags=["ai-tts"])
 app.include_router(oj_assistant_router, prefix="/api/ai/oj", tags=["ai-oj"])
 app.include_router(oj_router, prefix="/api", tags=["oj"])
+app.include_router(oj_admin_router, prefix="/api", tags=["oj-admin"])
 app.include_router(search_router, prefix="/api/search", tags=["search"])
 app.include_router(skills_router, prefix="/api")
 app.include_router(memory_router, prefix="/api")

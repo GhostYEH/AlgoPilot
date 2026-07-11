@@ -15,6 +15,7 @@ from services.oj.trace_runner import TraceStepOut, TraceSummary
 from utils.security import CPP_SECURITY_MESSAGE, CppSecurityViolation, check_cpp_security
 from services.oj.trace_steps_filter import (
     collapse_consecutive_same_line_steps,
+    compress_initialization_phase,
     filter_meaningful_steps,
 )
 from services.oj.trace_line_refine import refine_trace_step_lines
@@ -695,6 +696,7 @@ def _finalize_cpp_steps(
 ) -> TraceSummary:
     steps = collapse_consecutive_same_line_steps(steps)
     refine_trace_step_lines(steps, source)
+    steps = compress_initialization_phase(steps, source=source)
     steps = filter_meaningful_steps(steps, max_steps=MAX_CPP_TRACE_STEPS)
     if len(steps) < 2:
         return TraceSummary(

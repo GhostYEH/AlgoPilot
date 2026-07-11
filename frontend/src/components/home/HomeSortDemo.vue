@@ -122,8 +122,8 @@ onBeforeUnmount(() => {
 .sort-demos {
   padding: 14px 16px;
   border-radius: 12px;
-  border: 1px solid rgba(167, 139, 250, 0.35);
-  background: linear-gradient(135deg, rgba(167, 139, 250, 0.1), rgba(15, 23, 42, 0.5));
+  border: 1px solid var(--alp-color-border-strong);
+  background: var(--alp-color-primary-soft);
 }
 
 .sort-demos-head {
@@ -161,7 +161,7 @@ onBeforeUnmount(() => {
 .sort-demo {
   padding: 12px;
   border-radius: 10px;
-  border: 1px solid rgba(167, 139, 250, 0.25);
+  border: 1px solid var(--alp-color-border);
   background: rgba(15, 23, 42, 0.35);
   min-width: 0;
 }
@@ -213,20 +213,20 @@ onBeforeUnmount(() => {
   width: 100%;
   min-height: 6px;
   border-radius: 5px 5px 2px 2px;
-  background: linear-gradient(180deg, #a78bfa, #6366f1);
+  background: var(--alp-color-primary);
   transition:
     height 0.35s ease,
     background 0.25s ease;
 }
 
 .bar-wrap.active .bar {
-  background: linear-gradient(180deg, #22d3ee, #06b6d4);
-  box-shadow: 0 0 10px rgba(34, 211, 238, 0.4);
+  background: var(--alp-color-accent);
+  box-shadow: 0 0 10px var(--alp-color-primary-glow);
 }
 
 .bar-wrap.pivot .bar {
-  background: linear-gradient(180deg, #fbbf24, #f59e0b);
-  box-shadow: 0 0 8px rgba(251, 191, 36, 0.4);
+  background: var(--alp-color-accent);
+  box-shadow: 0 0 8px var(--alp-color-primary-glow);
 }
 
 .bar-val {
@@ -247,7 +247,7 @@ onBeforeUnmount(() => {
   padding: 1px 5px;
   border-radius: 4px;
   font-size: 9px;
-  color: #fbbf24;
-  background: rgba(251, 191, 36, 0.12);
+  color: #9c8540;
+  background: rgba(156, 133, 64, 0.12);
 }
 </style>

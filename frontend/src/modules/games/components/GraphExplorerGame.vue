@@ -351,7 +351,7 @@ function dfsBacktrack() {
 }
 
 .adj-row strong {
-  color: var(--game-accent, #22d3ee);
+  color: var(--game-accent, #3a8a9e);
 }
 
 .adj-row span {
@@ -383,8 +383,8 @@ function dfsBacktrack() {
 
 .choice-btn:hover:not(:disabled),
 .graph-node:hover:not(:disabled) {
-  border-color: var(--game-accent, #22d3ee);
-  background: color-mix(in srgb, var(--game-accent, #22d3ee) 14%, transparent);
+  border-color: var(--game-accent, #3a8a9e);
+  background: color-mix(in srgb, var(--game-accent, #3a8a9e) 14%, transparent);
   transform: translateY(-1px);
 }
 
@@ -404,12 +404,12 @@ function dfsBacktrack() {
 }
 
 .graph-node.seen {
-  border-color: color-mix(in srgb, #22c55e 45%, transparent);
-  background: color-mix(in srgb, #22c55e 12%, transparent);
+  border-color: color-mix(in srgb, #4a8a5e 45%, transparent);
+  background: color-mix(in srgb, #4a8a5e 12%, transparent);
 }
 
 .graph-node.head {
-  outline: 2px solid var(--game-accent, #22d3ee);
+  outline: 2px solid var(--game-accent, #3a8a9e);
   outline-offset: 2px;
 }
 </style>

@@ -24,15 +24,13 @@ import { getApiBaseUrl } from '@/utils/apiBase'
 import { buildLearningOverview } from '@/utils/learningOverview'
 import { prefetchRoute } from '@/router/prefetch'
 import { fetchProblems, type ProblemListItem } from '@/api/oj'
+import { fetchCommunity, type CommunityResponse } from '@/api/analytics'
 import { touchTodayVisit, getLast7DaySeries, getHeatmapCells } from '@/utils/homeActivityLog'
 import {
   buildSkillRadar,
   buildPlatformStats,
   buildReviewQueue,
   enrichResources,
-  getActivityFeed,
-  getLeaderboardAc,
-  getLeaderboardStreak,
   getRecentForHome,
   pickDailyProblem,
   pickTargetedProblems,
@@ -155,11 +153,26 @@ function goQuick(route: (typeof quickActions)[number]['route'], prefetch?: strin
 const healthStatus = ref<'checking' | 'ok' | 'error'>('checking')
 const ojReadyCount = ref<number | null>(null)
 const ojProblems = ref<ProblemListItem[]>([])
+const communityData = ref<CommunityResponse | null>(null)
 
 const skillRadar = computed(() => buildSkillRadar(overview.value.rows))
 const activitySeries = computed(() => getLast7DaySeries())
 const heatmapCells = computed(() => getHeatmapCells(12))
-const platformStats = computed(() => buildPlatformStats(ojReadyCount.value))
+const platformStats = computed(() => {
+  const base = buildPlatformStats(ojReadyCount.value)
+  const c = communityData.value
+  if (!c) return base
+  return [
+    ...base,
+    { key: 'students', label: '注册学员', value: c.stats.student_count, suffix: ' 人' },
+    { key: 'resources', label: '生成资源', value: c.stats.resource_count, suffix: ' 条' },
+    { key: 'week_ac', label: '本周 AC', value: c.stats.week_ac_count, suffix: ' 次' },
+    { key: 'week_active', label: '本周活跃', value: c.stats.week_active_count, suffix: ' 人' },
+  ]
+})
+const acBoard = computed(() => communityData.value?.ac_board ?? [])
+const streakBoard = computed(() => communityData.value?.streak_board ?? [])
+const activityFeed = computed(() => communityData.value?.feed ?? [])
 const dailyProblem = computed(() => pickDailyProblem(ojProblems.value))
 const targetedProblems = computed(() =>
   pickTargetedProblems(overview.value.weakModules, ojProblems.value),
@@ -225,6 +238,14 @@ onMounted(async () => {
     .catch(() => {
       ojProblems.value = []
       ojReadyCount.value = null
+    })
+
+  void fetchCommunity()
+    .then((data) => {
+      communityData.value = data
+    })
+    .catch(() => {
+      communityData.value = null
     })
 })
 </script>
@@ -441,9 +462,9 @@ onMounted(async () => {
             </template>
             <HomeCommunityPanel
               :stats="platformStats"
-              :ac-board="getLeaderboardAc()"
-              :streak-board="getLeaderboardStreak()"
-              :feed="getActivityFeed()"
+              :ac-board="acBoard"
+              :streak-board="streakBoard"
+              :feed="activityFeed"
             />
           </el-card>
         </el-col>
@@ -708,7 +729,7 @@ onMounted(async () => {
   border-radius: var(--alp-radius-lg);
   border: 1px solid var(--alp-color-border-strong);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 38%),
+    rgba(255, 255, 255, 0.025),
     var(--alp-bg-surface);
   box-shadow: var(--alp-shadow-card);
 }
@@ -789,7 +810,7 @@ onMounted(async () => {
   padding: 14px 13px;
   border-radius: var(--alp-radius-card);
   background:
-    linear-gradient(90deg, rgba(var(--alp-color-primary-rgb), 0.1), transparent),
+    rgba(var(--alp-color-primary-rgb), 0.1),
     var(--alp-bg-soft-block);
   border: 1px solid var(--alp-color-border);
 }
@@ -812,11 +833,8 @@ onMounted(async () => {
   gap: 8px;
   padding: 10px;
   border-radius: var(--alp-radius-card);
-  background:
-    linear-gradient(90deg, rgba(var(--alp-color-primary-rgb), 0.07) 1px, transparent 1px),
-    linear-gradient(0deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    var(--alp-bg-main-panel);
-  background-size: 56px 100%, 100% 34px, auto;
+  background: var(--alp-bg-main-panel);
+  background-size: auto;
   border: 1px solid rgba(var(--alp-color-primary-rgb), 0.1);
 }
 
@@ -837,7 +855,8 @@ onMounted(async () => {
   transition:
     transform var(--alp-transition-smooth),
     box-shadow var(--alp-transition-smooth),
-    border-color var(--alp-transition-fast);
+    border-color var(--alp-transition-fast),
+    filter var(--alp-transition-fast);
 }
 
 .module-node:hover,
@@ -847,8 +866,9 @@ onMounted(async () => {
   border-color: var(--node-accent);
   box-shadow:
     inset 3px 0 0 var(--node-accent),
-    0 12px 26px rgba(0, 0, 0, 0.18);
+    var(--alp-shadow-card-hover);
   outline: none;
+  filter: brightness(1.06);
 }
 
 .module-node.locked {
@@ -859,7 +879,7 @@ onMounted(async () => {
 .module-node.done {
   border-color: rgba(52, 211, 153, 0.5);
   background:
-    linear-gradient(90deg, rgba(34, 197, 94, 0.12), transparent 52%),
+    rgba(74, 138, 94, 0.12),
     color-mix(in srgb, var(--alp-bg-surface) 90%, transparent);
 }
 
@@ -953,8 +973,8 @@ onMounted(async () => {
   border-radius: var(--alp-radius-lg);
   border: 1px solid var(--alp-color-border-strong);
   background:
-    linear-gradient(90deg, rgba(var(--alp-color-primary-rgb), 0.1), transparent 42%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 36%),
+    rgba(var(--alp-color-primary-rgb), 0.1),
+    rgba(255, 255, 255, 0.03),
     var(--alp-bg-surface);
   box-shadow: var(--alp-shadow-card);
   min-width: 0;
@@ -966,10 +986,8 @@ onMounted(async () => {
   content: '';
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(90deg, rgba(var(--alp-color-primary-rgb), 0.08) 1px, transparent 1px),
-    linear-gradient(0deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
-  background-size: 52px 52px;
+  background: transparent;
+  background-size: auto;
   mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.56), transparent 76%);
   pointer-events: none;
 }
@@ -1101,21 +1119,23 @@ html:not(.dark) .hero-visual-panel {
   padding: 16px;
   border-radius: 8px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent),
+    rgba(255, 255, 255, 0.035),
     var(--alp-bg-main-panel);
   border: 1px solid var(--alp-color-border);
-  transition: border-color var(--alp-transition-fast), box-shadow var(--alp-transition-fast);
+  transition: border-color var(--alp-transition-fast), box-shadow var(--alp-transition-fast), filter var(--alp-transition-fast);
 }
 
 .stat-card:hover {
   border-color: rgba(var(--alp-color-primary-rgb), 0.34);
-  box-shadow: var(--alp-shadow-glow);
+  transform: translateY(-3px);
+  box-shadow: var(--alp-shadow-card-hover);
+  filter: brightness(1.06);
 }
 
 .stat-card.accent {
   border-color: rgba(var(--alp-color-accent-rgb), 0.34);
   background:
-    linear-gradient(135deg, rgba(var(--alp-color-accent-rgb), 0.12), transparent 56%),
+    rgba(var(--alp-color-accent-rgb), 0.12),
     var(--alp-bg-main-panel);
 }
 
@@ -1327,12 +1347,15 @@ html:not(.dark) .hero-visual-panel {
   padding: 6px 14px;
   border-radius: var(--alp-radius-pill);
   cursor: pointer;
-  transition: border-color var(--alp-transition-fast), background var(--alp-transition-fast);
+  transition: border-color var(--alp-transition-fast), background var(--alp-transition-fast), filter var(--alp-transition-fast);
 }
 
 .continue-recent button:hover {
   border-color: rgba(var(--alp-color-primary-rgb), 0.38);
   background: rgba(var(--alp-color-primary-rgb), 0.07);
+  transform: translateY(-2px);
+  box-shadow: var(--alp-shadow-btn-hover);
+  filter: brightness(1.08);
 }
 
 .quick-row {
@@ -1355,13 +1378,15 @@ html:not(.dark) .hero-visual-panel {
   transition:
     transform var(--alp-transition-smooth),
     border-color var(--alp-transition-fast),
-    box-shadow var(--alp-transition-fast);
+    box-shadow var(--alp-transition-fast),
+    filter var(--alp-transition-fast);
 }
 
 .quick-card:hover {
   transform: translateY(-3px);
   border-color: rgba(var(--alp-color-primary-rgb), 0.38);
   box-shadow: var(--alp-shadow-card-hover);
+  filter: brightness(1.06);
 }
 
 .quick-icon {
@@ -1403,7 +1428,8 @@ html:not(.dark) .hero-visual-panel {
   margin-bottom: 0;
 }
 
-.home-stretch-col :deep(.el-card) {
+.home-stretch-col :deep(.el-card),
+.home-stretch-col :deep(.alp-game-entry) {
   flex: 1;
   width: 100%;
   display: flex;
@@ -1411,7 +1437,8 @@ html:not(.dark) .hero-visual-panel {
   min-height: 0;
 }
 
-.home-stretch-col :deep(.el-card__body) {
+.home-stretch-col :deep(.el-card__body),
+.home-stretch-col :deep(.alp-game-panel) {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -1430,13 +1457,15 @@ html:not(.dark) .hero-visual-panel {
   transition:
     transform var(--alp-transition-smooth),
     box-shadow var(--alp-transition-smooth),
-    border-color var(--alp-transition-fast);
+    border-color var(--alp-transition-fast),
+    filter var(--alp-transition-fast);
 }
 
 .hover-card:hover {
   transform: translateY(-3px);
   box-shadow: var(--alp-shadow-card-hover);
   border-color: rgba(var(--alp-color-primary-rgb), 0.3);
+  filter: brightness(1.06);
 }
 
 .persona-card {
@@ -1521,11 +1550,29 @@ html:not(.dark) .hero-visual-panel {
   min-height: 100%;
 }
 
+/* 首页卡片行：算法侦探卡片与周围 el-card 统一视觉 */
+.home-stretch-col :deep(.alp-game-panel) {
+  border-radius: var(--alp-radius-card);
+  border: 1px solid var(--alp-color-border);
+  background: var(--alp-bg-surface);
+  padding: 16px;
+  transition:
+    transform var(--alp-transition-smooth),
+    box-shadow var(--alp-transition-smooth),
+    border-color var(--alp-transition-fast);
+}
+
+.home-stretch-col :deep(.alp-game-entry:hover .alp-game-panel) {
+  transform: translateY(-3px);
+  box-shadow: var(--alp-shadow-card-hover);
+  border-color: rgba(var(--alp-color-primary-rgb), 0.3);
+}
+
 .resource-item {
   padding: 12px 4px;
   border-radius: 10px;
   cursor: pointer;
-  transition: background var(--alp-transition-fast);
+  transition: background var(--alp-transition-fast), filter var(--alp-transition-fast);
 }
 
 .resource-item--rich {
@@ -1561,7 +1608,10 @@ html:not(.dark) .hero-visual-panel {
 .resource-item:hover,
 .resource-item:focus-visible {
   background: var(--alp-color-primary-soft);
+  transform: translateY(-2px);
+  box-shadow: var(--alp-shadow-btn-hover);
   outline: none;
+  filter: brightness(1.06);
 }
 
 .resource-title-row {
@@ -1650,13 +1700,15 @@ html:not(.dark) .hero-visual-panel {
   transition:
     transform var(--alp-transition-smooth),
     border-color var(--alp-transition-fast),
-    box-shadow var(--alp-transition-fast);
+    box-shadow var(--alp-transition-fast),
+    filter var(--alp-transition-fast);
 }
 
 .soft-card.actionable:hover {
   transform: translateY(-3px);
   border-color: rgba(var(--alp-color-primary-rgb), 0.3);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--alp-shadow-card-hover);
+  filter: brightness(1.06);
 }
 
 .soft-card-inner {

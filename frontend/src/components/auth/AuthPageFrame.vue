@@ -117,7 +117,7 @@ function goHome() {
   height: 480px;
   top: -140px;
   left: -100px;
-  background: rgba(34, 211, 238, 0.18);
+  background: var(--alp-color-primary-soft);
   animation: orbFloat 12s ease-in-out infinite alternate;
 }
 
@@ -126,7 +126,7 @@ function goHome() {
   height: 400px;
   bottom: -120px;
   right: 8%;
-  background: rgba(167, 139, 250, 0.15);
+  background: var(--alp-color-accent-soft);
   animation: orbFloat 10s ease-in-out infinite alternate-reverse;
 }
 
@@ -138,9 +138,7 @@ function goHome() {
 .auth-grid {
   position: absolute;
   inset: 0;
-  background-image:
-    linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+  background-image: none;
   background-size: 52px 52px;
   mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 20%, transparent 75%);
 }
@@ -173,13 +171,13 @@ function goHome() {
 .brand:focus-visible {
   outline: 2px solid var(--alp-color-primary);
   outline-offset: 4px;
-  border-radius: 8px;
+  border-radius: var(--alp-radius-card);
 }
 
 .logo {
   width: 42px;
   height: 42px;
-  border-radius: 12px;
+  border-radius: var(--alp-radius-lg);
   background: var(--alp-gradient-accent);
   color: #fff;
   font-weight: 800;
@@ -188,7 +186,7 @@ function goHome() {
   place-items: center;
   letter-spacing: 0.5px;
   flex-shrink: 0;
-  box-shadow: 0 4px 20px rgba(34, 211, 238, 0.3);
+  box-shadow: 0 4px 20px var(--alp-color-primary-glow);
 }
 
 .brand-text {
@@ -283,9 +281,9 @@ function goHome() {
   place-items: center;
   width: 38px;
   height: 38px;
-  border-radius: 11px;
+  border-radius: var(--alp-radius-lg);
   background: var(--alp-color-primary-soft);
-  border: 1px solid rgba(34, 211, 238, 0.2);
+  border: 1px solid var(--alp-color-primary-glow);
   color: var(--alp-color-primary);
   flex-shrink: 0;
 }
@@ -310,7 +308,7 @@ function goHome() {
 }
 
 .code-kw {
-  color: #c084fc;
+  color: var(--alp-color-muted);
 }
 
 .code-fn {

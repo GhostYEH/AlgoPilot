@@ -318,3 +318,86 @@ export async function fetchOjCapabilities(): Promise<OjCapabilities> {
 export function practicePath(slug: string) {
   return `/practice/${slug}`
 }
+
+// ──────────────────────────── 教师 OJ 管理 ────────────────────────────
+
+export interface AdminTestCase {
+  args?: unknown[]
+  expected?: unknown
+  stdin?: string
+  stdout?: string
+  note?: string
+}
+
+export interface AdminProblemCases {
+  slug: string
+  title: string
+  judge_mode: string
+  entry: Record<string, unknown>
+  samples: AdminTestCase[]
+  hidden: AdminTestCase[]
+}
+
+export interface AdminChapter {
+  id: string
+  title: string
+  difficulty: string
+  module_keys: string[]
+  recommended_problems: string[]
+}
+
+export interface CreateProblemPayload {
+  slug: string
+  title: string
+  module_key?: string
+  difficulty?: string
+  lc_id?: number
+  description?: string
+  judge_mode?: string
+  entry?: Record<string, unknown> | null
+  starter_code?: Record<string, string> | null
+  samples?: AdminTestCase[]
+  hidden?: AdminTestCase[]
+  tags?: string[]
+  common_errors?: string[]
+}
+
+export async function fetchAdminCases(slug: string): Promise<AdminProblemCases> {
+  const { data } = await judgeClient.get<AdminProblemCases>(
+    `/api/oj/admin/problems/${slug}/cases`,
+  )
+  return data
+}
+
+export async function updateAdminCases(
+  slug: string,
+  samples: AdminTestCase[],
+  hidden: AdminTestCase[],
+): Promise<AdminProblemCases> {
+  const { data } = await judgeClient.put<AdminProblemCases>(
+    `/api/oj/admin/problems/${slug}/cases`,
+    { samples, hidden },
+  )
+  return data
+}
+
+export async function fetchAdminChapters(): Promise<AdminChapter[]> {
+  const { data } = await judgeClient.get<AdminChapter[]>('/api/oj/admin/chapters')
+  return data
+}
+
+export async function createProblem(payload: CreateProblemPayload): Promise<unknown> {
+  const { data } = await judgeClient.post('/api/oj/admin/problems', payload)
+  return data
+}
+
+export async function attachProblemToChapter(
+  slug: string,
+  chapterId: string,
+): Promise<{ chapter_id: string; slug: string; recommended_problems: string[] }> {
+  const { data } = await judgeClient.post('/api/oj/admin/chapters/attach', {
+    slug,
+    chapter_id: chapterId,
+  })
+  return data
+}

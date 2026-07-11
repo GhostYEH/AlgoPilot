@@ -135,13 +135,13 @@ function goPlay(game: ModuleGameMeta) {
   </div>
 
   <div v-if="showDetective" class="alp-game-entry alp-game-entry--summary">
-    <div class="alp-game-panel" style="--game-accent: #a78bfa">
+    <div class="alp-game-panel" style="--game-accent: var(--alp-color-accent)">
       <div class="alp-game-panel__head">
         <div>
           <h3 class="alp-game-panel__title">毕业挑战 · {{ detectiveGame.title }}</h3>
           <p class="alp-game-panel__tagline">{{ detectiveGame.tagline }}</p>
         </div>
-        <el-icon :size="20" color="#a78bfa"><Trophy /></el-icon>
+        <el-icon :size="20" color="#9c7a3d"><Trophy /></el-icon>
       </div>
 
       <!-- 关卡通关状态 -->
@@ -154,7 +154,7 @@ function goPlay(game: ModuleGameMeta) {
           :percentage="Math.round((detectiveClearedCount / detectiveGame.levels.length) * 100)"
           :stroke-width="6"
           :show-text="false"
-          color="#a78bfa"
+          color="#9c7a3d"
           class="detective-progress"
         />
         <ul class="detective-level-list">
@@ -201,8 +201,8 @@ function goPlay(game: ModuleGameMeta) {
   margin: 12px 0;
   padding: 10px 12px;
   border-radius: 8px;
-  background: rgba(167, 139, 250, 0.06);
-  border: 1px solid rgba(167, 139, 250, 0.12);
+  background: rgba(var(--alp-color-accent-rgb),0.06);
+  border: 1px solid rgba(var(--alp-color-accent-rgb),0.12);
 }
 
 .detective-levels__head {
@@ -215,14 +215,14 @@ function goPlay(game: ModuleGameMeta) {
 .detective-levels__label {
   font-size: 12px;
   font-weight: 600;
-  color: #a78bfa;
+  color: var(--alp-color-accent);
   letter-spacing: 0.05em;
 }
 
 .detective-levels__count {
   font-size: 13px;
   font-weight: 700;
-  color: #a78bfa;
+  color: var(--alp-color-accent);
   font-family: 'Cascadia Code', ui-monospace, Consolas, monospace;
 }
 

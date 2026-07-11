@@ -181,7 +181,7 @@ function goTo(link: { name: string; query?: Record<string, string> }) {
   background: var(--alp-bg-soft-block);
   border: 1px solid var(--alp-color-border);
   cursor: pointer;
-  transition: border-color 0.2s, background 0.2s;
+  transition: border-color 0.2s, background 0.2s, filter var(--alp-transition-fast);
   height: calc(100% - 16px);
 }
 
@@ -189,7 +189,10 @@ function goTo(link: { name: string; query?: Record<string, string> }) {
 .quick-card:focus-visible {
   border-color: var(--alp-color-primary);
   background: rgba(34, 211, 238, 0.06);
+  transform: translateY(-3px);
+  box-shadow: var(--alp-shadow-card-hover);
   outline: none;
+  filter: brightness(1.06);
 }
 
 .quick-icon {

@@ -537,7 +537,7 @@ function verifyTag(meta: Record<string, unknown>) {
                 <div class="res-item-top">
                   <span
                     class="res-type-dot"
-                    :style="{ background: RESOURCE_TYPE_META[r.resource_type]?.color ?? '#22d3ee' }"
+                    :style="{ background: RESOURCE_TYPE_META[r.resource_type]?.color ?? '#3a8a9e' }"
                   />
                   <span class="res-agent">{{ r.agent_name }}</span>
                   <el-tag size="small" :type="verifyTag(r.meta ?? {}).type" effect="plain">
@@ -573,7 +573,7 @@ function verifyTag(meta: Record<string, unknown>) {
               :page-size="pageSize"
               :total="filteredResources.length"
               layout="prev, pager, next"
-              small
+              size="small"
               class="pager"
             />
           </el-col>
@@ -871,13 +871,15 @@ function verifyTag(meta: Record<string, unknown>) {
   transition:
     transform var(--alp-transition-fast),
     box-shadow var(--alp-transition-fast),
-    border-color var(--alp-transition-fast);
+    border-color var(--alp-transition-fast),
+    filter var(--alp-transition-fast);
 }
 
 .type-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--alp-shadow-card-hover);
   border-color: color-mix(in srgb, var(--card-accent) 40%, transparent);
+  filter: brightness(1.06);
 }
 
 .type-card.is-generating {
@@ -891,7 +893,7 @@ function verifyTag(meta: Record<string, unknown>) {
 
 .type-card-accent {
   height: 3px;
-  background: linear-gradient(90deg, var(--card-accent), color-mix(in srgb, var(--card-accent) 50%, transparent));
+  background: var(--card-accent);
   opacity: 0.7;
 }
 

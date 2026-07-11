@@ -206,7 +206,10 @@ def _rebuild_steps(
     remediation_key: str | None = None,
 ) -> list[dict]:
     progress_map = {m.key: m for m in request.modules}
-    old_map = {s["module_key"]: s for s in old_steps}
+    old_map = {}
+    for s in old_steps:
+        mk = s.get("module_key") or s.get("key", "")
+        old_map[mk] = s
     steps = []
     for i, key in enumerate(ordered, start=1):
         prev = old_map.get(key, {})

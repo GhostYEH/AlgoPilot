@@ -17,13 +17,13 @@ withDefaults(
 const emit = defineEmits<{ select: [index: number] }>()
 
 const pointerColors: Record<string, string> = {
-  L: '#22d3ee',
-  R: '#f472b6',
-  M: '#fbbf24',
-  slow: '#a78bfa',
-  fast: '#f97316',
-  i: '#2dd4bf',
-  j: '#fb7185',
+  L: '#3a8a9e',
+  R: '#9e6e88',
+  M: '#9c8540',
+  slow: '#7a6e9e',
+  fast: '#9e6e4a',
+  i: '#3d8a7e',
+  j: '#9e6470',
 }
 </script>
 
@@ -51,7 +51,7 @@ const pointerColors: Record<string, string> = {
           v-show="idx === i"
           :key="name"
           class="ptr-badge"
-          :style="{ '--ptr-color': pointerColors[name] ?? '#22d3ee' }"
+          :style="{ '--ptr-color': pointerColors[name] ?? '#3a8a9e' }"
         >{{ name }}</span>
       </span>
     </button>
@@ -77,7 +77,7 @@ const pointerColors: Record<string, string> = {
   background: var(--alp-bg-soft-block);
   color: var(--alp-color-text);
   cursor: default;
-  transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s;
+  transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s, filter var(--alp-transition-fast);
 }
 
 .game-array-cell.is-clickable {
@@ -86,21 +86,23 @@ const pointerColors: Record<string, string> = {
 
 .game-array-cell.is-clickable:hover {
   transform: translateY(-3px);
-  border-color: color-mix(in srgb, #22d3ee 55%, transparent);
+  border-color: color-mix(in srgb, #3a8a9e 55%, transparent);
+  box-shadow: var(--alp-shadow-btn-hover);
+  filter: brightness(1.08);
 }
 
 .game-array-cell.is-active {
-  border-color: #22d3ee;
-  box-shadow: 0 0 0 3px color-mix(in srgb, #22d3ee 28%, transparent);
+  border-color: #3a8a9e;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #3a8a9e 28%, transparent);
 }
 
 .game-array-cell.is-correct {
-  border-color: #22c55e;
-  background: color-mix(in srgb, #22c55e 15%, transparent);
+  border-color: #4a8a5e;
+  background: color-mix(in srgb, #4a8a5e 15%, transparent);
 }
 
 .game-array-cell.is-wrong {
-  border-color: #ef4444;
+  border-color: #9e5a5a;
   animation: shake 0.35s ease;
 }
 

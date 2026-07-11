@@ -253,12 +253,12 @@ function doReset() {
 .item-card:hover,
 .house-card:hover {
   transform: translateY(-2px);
-  border-color: #22d3ee;
+  border-color: #3a8a9e;
 }
 .item-card.selected,
 .house-card.selected {
-  border-color: #22d3ee;
-  background: color-mix(in srgb, #22d3ee 18%, transparent);
+  border-color: #3a8a9e;
+  background: color-mix(in srgb, #3a8a9e 18%, transparent);
 }
 .item-name,
 .house-idx {
@@ -268,7 +268,7 @@ function doReset() {
 }
 .house-val {
   font-size: 18px;
-  color: #fbbf24;
+  color: #9c8540;
 }
 .sub {
   font-size: 12px;
@@ -290,8 +290,8 @@ function doReset() {
   cursor: pointer;
 }
 .dp-cell.current {
-  border-color: #fbbf24;
-  box-shadow: 0 0 0 2px color-mix(in srgb, #fbbf24 30%, transparent);
+  border-color: #9c8540;
+  box-shadow: 0 0 0 2px color-mix(in srgb, #9c8540 30%, transparent);
 }
 .dp-cell.locked {
   opacity: 0.7;

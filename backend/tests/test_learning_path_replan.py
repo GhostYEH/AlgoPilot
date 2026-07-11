@@ -11,14 +11,18 @@ from sqlalchemy.orm import Session
 
 from core.database import SessionLocal
 from main import app
-from models.db_models import StudentProfile, User
+from models.db_models import LearningPathPlan, StudentProfile, User
 from schemas.learning_path import LearningPathReplanRequest, ModuleProgressInput
 from services.agents.learning_path import LearningPathAgent, _heuristic_plan
 from services.agents.learning_path_catalog import MODULE_CATALOG
 from services.mastery.mastery_service import MasteryService, get_cached_mastery_by_chapter
 from services.memory.memory_service import MemoryService
 from services.memory.schemas import MemoryEventInput
-from services.orchestrator.core import Orchestrator
+from services.orchestrator.core import (
+    Orchestrator,
+    _path_plan_response,
+    migrate_legacy_learning_path_plans,
+)
 from utils.security import hash_password
 
 client = TestClient(app)
@@ -329,3 +333,95 @@ def test_mastery_driven_replan_via_api(db: Session, test_user: User):
         or "掌握" in evidence_text
         or "dp" in " ".join(overview.report.weak_skills).lower()
     )
+
+
+# --- 旧格式数据兼容与启动迁移 ---
+
+
+_LEGACY_STEPS = [
+    {"key": "array", "label": "数组", "status": "done", "phase": "foundation"},
+    {"key": "linked-list", "label": "链表", "status": "in_progress", "phase": "foundation"},
+    {"key": "dp", "label": "动态规划", "status": "locked", "phase": "advanced"},
+]
+
+
+def _seed_legacy_plan(db: Session, user: User) -> LearningPathPlan:
+    """写入一份旧格式（key/label/status，无 module_key/rank）的学习路径计划。"""
+    row = db.get(LearningPathPlan, user.id)
+    if row is None:
+        row = LearningPathPlan(user_id=user.id)
+        db.add(row)
+    row.summary = "旧格式测试计划"
+    row.ordered_keys = ["array", "linked-list", "dp"]
+    row.steps = [dict(s) for s in _LEGACY_STEPS]
+    row.next_module_key = "linked-list"
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+def test_path_plan_response_handles_legacy_steps(db: Session, test_user: User):
+    """旧格式 steps 存库时，_path_plan_response 不应抛 ValidationError。"""
+    row = _seed_legacy_plan(db, test_user)
+    # 关键断言：不抛异常
+    resp = _path_plan_response(row)
+    assert len(resp.steps) == 3
+    assert resp.steps[0].module_key == "array"
+    assert resp.steps[1].module_key == "linked-list"
+    assert resp.steps[2].module_key == "dp"
+    # rank 按序号补全
+    assert resp.steps[0].rank == 1
+    assert resp.steps[2].rank == 3
+    assert resp.next_module_key == "linked-list"
+
+
+def test_migrate_legacy_learning_path_plans_converts_and_is_idempotent(
+    db: Session, test_user: User
+):
+    """启动迁移把旧格式 steps 升级为新格式，且幂等。"""
+    _seed_legacy_plan(db, test_user)
+
+    migrated = migrate_legacy_learning_path_plans(db)
+    assert migrated >= 1
+
+    db.expire_all()
+    row = db.get(LearningPathPlan, test_user.id)
+    for step in row.steps:
+        assert "module_key" in step
+        assert "rank" in step
+    assert row.steps[0]["module_key"] == "array"
+
+    # 再次迁移应返回 0（已全部为新格式）
+    migrated_again = migrate_legacy_learning_path_plans(db)
+    assert migrated_again == 0
+
+
+def test_get_learning_path_plan_endpoint_with_legacy_data(db: Session, test_user: User):
+    """端到端：旧格式数据下 GET /learning-path/plan 不再返回 500。"""
+    _seed_legacy_plan(db, test_user)
+
+    login = client.post(
+        "/api/auth/login",
+        json={"username": test_user.username, "password": "pass"},
+    )
+    if login.status_code != 200:
+        reg = client.post(
+            "/api/auth/register",
+            json={
+                "username": test_user.username,
+                "password": "pass",
+                "email": test_user.email,
+            },
+        )
+        assert reg.status_code == 200, reg.text
+        token = reg.json()["access_token"]
+    else:
+        token = login.json()["access_token"]
+
+    headers = {"Authorization": f"Bearer {token}"}
+    resp = client.get("/api/orchestrator/learning-path/plan", headers=headers)
+    assert resp.status_code == 200, resp.text
+    body = resp.json()["plan"]
+    assert body is not None
+    assert len(body["steps"]) == 3
+    assert body["steps"][0]["module_key"] == "array"

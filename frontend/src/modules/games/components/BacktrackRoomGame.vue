@@ -221,11 +221,11 @@ function doReset() {
 }
 .cell:hover {
   transform: scale(1.04);
-  border-color: #22d3ee;
+  border-color: #3a8a9e;
 }
 .cell.queen {
-  background: color-mix(in srgb, #f472b6 25%, transparent);
-  border-color: #f472b6;
+  background: color-mix(in srgb, #9e6e88 25%, transparent);
+  border-color: #9e6e88;
 }
 .perm-area {
   text-align: center;
@@ -256,12 +256,12 @@ function doReset() {
   cursor: not-allowed;
 }
 .perm-btn.next {
-  border-color: #fbbf24;
-  box-shadow: 0 0 0 3px color-mix(in srgb, #fbbf24 30%, transparent);
+  border-color: #9c8540;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #9c8540 30%, transparent);
 }
 .perm-trail {
   font-size: 14px;
-  color: var(--game-accent, #22d3ee);
+  color: var(--game-accent, #3a8a9e);
   margin: 0;
 }
 </style>

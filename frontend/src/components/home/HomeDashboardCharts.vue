@@ -97,12 +97,12 @@ const heatmapWeeks = computed(() => {
         />
         <polygon
           :points="radarPolygon"
-          fill="rgba(34, 211, 238, 0.22)"
-          stroke="rgba(34, 211, 238, 0.85)"
+          fill="rgba(61, 138, 126, 0.22)"
+          stroke="rgba(61, 138, 126, 0.85)"
           stroke-width="2"
         />
         <g v-for="(p, i) in radarPoints" :key="i">
-          <circle :cx="p.x" :cy="p.y" r="3" fill="#22d3ee" />
+          <circle :cx="p.x" :cy="p.y" r="3" fill="#3d8a7e" />
           <text
             :x="p.labelX"
             :y="p.labelY"
@@ -134,15 +134,15 @@ const heatmapWeeks = computed(() => {
       >
         <defs>
           <linearGradient id="homeLineFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="rgba(34, 211, 238, 0.35)" />
-            <stop offset="100%" stop-color="rgba(34, 211, 238, 0)" />
+            <stop offset="0%" stop-color="rgba(61, 138, 126, 0.35)" />
+            <stop offset="100%" stop-color="rgba(61, 138, 126, 0)" />
           </linearGradient>
         </defs>
         <polygon :points="lineChart.area" fill="url(#homeLineFill)" />
         <polyline
           :points="lineChart.line"
           fill="none"
-          stroke="#22d3ee"
+          stroke="#3d8a7e"
           stroke-width="2.5"
           stroke-linejoin="round"
         />
@@ -152,7 +152,7 @@ const heatmapWeeks = computed(() => {
           :cx="p.x"
           :cy="p.y"
           r="3.5"
-          fill="#0ea5e9"
+          fill="#3d8a7e"
           stroke="#e0f2fe"
           stroke-width="1"
         />
@@ -290,16 +290,16 @@ const heatmapWeeks = computed(() => {
 }
 
 .heatmap-cell[data-level='1'] {
-  background: rgba(34, 211, 238, 0.25);
+  background: rgba(var(--alp-color-primary-rgb), 0.25);
 }
 .heatmap-cell[data-level='2'] {
-  background: rgba(34, 211, 238, 0.45);
+  background: rgba(var(--alp-color-primary-rgb), 0.45);
 }
 .heatmap-cell[data-level='3'] {
-  background: rgba(34, 211, 238, 0.65);
+  background: rgba(var(--alp-color-primary-rgb), 0.65);
 }
 .heatmap-cell[data-level='4'] {
-  background: rgba(34, 211, 238, 0.9);
+  background: rgba(var(--alp-color-primary-rgb), 0.9);
 }
 
 .heatmap-legend {

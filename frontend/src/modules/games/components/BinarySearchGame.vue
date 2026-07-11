@@ -267,6 +267,6 @@ function doReset() {
   margin: 0 0 12px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--game-accent, #22d3ee);
+  color: var(--game-accent, #3a8a9e);
 }
 </style>

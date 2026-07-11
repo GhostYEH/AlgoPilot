@@ -1057,7 +1057,7 @@ async function onReplan() {
 
 .stat-card--accent {
 
-  border-color: rgba(34, 211, 238, 0.35);
+  border-color: var(--alp-color-primary-glow);
 
   background: var(--alp-color-primary-soft);
 
@@ -1413,7 +1413,7 @@ async function onReplan() {
 
   font-size: 16px;
 
-  color: #4ade80;
+  color: #6aa878;
 
 }
 
@@ -1532,7 +1532,7 @@ async function onReplan() {
 
   border-color: var(--node-accent, var(--alp-color-primary));
 
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--node-accent, #22d3ee) 22%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--node-accent, #3d8a7e) 22%, transparent);
 
 }
 

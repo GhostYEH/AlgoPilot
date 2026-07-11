@@ -553,7 +553,7 @@ function getModuleHint(key: string) {
               <span class="game-card-title">{{ row.title }}</span>
               <el-tag size="small" type="success" effect="plain">{{ row.cleared }}/{{ row.total }}</el-tag>
             </div>
-            <el-progress :percentage="row.percent" :stroke-width="6" :show-text="false" color="#4ade80" />
+            <el-progress :percentage="row.percent" :stroke-width="6" :show-text="false" color="#6aa878" />
             <div class="game-card-meta">
               <span>{{ row.moduleLabel }}</span>
             </div>
@@ -698,7 +698,7 @@ function getModuleHint(key: string) {
   margin-bottom: 16px;
   padding: 14px 16px;
   border-radius: var(--alp-radius-card);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--alp-color-primary) 8%, var(--alp-bg-soft-block)), var(--alp-bg-soft-block));
+  background: color-mix(in srgb, var(--alp-color-primary) 8%, var(--alp-bg-soft-block));
   border: 1px solid color-mix(in srgb, var(--alp-color-primary) 25%, var(--alp-color-border));
 }
 
@@ -948,7 +948,7 @@ function getModuleHint(key: string) {
   background: var(--alp-bg-soft-block);
   border: 1px solid var(--alp-color-border);
   cursor: pointer;
-  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s, filter var(--alp-transition-fast);
 }
 
 .module-card-compact:hover,
@@ -957,6 +957,7 @@ function getModuleHint(key: string) {
   border-color: rgba(34, 211, 238, 0.35);
   box-shadow: var(--alp-shadow-card-hover);
   outline: none;
+  filter: brightness(1.06);
 }
 
 .card-header {
@@ -1053,11 +1054,11 @@ function getModuleHint(key: string) {
 }
 
 .strength-icon--success {
-  color: #4ade80;
+  color: #6aa878;
 }
 
 .strength-icon--warning {
-  color: #fbbf24;
+  color: #9c8540;
 }
 
 .strength-title {
@@ -1207,13 +1208,14 @@ function getModuleHint(key: string) {
   border-radius: var(--alp-radius-card);
   background: var(--alp-bg-soft-block);
   border: 1px solid var(--alp-color-border);
-  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s, filter var(--alp-transition-fast);
 }
 
 .fav-card:hover {
   transform: translateY(-2px);
   border-color: rgba(34, 211, 238, 0.35);
   box-shadow: var(--alp-shadow-card-hover);
+  filter: brightness(1.06);
 }
 
 .fav-card-top {
@@ -1241,7 +1243,7 @@ function getModuleHint(key: string) {
 
 .fav-unstar-btn {
   margin-left: auto;
-  color: #fbbf24;
+  color: #9c8540;
 }
 
 .fav-card-desc {
@@ -1314,7 +1316,7 @@ function getModuleHint(key: string) {
 }
 
 .game-stat-icon--trophy {
-  color: #fbbf24;
+  color: #9c8540;
 }
 
 .game-stat-icon--percent {
@@ -1322,7 +1324,7 @@ function getModuleHint(key: string) {
 }
 
 .game-stat-icon--unlock {
-  color: #a78bfa;
+  color: #7a6e9e;
 }
 
 .game-stat-info {
@@ -1363,12 +1365,14 @@ function getModuleHint(key: string) {
   border-radius: var(--alp-radius-card);
   background: var(--alp-bg-soft-block);
   border: 1px solid var(--alp-color-border);
-  transition: transform 0.2s, border-color 0.2s;
+  transition: transform 0.2s, border-color 0.2s, filter var(--alp-transition-fast);
 }
 
 .game-card:hover {
   transform: translateY(-2px);
   border-color: rgba(74, 222, 128, 0.35);
+  box-shadow: var(--alp-shadow-card-hover);
+  filter: brightness(1.06);
 }
 
 .game-card-head {

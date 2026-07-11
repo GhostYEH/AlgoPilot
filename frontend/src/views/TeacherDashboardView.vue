@@ -318,8 +318,8 @@ onMounted(loadDashboard)
   border: 1px solid color-mix(in srgb, var(--alp-color-primary) 32%, var(--alp-color-border));
   border-radius: 18px;
   background:
-    radial-gradient(circle at 82% 18%, rgba(34, 211, 238, 0.2), transparent 28%),
-    linear-gradient(135deg, rgba(14, 116, 144, 0.22), rgba(79, 70, 229, 0.14)),
+    rgba(58, 138, 158, 0.2),
+    rgba(14, 116, 144, 0.22),
     var(--alp-bg-surface);
   box-shadow: var(--alp-shadow-card);
 }
@@ -457,19 +457,21 @@ onMounted(loadDashboard)
   border: 1px solid var(--alp-color-border);
   border-radius: var(--alp-radius-card);
   background: var(--alp-bg-surface);
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.2s ease, border-color 0.2s ease, filter var(--alp-transition-fast);
 }
 
 .metric-card:hover {
   transform: translateY(-2px);
   border-color: color-mix(in srgb, var(--metric-color) 55%, var(--alp-color-border));
+  box-shadow: var(--alp-shadow-card-hover);
+  filter: brightness(1.06);
 }
 
-.metric-card--blue { --metric-color: #22d3ee; }
-.metric-card--purple { --metric-color: #a78bfa; }
-.metric-card--green { --metric-color: #4ade80; }
-.metric-card--orange { --metric-color: #f59e0b; }
-.metric-card--cyan { --metric-color: #22d3ee; }
+.metric-card--blue { --metric-color: #3a8a9e; }
+.metric-card--purple { --metric-color: #7a6e9e; }
+.metric-card--green { --metric-color: #6aa878; }
+.metric-card--orange { --metric-color: #9c7a3d; }
+.metric-card--cyan { --metric-color: #3a8a9e; }
 
 .metric-icon {
   display: grid;
@@ -517,7 +519,7 @@ onMounted(loadDashboard)
 }
 
 .panel-icon--danger {
-  color: #fb7185;
+  color: #9e6470;
 }
 
 .ranking-list,
@@ -566,12 +568,12 @@ onMounted(loadDashboard)
 .bar-fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #22d3ee, #818cf8);
+  background: #3a8a9e;
   transition: width 0.5s ease;
 }
 
 .bar-fill--danger {
-  background: linear-gradient(90deg, #fb7185, #f59e0b);
+  background: #9e6470;
 }
 
 .ranking-value,

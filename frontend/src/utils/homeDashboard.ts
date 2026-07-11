@@ -64,25 +64,25 @@ const RESOURCE_META: Record<
   { cover: string; problemCount: number; passRate: number; tags: string[] }
 > = {
   '1': {
-    cover: 'linear-gradient(135deg, #f97316 0%, #fb923c 45%, #1e293b 100%)',
+    cover: '#9e6e4a',
     problemCount: 12,
     passRate: 68,
     tags: ['记忆化', '状态转移'],
   },
   '2': {
-    cover: 'linear-gradient(135deg, #818cf8 0%, #a78bfa 50%, #0f172a 100%)',
+    cover: '#6b7a9e',
     problemCount: 18,
     passRate: 72,
     tags: ['模板题', '冲刺'],
   },
   '3': {
-    cover: 'linear-gradient(135deg, #c084fc 0%, #e879f9 40%, #111827 100%)',
+    cover: '#7a6e9e',
     problemCount: 10,
     passRate: 61,
     tags: ['单调栈', '经典模型'],
   },
   '4': {
-    cover: 'linear-gradient(135deg, #f472b6 0%, #fb7185 45%, #0f172a 100%)',
+    cover: '#9e6470',
     problemCount: 15,
     passRate: 74,
     tags: ['遍历框架', '递归'],
@@ -261,7 +261,7 @@ export function enrichResources(
 ): ResourceCard[] {
   return list.map((r) => {
     const meta = RESOURCE_META[r.id] ?? {
-      cover: 'linear-gradient(135deg, #38bdf8, #0f172a)',
+      cover: '#4a7e94',
       problemCount: 8,
       passRate: 65,
       tags: ['讲义'],

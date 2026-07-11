@@ -33,7 +33,7 @@
 *::-webkit-scrollbar-thumb {
   background: var(--alp-scrollbar-gradient);
   border-radius: 999px;
-  border: 1px solid rgba(56, 189, 248, 0.28);
+  border: 1px solid rgba(74, 126, 148, 0.28);
   box-shadow: var(--alp-scrollbar-glow);
   transition:
     background 0.2s ease,
@@ -43,7 +43,7 @@
 
 *::-webkit-scrollbar-thumb:hover {
   background: var(--alp-scrollbar-gradient-hover);
-  border-color: rgba(56, 189, 248, 0.55);
+  border-color: rgba(74, 126, 148, 0.55);
   box-shadow: var(--alp-scrollbar-glow-hover);
 }
 
@@ -94,7 +94,7 @@
   background: var(--alp-scrollbar-gradient) !important;
   opacity: 1 !important;
   border-radius: 999px !important;
-  border: 1px solid rgba(56, 189, 248, 0.28);
+  border: 1px solid rgba(74, 126, 148, 0.28);
   box-shadow: var(--alp-scrollbar-glow);
   transition:
     background 0.2s ease,
@@ -104,7 +104,7 @@
 
 .el-scrollbar__thumb:hover {
   background: var(--alp-scrollbar-gradient-hover) !important;
-  border-color: rgba(56, 189, 248, 0.55);
+  border-color: rgba(74, 126, 148, 0.55);
   box-shadow: var(--alp-scrollbar-glow-hover);
 }
 

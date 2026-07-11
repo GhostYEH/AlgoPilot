@@ -41,8 +41,8 @@ defineProps<{
 }
 
 .trace-dict--hot {
-  border-color: color-mix(in srgb, #a78bfa 45%, var(--alp-color-border));
-  box-shadow: 0 0 0 1px color-mix(in srgb, #a78bfa 20%, transparent);
+  border-color: color-mix(in srgb, var(--alp-color-accent) 45%, var(--alp-color-border));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--alp-color-accent) 20%, transparent);
 }
 
 .trace-dict-head {
@@ -55,14 +55,14 @@ defineProps<{
 .trace-dict-tag {
   font-size: 13px;
   font-weight: 700;
-  color: #a78bfa;
+  color: var(--alp-color-accent);
 }
 
 .trace-dict-badge {
   font-size: 11px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, #a78bfa 12%, transparent);
+  background: color-mix(in srgb, var(--alp-color-accent) 12%, transparent);
   color: var(--alp-color-muted);
 }
 
@@ -85,8 +85,8 @@ defineProps<{
 
 .trace-dict-entry--hot {
   border-style: solid;
-  border-color: #a78bfa;
-  background: color-mix(in srgb, #a78bfa 12%, transparent);
+  border-color: var(--alp-color-accent);
+  background: color-mix(in srgb, var(--alp-color-accent) 12%, transparent);
 }
 
 .trace-dict-key {

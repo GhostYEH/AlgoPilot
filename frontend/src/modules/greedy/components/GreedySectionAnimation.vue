@@ -182,7 +182,7 @@ const stepHint = computed(() => {
 }
 .theory .warn {
   font-size: 10px;
-  color: #f59e0b;
+  color: #9c7a3d;
   font-weight: 700;
 }
 .cookies {
@@ -225,7 +225,7 @@ const stepHint = computed(() => {
 .reach {
   font-size: 10px;
   font-weight: 700;
-  color: #22c55e;
+  color: #4a8a5e;
 }
 .gas .ring {
   font-size: 10px;
@@ -233,12 +233,12 @@ const stepHint = computed(() => {
   font-weight: 700;
 }
 .stock .cell.low {
-  border-color: #22c55e;
-  color: #16a34a;
+  border-color: #4a8a5e;
+  color: #3a6e4a;
 }
 .gain {
   font-size: 11px;
   font-weight: 700;
-  color: #22c55e;
+  color: #4a8a5e;
 }
 </style>

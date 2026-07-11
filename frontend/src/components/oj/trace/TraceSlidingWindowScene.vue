@@ -66,8 +66,8 @@ const windowLen = computed(() => {
   margin-bottom: 12px;
   padding: 14px 16px;
   border-radius: 12px;
-  border: 1px solid color-mix(in srgb, #2dd4bf 35%, var(--alp-color-border));
-  background: linear-gradient(165deg, var(--alp-bg-surface) 0%, color-mix(in srgb, #2dd4bf 8%, var(--alp-bg-soft-block)) 100%);
+  border: 1px solid color-mix(in srgb, #3d8a7e 35%, var(--alp-color-border));
+  background: var(--alp-bg-surface);
   box-shadow: var(--alp-shadow-card);
 }
 
@@ -81,7 +81,7 @@ const windowLen = computed(() => {
 .sw-tag {
   font-size: 12px;
   font-weight: 700;
-  color: #2dd4bf;
+  color: #3d8a7e;
 }
 
 .sw-badge {
@@ -93,13 +93,13 @@ const windowLen = computed(() => {
 }
 
 .sw-badge--sum {
-  color: #22d3ee;
-  border: 1px solid color-mix(in srgb, #22d3ee 40%, transparent);
+  color: var(--alp-color-primary);
+  border: 1px solid color-mix(in srgb, var(--alp-color-primary) 40%, transparent);
 }
 
 .sw-badge--ans {
-  color: #fbbf24;
-  border: 1px solid color-mix(in srgb, #fbbf24 40%, transparent);
+  color: #9c8540;
+  border: 1px solid color-mix(in srgb, #9c8540 40%, transparent);
 }
 
 .sw-hint {
@@ -109,7 +109,7 @@ const windowLen = computed(() => {
 }
 
 .sw-hint--shrink {
-  color: #f472b6;
+  color: #9e6e88;
   font-weight: 600;
 }
 
@@ -145,18 +145,18 @@ const windowLen = computed(() => {
 
 .sw-cell--in {
   opacity: 1;
-  border-color: color-mix(in srgb, #2dd4bf 50%, var(--alp-color-border));
-  background: color-mix(in srgb, #2dd4bf 12%, var(--alp-bg-soft-block));
+  border-color: color-mix(in srgb, #3d8a7e 50%, var(--alp-color-border));
+  background: color-mix(in srgb, #3d8a7e 12%, var(--alp-bg-soft-block));
 }
 
 .sw-cell--left {
-  border-color: #f472b6;
-  box-shadow: 0 0 0 2px color-mix(in srgb, #f472b6 30%, transparent);
+  border-color: #9e6e88;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--alp-color-accent) 30%, transparent);
 }
 
 .sw-cell--right {
-  border-color: #22d3ee;
-  box-shadow: 0 0 0 2px color-mix(in srgb, #22d3ee 30%, transparent);
+  border-color: var(--alp-color-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--alp-color-primary) 30%, transparent);
 }
 
 .sw-cell--pulse {
@@ -178,13 +178,13 @@ const windowLen = computed(() => {
 }
 
 .sw-ptr--l {
-  color: #f472b6;
-  background: color-mix(in srgb, #f472b6 20%, transparent);
+  color: #9e6e88;
+  background: color-mix(in srgb, #9e6e88 20%, transparent);
 }
 
 .sw-ptr--r {
-  color: #22d3ee;
-  background: color-mix(in srgb, #22d3ee 20%, transparent);
+  color: var(--alp-color-primary);
+  background: color-mix(in srgb, var(--alp-color-primary) 20%, transparent);
 }
 
 .sw-bracket {
@@ -196,10 +196,10 @@ const windowLen = computed(() => {
   display: inline-block;
   font-size: 13px;
   font-weight: 600;
-  color: #2dd4bf;
+  color: #3d8a7e;
   padding: 4px 12px;
   border-radius: 8px;
-  border: 1px dashed color-mix(in srgb, #2dd4bf 50%, transparent);
+  border: 1px dashed color-mix(in srgb, #3d8a7e 50%, transparent);
 }
 
 @keyframes sw-pulse {

@@ -378,6 +378,49 @@ def index_course_chunks(course_id: str = _DEFAULT_COURSE_ID) -> list[KnowledgeCh
     return chunks
 
 
+def list_chapters(course_id: str = _DEFAULT_COURSE_ID) -> list[dict[str, Any]]:
+    """返回章节列表（id、title、module_keys、recommended_problems），供教师选题挂载用。"""
+    manifest = load_manifest(course_id)
+    out: list[dict[str, Any]] = []
+    for ch in manifest.get("chapters") or []:
+        out.append(
+            {
+                "id": ch.get("id", ""),
+                "title": ch.get("title", ""),
+                "difficulty": ch.get("difficulty", ""),
+                "module_keys": list(ch.get("module_keys") or []),
+                "recommended_problems": list(ch.get("recommended_problems") or []),
+            }
+        )
+    return out
+
+
+def add_problem_to_chapter(
+    slug: str, chapter_id: str, course_id: str = _DEFAULT_COURSE_ID
+) -> list[str]:
+    """把题目 slug 追加到指定章节的 recommended_problems（去重，写回 yaml）。"""
+    manifest = load_manifest(course_id)
+    chapters = manifest.get("chapters") or []
+    target = None
+    for ch in chapters:
+        if ch.get("id") == chapter_id:
+            target = ch
+            break
+    if target is None:
+        raise ValueError(f"章节不存在: {chapter_id}")
+
+    problems: list[str] = list(target.get("recommended_problems") or [])
+    if slug not in problems:
+        problems.append(slug)
+        target["recommended_problems"] = problems
+
+        # 写回 yaml 文件
+        path = manifest_path(course_id)
+        path.write_text(yaml.safe_dump(manifest, allow_unicode=True, sort_keys=False), encoding="utf-8")
+        clear_course_caches()
+    return problems
+
+
 def clear_course_caches() -> None:
     load_manifest.cache_clear()
     index_course_chunks.cache_clear()

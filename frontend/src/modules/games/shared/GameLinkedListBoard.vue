@@ -22,10 +22,10 @@ const props = withDefaults(
 const emit = defineEmits<{ select: [index: number] }>()
 
 const pointerColors: Record<string, string> = {
-  pre: '#22d3ee',
-  cur: '#f472b6',
-  slow: '#a78bfa',
-  fast: '#f97316',
+  pre: '#3a8a9e',
+  cur: '#9e6e88',
+  slow: '#7a6e9e',
+  fast: '#9e6e4a',
   dummy: '#94a3b8',
 }
 </script>
@@ -58,7 +58,7 @@ const pointerColors: Record<string, string> = {
             v-show="idx === i && name !== 'dummy'"
             :key="name"
             class="ptr-tag"
-            :style="{ '--ptr-color': pointerColors[name] ?? '#22d3ee' }"
+            :style="{ '--ptr-color': pointerColors[name] ?? '#3a8a9e' }"
           >{{ name }}</span>
         </span>
       </button>
@@ -80,7 +80,7 @@ const pointerColors: Record<string, string> = {
   padding: 20px 18px;
   border-radius: 12px;
   border: 1px dashed var(--alp-color-border);
-  background: color-mix(in srgb, var(--alp-color-primary, #22d3ee) 4%, transparent);
+  background: color-mix(in srgb, var(--alp-color-primary, #3a8a9e) 4%, transparent);
 }
 
 .head-label {
@@ -89,9 +89,9 @@ const pointerColors: Record<string, string> = {
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #7dd3fc;
+  color: #6a9eb0;
   border-radius: 4px;
-  background: color-mix(in srgb, #22d3ee 12%, transparent);
+  background: color-mix(in srgb, #3a8a9e 12%, transparent);
 }
 
 .dummy-node {
@@ -117,12 +117,14 @@ const pointerColors: Record<string, string> = {
 
 .ll-node-wrap.is-clickable:hover .node-box {
   transform: translateY(-3px);
-  border-color: #22d3ee;
+  border-color: #3a8a9e;
+  box-shadow: var(--alp-shadow-btn-hover);
+  filter: brightness(1.08);
 }
 
 .ll-node-wrap.is-highlight .node-box {
-  border-color: #fbbf24;
-  box-shadow: 0 0 0 3px color-mix(in srgb, #fbbf24 30%, transparent);
+  border-color: #9c8540;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #9c8540 30%, transparent);
 }
 
 .ll-node-wrap.is-removed .node-box {
@@ -138,7 +140,7 @@ const pointerColors: Record<string, string> = {
   background: var(--alp-bg-soft-block);
   font-weight: 700;
   font-size: 15px;
-  transition: transform 0.12s, border-color 0.12s;
+  transition: transform 0.12s, border-color 0.12s, filter var(--alp-transition-fast);
 }
 
 .node-box.dummy {
@@ -184,6 +186,6 @@ const pointerColors: Record<string, string> = {
 }
 
 .cycle-tag {
-  color: #f472b6;
+  color: #9e6e88;
 }
 </style>

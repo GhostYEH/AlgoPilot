@@ -75,8 +75,8 @@ function render() {
   const path = g
     .append('path')
     .datum(start)
-    .attr('fill', 'color-mix(in srgb, #a78bfa 30%, transparent)')
-    .attr('stroke', '#a78bfa')
+    .attr('fill', 'color-mix(in srgb, var(--alp-color-accent) 30%, transparent)')
+    .attr('stroke', 'var(--alp-color-accent)')
     .attr('stroke-width', 2)
     .attr('d', area)
 

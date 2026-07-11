@@ -59,9 +59,9 @@ function onBarClick(i: number) {
   fail.value = false
 
   if (props.levelId === 'temp') {
-    while (stack.value.length && heights.value[stackTop.value!]! >= heights.value[i]!) {
+    while (stack.value.length && heights.value[stackTop.value!]! < heights.value[i]!) {
       fail.value = true
-      msg.value = '栈顶高度 ≥ 当前柱，应先点栈顶弹出！'
+      msg.value = '当前柱比栈顶高 → 找到更暖一天，应先点栈顶弹出结算！'
       return
     }
   } else {
@@ -98,7 +98,7 @@ function onStackTopClick() {
 function finish() {
   while (props.levelId === 'temp' && stack.value.length) {
     const j = stack.value.pop()!
-    result.value[j] = processed.value - j
+    result.value[j] = 0
   }
   won.value = true
   msg.value =
@@ -188,14 +188,14 @@ function finish() {
   cursor: pointer;
 }
 .bar-wrap.is-next {
-  border-color: #22d3ee;
+  border-color: #3a8a9e;
 }
 .bar-wrap.is-done {
   opacity: 0.55;
 }
 .bar {
   width: 36px;
-  background: linear-gradient(180deg, #22d3ee, #6366f1);
+  background: #3a8a9e;
   border-radius: 4px 4px 0 0;
 }
 .bar-val {
@@ -205,7 +205,7 @@ function finish() {
 }
 .wait {
   font-size: 10px;
-  color: #86efac;
+  color: #8ab896;
 }
 .stack-zone {
   padding: 14px;
@@ -234,8 +234,8 @@ function finish() {
   cursor: pointer;
 }
 .stack-item.is-top {
-  border-color: #fbbf24;
-  box-shadow: 0 0 0 2px color-mix(in srgb, #fbbf24 35%, transparent);
+  border-color: #9c8540;
+  box-shadow: 0 0 0 2px color-mix(in srgb, #9c8540 35%, transparent);
 }
 .stack-item small {
   display: block;

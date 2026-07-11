@@ -66,14 +66,14 @@ const layoutNodes = computed<Node[]>(() => {
         label: n.label,
         data: { ...n, highlighted },
         style: {
-          border: `2px solid ${highlighted ? '#fbbf24' : n.accent}`,
+          border: `2px solid ${highlighted ? '#9c8540' : n.accent}`,
           borderRadius: '10px',
           padding: '8px 12px',
           fontSize: '12px',
           background: n.kind === 'problem' ? 'var(--alp-bg-soft-block)' : 'var(--alp-bg-surface-solid)',
           color: 'var(--alp-color-text)',
           minWidth: '100px',
-          boxShadow: highlighted ? '0 0 12px rgba(251, 191, 36, 0.45)' : undefined,
+          boxShadow: highlighted ? '0 0 12px rgba(156, 133, 64, 0.45)' : undefined,
         },
       })
     })

@@ -263,12 +263,12 @@ export const RESOURCE_TYPE_META: Record<
   string,
   { label: string; agentName: string; color: string }
 > = {
-  document: { label: '概念讲解', agentName: 'ConceptAgent', color: '#3b82f6' },
+  document: { label: '概念讲解', agentName: 'ConceptAgent', color: '#4a6e94' },
   mindmap: { label: '知识思维导图', agentName: 'GraphAgent', color: '#8b5cf6' },
-  exercises: { label: '个性化题单', agentName: 'QuizAgent', color: '#f59e0b' },
-  code_case: { label: '剧本沙盒', agentName: 'ScenarioAgent', color: '#ef4444' },
+  exercises: { label: '个性化题单', agentName: 'QuizAgent', color: '#9c7a3d' },
+  code_case: { label: '剧本沙盒', agentName: 'ScenarioAgent', color: '#9e5a5a' },
   trace_animation: { label: '轨迹动画', agentName: 'TraceAgent', color: '#ec4899' },
-  reading: { label: '分层阅读', agentName: 'ReadingAgent', color: '#10b981' },
+  reading: { label: '分层阅读', agentName: 'ReadingAgent', color: '#3d8a6e' },
 }
 
 export interface AgentInfo {

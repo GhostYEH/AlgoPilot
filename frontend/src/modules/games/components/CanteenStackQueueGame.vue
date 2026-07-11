@@ -144,17 +144,18 @@ function clickStackPlate(stackIndex: number) {
     loseLife('只能从栈顶出餐！')
     return
   }
-  const v = stack.value.pop()!
   const expect = nextExpected.value
   if (expect === undefined) {
     loseLife('已经出够了')
     return
   }
+  const v = stack.value[top]!
   if (v !== expect) {
-    output.value.push(v)
-    loseLife(`顺序错了：该出 ${expect}，你出了 ${v}`)
+    // 不消费餐盘，仅提示顺序错误，避免污染 output 导致本关永久不可通关
+    loseLife(`顺序错了：该出 ${expect}，栈顶是 ${v}`)
     return
   }
+  stack.value.pop()
   output.value.push(v)
   addScore(15)
   pushLog(`栈顶出餐 ${v}`)
@@ -180,13 +181,14 @@ function clickQueuePlate(index: number) {
     loseLife('只能从队头（最左侧）出餐！')
     return
   }
-  const v = queue.value.shift()!
   const expect = nextExpected.value
+  const v = queue.value[0]!
   if (v !== expect) {
-    output.value.push(v)
-    loseLife(`顺序错了：该出 ${expect}，你出了 ${v}`)
+    // 不消费餐盘，仅提示顺序错误，避免污染 output 导致本关永久不可通关
+    loseLife(`顺序错了：该出 ${expect}，队头是 ${v}`)
     return
   }
+  queue.value.shift()
   output.value.push(v)
   addScore(15)
   msg.value = `队头出餐 ${v} ✓`
@@ -220,13 +222,14 @@ function clickOutStackTop() {
     }
     return
   }
-  const v = outStack.value.pop()!
+  const v = outStack.value[outStack.value.length - 1]!
   const expect = nextExpected.value
   if (v !== expect) {
-    output.value.push(v)
-    loseLife(`应对 ${expect}，出了 ${v}`)
+    // 不消费餐盘，仅提示顺序错误，避免污染 output 导致本关永久不可通关
+    loseLife(`应对 ${expect}，栈顶是 ${v}`)
     return
   }
+  outStack.value.pop()
   output.value.push(v)
   addScore(15)
   dualPoured.value = false
@@ -249,11 +252,14 @@ function clickParenAt(i: number) {
     msg.value = `左括号 ${ch} 入栈`
   } else {
     const map: Record<string, string> = { ')': '(', ']': '[', '}': '{' }
-    if (parenStack.value.pop() !== map[ch]) {
+    const top = parenStack.value[parenStack.value.length - 1]
+    if (top !== map[ch]) {
+      // 不弹出栈顶，避免破坏匹配栈状态
       loseLife(`栈顶与 ${ch} 不匹配`)
       parenCursor.value--
       return
     }
+    parenStack.value.pop()
     addScore(10)
     msg.value = `匹配 ${ch}，栈：${parenStack.value.join('') || '空'}`
   }
@@ -286,7 +292,7 @@ function clickDequePop(idxInWindow: number) {
     msg.value = '正确！窗口右移，deque 现为 [3]'
     return
   }
-  if (dequeStep.value === 1) {
+  if (dequeStep.value >= 1) {
     won.value = true
     msg.value = '窗口最大值 5，通关！'
     emit('cleared')
@@ -597,7 +603,7 @@ const isFail = computed(() => lives.value <= 0 && !won.value)
   margin-bottom: 14px;
   padding: 10px 14px;
   border-radius: 10px;
-  background: color-mix(in srgb, #6366f1 8%, var(--alp-bg-soft-block));
+  background: color-mix(in srgb, #525c8a 8%, var(--alp-bg-soft-block));
   border: 1px solid var(--alp-color-border);
 }
 
@@ -623,8 +629,8 @@ const isFail = computed(() => lives.value <= 0 && !won.value)
   margin-bottom: 16px;
   padding: 12px 16px;
   border-radius: 10px;
-  background: color-mix(in srgb, #fbbf24 10%, transparent);
-  border: 1px solid color-mix(in srgb, #fbbf24 35%, transparent);
+  background: color-mix(in srgb, #9c8540 10%, transparent);
+  border: 1px solid color-mix(in srgb, #9c8540 35%, transparent);
 }
 
 .order-label {
@@ -651,15 +657,15 @@ const isFail = computed(() => lives.value <= 0 && !won.value)
 }
 
 .order-plate.is-next {
-  border-color: #fbbf24;
-  color: #fbbf24;
-  box-shadow: 0 0 12px color-mix(in srgb, #fbbf24 40%, transparent);
+  border-color: #9c8540;
+  color: #9c8540;
+  box-shadow: 0 0 12px color-mix(in srgb, #9c8540 40%, transparent);
 }
 
 .order-plate.is-done {
-  border-color: #22c55e;
-  background: color-mix(in srgb, #22c55e 20%, transparent);
-  color: #86efac;
+  border-color: #4a8a5e;
+  background: color-mix(in srgb, #4a8a5e 20%, transparent);
+  color: #8ab896;
 }
 
 .canteen-board {
@@ -716,20 +722,21 @@ const isFail = computed(() => lives.value <= 0 && !won.value)
   font-size: 1.15rem;
   font-weight: 700;
   color: #f8fafc;
-  background: linear-gradient(145deg, #6366f1, #4f46e5);
+  background: #525c8a;
   border: 2px solid color-mix(in srgb, #a5b4fc 50%, transparent);
-  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 10px rgba(82, 92, 138, 0.3);
 }
 
 button.plate {
   cursor: pointer;
   font-family: inherit;
-  transition: transform 0.12s, box-shadow 0.12s;
+  transition: transform 0.12s, box-shadow 0.12s, filter var(--alp-transition-fast);
 }
 
 button.plate:hover:not(:disabled) {
   transform: translateY(-3px);
-  box-shadow: 0 8px 16px rgba(99, 102, 241, 0.45);
+  box-shadow: var(--alp-shadow-btn-hover);
+  filter: brightness(1.08);
 }
 
 button.plate:disabled {
@@ -738,7 +745,7 @@ button.plate:disabled {
 }
 
 .plate.is-top {
-  outline: 3px solid #fbbf24;
+  outline: 3px solid #9c8540;
   outline-offset: 2px;
 }
 
@@ -748,11 +755,11 @@ button.plate:disabled {
 }
 
 .plate.is-head {
-  outline: 3px solid #fbbf24;
+  outline: 3px solid #9c8540;
 }
 
 .plate.is-current {
-  outline: 3px solid #22d3ee;
+  outline: 3px solid #3a8a9e;
   animation: pulse 1s ease infinite;
 }
 
@@ -762,7 +769,7 @@ button.plate:disabled {
 
 @keyframes pulse {
   50% {
-    box-shadow: 0 0 16px rgba(34, 211, 238, 0.6);
+    box-shadow: 0 0 16px rgba(58, 138, 158, 0.6);
   }
 }
 
@@ -774,12 +781,12 @@ button.plate:disabled {
   font-size: 9px;
   font-weight: 700;
   border-radius: 4px;
-  background: #fbbf24;
+  background: #9c8540;
   color: #1e293b;
 }
 
 .plate--out {
-  background: linear-gradient(145deg, #22c55e, #16a34a);
+  background: #4a8a5e;
 }
 
 .plate--char {
@@ -827,8 +834,8 @@ button.plate:disabled {
 }
 
 .action-chip.is-ready {
-  border-color: #22d3ee;
-  background: color-mix(in srgb, #22d3ee 15%, transparent);
+  border-color: #3a8a9e;
+  background: color-mix(in srgb, #3a8a9e 15%, transparent);
 }
 
 .action-chip:disabled {
@@ -869,14 +876,14 @@ button.plate:disabled {
 
 .deque-bar-wrap.in-window {
   opacity: 1;
-  background: color-mix(in srgb, #22d3ee 12%, transparent);
-  outline: 2px solid color-mix(in srgb, #22d3ee 40%, transparent);
+  background: color-mix(in srgb, #3a8a9e 12%, transparent);
+  outline: 2px solid color-mix(in srgb, #3a8a9e 40%, transparent);
 }
 
 .deque-bar {
   width: 28px;
   border-radius: 4px 4px 0 0;
-  background: linear-gradient(180deg, #818cf8, #4f46e5);
+  background: #6b7a9e;
 }
 
 .deque-idx,
@@ -916,13 +923,13 @@ button.plate:disabled {
 }
 
 .feedback.is-win {
-  border-left-color: #22c55e;
-  background: color-mix(in srgb, #22c55e 12%, transparent);
-  color: #86efac;
+  border-left-color: #4a8a5e;
+  background: color-mix(in srgb, #4a8a5e 12%, transparent);
+  color: #8ab896;
 }
 
 .feedback.is-error {
-  border-left-color: #ef4444;
+  border-left-color: #9e5a5a;
   color: #fca5a5;
 }
 </style>

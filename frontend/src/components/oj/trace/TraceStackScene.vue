@@ -69,12 +69,8 @@ const cellsTopFirst = computed(() => [...props.scene.items].reverse())
   margin-bottom: 12px;
   padding: 14px 16px;
   border-radius: 12px;
-  border: 1px solid color-mix(in srgb, #f59e0b 35%, var(--alp-color-border));
-  background: linear-gradient(
-    165deg,
-    var(--alp-bg-surface) 0%,
-    color-mix(in srgb, #f59e0b 8%, var(--alp-bg-soft-block)) 100%
-  );
+  border: 1px solid color-mix(in srgb, #9c7a3d 35%, var(--alp-color-border));
+  background: var(--alp-bg-surface);
   box-shadow: var(--alp-shadow-card);
 }
 
@@ -88,19 +84,19 @@ const cellsTopFirst = computed(() => [...props.scene.items].reverse())
 .ts-tag {
   font-size: 12px;
   font-weight: 700;
-  color: #f59e0b;
+  color: #9c7a3d;
 }
 
 .ts-badge {
   font-size: 11px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, #f59e0b 14%, transparent);
+  background: color-mix(in srgb, #9c7a3d 14%, transparent);
   color: var(--alp-color-muted);
 }
 
 .ts-badge--ok {
-  color: #4ade80;
+  color: #6aa878;
 }
 
 .ts-badge--bad {
@@ -137,14 +133,14 @@ const cellsTopFirst = computed(() => [...props.scene.items].reverse())
   margin-bottom: 10px;
   padding: 6px 10px;
   border-radius: 8px;
-  background: color-mix(in srgb, #22d3ee 10%, var(--alp-bg-soft-block));
-  border: 1px solid color-mix(in srgb, #22d3ee 35%, var(--alp-color-border));
+  background: color-mix(in srgb, var(--alp-color-primary) 10%, var(--alp-bg-soft-block));
+  border: 1px solid color-mix(in srgb, var(--alp-color-primary) 35%, var(--alp-color-border));
 }
 
 .ts-cursor-label {
   font-size: 12px;
   font-weight: 600;
-  color: #22d3ee;
+  color: var(--alp-color-primary);
 }
 
 .ts-cursor-val {
@@ -179,7 +175,7 @@ const cellsTopFirst = computed(() => [...props.scene.items].reverse())
 }
 
 .ts-stack-lane--hot {
-  border-color: #f59e0b;
+  border-color: #9c7a3d;
 }
 
 .ts-cell {
@@ -197,9 +193,9 @@ const cellsTopFirst = computed(() => [...props.scene.items].reverse())
 }
 
 .ts-cell--top {
-  border-color: #f59e0b;
-  background: color-mix(in srgb, #f59e0b 16%, var(--alp-bg-surface));
-  box-shadow: 0 0 0 2px color-mix(in srgb, #f59e0b 25%, transparent);
+  border-color: #9c7a3d;
+  background: color-mix(in srgb, #9c7a3d 16%, var(--alp-bg-surface));
+  box-shadow: 0 0 0 2px color-mix(in srgb, #9c7a3d 25%, transparent);
 }
 
 .ts-cell--hot {

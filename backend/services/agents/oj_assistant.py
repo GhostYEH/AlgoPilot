@@ -13,6 +13,11 @@ class OjAssistantAgent(BaseAgent):
     def build_messages(self, *, request: OjAssistantRequest) -> list[dict[str, str]]:
         return build_oj_assistant_messages(request)
 
+    async def run(self, **kwargs) -> str:
+        """BaseAgent interface compatibility: kwargs must contain request: OjAssistantRequest."""
+        body = kwargs["request"]
+        return await self.run_for_request(body)
+
     async def run_for_request(self, body: OjAssistantRequest) -> str:
         messages = self.build_messages(request=body)
         temp = 0.55 if body.mode == "ds_hint" else 0.6

@@ -104,9 +104,9 @@ const layout = computed(() => {
 })
 
 function scoreColor(score: number): string {
-  if (score >= 8) return '#22d3ee'
-  if (score >= 6) return '#4ade80'
-  if (score >= 4) return '#fbbf24'
+  if (score >= 8) return 'var(--alp-color-primary)'
+  if (score >= 6) return '#6aa878'
+  if (score >= 4) return '#9c8540'
   return '#f87171'
 }
 
@@ -196,7 +196,7 @@ function renderGraph() {
     .append('text')
     .attr('text-anchor', 'middle')
     .attr('y', -30)
-    .attr('fill', '#fbbf24')
+    .attr('fill', '#9c8540')
     .attr('font-size', 9)
     .text('巩固 Remediation')
 
@@ -250,13 +250,13 @@ onUnmounted(() => {
 .dag-viz {
   padding: 12px;
   border-radius: var(--alp-radius-card);
-  background: linear-gradient(180deg, #0f172a 0%, #020617 100%);
+  background: #0f172a;
   border: 1px solid color-mix(in srgb, var(--alp-color-primary) 25%, var(--alp-color-border));
   transition: box-shadow 0.6s ease;
 }
 
 .dag-viz--remediating {
-  box-shadow: 0 0 40px color-mix(in srgb, #fbbf24 25%, transparent);
+  box-shadow: 0 0 40px color-mix(in srgb, #9c8540 25%, transparent);
   animation: rem-pulse 1.2s ease-out;
 }
 
@@ -288,10 +288,10 @@ onUnmounted(() => {
 }
 
 .swatch--high {
-  background: #22d3ee;
+  background: var(--alp-color-primary);
 }
 .swatch--mid {
-  background: #fbbf24;
+  background: #9c8540;
 }
 .swatch--low {
   background: #f87171;

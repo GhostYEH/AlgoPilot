@@ -190,10 +190,10 @@ const summaryTags = ['77 组合', '46 排列', '78 子集', '51 皇后']
   color: var(--alp-color-primary, #2563eb);
 }
 .tree-link.collect {
-  color: #22c55e;
+  color: #4a8a5e;
 }
 .tree-link.back {
-  color: #f59e0b;
+  color: #9c7a3d;
 }
 .hint-label {
   font-size: 10px;

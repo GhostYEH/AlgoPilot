@@ -412,7 +412,7 @@ const checkpointGroups = computed(() => CHECKPOINT_GROUPS[props.sectionId] ?? []
 }
 
 .bt-swap-arc {
-  stroke: #f59e0b;
+  stroke: #9c7a3d;
   stroke-width: 2;
   stroke-dasharray: 5 4;
   animation: bt-dash 1.2s linear infinite;
@@ -437,18 +437,18 @@ const checkpointGroups = computed(() => CHECKPOINT_GROUPS[props.sectionId] ?? []
 .bt-tag {
   font-size: 9px;
   font-weight: 700;
-  fill: var(--alp-color-primary, #22d3ee);
+  fill: var(--alp-color-primary, #3a8a9e);
 }
 
 .bt-node--hot {
   fill: color-mix(in srgb, var(--alp-color-primary) 25%, var(--alp-bg-surface-solid));
-  stroke: var(--alp-color-primary, #22d3ee);
+  stroke: var(--alp-color-primary, #3a8a9e);
   stroke-width: 2.5;
 }
 
 .bt-node--done {
-  fill: color-mix(in srgb, #22c55e 15%, var(--alp-bg-surface-solid));
-  stroke: #22c55e;
+  fill: color-mix(in srgb, #4a8a5e 15%, var(--alp-bg-surface-solid));
+  stroke: #4a8a5e;
 }
 
 .bt-node--dim {
@@ -456,8 +456,8 @@ const checkpointGroups = computed(() => CHECKPOINT_GROUPS[props.sectionId] ?? []
 }
 
 .bt-node--swap {
-  fill: color-mix(in srgb, #f59e0b 20%, var(--alp-bg-surface-solid));
-  stroke: #f59e0b;
+  fill: color-mix(in srgb, #9c7a3d 20%, var(--alp-bg-surface-solid));
+  stroke: #9c7a3d;
 }
 
 .bt-node--p {
@@ -471,8 +471,8 @@ const checkpointGroups = computed(() => CHECKPOINT_GROUPS[props.sectionId] ?? []
 }
 
 .bt-node--lca {
-  fill: color-mix(in srgb, #22c55e 28%, var(--alp-bg-surface-solid));
-  stroke: #16a34a;
+  fill: color-mix(in srgb, #4a8a5e 28%, var(--alp-bg-surface-solid));
+  stroke: #3a6e4a;
   stroke-width: 3;
 }
 
@@ -493,7 +493,7 @@ const checkpointGroups = computed(() => CHECKPOINT_GROUPS[props.sectionId] ?? []
 }
 
 .bt-aux--queue {
-  border-color: color-mix(in srgb, #4ade80 35%, var(--alp-color-border));
+  border-color: color-mix(in srgb, #6aa878 35%, var(--alp-color-border));
 }
 
 .bt-aux-title {
@@ -602,11 +602,11 @@ const checkpointGroups = computed(() => CHECKPOINT_GROUPS[props.sectionId] ?? []
 }
 
 .bt-checkpoint-card--blue {
-  border-top: 3px solid var(--alp-color-primary, #22d3ee);
+  border-top: 3px solid var(--alp-color-primary, #3a8a9e);
 }
 
 .bt-checkpoint-card--cyan {
-  border-top: 3px solid #4ade80;
+  border-top: 3px solid #6aa878;
 }
 
 .bt-checkpoint-card--violet {

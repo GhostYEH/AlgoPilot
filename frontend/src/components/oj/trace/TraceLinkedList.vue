@@ -189,7 +189,7 @@ function ptrHot(name: string) {
 .trace-ll-focus__item--hot {
   color: #713f12;
   background: #fde68a;
-  box-shadow: 0 0 0 2px color-mix(in srgb, #f59e0b 30%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, #9c7a3d 30%, transparent);
 }
 
 .trace-ll-section-title {
@@ -229,7 +229,7 @@ function ptrHot(name: string) {
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 4px;
-  background: #22d3ee;
+  background: var(--alp-color-primary);
   color: #0f172a;
   transition:
     transform 0.2s,
@@ -237,7 +237,7 @@ function ptrHot(name: string) {
 }
 
 .trace-ll-ptr--hot {
-  background: #fbbf24;
+  background: #9c8540;
   animation: ptr-pulse 0.55s ease;
 }
 
@@ -259,8 +259,8 @@ function ptrHot(name: string) {
 }
 
 .trace-ll-node--has-ptr {
-  border-color: #22d3ee;
-  box-shadow: 0 0 0 2px color-mix(in srgb, #22d3ee 35%, transparent);
+  border-color: var(--alp-color-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--alp-color-primary) 35%, transparent);
 }
 
 .trace-ll-node--hot {

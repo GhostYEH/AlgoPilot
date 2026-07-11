@@ -4,16 +4,16 @@
  */
 :root {
   /* ── 色彩系统 ── */
-  --alp-color-primary: #2dd4bf;
-  --alp-color-primary-rgb: 45, 212, 191;
-  --alp-color-primary-soft: rgba(45, 212, 191, 0.12);
-  --alp-color-primary-glow: rgba(45, 212, 191, 0.24);
-  --alp-color-accent: #f59e0b;
-  --alp-color-accent-rgb: 245, 158, 11;
-  --alp-color-accent-soft: rgba(245, 158, 11, 0.12);
-  --alp-color-success: #22c55e;
-  --alp-color-warning: #f59e0b;
-  --alp-color-danger: #fb7185;
+  --alp-color-primary: #3d8a7e;
+  --alp-color-primary-rgb: 61, 138, 126;
+  --alp-color-primary-soft: rgba(61, 138, 126, 0.12);
+  --alp-color-primary-glow: rgba(61, 138, 126, 0.24);
+  --alp-color-accent: #9c7a3d;
+  --alp-color-accent-rgb: 156, 122, 61;
+  --alp-color-accent-soft: rgba(156, 122, 61, 0.12);
+  --alp-color-success: #4a8a5e;
+  --alp-color-warning: #9c7a3d;
+  --alp-color-danger: #9e6470;
   --alp-color-text: #f8faf7;
   --alp-color-text-secondary: #d5ded8;
   --alp-color-muted: #91a19a;
@@ -26,11 +26,35 @@
   --alp-radius-lg: 12px;
   --alp-radius-pill: 999px;
 
-  /* ── 阴影 ── */
-  --alp-shadow-card: 0 18px 50px rgba(0, 0, 0, 0.28), 0 1px 0 rgba(255, 255, 255, 0.04);
-  --alp-shadow-card-hover: 0 22px 56px rgba(0, 0, 0, 0.34), 0 0 0 1px rgba(45, 212, 191, 0.12);
-  --alp-shadow-glow: 0 0 0 1px rgba(45, 212, 191, 0.18);
-  --alp-shadow-glow-accent: 0 0 0 1px rgba(245, 158, 11, 0.18);
+  /* ── 阴影（透明白光影系统） ── */
+  /* 静态：顶部白色高光 + 白色外辉 + 极淡接触 */
+  --alp-shadow-card:
+    0 1px 0 rgba(255, 255, 255, 0.12) inset,
+    0 -1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 8px 24px rgba(255, 255, 255, 0.06),
+    0 2px 6px rgba(0, 0, 0, 0.12);
+  /* 浮起：更亮白高光 + 白色光晕扩散 */
+  --alp-shadow-card-hover:
+    0 1px 0 rgba(255, 255, 255, 0.22) inset,
+    0 -1px 0 rgba(255, 255, 255, 0.1) inset,
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 12px 36px rgba(255, 255, 255, 0.1),
+    0 4px 12px rgba(0, 0, 0, 0.14);
+  /* 按钮静态：白高光 */
+  --alp-shadow-btn:
+    0 1px 0 rgba(255, 255, 255, 0.14) inset,
+    0 2px 8px rgba(255, 255, 255, 0.04);
+  /* 按钮浮起：白光晕 */
+  --alp-shadow-btn-hover:
+    0 1px 0 rgba(255, 255, 255, 0.24) inset,
+    0 0 0 1px rgba(255, 255, 255, 0.14),
+    0 6px 20px rgba(255, 255, 255, 0.08);
+  --alp-shadow-glow:
+    0 0 0 1px rgba(255, 255, 255, 0.16),
+    0 0 18px rgba(255, 255, 255, 0.08);
+  --alp-shadow-glow-accent:
+    0 0 0 1px rgba(255, 255, 255, 0.16),
+    0 0 18px rgba(255, 255, 255, 0.08);
 
   /* ── 布局 ── */
   --alp-header-height: 60px;
@@ -45,10 +69,8 @@
   --alp-transition-spring: 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* ── 背景系统 ── */
-  --alp-bg-page: #0b100f;
-  --alp-bg-shell:
-    linear-gradient(135deg, rgba(45, 212, 191, 0.045) 0 1px, transparent 1px 32px),
-    linear-gradient(180deg, #0b100f 0%, #111716 46%, #161817 100%);
+  --alp-bg-page: #0f1413;
+  --alp-bg-shell: #0f1413;
   --alp-bg-header: rgba(13, 18, 17, 0.9);
   --alp-bg-toolbar: rgba(22, 28, 26, 0.76);
   --alp-bg-surface: rgba(24, 31, 29, 0.82);
@@ -56,60 +78,50 @@
   --alp-bg-surface-muted: rgba(19, 25, 24, 0.86);
   --alp-bg-soft-block: rgba(37, 46, 42, 0.62);
   --alp-bg-main-panel: rgba(13, 18, 17, 0.48);
-  --alp-bg-aside-gradient: linear-gradient(180deg, rgba(24, 31, 29, 0.96) 0%, rgba(18, 24, 22, 0.94) 100%);
+  --alp-bg-aside-gradient: rgba(21, 27, 25, 0.95);
   --alp-bg-nav: rgba(43, 52, 48, 0.56);
-  --alp-bg-nav-hover: rgba(45, 212, 191, 0.08);
-  --alp-bg-nav-active: rgba(45, 212, 191, 0.14);
+  --alp-bg-nav-hover: rgba(61, 138, 126, 0.08);
+  --alp-bg-nav-active: rgba(61, 138, 126, 0.14);
   --alp-bg-code-ish: rgba(8, 12, 11, 0.96);
-  --alp-bg-persona: linear-gradient(135deg, rgba(24, 31, 29, 0.98) 0%, rgba(29, 35, 30, 0.98) 62%, rgba(245, 158, 11, 0.12) 100%);
-  --alp-border-persona: rgba(245, 158, 11, 0.28);
+  --alp-bg-persona: rgba(24, 31, 29, 0.98);
+  --alp-border-persona: rgba(156, 122, 61, 0.28);
   --alp-nav-index-bg: #25302c;
   --alp-nav-index-fg: #d5ded8;
 
-  /* ── 装饰性渐变 ── */
-  --alp-gradient-hero:
-    linear-gradient(135deg, rgba(45, 212, 191, 0.12), transparent 38%),
-    linear-gradient(90deg, rgba(245, 158, 11, 0.08), transparent 62%);
-  --alp-gradient-card-border: linear-gradient(135deg, rgba(45, 212, 191, 0.36), rgba(245, 158, 11, 0.2));
-  --alp-gradient-accent: linear-gradient(135deg, #2dd4bf, #f59e0b);
-  --alp-gradient-text: linear-gradient(90deg, #f8faf7, #5eead4 62%, #fbbf24);
+  /* ── 装饰性纯色（原渐变已移除） ── */
+  --alp-gradient-hero: transparent;
+  --alp-gradient-card-border: rgba(61, 138, 126, 0.32);
+  --alp-gradient-accent: #3d8a7e;
+  --alp-gradient-text: #d5ded8;
 
-  /* ── 滚动条 — 星轨风 ── */
+  /* ── 滚动条 ── */
   --alp-scrollbar-size: 6px;
   --alp-scrollbar-size-hover: 8px;
   --alp-scrollbar-track: rgba(11, 16, 15, 0.42);
-  --alp-scrollbar-thumb: rgba(45, 212, 191, 0.28);
-  --alp-scrollbar-thumb-hover: rgba(45, 212, 191, 0.64);
-  --alp-scrollbar-thumb-active: #2dd4bf;
-  --alp-scrollbar-glow: 0 0 8px rgba(45, 212, 191, 0.24);
-  --alp-scrollbar-glow-hover: 0 0 12px rgba(45, 212, 191, 0.42), 0 0 4px rgba(245, 158, 11, 0.2);
-  --alp-scrollbar-gradient: linear-gradient(
-    180deg,
-    rgba(45, 212, 191, 0.7) 0%,
-    rgba(245, 158, 11, 0.48) 100%
-  );
-  --alp-scrollbar-gradient-hover: linear-gradient(
-    180deg,
-    rgba(45, 212, 191, 0.9) 0%,
-    rgba(245, 158, 11, 0.7) 100%
-  );
+  --alp-scrollbar-thumb: rgba(61, 138, 126, 0.28);
+  --alp-scrollbar-thumb-hover: rgba(61, 138, 126, 0.64);
+  --alp-scrollbar-thumb-active: #3d8a7e;
+  --alp-scrollbar-glow: 0 0 8px rgba(61, 138, 126, 0.24);
+  --alp-scrollbar-glow-hover: 0 0 12px rgba(61, 138, 126, 0.42);
+  --alp-scrollbar-gradient: rgba(61, 138, 126, 0.5);
+  --alp-scrollbar-gradient-hover: rgba(61, 138, 126, 0.7);
 
   /* Element Plus 滚动条覆盖 */
   --el-scrollbar-opacity: 0.5;
-  --el-scrollbar-bg-color: rgba(45, 212, 191, 0.35);
+  --el-scrollbar-bg-color: rgba(61, 138, 126, 0.35);
   --el-scrollbar-hover-opacity: 0.9;
-  --el-scrollbar-hover-bg-color: rgba(45, 212, 191, 0.78);
+  --el-scrollbar-hover-bg-color: rgba(61, 138, 126, 0.78);
 
   /* ── Element Plus 主题覆盖 ── */
-  --el-color-primary: #2dd4bf;
-  --el-color-primary-light-3: #5eead4;
-  --el-color-primary-light-5: #99f6e4;
-  --el-color-primary-light-7: #ccfbf1;
-  --el-color-primary-light-9: #f0fdfa;
-  --el-color-primary-dark-2: #0f766e;
-  --el-color-success: #22c55e;
-  --el-color-warning: #f59e0b;
-  --el-color-danger: #fb7185;
+  --el-color-primary: #3d8a7e;
+  --el-color-primary-light-3: #5a9b8f;
+  --el-color-primary-light-5: #7aab9f;
+  --el-color-primary-light-7: #9bbab2;
+  --el-color-primary-light-9: #c5d8d2;
+  --el-color-primary-dark-2: #2e6b62;
+  --el-color-success: #4a8a5e;
+  --el-color-warning: #9c7a3d;
+  --el-color-danger: #9e6470;
   --el-bg-color: rgba(24, 31, 29, 0.82);
   --el-bg-color-overlay: rgba(18, 24, 22, 0.98);
   --el-text-color-primary: #f8faf7;
@@ -123,25 +135,44 @@
 /* 浅色主题 */
 html:not(.dark) {
   color-scheme: light;
-  --alp-color-primary: #0f766e;
-  --alp-color-primary-rgb: 15, 118, 110;
-  --alp-color-primary-soft: rgba(15, 118, 110, 0.1);
-  --alp-color-primary-glow: rgba(15, 118, 110, 0.22);
-  --alp-color-accent: #b45309;
-  --alp-color-accent-rgb: 180, 83, 9;
-  --alp-color-accent-soft: rgba(180, 83, 9, 0.08);
+  --alp-color-primary: #2e6b62;
+  --alp-color-primary-rgb: 46, 107, 98;
+  --alp-color-primary-soft: rgba(46, 107, 98, 0.1);
+  --alp-color-primary-glow: rgba(46, 107, 98, 0.22);
+  --alp-color-accent: #8a6a33;
+  --alp-color-accent-rgb: 138, 106, 51;
+  --alp-color-accent-soft: rgba(138, 106, 51, 0.08);
   --alp-color-text: #0f172a;
   --alp-color-text-secondary: #334155;
   --alp-color-muted: #64748b;
   --alp-color-border: rgba(100, 116, 139, 0.2);
   --alp-color-border-strong: rgba(100, 116, 139, 0.35);
-  --alp-shadow-card: 0 4px 20px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
-  --alp-shadow-card-hover: 0 8px 32px rgba(8, 145, 178, 0.1), 0 2px 8px rgba(15, 23, 42, 0.06);
-  --alp-shadow-glow: 0 0 20px rgba(8, 145, 178, 0.12);
+  --alp-shadow-card:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 -1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 6px 20px rgba(15, 23, 42, 0.05),
+    0 1px 3px rgba(15, 23, 42, 0.03);
+  --alp-shadow-card-hover:
+    0 1px 0 rgba(255, 255, 255, 1) inset,
+    0 -1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 0 0 1px rgba(255, 255, 255, 0.6),
+    0 10px 28px rgba(15, 23, 42, 0.08),
+    0 3px 8px rgba(15, 23, 42, 0.05);
+  --alp-shadow-btn:
+    0 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 1px 4px rgba(15, 23, 42, 0.04);
+  --alp-shadow-btn-hover:
+    0 1px 0 rgba(255, 255, 255, 1) inset,
+    0 0 0 1px rgba(255, 255, 255, 0.5),
+    0 6px 16px rgba(15, 23, 42, 0.07);
+  --alp-shadow-glow:
+    0 0 0 1px rgba(255, 255, 255, 0.6),
+    0 0 14px rgba(255, 255, 255, 0.4);
+  --alp-shadow-glow-accent:
+    0 0 0 1px rgba(255, 255, 255, 0.6),
+    0 0 14px rgba(255, 255, 255, 0.4);
   --alp-bg-page: #f6f7f1;
-  --alp-bg-shell:
-    linear-gradient(135deg, rgba(15, 118, 110, 0.035) 0 1px, transparent 1px 32px),
-    linear-gradient(180deg, #fbfbf6 0%, #f4f6ef 54%, #edf0e7 100%);
+  --alp-bg-shell: #f4f6ef;
   --alp-bg-header: rgba(255, 255, 255, 0.9);
   --alp-bg-toolbar: rgba(248, 250, 252, 0.95);
   --alp-bg-surface: rgba(255, 255, 255, 0.96);
@@ -149,27 +180,25 @@ html:not(.dark) {
   --alp-bg-surface-muted: #f8fafc;
   --alp-bg-soft-block: #f1f5f9;
   --alp-bg-main-panel: rgba(255, 255, 255, 0.72);
-  --alp-bg-aside-gradient: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  --alp-bg-aside-gradient: #fbfcfa;
   --alp-bg-nav: rgba(226, 232, 240, 0.65);
-  --alp-bg-nav-hover: rgba(15, 118, 110, 0.06);
-  --alp-bg-nav-active: rgba(15, 118, 110, 0.12);
+  --alp-bg-nav-hover: rgba(46, 107, 98, 0.06);
+  --alp-bg-nav-active: rgba(46, 107, 98, 0.12);
   --alp-bg-code-ish: #f8fafc;
-  --alp-bg-persona: linear-gradient(135deg, #ffffff 0%, #f8fafc 54%, rgba(254, 243, 199, 0.42) 100%);
-  --alp-border-persona: rgba(180, 83, 9, 0.2);
-  --alp-gradient-hero:
-    linear-gradient(135deg, rgba(15, 118, 110, 0.08), transparent 42%),
-    linear-gradient(90deg, rgba(180, 83, 9, 0.06), transparent 64%);
-  --alp-gradient-card-border: linear-gradient(135deg, rgba(15, 118, 110, 0.22), rgba(180, 83, 9, 0.14));
-  --alp-gradient-accent: linear-gradient(135deg, var(--alp-color-primary), var(--alp-color-accent));
-  --alp-gradient-text: linear-gradient(90deg, #0f172a, #0f766e 68%, #b45309);
+  --alp-bg-persona: #fbfcfa;
+  --alp-border-persona: rgba(138, 106, 51, 0.2);
+  --alp-gradient-hero: transparent;
+  --alp-gradient-card-border: rgba(46, 107, 98, 0.22);
+  --alp-gradient-accent: #2e6b62;
+  --alp-gradient-text: #0f172a;
   --alp-scrollbar-track: rgba(240, 244, 248, 0.9);
-  --alp-scrollbar-thumb: rgba(8, 145, 178, 0.3);
-  --el-color-primary: #0f766e;
-  --el-color-primary-light-3: #14b8a6;
-  --el-color-primary-light-5: #5eead4;
-  --el-color-primary-light-7: #99f6e4;
-  --el-color-primary-light-9: #f0fdfa;
-  --el-color-primary-dark-2: #115e59;
+  --alp-scrollbar-thumb: rgba(46, 107, 98, 0.3);
+  --el-color-primary: #2e6b62;
+  --el-color-primary-light-3: #4a8579;
+  --el-color-primary-light-5: #6b9b91;
+  --el-color-primary-light-7: #9bbab2;
+  --el-color-primary-light-9: #c5d8d2;
+  --el-color-primary-dark-2: #1f4d45;
   --el-bg-color: rgba(255, 255, 255, 0.96);
   --el-bg-color-overlay: rgba(255, 255, 255, 0.98);
   --el-text-color-primary: #0f172a;

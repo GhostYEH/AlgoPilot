@@ -82,12 +82,12 @@ const props = defineProps<{
   border: 1px solid var(--alp-color-border);
   border-radius: 12px;
   padding: 12px 14px;
-  background: linear-gradient(165deg, var(--alp-bg-surface) 0%, var(--alp-bg-soft-block) 100%);
+  background: var(--alp-bg-surface);
   box-shadow: var(--alp-shadow-card);
 }
 
 .ht-trace-card--map {
-  border-color: color-mix(in srgb, #a78bfa 35%, var(--alp-color-border));
+  border-color: color-mix(in srgb, var(--alp-color-accent) 35%, var(--alp-color-border));
 }
 
 .ht-trace-head {
@@ -101,11 +101,11 @@ const props = defineProps<{
 .ht-trace-tag {
   font-size: 12px;
   font-weight: 700;
-  color: #22d3ee;
+  color: var(--alp-color-primary);
 }
 
 .ht-trace-tag--violet {
-  color: #a78bfa;
+  color: var(--alp-color-accent);
 }
 
 .ht-trace-badge {
@@ -146,9 +146,9 @@ const props = defineProps<{
 }
 
 .ht-cell--hot {
-  border-color: #22d3ee;
-  background: color-mix(in srgb, #22d3ee 18%, var(--alp-bg-soft-block));
-  box-shadow: 0 0 0 3px color-mix(in srgb, #22d3ee 25%, transparent);
+  border-color: var(--alp-color-primary);
+  background: color-mix(in srgb, var(--alp-color-primary) 18%, var(--alp-bg-soft-block));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--alp-color-primary) 25%, transparent);
   transform: scale(1.06);
 }
 
@@ -161,7 +161,7 @@ const props = defineProps<{
 }
 
 .ht-cell--key {
-  border-color: #a78bfa;
+  border-color: var(--alp-color-accent);
 }
 
 .ht-idx {
@@ -177,7 +177,7 @@ const props = defineProps<{
 }
 
 .ht-lookup-key {
-  color: #a78bfa;
+  color: var(--alp-color-accent);
   margin-left: 4px;
 }
 
@@ -207,8 +207,8 @@ const props = defineProps<{
 
 .ht-map-entry--hot {
   border-style: solid;
-  border-color: #a78bfa;
-  background: color-mix(in srgb, #a78bfa 14%, transparent);
+  border-color: var(--alp-color-accent);
+  background: color-mix(in srgb, var(--alp-color-accent) 14%, transparent);
 }
 
 .ht-map-arrow {
@@ -226,7 +226,7 @@ const props = defineProps<{
   margin: 10px 0 0;
   font-size: 13px;
   font-weight: 600;
-  color: #4ade80;
+  color: #6aa878;
 }
 
 .ht-hint {

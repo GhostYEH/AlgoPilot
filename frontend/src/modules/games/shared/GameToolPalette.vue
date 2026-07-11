@@ -67,18 +67,21 @@ const emit = defineEmits<{ select: [id: string] }>()
   transition:
     border-color 0.12s,
     background 0.12s,
-    transform 0.12s;
+    transform 0.12s,
+    filter var(--alp-transition-fast);
 }
 
 .tool-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  border-color: color-mix(in srgb, #22d3ee 50%, transparent);
+  border-color: color-mix(in srgb, #3a8a9e 50%, transparent);
+  box-shadow: var(--alp-shadow-btn);
+  filter: brightness(1.08);
 }
 
 .tool-btn.is-active {
-  border-color: #22d3ee;
-  background: color-mix(in srgb, #22d3ee 18%, transparent);
-  color: #7dd3fc;
+  border-color: #3a8a9e;
+  background: color-mix(in srgb, #3a8a9e 18%, transparent);
+  color: #6a9eb0;
 }
 
 .tool-btn.is-disabled,

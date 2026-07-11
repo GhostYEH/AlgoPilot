@@ -81,12 +81,12 @@ function isHot(id: string) {
   margin-bottom: 12px;
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid color-mix(in srgb, #22d3ee 25%, var(--alp-color-border));
+  border: 1px solid color-mix(in srgb, var(--alp-color-primary) 25%, var(--alp-color-border));
   background: color-mix(in srgb, #0f172a 6%, var(--alp-bg-soft-block));
 }
 
 .trace-memory--var-hot {
-  border-color: color-mix(in srgb, #4ade80 45%, var(--alp-color-border));
+  border-color: color-mix(in srgb, #6aa878 45%, var(--alp-color-border));
 }
 
 .trace-memory-label {
@@ -104,8 +104,8 @@ function isHot(id: string) {
   font-weight: 500;
   padding: 1px 6px;
   border-radius: 4px;
-  background: color-mix(in srgb, #22d3ee 15%, transparent);
-  color: #22d3ee;
+  background: color-mix(in srgb, var(--alp-color-primary) 15%, transparent);
+  color: var(--alp-color-primary);
 }
 
 .trace-memory-regions {
@@ -145,11 +145,11 @@ function isHot(id: string) {
 }
 
 .memory-slot--stack {
-  border-left: 3px solid #22d3ee;
+  border-left: 3px solid var(--alp-color-primary);
 }
 
 .memory-slot--heap {
-  border-left: 3px solid #a78bfa;
+  border-left: 3px solid var(--alp-color-accent);
 }
 
 .memory-slot--global {
@@ -157,23 +157,23 @@ function isHot(id: string) {
 }
 
 .memory-slot--hot {
-  border-color: #4ade80;
-  box-shadow: 0 0 0 1px color-mix(in srgb, #4ade80 40%, transparent);
+  border-color: #6aa878;
+  box-shadow: 0 0 0 1px color-mix(in srgb, #6aa878 40%, transparent);
   animation: mem-pulse 0.55s ease;
 }
 
 @keyframes mem-pulse {
   0% {
     transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.5);
+    box-shadow: 0 0 0 0 rgba(106, 168, 120, 0.5);
   }
   45% {
     transform: scale(1.02);
-    box-shadow: 0 0 14px 2px rgba(74, 222, 128, 0.35);
+    box-shadow: 0 0 14px 2px rgba(106, 168, 120, 0.35);
   }
   100% {
     transform: scale(1);
-    box-shadow: 0 0 0 1px color-mix(in srgb, #4ade80 40%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, #6aa878 40%, transparent);
   }
 }
 
@@ -183,12 +183,12 @@ function isHot(id: string) {
 }
 
 .slot-addr {
-  color: #22d3ee;
+  color: var(--alp-color-primary);
   font-variant-numeric: tabular-nums;
 }
 
 .slot-val {
-  color: #a5f3fc;
+  color: var(--alp-color-primary);
   text-align: right;
   overflow: hidden;
   text-overflow: ellipsis;

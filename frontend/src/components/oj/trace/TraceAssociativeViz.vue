@@ -105,12 +105,8 @@ function entryChanged(entry: AssociativeEntry): boolean {
   margin-bottom: 14px;
   padding: 14px 16px;
   border-radius: 12px;
-  border: 1px solid color-mix(in srgb, #a78bfa 35%, var(--alp-color-border));
-  background: linear-gradient(
-    165deg,
-    var(--alp-bg-surface) 0%,
-    color-mix(in srgb, #a78bfa 8%, var(--alp-bg-soft-block)) 100%
-  );
+  border: 1px solid color-mix(in srgb, var(--alp-color-accent) 35%, var(--alp-color-border));
+  background: var(--alp-bg-surface);
 }
 
 .assoc-head {
@@ -124,14 +120,14 @@ function entryChanged(entry: AssociativeEntry): boolean {
 .assoc-tag {
   font-size: 12px;
   font-weight: 700;
-  color: #a78bfa;
+  color: var(--alp-color-accent);
 }
 
 .assoc-badge {
   font-size: 10px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, #a78bfa 15%, var(--alp-bg-surface));
+  background: color-mix(in srgb, var(--alp-color-accent) 15%, var(--alp-bg-surface));
 }
 
 .assoc-count {
@@ -244,7 +240,7 @@ function entryChanged(entry: AssociativeEntry): boolean {
     box-shadow: none;
   }
   50% {
-    box-shadow: 0 0 0 3px color-mix(in srgb, #a78bfa 35%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--alp-color-accent) 35%, transparent);
   }
 }
 

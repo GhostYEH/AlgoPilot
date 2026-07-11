@@ -7,8 +7,6 @@ const props = defineProps<{
 }>()
 
 const STEP_MS = 880
-/** 剑指 05 示意：尾部缓冲区写入 %20（读指针在空格原位置） */
-const FILL_DEMO_CELLS = ['a', '□', 'c', '·', '·', '%', '2', '0'] as const
 
 let tick: ReturnType<typeof setInterval> | null = null
 
@@ -48,9 +46,9 @@ const maxStep = computed(() => {
       return 3
     case 'theory':
     case 'summary':
-      return 3
+      return 0
     default:
-      return 3
+      return 0
   }
 })
 
@@ -66,18 +64,18 @@ const stepHint = computed(() => {
   if (s === 'reverse-string-ii') {
     const t = [
       'k=2、2k=4：每组只反转前 2 个字符',
-      '第 1 组 [a,b] 参与反转（高亮段）',
-      '第 2 组 [e,f] 参与反转',
-      '末尾不足 2k 时，剩余若 ≤k 则整段反转',
+      '第 1 组 [a,b] 反转 → [b,a,c,d]',
+      '第 2 组 [e,f] 反转 → [f,e,g,h]',
+      '8 字符恰好 2 组，最终结果：bacdfegh',
     ]
     return t[Math.min(i, t.length - 1)] ?? ''
   }
   if (s === 'replace-space') {
     const t = [
-      '先数空格，计算扩容后的总长度',
-      '读指针、写指针从尾部对齐：先填末尾',
-      '遇到空格则从写指针起依次落位：先写末尾的 0，再 2，再 %（整体仍是 %20）',
-      '从左往右会覆盖未读区；从后往前才安全',
+      '原串 "a□c"（3 字符，1 空格）→ 扩容至 5 格',
+      'j=2(c) → i=4 写入 c（读、写指针从尾部对齐）',
+      'j=1(空格) → 依次写 0、2、%（从后往前，每位只写一次）',
+      '从左往右会覆盖未读区；从后往前才安全 → O(n)',
     ]
     return t[Math.min(i, t.length - 1)] ?? ''
   }
@@ -102,12 +100,12 @@ const stepHint = computed(() => {
   }
   if (s === 'kmp') {
     const t = [
-      '暴力：主串指针 i 每次回退',
+      '暴力：主串指针 i 每次回退，已匹配前缀被反复比较',
       'aabaaf 前缀表（不减一）：0 1 0 1 2 0',
-      '末位失配：看前一格前缀表值 2 → 跳到 b',
-      'KMP：主串 i 不动，模式串 j 回退',
-      '构造 next 为模式串自匹配',
-      '整体 O(n+m)',
+      '末位失配：主串 b ≠ 模式 f，暴力回退 i，KMP 不回退',
+      'j ← next[j-1]：前一格值 2 → 模式串跳到下标 2（b）继续比',
+      '构造 next：双指针自匹配，i（后缀末）、j（前缀末），O(m)',
+      '整体 O(n+m)：构造 O(m) + 匹配 O(n)，空间 O(m)',
     ]
     return t[Math.min(i, t.length - 1)] ?? ''
   }
@@ -123,10 +121,26 @@ const stepHint = computed(() => {
   return ''
 })
 
-const _KMP_PREFIX_AABAAF = [0, 1, 0, 1, 2, 0] as const
-const _KMP_PATTERN = ['a', 'a', 'b', 'a', 'a', 'f'] as const
-void _KMP_PREFIX_AABAAF
-void _KMP_PATTERN
+const KMP_PREFIX_AABAAF = [0, 1, 0, 1, 2, 0] as const
+const KMP_PATTERN = ['a', 'a', 'b', 'a', 'a', 'f'] as const
+
+/** 剑指 05：原串 "a□c"（3 字符，1 空格）→ 扩容至 5 格 → "a%20c" */
+const fillState = computed(() => {
+  const i = step.value
+  if (i === 0) {
+    return { cells: ['a', '□', 'c', '·', '·'] as string[], readIdx: -1, writeSet: new Set<number>(), doneSet: new Set<number>() }
+  }
+  if (i === 1) {
+    // j=2(c) → i=4 写入 c
+    return { cells: ['a', '□', 'c', '·', 'c'], readIdx: 2, writeSet: new Set<number>([4]), doneSet: new Set<number>() }
+  }
+  if (i === 2) {
+    // j=1(空格) → 依次写 0、2、% 于 i=3,2,1
+    return { cells: ['a', '%', '2', '0', 'c'], readIdx: 1, writeSet: new Set<number>([1, 2, 3, 4]), doneSet: new Set<number>() }
+  }
+  // step 3: 最终结果
+  return { cells: ['a', '%', '2', '0', 'c'], readIdx: -1, writeSet: new Set<number>(), doneSet: new Set<number>([0, 1, 2, 3, 4]) }
+})
 
 /** 344：可变的字符展示 */
 const revChars = ref(['h', 'e', 'l', 'l', 'o'])
@@ -148,29 +162,37 @@ watch(
   { immediate: true },
 )
 
-/** 541：k=2, 2k=4 高亮组 */
-const segHighlight = computed(() => {
+/** 541：k=2, 2k=4，展示分段反转的实际结果 */
+const segDisplay = computed(() => {
   const i = step.value
-  // indices 0-7, highlight "first k of each 2k block"
+  const orig = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+  if (i === 0) return { chars: orig, hot: new Set<number>(), done: new Set<number>() }
+  const a = [...orig]
   const hot = new Set<number>()
-  if (i === 1) {
-    hot.add(0)
-    hot.add(1)
-  } else if (i === 2) {
-    hot.add(4)
-    hot.add(5)
-  } else if (i === 3) {
-    hot.add(6)
-    hot.add(7)
+  const done = new Set<number>()
+  // 第 1 组 [0..3]：反转前 k=2 个 → [b,a]
+  if (i >= 1) {
+    ;[a[0], a[1]] = [a[1], a[0]]
+    if (i === 1) { hot.add(0); hot.add(1) } else { done.add(0); done.add(1) }
   }
-  return hot
+  // 第 2 组 [4..7]：反转前 k=2 个 → [f,e]
+  if (i >= 2) {
+    ;[a[4], a[5]] = [a[5], a[4]]
+    if (i === 2) { hot.add(4); hot.add(5) } else { done.add(4); done.add(5) }
+  }
+  if (i >= 3) {
+    done.add(0); done.add(1); done.add(4); done.add(5)
+  }
+  return { chars: a, hot, done }
 })
-
-const segLetters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
 
 /** 已落到最终位置的字符下标（自两端向里，与分步序号一致） */
 function revSettledIdx(idx: number, n: number, s: number): boolean {
-  return s > 0 && (idx < s || idx > n - 1 - s)
+  if (s <= 0) return false
+  if (idx < s || idx > n - 1 - s) return true
+  // 奇数长度指针相遇时，中间字符也已到位
+  if (s >= Math.floor(n / 2) && idx === Math.floor(n / 2)) return true
+  return false
 }
 
 /** 当前轮到交换或已汇合的左右指针位置 */
@@ -294,7 +316,9 @@ onUnmounted(() => {
           class="ch"
           :class="{
             'ch-pair':
-              step < 3 && (idx === revPairIdx.lo || idx === revPairIdx.hi),
+              step < 3 &&
+              revPairIdx.lo !== revPairIdx.hi &&
+              (idx === revPairIdx.lo || idx === revPairIdx.hi),
             'ch-done': revSettledIdx(idx, revChars.length, step),
           }"
         >
@@ -312,19 +336,18 @@ onUnmounted(() => {
     <div v-else-if="sectionId === 'reverse-string-ii'" class="panel seg">
       <div class="seg-bar" aria-hidden="true">
         <span
-          v-for="(c, idx) in segLetters"
+          v-for="(c, idx) in segDisplay.chars"
           :key="idx"
           class="seg-ch"
           :class="{
-            'seg-hot': segHighlight.has(idx) && step === 1,
-            'seg-hot2': segHighlight.has(idx) && step === 2,
-            'seg-hot3': segHighlight.has(idx) && step === 3,
+            'seg-hot': segDisplay.hot.has(idx),
+            'seg-done': segDisplay.done.has(idx),
           }"
         >
           {{ c }}
         </span>
       </div>
-      <p class="seg-hint">示例串 8 字符；k=2、2k=4。高亮为「本步要反转的前 k 个」。</p>
+      <p class="seg-hint">示例串 8 字符；k=2、2k=4。蓝色=本步反转，绿色=已落位。</p>
     </div>
 
     <!-- 替换空格：从尾到头 -->
@@ -332,21 +355,21 @@ onUnmounted(() => {
       <div class="fill-visual">
         <div class="fill-track">
           <span
-            v-for="(cell, idx) in FILL_DEMO_CELLS"
+            v-for="(cell, idx) in fillState.cells"
             :key="idx"
             class="fill-cell"
             :class="{
-              'fill-read': step >= 1 && idx === 1,
-              'fill-write': step >= 2 && idx >= 5,
-              pulse: playing && step >= 2 && idx >= 5,
+              'fill-read': fillState.readIdx === idx,
+              'fill-write': fillState.writeSet.has(idx),
+              'fill-done': fillState.doneSet.has(idx),
             }"
           >
             {{ cell }}
           </span>
         </div>
         <div class="fill-arrows" aria-hidden="true">
-          <span class="w-reader" :class="{ dim: step < 1 }">读 i →</span>
-          <span class="w-writer" :class="{ dim: step < 2 }">← 写 j</span>
+          <span class="w-reader" :class="{ dim: step < 1 }">读 j →</span>
+          <span class="w-writer" :class="{ dim: step < 1 }">← 写 i</span>
         </div>
       </div>
     </div>
@@ -395,11 +418,22 @@ onUnmounted(() => {
 
     <!-- KMP：失配跳转 -->
     <div v-else-if="sectionId === 'kmp'" class="panel kmp">
-      <div class="kmp-text">
+      <!-- step 1：展示前缀表 -->
+      <div v-if="step === 1" class="kmp-prefix">
+        <span class="k-label">前缀表 aabaaf（不减一）</span>
+        <div class="kmp-prefix-row">
+          <span v-for="(ch, i) in KMP_PATTERN" :key="'c' + i" class="kp-ch">{{ ch }}</span>
+        </div>
+        <div class="kmp-prefix-row">
+          <span v-for="(v, i) in KMP_PREFIX_AABAAF" :key="'n' + i" class="kp-num">{{ v }}</span>
+        </div>
+      </div>
+      <!-- 其余步骤：展示主串 + 模式串 -->
+      <div v-else class="kmp-text">
         <span class="k-label">主串</span>
-        <span class="k-main">a a b a a a c</span>
+        <span class="k-main">a a b a a b a a f a</span>
         <span class="k-label">模式</span>
-        <span class="k-pat">a a b a f</span>
+        <span class="k-pat">a a b a a f</span>
       </div>
       <div class="kmp-phases">
         <div v-if="step === 0" class="kmp-row">
@@ -407,20 +441,24 @@ onUnmounted(() => {
           <span class="k-mini">主串指针 i 会回退，已匹配前缀被反复比较</span>
         </div>
         <div v-else-if="step === 1" class="kmp-row">
-          <span class="k-badge">KMP 切入点</span>
-          <span class="k-mini">先预处理 next；失配时只动模式串 j，主串 i 不回退</span>
+          <span class="k-badge">前缀表预处理</span>
+          <span class="k-mini">最长相等前后缀；失配时只动模式串 j，主串 i 不回退</span>
         </div>
         <div v-else-if="step === 2" class="kmp-row">
-          <span class="k-badge k-warn">在末位失配</span>
-          <span class="k-mini">暴力会回退主串；KMP 不回退 i</span>
+          <span class="k-badge k-warn">末位失配</span>
+          <span class="k-mini">主串 'b' ≠ 模式 'f'；暴力会回退 i，KMP 不回退</span>
         </div>
         <div v-else-if="step === 3" class="kmp-row">
-          <span class="k-badge">j ← next[j]</span>
-          <span class="k-mini">利用已匹配前缀的最长边框</span>
+          <span class="k-badge">j ← next[j-1]</span>
+          <span class="k-mini">看前一格前缀表值 2 → 模式串跳到下标 2（b）继续比</span>
+        </div>
+        <div v-else-if="step === 4" class="kmp-row">
+          <span class="k-badge">构造 next</span>
+          <span class="k-mini">双指针自匹配：i（后缀末）、j（前缀末），O(m)</span>
         </div>
         <div v-else class="kmp-row">
-          <span class="k-badge k-ok">继续匹配</span>
-          <span class="k-mini">主串指针保持，模式串滑到可衔接位置</span>
+          <span class="k-badge k-ok">整体 O(n+m)</span>
+          <span class="k-mini">构造 O(m) + 匹配 O(n)；空间 O(m) 存 next</span>
         </div>
       </div>
       <div class="kmp-jump">
@@ -431,12 +469,25 @@ onUnmounted(() => {
 
     <!-- 459 周期 -->
     <div v-else-if="sectionId === 'repeated-substring'" class="panel period">
-      <div class="period-row">
+      <div v-if="step === 0" class="period-row">
         <span class="unit unit-a">ab</span>
         <span class="unit unit-b">ab</span>
         <span class="unit unit-c">ab</span>
       </div>
-      <p class="period-cap">len − next[len−1] 给出候选周期；再结合整除关系判断重复子串</p>
+      <div v-else-if="step === 1" class="period-stage">
+        <div class="period-mono-line">
+          <span class="period-strike">a</span><span class="period-mono">bababababa</span><span class="period-strike">b</span>
+        </div>
+        <span class="period-arrow">s+s 掐头去尾 → 中间仍含 ababab</span>
+      </div>
+      <div v-else-if="step === 2" class="period-stage">
+        <span class="period-mono">len % (len - next[len-1]) == 0</span>
+        <span class="period-arrow">→ 最小周期 = ab</span>
+      </div>
+      <div v-else class="period-stage">
+        <span class="period-note">不减一：next[len-1] &gt; 0 且整除</span>
+        <span class="period-note">减一版：next[len-1] ≠ -1 且整除（勿混用）</span>
+      </div>
     </div>
 
     <!-- 总结 -->
@@ -532,7 +583,7 @@ onUnmounted(() => {
 
 .chip-cpp {
   color: #0369a1;
-  border-color: #7dd3fc;
+  border-color: #6a9eb0;
 }
 .chip-java {
   color: #b45309;
@@ -540,7 +591,7 @@ onUnmounted(() => {
 }
 .chip-py {
   color: #15803d;
-  border-color: #86efac;
+  border-color: #8ab896;
 }
 .chip-mut {
   animation: chip-pulse 2.4s ease-in-out infinite;
@@ -587,13 +638,13 @@ onUnmounted(() => {
 }
 
 .ch-pair {
-  border-color: var(--alp-color-primary, #0ea5e9);
-  background: #e0f2fe;
+  border-color: var(--alp-color-primary, #3a7e94);
+  background: #d4e2ea;
   transform: scale(1.06);
 }
 
 .ch-done {
-  border-color: #86efac;
+  border-color: #8ab896;
   background: #ecfdf5;
 }
 
@@ -652,21 +703,16 @@ onUnmounted(() => {
 }
 
 .seg-hot {
-  border-color: #22d3ee;
+  border-color: #3a8a9e;
   color: #0369a1;
-  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.28);
+  box-shadow: 0 0 0 2px rgba(58, 138, 158, 0.28);
 }
 
-.seg-hot2 {
-  border-color: #a78bfa;
-  color: #5b21b6;
-  box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.35);
-}
-
-.seg-hot3 {
-  border-color: #f97316;
-  color: #9a3412;
-  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.28);
+.seg-done {
+  border-color: #8ab896;
+  border-style: solid;
+  color: #166534;
+  background: #ecfdf5;
 }
 
 .seg-hint {
@@ -716,20 +762,11 @@ onUnmounted(() => {
   background: #ffedd5;
 }
 
-.fill-cell.pulse {
-  animation: fill-pulse 2s ease-in-out infinite;
-}
-
-@keyframes fill-pulse {
-  0%,
-  100% {
-    opacity: 0.75;
-    transform: translateY(0);
-  }
-  50% {
-    opacity: 1;
-    transform: translateY(-3px);
-  }
+.fill-done {
+  border-color: #8ab896;
+  border-style: solid;
+  background: #ecfdf5;
+  color: #166534;
 }
 
 .fill-arrows {
@@ -784,7 +821,7 @@ onUnmounted(() => {
 }
 
 .w-final {
-  border-color: #86efac;
+  border-color: #8ab896;
   background: #f0fdf4;
 }
 
@@ -816,14 +853,14 @@ onUnmounted(() => {
 .rot-a {
   padding: 4px 8px;
   border-radius: 6px;
-  background: #e0f2fe;
-  border: 1px solid #7dd3fc;
+  background: #d4e2ea;
+  border: 1px solid #6a9eb0;
 }
 
 .rot-b {
   padding: 4px 8px;
   border-radius: 6px;
-  background: #fef3c7;
+  background: #e0dac4;
   border: 1px solid #fcd34d;
 }
 
@@ -836,8 +873,8 @@ onUnmounted(() => {
   border-radius: 8px;
   font-size: 16px;
   letter-spacing: 0.06em;
-  background: linear-gradient(90deg, #e0f2fe 0%, #fef3c7 100%);
-  border: 2px solid #22d3ee;
+  background: #d4e2ea;
+  border: 2px solid #3a8a9e;
   color: #0f172a;
 }
 
@@ -868,8 +905,8 @@ onUnmounted(() => {
 }
 
 .step.on {
-  border-color: #22d3ee;
-  background: #e0f2fe;
+  border-color: #3a8a9e;
+  background: #d4e2ea;
   color: #0369a1;
   font-weight: 700;
 }
@@ -899,7 +936,7 @@ onUnmounted(() => {
 .k-pat {
   color: #0f172a;
   font-weight: 700;
-  border-bottom: 2px solid #22d3ee;
+  border-bottom: 2px solid #3a8a9e;
 }
 
 .kmp-phases {
@@ -907,6 +944,41 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.kmp-prefix {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.kmp-prefix-row {
+  display: flex;
+  gap: 4px;
+}
+
+.kp-ch,
+.kp-num {
+  width: 24px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.kp-ch {
+  background: #d4e2ea;
+  border: 1px solid #6a9eb0;
+  color: #0369a1;
+}
+
+.kp-num {
+  background: #e0dac4;
+  border: 1px solid #fcd34d;
+  color: #92400e;
 }
 
 .kmp-row {
@@ -927,7 +999,7 @@ onUnmounted(() => {
 }
 
 .k-badge.k-warn {
-  background: #fef3c7;
+  background: #e0dac4;
   color: #92400e;
 }
 
@@ -970,6 +1042,44 @@ onUnmounted(() => {
 .period-row {
   display: flex;
   gap: 6px;
+}
+
+.period-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+.period-mono {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.period-mono-line {
+  display: flex;
+  align-items: center;
+}
+
+.period-strike {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: #9e5a5a;
+  text-decoration: line-through;
+}
+
+.period-arrow {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.period-note {
+  font-size: 11px;
+  color: #475569;
+  line-height: 1.5;
 }
 
 .period-cap {
@@ -1044,14 +1154,13 @@ onUnmounted(() => {
     border-color: #e2e8f0;
   }
   50% {
-    border-color: #818cf8;
+    border-color: #6b7a9e;
     color: #4338ca;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .chip-mut,
-  .fill-cell.pulse,
   .j-arrow,
   .unit,
   .sp,

@@ -5,6 +5,10 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass, field
+
+# Prevent unbounded log growth in multi-agent pipeline
+_PIPELINE_LOG_LIMIT: int = 200
+
 from datetime import datetime, timezone
 
 
@@ -46,6 +50,8 @@ class PipelineContext:
         output_summary: str = "",
         failure_reason: str = "",
     ) -> None:
+        if len(self.agent_logs) >= _PIPELINE_LOG_LIMIT:
+            return
         entry = {
             "agent": agent,
             "agent_id": agent,

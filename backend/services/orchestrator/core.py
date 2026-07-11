@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import json
 import logging
 from collections.abc import AsyncIterator, Awaitable, Callable
@@ -54,6 +55,11 @@ from services.orchestrator.workflow import resource_workflow
 from services.safety.content_filter import content_filter
 
 logger = logging.getLogger(__name__)
+
+# each request gets its own fallback state via contextvars (no race on singleton)
+_persona_chat_fallback_var: contextvars.ContextVar[dict] = contextvars.ContextVar(
+    '_persona_chat_fallback', default={'fallback': False, 'reason': ''}
+)
 
 _persona = PersonaAgent()
 _tutor = TutorAgent()
@@ -206,11 +212,15 @@ def _format_profile_block(
 
 
 class Orchestrator:
-    """自研轻量编排：按任务类型路由到对应 Agent。"""
+    """自研轻量编排：按任务类型路由到对应 Agent。
+
+    注意：Orchestrator 是模块级单例，所有请求共享实例。
+    不要使用实例变量存储请求级状态（如 fallback 标记），
+    请使用 _persona_chat_fallback_var 等 contextvars 替代。
+    """
 
     def __init__(self) -> None:
-        self._last_persona_chat_fallback = False
-        self._last_persona_chat_fallback_reason = ""
+        pass  # 所有请求级状态通过 contextvars 管理，避免并发竞态
 
     # --- 画像 ---
 
@@ -239,12 +249,12 @@ class Orchestrator:
         if row and row.dimensions:
             existing_dims = PersonaDimensions.from_storage(row.dimensions)
 
-        self._last_persona_chat_fallback = False
-        self._last_persona_chat_fallback_reason = ""
+        _meta = {"fallback": False, "reason": ""}
 
         if should_use_persona_fallback():
-            self._last_persona_chat_fallback = True
-            self._last_persona_chat_fallback_reason = FALLBACK_REASON_DEFAULT
+            _meta["fallback"] = True
+            _meta["reason"] = FALLBACK_REASON_DEFAULT
+            _persona_chat_fallback_var.set(_meta)
             async for chunk in stream_persona_fallback_reply(
                 message=message,
                 history=history,
@@ -264,8 +274,9 @@ class Orchestrator:
         except Exception as exc:
             if not is_llm_related_error(exc):
                 raise
-            self._last_persona_chat_fallback = True
-            self._last_persona_chat_fallback_reason = str(exc)[:200] or FALLBACK_REASON_DEFAULT
+            _meta["fallback"] = True
+            _meta["reason"] = str(exc)[:200] or FALLBACK_REASON_DEFAULT
+            _persona_chat_fallback_var.set(_meta)
             async for chunk in stream_persona_fallback_reply(
                 message=message,
                 history=history,
@@ -274,10 +285,16 @@ class Orchestrator:
                 yield chunk
 
     def last_persona_chat_meta(self) -> dict:
+        """返回当前请求上下文中画像对话的降级元信息。
+
+        通过 contextvars 实现每个请求/任务独立存储，
+        避免模块级单例 Orchestrator 在并发请求下的竞态条件。
+        """
         from services.agents.persona_fallback import persona_fallback_meta
 
-        if self._last_persona_chat_fallback:
-            return persona_fallback_meta(self._last_persona_chat_fallback_reason)
+        _meta = _persona_chat_fallback_var.get()
+        if _meta["fallback"]:
+            return persona_fallback_meta(_meta["reason"])
         return {
             "fallback": False,
             "fallback_reason": "",
@@ -1137,25 +1154,27 @@ class Orchestrator:
                     pipeline_ctx=pipeline_ctx,
                 )
                 return resource_type, events, item, None
-            try:
-                item = await self.generate_resource(
-                    local_db,
-                    local_user,
-                    req,
-                    emit=capture,
-                    pipeline_ctx=pipeline_ctx,
-                )
-                return resource_type, events, item, None
-            except Exception as exc:
-                local_db.rollback()
-                if is_llm_related_error(exc):
-                    from fastapi import HTTPException
+            item = await self.generate_resource(
+                local_db,
+                local_user,
+                req,
+                emit=capture,
+                pipeline_ctx=pipeline_ctx,
+            )
+            return resource_type, events, item, None
+        except Exception as exc:
+            local_db.rollback()
+            if fallback_reason:
+                return resource_type, events, None, exc
+            if is_llm_related_error(exc):
+                from fastapi import HTTPException
 
-                    reason = (
-                        str(exc.detail)[:240]
-                        if isinstance(exc, HTTPException)
-                        else str(exc)[:240]
-                    )
+                reason = (
+                    str(exc.detail)[:240]
+                    if isinstance(exc, HTTPException)
+                    else str(exc)[:240]
+                )
+                try:
                     item = await self.generate_resource_fallback(
                         local_db,
                         local_user,
@@ -1165,9 +1184,9 @@ class Orchestrator:
                         pipeline_ctx=pipeline_ctx,
                     )
                     return resource_type, events, item, None
-                return resource_type, events, None, exc
-        except Exception as exc:
-            local_db.rollback()
+                except Exception as fb_exc:
+                    local_db.rollback()
+                    return resource_type, events, None, fb_exc
             return resource_type, events, None, exc
         finally:
             local_db.close()
@@ -1231,18 +1250,6 @@ class Orchestrator:
             input_summary=f"module_key={module_key or 'auto'}",
             output_summary="current learning path context",
         ))
-        for optional_agent, optional_stage in (
-            ("PptAgent", "ppt_generate"),
-            ("VideoScriptAgent", "video_script_generate"),
-        ):
-            yield _sse(_observable_agent_event(
-                agent=optional_agent,
-                stage=optional_stage,
-                status="skipped",
-                message="当前 generate-all 端点未启用该资源类型",
-                validation_result={"status": "not_enabled"},
-            ))
-
         if batch_fallback_reason:
             yield _sse({
                 "type": "workflow",
@@ -1509,6 +1516,46 @@ class Orchestrator:
         })
 
 
+def _normalize_legacy_step(step: dict, rank: int) -> dict:
+    """兼容旧格式 step：旧版用 key/label/status，新版用 module_key/rank。
+
+    无论数据库里存的是旧格式还是新格式，都返回可被 PathStepItem 校验通过的新格式 dict。
+    """
+    out = dict(step)
+    if "module_key" not in out:
+        out["module_key"] = str(out.get("key", ""))
+    out.setdefault("rank", rank)
+    return out
+
+
+def _step_needs_migration(step: dict) -> bool:
+    """判断一个 step 是否仍是旧格式（缺 module_key 或 rank）。"""
+    return "module_key" not in step or "rank" not in step
+
+
+def migrate_legacy_learning_path_plans(db: Session) -> int:
+    """启动时数据自愈：扫描所有 LearningPathPlan，把旧格式 steps 原地升级为新格式。
+
+    返回迁移的行数。幂等——已是新格式的行不会被改动。
+    """
+    rows = db.query(LearningPathPlan).all()
+    migrated = 0
+    for row in rows:
+        steps = row.steps or []
+        if not any(_step_needs_migration(s) for s in steps if isinstance(s, dict)):
+            continue
+        row.steps = [
+            _normalize_legacy_step(s, i)
+            for i, s in enumerate(steps, start=1)
+            if isinstance(s, dict)
+        ]
+        migrated += 1
+    if migrated:
+        db.commit()
+        logger.info("学习路径计划旧格式数据迁移完成，共 %d 行", migrated)
+    return migrated
+
+
 def _path_plan_response(
     row: LearningPathPlan,
     *,
@@ -1521,7 +1568,11 @@ def _path_plan_response(
         generate_path_step_explain,
     )
 
-    steps = [PathStepItem.model_validate(s) for s in (row.steps or [])]
+    raw_steps = row.steps or []
+    steps = [
+        PathStepItem.model_validate(_normalize_legacy_step(s, i))
+        for i, s in enumerate(raw_steps, start=1)
+    ]
     snapshot = row.progress_snapshot or {}
     remediation = bool(snapshot.get("remediation_inserted")) or any(
         s.is_remediation for s in steps

@@ -12,6 +12,12 @@ from sqlalchemy.orm import Session
 from api.deps import get_current_user
 from core.database import get_db
 from models.db_models import User
+from services.analytics.community import (
+    build_ac_leaderboard,
+    build_activity_feed,
+    build_community_stats,
+    build_streak_leaderboard,
+)
 from services.analytics.effectiveness import (
     EffectivenessResponse,
     build_csv_rows,
@@ -59,3 +65,18 @@ def export_effectiveness_csv(
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=effectiveness_export.csv"},
     )
+
+
+@router.get("/community")
+def get_community(db: Session = Depends(get_db)) -> dict:
+    """社区全站数据：公开接口，无需登录。返回统计、AC 榜、打卡榜、学习动态。"""
+    stats = build_community_stats(db)
+    ac_board = build_ac_leaderboard(db)
+    streak_board = build_streak_leaderboard(db)
+    feed = build_activity_feed(db)
+    return {
+        "stats": stats,
+        "ac_board": ac_board,
+        "streak_board": streak_board,
+        "feed": feed,
+    }

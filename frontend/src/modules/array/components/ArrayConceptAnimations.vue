@@ -203,12 +203,7 @@ const spiralDelays = [0, 0.1, 0.2, 0.7, 0.8, 0.3, 0.6, 0.5, 0.4]
   height: 10px;
   margin-top: -5px;
   border-radius: 5px;
-  background: linear-gradient(
-    90deg,
-    var(--alp-color-primary-soft),
-    var(--alp-color-primary),
-    var(--alp-color-primary-soft)
-  );
+  background: var(--alp-color-primary-soft);
   opacity: 0.9;
   animation: bin-shrink 2.6s ease-in-out infinite;
   transform-origin: center center;
@@ -251,10 +246,10 @@ const spiralDelays = [0, 0.1, 0.2, 0.7, 0.8, 0.3, 0.6, 0.5, 0.4]
 @keyframes mid-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.35);
+    box-shadow: 0 0 0 0 rgba(58, 138, 158, 0.35);
   }
   50% {
-    box-shadow: 0 0 0 6px rgba(34, 211, 238, 0);
+    box-shadow: 0 0 0 6px rgba(58, 138, 158, 0);
   }
 }
 
@@ -342,18 +337,18 @@ const spiralDelays = [0, 0.1, 0.2, 0.7, 0.8, 0.3, 0.6, 0.5, 0.4]
 }
 
 .sq-i {
-  background: linear-gradient(145deg, var(--alp-color-accent), rgba(129, 140, 248, 0.75));
+  background: var(--alp-color-accent);
 }
 
 .sq-j {
-  background: linear-gradient(145deg, var(--alp-color-primary), rgba(34, 211, 238, 0.75));
+  background: var(--alp-color-primary);
 }
 
 .sq-gap {
   flex: 1;
   height: 4px;
   margin: 0 12px;
-  background: linear-gradient(90deg, transparent, var(--alp-color-border), transparent);
+  background: var(--alp-color-border);
 }
 
 .sq-cap {
@@ -439,7 +434,7 @@ const spiralDelays = [0, 0.1, 0.2, 0.7, 0.8, 0.3, 0.6, 0.5, 0.4]
   }
   22%,
   100% {
-    background: rgba(34, 211, 238, 0.35);
+    background: rgba(58, 138, 158, 0.35);
     transform: scale(1);
   }
 }
@@ -456,7 +451,7 @@ const spiralDelays = [0, 0.1, 0.2, 0.7, 0.8, 0.3, 0.6, 0.5, 0.4]
   padding: 6px 12px;
   border-radius: 999px;
   background: var(--alp-bg-nav-active);
-  border: 1px solid rgba(34, 211, 238, 0.35);
+  border: 1px solid rgba(58, 138, 158, 0.35);
   font-size: 13px;
   font-weight: 600;
   color: var(--alp-color-primary);
@@ -481,10 +476,10 @@ const spiralDelays = [0, 0.1, 0.2, 0.7, 0.8, 0.3, 0.6, 0.5, 0.4]
 @keyframes flow-glow {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0);
+    box-shadow: 0 0 0 0 rgba(58, 138, 158, 0);
   }
   50% {
-    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2);
+    box-shadow: 0 0 0 3px rgba(58, 138, 158, 0.2);
   }
 }
 
@@ -528,7 +523,7 @@ const spiralDelays = [0, 0.1, 0.2, 0.7, 0.8, 0.3, 0.6, 0.5, 0.4]
   }
 
   .sg {
-    background: rgba(34, 211, 238, 0.35);
+    background: rgba(58, 138, 158, 0.35);
   }
 }
 </style>

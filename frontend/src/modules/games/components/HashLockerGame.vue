@@ -37,14 +37,25 @@ function reset() {
   rehashPhase.value = 0
   won.value = false
   buckets.value = Array.from({ length: BUCKET_SIZE }, () => [])
-  queue.value = [
-    { key: 12, label: '包裹#12' },
-    { key: 19, label: '包裹#19' },
-    { key: 26, label: '包裹#26' },
-    { key: 33, label: '包裹#33' },
-  ]
-  if (props.levelId === 'rehash') {
-    queue.value.push({ key: 40, label: '包裹#40' }, { key: 47, label: '包裹#47' })
+  if (props.levelId === 'basic') {
+    // 不同 key 散列到不同桶，演示无冲突入桶（10%7=3, 20%7=6, 15%7=1, 25%7=4）
+    queue.value = [
+      { key: 10, label: '包裹#10' },
+      { key: 20, label: '包裹#20' },
+      { key: 15, label: '包裹#15' },
+      { key: 25, label: '包裹#25' },
+    ]
+  } else {
+    // chain / rehash：相同取模制造冲突（12/19/26/33 % 7 均为 5）
+    queue.value = [
+      { key: 12, label: '包裹#12' },
+      { key: 19, label: '包裹#19' },
+      { key: 26, label: '包裹#26' },
+      { key: 33, label: '包裹#33' },
+    ]
+    if (props.levelId === 'rehash') {
+      queue.value.push({ key: 40, label: '包裹#40' }, { key: 47, label: '包裹#47' })
+    }
   }
   initialQueueLen.value = queue.value.length
   current.value = queue.value[0] ?? null
@@ -161,8 +172,8 @@ const pendingQueue = computed(() => queue.value.map((q) => q.label))
   margin-bottom: 14px;
   padding: 12px 14px;
   border-radius: 10px;
-  background: color-mix(in srgb, #fbbf24 12%, transparent);
-  border: 1px solid color-mix(in srgb, #fbbf24 35%, transparent);
+  background: color-mix(in srgb, #9c8540 12%, transparent);
+  border: 1px solid color-mix(in srgb, #9c8540 35%, transparent);
 }
 
 .pkg-label {
@@ -174,7 +185,7 @@ const pendingQueue = computed(() => queue.value.map((q) => q.label))
   margin-left: auto;
   font-size: 12px;
   font-family: ui-monospace, monospace;
-  color: #7dd3fc;
+  color: #6a9eb0;
 }
 
 .bucket-grid {
@@ -196,12 +207,12 @@ const pendingQueue = computed(() => queue.value.map((q) => q.label))
 
 .bucket:hover {
   transform: translateY(-2px);
-  border-color: #22d3ee;
+  border-color: #3a8a9e;
 }
 
 .bucket.is-target {
-  border-color: #fbbf24;
-  box-shadow: 0 0 0 2px color-mix(in srgb, #fbbf24 30%, transparent);
+  border-color: #9c8540;
+  box-shadow: 0 0 0 2px color-mix(in srgb, #9c8540 30%, transparent);
 }
 
 .bucket-id {

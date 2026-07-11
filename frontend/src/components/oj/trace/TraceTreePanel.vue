@@ -275,8 +275,8 @@ function edgeHot(edge: RenderEdge): boolean {
   padding: 12px;
   border-radius: 8px;
   background:
-    linear-gradient(var(--alp-bg-soft-block), var(--alp-bg-soft-block)) padding-box,
-    radial-gradient(circle at 20% 0%, rgba(34, 211, 238, 0.22), transparent 34%) border-box;
+    var(--alp-bg-soft-block) padding-box,
+    rgba(var(--alp-color-primary-rgb), 0.22) border-box;
   border: 1px solid var(--alp-color-border);
   width: 100%;
   max-height: min(520px, 56vh);
@@ -301,9 +301,9 @@ function edgeHot(edge: RenderEdge): boolean {
 }
 
 .trace-tree-edges path.trace-tree-edge--hot {
-  stroke: #fbbf24;
+  stroke: #9c8540;
   stroke-width: 3;
-  filter: drop-shadow(0 0 5px color-mix(in srgb, #fbbf24 55%, transparent));
+  filter: drop-shadow(0 0 5px color-mix(in srgb, #9c8540 55%, transparent));
   animation: tree-edge-pulse 0.7s ease-in-out 2;
 }
 
@@ -332,9 +332,9 @@ function edgeHot(edge: RenderEdge): boolean {
 }
 
 .trace-tree-node--hot rect {
-  fill: color-mix(in srgb, #fbbf24 22%, var(--alp-bg-surface-solid));
-  stroke: #fbbf24;
-  filter: drop-shadow(0 0 12px color-mix(in srgb, #fbbf24 45%, transparent));
+  fill: color-mix(in srgb, #9c8540 22%, var(--alp-bg-surface-solid));
+  stroke: #9c8540;
+  filter: drop-shadow(0 0 12px color-mix(in srgb, #9c8540 45%, transparent));
 }
 
 .trace-tree-node--hot {
@@ -368,7 +368,7 @@ function edgeHot(edge: RenderEdge): boolean {
 
 @keyframes tree-node-pulse {
   50% {
-    filter: drop-shadow(0 0 8px color-mix(in srgb, #fbbf24 60%, transparent));
+    filter: drop-shadow(0 0 8px color-mix(in srgb, #9c8540 60%, transparent));
   }
 }
 

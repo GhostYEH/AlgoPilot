@@ -147,21 +147,13 @@ function itemKey(items: string[], index: number): string {
 }
 
 .seq-trace--stack {
-  border-color: color-mix(in srgb, #f59e0b 35%, var(--alp-color-border));
-  background: linear-gradient(
-    165deg,
-    var(--alp-bg-surface) 0%,
-    color-mix(in srgb, #f59e0b 8%, var(--alp-bg-soft-block)) 100%
-  );
+  border-color: color-mix(in srgb, #9c7a3d 35%, var(--alp-color-border));
+  background: var(--alp-bg-surface);
 }
 
 .seq-trace--queue {
-  border-color: color-mix(in srgb, #22d3ee 35%, var(--alp-color-border));
-  background: linear-gradient(
-    165deg,
-    var(--alp-bg-surface) 0%,
-    color-mix(in srgb, #22d3ee 8%, var(--alp-bg-soft-block)) 100%
-  );
+  border-color: color-mix(in srgb, var(--alp-color-primary) 35%, var(--alp-color-border));
+  background: var(--alp-bg-surface);
 }
 
 .seq-head {
@@ -178,11 +170,11 @@ function itemKey(items: string[], index: number): string {
 }
 
 .seq-trace--stack .seq-tag {
-  color: #f59e0b;
+  color: #9c7a3d;
 }
 
 .seq-trace--queue .seq-tag {
-  color: #22d3ee;
+  color: var(--alp-color-primary);
 }
 
 .seq-badge {
@@ -242,8 +234,8 @@ function itemKey(items: string[], index: number): string {
   min-width: 56px;
   padding: 12px 16px;
   border-radius: 8px 8px 4px 4px;
-  border: 2px solid color-mix(in srgb, #f59e0b 50%, var(--alp-color-border));
-  background: color-mix(in srgb, #f59e0b 6%, var(--alp-bg-surface));
+  border: 2px solid color-mix(in srgb, #9c7a3d 50%, var(--alp-color-border));
+  background: color-mix(in srgb, #9c7a3d 6%, var(--alp-bg-surface));
 }
 
 .seq-stack-items {
@@ -261,13 +253,13 @@ function itemKey(items: string[], index: number): string {
   font-family: ui-monospace, Consolas, monospace;
   border-radius: 6px;
   background: var(--alp-bg-surface);
-  border: 1px solid color-mix(in srgb, #f59e0b 40%, var(--alp-color-border));
+  border: 1px solid color-mix(in srgb, #9c7a3d 40%, var(--alp-color-border));
   animation: seq-drop 0.35s ease-out;
 }
 
 .seq-cell--top {
-  border-color: #f59e0b;
-  box-shadow: 0 2px 8px color-mix(in srgb, #f59e0b 30%, transparent);
+  border-color: #9c7a3d;
+  box-shadow: 0 2px 8px color-mix(in srgb, #9c7a3d 30%, transparent);
 }
 
 .seq-cap {
@@ -289,8 +281,8 @@ function itemKey(items: string[], index: number): string {
   gap: 6px;
   padding: 10px 14px;
   border-radius: 999px;
-  border: 2px solid color-mix(in srgb, #22d3ee 45%, var(--alp-color-border));
-  background: color-mix(in srgb, #22d3ee 6%, var(--alp-bg-surface));
+  border: 2px solid color-mix(in srgb, var(--alp-color-primary) 45%, var(--alp-color-border));
+  background: color-mix(in srgb, var(--alp-color-primary) 6%, var(--alp-bg-surface));
   overflow-x: auto;
 }
 
@@ -312,12 +304,12 @@ function itemKey(items: string[], index: number): string {
 }
 
 .seq-pipe-cell--head {
-  border-color: #22c55e;
-  box-shadow: 0 0 0 2px color-mix(in srgb, #22c55e 25%, transparent);
+  border-color: #4a8a5e;
+  box-shadow: 0 0 0 2px color-mix(in srgb, #4a8a5e 25%, transparent);
 }
 
 .seq-pipe-cell--tail {
-  border-color: #22d3ee;
+  border-color: var(--alp-color-primary);
 }
 
 .seq-pipe-label {

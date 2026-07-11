@@ -126,7 +126,7 @@ function isColHeaderHot(c: number) {
 .cursor-hint {
   font-size: 11px;
   font-weight: 600;
-  color: #f59e0b;
+  color: #9c7a3d;
 }
 
 .trace-matrix-table-wrap {
@@ -163,8 +163,8 @@ function isColHeaderHot(c: number) {
 
 .col-head--active,
 .row-head--active {
-  color: #f59e0b;
-  background: color-mix(in srgb, #f59e0b 15%, transparent);
+  color: #9c7a3d;
+  background: color-mix(in srgb, #9c7a3d 15%, transparent);
   border-radius: 4px;
 }
 
@@ -184,16 +184,16 @@ function isColHeaderHot(c: number) {
 }
 
 .trace-matrix-cell--active {
-  border-color: #f59e0b;
+  border-color: #9c7a3d;
   box-shadow:
-    0 0 0 2px color-mix(in srgb, #f59e0b 35%, transparent),
-    inset 0 0 0 1px #f59e0b;
-  background: color-mix(in srgb, #f59e0b 12%, var(--alp-bg-surface));
+    0 0 0 2px color-mix(in srgb, #9c7a3d 35%, transparent),
+    inset 0 0 0 1px #9c7a3d;
+  background: color-mix(in srgb, #9c7a3d 12%, var(--alp-bg-surface));
 }
 
 .trace-matrix-cell--hot {
-  border-color: #22c55e;
-  background: color-mix(in srgb, #22c55e 28%, transparent);
+  border-color: #4a8a5e;
+  background: color-mix(in srgb, #4a8a5e 28%, transparent);
   animation: matrix-pulse 0.55s ease;
 }
 
@@ -222,7 +222,7 @@ function isColHeaderHot(c: number) {
 @keyframes matrix-pulse-active {
   0% {
     transform: scale(1);
-    box-shadow: 0 0 0 0 color-mix(in srgb, #f59e0b 50%, transparent);
+    box-shadow: 0 0 0 0 color-mix(in srgb, #9c7a3d 50%, transparent);
   }
   50% {
     transform: scale(1.08);

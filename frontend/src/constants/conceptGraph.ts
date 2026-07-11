@@ -184,7 +184,7 @@ export function buildConceptGraphNodes(
       label: c.label,
       kind: 'concept',
       moduleKey: c.module_key,
-      accent: MODULE_ACCENTS[c.module_key] ?? '#38bdf8',
+      accent: MODULE_ACCENTS[c.module_key] ?? '#4a7e94',
       description: c.description,
       prerequisites: c.prerequisites,
       mastery,

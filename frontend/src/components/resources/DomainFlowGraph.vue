@@ -76,7 +76,7 @@ function renderFlow() {
 
   steps.value.forEach((step, i) => {
     const x = padX + i * gap
-    const color = step.group === 'domain' ? '#a78bfa' : '#38bdf8'
+    const color = step.group === 'domain' ? 'var(--alp-color-accent)' : 'var(--alp-color-primary)'
 
     if (i > 0) {
       g.append('line')
@@ -154,7 +154,7 @@ onUnmounted(() => {
   margin-top: 12px;
   padding: 12px;
   border-radius: 12px;
-  border: 1px dashed color-mix(in srgb, #38bdf8 35%, var(--alp-color-border));
+  border: 1px dashed color-mix(in srgb, var(--alp-color-primary) 35%, var(--alp-color-border));
   background: color-mix(in srgb, #0f172a 6%, var(--alp-bg-soft-block));
   overflow-x: auto;
 }
@@ -172,7 +172,7 @@ onUnmounted(() => {
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, #a78bfa 20%, transparent);
+  background: color-mix(in srgb, var(--alp-color-accent) 20%, transparent);
   color: #c4b5fd;
 }
 
@@ -187,6 +187,6 @@ onUnmounted(() => {
 }
 
 .flow-node:hover circle {
-  filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.5));
+  filter: drop-shadow(0 0 6px rgba(74, 126, 148, 0.5));
 }
 </style>

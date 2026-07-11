@@ -128,7 +128,7 @@ watch(
   overflow: auto;
 }
 .oj-editor :deep(.cm-trace-current-line) {
-  background: rgba(34, 211, 238, 0.16) !important;
-  box-shadow: inset 3px 0 0 #22d3ee;
+  background: rgba(var(--alp-color-primary-rgb), 0.16) !important;
+  box-shadow: inset 3px 0 0 var(--alp-color-primary);
 }
 </style>

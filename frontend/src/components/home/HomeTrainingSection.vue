@@ -146,9 +146,9 @@ function diffType(d: string) {
 }
 
 .daily-card {
-  background: linear-gradient(160deg, rgba(34, 211, 238, 0.12), transparent 55%),
+  background: var(--alp-color-primary-soft),
     var(--alp-bg-surface);
-  border-color: rgba(34, 211, 238, 0.35);
+  border-color: var(--alp-color-primary-glow);
   justify-content: center;
 }
 
@@ -163,15 +163,15 @@ function diffType(d: string) {
 }
 
 .targeted-card {
-  background: linear-gradient(160deg, rgba(167, 139, 250, 0.08), transparent 55%),
+  background: var(--alp-color-accent-soft),
     var(--alp-bg-surface);
-  border-color: rgba(167, 139, 250, 0.25);
+  border-color: var(--alp-color-border-strong);
 }
 
 .review-card {
-  background: linear-gradient(160deg, rgba(251, 191, 36, 0.06), transparent 55%),
+  background: var(--alp-color-accent-soft),
     var(--alp-bg-surface);
-  border-color: rgba(251, 191, 36, 0.2);
+  border-color: var(--alp-color-border-strong);
 }
 
 .tc-head {

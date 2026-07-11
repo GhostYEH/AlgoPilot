@@ -198,7 +198,7 @@ onBeforeUnmount(() => {
 }
 
 .selectable-learn-text :deep(::selection) {
-  background: rgba(34, 211, 238, 0.35);
+  background: var(--alp-color-primary-soft);
   color: var(--alp-color-text);
 }
 </style>
@@ -213,10 +213,10 @@ onBeforeUnmount(() => {
   padding: 2px;
   border-radius: 10px;
   background: var(--alp-bg-surface-solid, #151d2e);
-  border: 1px solid rgba(34, 211, 238, 0.45);
+  border: 1px solid var(--alp-color-primary-glow);
   box-shadow:
     0 8px 24px rgba(0, 0, 0, 0.45),
-    0 0 0 1px rgba(34, 211, 238, 0.12);
+    0 0 0 1px var(--alp-color-primary-glow);
   pointer-events: auto;
 }
 
@@ -227,8 +227,8 @@ onBeforeUnmount(() => {
   padding: 6px 14px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--alp-color-primary, #22d3ee);
-  background: var(--alp-color-primary-soft, rgba(34, 211, 238, 0.16));
+  color: var(--alp-color-primary, #3d8a7e);
+  background: var(--alp-color-primary-soft, rgba(61, 138, 126, 0.16));
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -239,7 +239,7 @@ onBeforeUnmount(() => {
 }
 
 .selection-ask-btn:hover:not(:disabled) {
-  background: rgba(34, 211, 238, 0.28);
+  background: rgba(var(--alp-color-primary-rgb), 0.28);
   color: #e0f2fe;
 }
 

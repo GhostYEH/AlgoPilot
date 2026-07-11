@@ -25,7 +25,7 @@ const CARDS = [
     rule: '根 → 左 → 右',
     formula: '先 visit 根，再左子树，再右子树',
     order: ['1', '2', '4', '5', '3'] as string[],
-    accent: '#22d3ee',
+    accent: '#3a8a9e',
   },
   {
     key: 'inorder',
@@ -43,7 +43,7 @@ const CARDS = [
     rule: '左 → 右 → 根',
     formula: '左右子树都处理完再 visit 根',
     order: ['4', '5', '2', '3', '1'] as string[],
-    accent: '#4ade80',
+    accent: '#6aa878',
   },
 ] as const
 
@@ -159,7 +159,7 @@ function pos(id: string) {
   border-radius: 12px;
   background: var(--alp-bg-code-ish, rgba(15, 23, 42, 0.55));
   border: 1px solid var(--alp-color-border);
-  border-top: 3px solid var(--card-accent, #22d3ee);
+  border-top: 3px solid var(--card-accent, #3a8a9e);
   min-width: 0;
 }
 
@@ -238,8 +238,8 @@ function pos(id: string) {
 }
 
 .bt-mini-node--done {
-  fill: color-mix(in srgb, #22c55e 14%, var(--alp-bg-surface-solid));
-  stroke: #22c55e;
+  fill: color-mix(in srgb, #4a8a5e 14%, var(--alp-bg-surface-solid));
+  stroke: #4a8a5e;
 }
 
 .trail {

@@ -49,15 +49,50 @@ html:not(.dark) ::selection {
 /* ── Element Plus 全局覆盖 ── */
 .el-card {
   --el-card-border-color: var(--alp-color-border);
+  box-shadow: var(--alp-shadow-card);
+  transition:
+    transform var(--alp-transition-smooth),
+    box-shadow var(--alp-transition-smooth),
+    border-color var(--alp-transition-fast),
+    filter var(--alp-transition-smooth);
+}
+
+.el-card.is-hoverable:hover,
+.el-card.is-always-shadow:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--alp-shadow-card-hover);
+  filter: brightness(1.06);
+}
+
+.el-button {
+  transition:
+    transform var(--alp-transition-fast),
+    box-shadow var(--alp-transition-fast),
+    background-color var(--alp-transition-fast),
+    border-color var(--alp-transition-fast),
+    color var(--alp-transition-fast),
+    filter var(--alp-transition-fast);
+}
+
+.el-button:not(.is-disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: var(--alp-shadow-btn-hover);
+  filter: brightness(1.08);
+}
+
+.el-button:not(.is-disabled):active {
+  transform: translateY(0);
+  box-shadow: var(--alp-shadow-btn);
+  filter: brightness(0.98);
 }
 
 .el-button--primary {
   --el-button-bg-color: var(--alp-color-primary);
   --el-button-border-color: var(--alp-color-primary);
-  --el-button-hover-bg-color: #5eead4;
-  --el-button-hover-border-color: #5eead4;
-  --el-button-active-bg-color: #0f766e;
-  --el-button-active-border-color: #0f766e;
+  --el-button-hover-bg-color: #5a9b8f;
+  --el-button-hover-border-color: #5a9b8f;
+  --el-button-active-bg-color: #2e6b62;
+  --el-button-active-border-color: #2e6b62;
 }
 
 .el-progress__text {
@@ -68,4 +103,83 @@ html:not(.dark) ::selection {
   --el-tag-bg-color: var(--alp-bg-soft-block);
   --el-tag-border-color: var(--alp-color-border);
   --el-tag-text-color: var(--alp-color-muted);
+}
+
+.el-menu-item,
+.el-sub-menu__title {
+  transition:
+    transform var(--alp-transition-fast),
+    background-color var(--alp-transition-fast),
+    color var(--alp-transition-fast),
+    box-shadow var(--alp-transition-fast),
+    filter var(--alp-transition-fast);
+}
+
+.el-menu-item:not(.is-disabled):hover,
+.el-sub-menu__title:not(.is-disabled):hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+
+/* ── 全局浮起工具类（透明白光影） ── */
+/* 卡片浮起：白色高光 + 外辉 + 亮度提升 */
+.alp-lift-card {
+  box-shadow: var(--alp-shadow-card);
+  transition:
+    transform var(--alp-transition-smooth),
+    box-shadow var(--alp-transition-smooth),
+    border-color var(--alp-transition-fast),
+    filter var(--alp-transition-smooth);
+  will-change: transform;
+}
+
+.alp-lift-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--alp-shadow-card-hover);
+  filter: brightness(1.06);
+}
+
+.alp-lift-card:active {
+  transform: translateY(-1px);
+  filter: brightness(0.98);
+}
+
+/* 按钮浮起：白高光 + 亮度提升 */
+.alp-lift-btn {
+  box-shadow: var(--alp-shadow-btn);
+  transition:
+    transform var(--alp-transition-fast),
+    box-shadow var(--alp-transition-fast),
+    background-color var(--alp-transition-fast),
+    border-color var(--alp-transition-fast),
+    filter var(--alp-transition-fast);
+  will-change: transform;
+}
+
+.alp-lift-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--alp-shadow-btn-hover);
+  filter: brightness(1.08);
+}
+
+.alp-lift-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--alp-shadow-btn);
+  filter: brightness(0.98);
+}
+
+/* 链接浮起：微亮度提升 */
+.alp-lift-link {
+  transition:
+    transform var(--alp-transition-fast),
+    background-color var(--alp-transition-fast),
+    color var(--alp-transition-fast),
+    box-shadow var(--alp-transition-fast),
+    filter var(--alp-transition-fast);
+}
+
+.alp-lift-link:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--alp-shadow-btn);
+  filter: brightness(1.06);
 }

@@ -379,17 +379,17 @@ function formatTime(iso: string) {
 }
 
 .ev-passed .ev-timeline-dot {
-  background: #22c55e;
+  background: var(--alp-color-success);
   color: #fff;
 }
 
 .ev-warning .ev-timeline-dot {
-  background: #f59e0b;
+  background: var(--alp-color-warning);
   color: #fff;
 }
 
 .ev-failed .ev-timeline-dot {
-  background: #ef4444;
+  background: var(--alp-color-danger);
   color: #fff;
 }
 
@@ -446,18 +446,18 @@ function formatTime(iso: string) {
 }
 
 .ev-status-item.ev-passed {
-  border-color: color-mix(in srgb, #22c55e 40%, var(--alp-color-border));
-  color: #22c55e;
+  border-color: color-mix(in srgb, #4a8a5e 40%, var(--alp-color-border));
+  color: var(--alp-color-success);
 }
 
 .ev-status-item.ev-warning {
-  border-color: color-mix(in srgb, #f59e0b 40%, var(--alp-color-border));
-  color: #f59e0b;
+  border-color: color-mix(in srgb, #9c7a3d 40%, var(--alp-color-border));
+  color: var(--alp-color-warning);
 }
 
 .ev-status-item.ev-failed {
-  border-color: color-mix(in srgb, #ef4444 40%, var(--alp-color-border));
-  color: #ef4444;
+  border-color: color-mix(in srgb, #9e5a5a 40%, var(--alp-color-border));
+  color: var(--alp-color-danger);
 }
 
 .ev-retry-hint {
@@ -466,7 +466,7 @@ function formatTime(iso: string) {
   gap: 6px;
   margin-top: 8px;
   font-size: 12px;
-  color: #f59e0b;
+  color: var(--alp-color-warning);
 }
 
 .ev-fallback-alert {
@@ -490,7 +490,7 @@ function formatTime(iso: string) {
 }
 
 .ev-risk-hall {
-  color: #d97706;
+  color: var(--alp-color-warning);
 }
 
 .ev-risk-unsup {

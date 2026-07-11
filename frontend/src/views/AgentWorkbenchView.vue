@@ -376,7 +376,7 @@ function agentStatus(id: string): 'running' | 'idle' {
       :progress="progress"
       mode="resource"
       title="Agent Synergy Terminal"
-      subtitle="Concept → Graph → Quiz → Scenario → Trace → PPT → Video → Reading"
+      subtitle="Concept → Graph → Quiz → Scenario → Trace → Reading"
       class="wb-console"
     />
 
@@ -534,7 +534,7 @@ function agentStatus(id: string): 'running' | 'idle' {
 }
 
 .dag-node.warn {
-  border-color: #f59e0b;
+  border-color: #9c7a3d;
 }
 
 .dag-arrow {
@@ -589,7 +589,7 @@ function agentStatus(id: string): 'running' | 'idle' {
 }
 
 .status-dot.running {
-  background: #22c55e;
+  background: #4a8a5e;
   animation: pulse 1s infinite;
 }
 

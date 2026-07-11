@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from services.oj.runner import LIST_NODE_HELPERS, _detect_helpers
-from services.oj.trace_steps_filter import filter_meaningful_steps
+from services.oj.trace_steps_filter import compress_initialization_phase, filter_meaningful_steps
 from services.oj.trace_line_refine import refine_trace_step_lines
 from utils import python_exec_args
 
@@ -221,6 +221,7 @@ def _steps_from_payload(
         for s in raw_steps
     ]
     refine_trace_step_lines(steps, source)
+    steps = compress_initialization_phase(steps, source=source)
     steps = filter_meaningful_steps(steps, max_steps=MAX_TRACE_STEPS)
     if len(steps) < min_steps:
         return (

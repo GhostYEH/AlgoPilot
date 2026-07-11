@@ -483,7 +483,7 @@ const staticLabel = computed(() => {
           stroke-width="2.5"
           stroke-linecap="round"
         />
-        <circle class="pulse-dot" cx="100" cy="58" r="5" fill="#22c55e" />
+        <circle class="pulse-dot" cx="100" cy="58" r="5" fill="#4a8a5e" />
       </svg>
     </div>
 
@@ -532,8 +532,8 @@ const staticLabel = computed(() => {
   padding: 3px 10px;
   border-radius: 999px;
   color: #c4b5fd;
-  background: color-mix(in srgb, #a78bfa 14%, transparent);
-  border: 1px solid color-mix(in srgb, #a78bfa 35%, transparent);
+  background: color-mix(in srgb, #7a6e9e 14%, transparent);
+  border: 1px solid color-mix(in srgb, #7a6e9e 35%, transparent);
 }
 
 .tp-3sum-sort-banner {
@@ -560,7 +560,7 @@ const staticLabel = computed(() => {
 }
 
 .tp-3sum-sort-to {
-  color: #4ade80;
+  color: #6aa878;
 }
 
 .tp-3sum-arr-block {
@@ -602,13 +602,13 @@ const staticLabel = computed(() => {
 }
 
 .tp-3sum-cell-wrap--i .learn-viz-cell {
-  border-color: #a78bfa;
-  background: color-mix(in srgb, #a78bfa 18%, transparent);
+  border-color: #7a6e9e;
+  background: color-mix(in srgb, #7a6e9e 18%, transparent);
 }
 
 .tp-3sum-cell-wrap--l .learn-viz-cell {
-  border-color: #4ade80;
-  background: color-mix(in srgb, #4ade80 15%, transparent);
+  border-color: #6aa878;
+  background: color-mix(in srgb, #6aa878 15%, transparent);
 }
 
 .tp-3sum-cell-wrap--r .learn-viz-cell {
@@ -622,7 +622,7 @@ const staticLabel = computed(() => {
   inset: -4px -6px auto;
   height: calc(100% + 8px);
   border-radius: 10px;
-  border: 1px dashed color-mix(in srgb, #22d3ee 50%, transparent);
+  border: 1px dashed color-mix(in srgb, #3a8a9e 50%, transparent);
   pointer-events: none;
   z-index: 0;
 }
@@ -642,13 +642,13 @@ const staticLabel = computed(() => {
 }
 
 .tp-ptr-tag--i {
-  color: #a78bfa;
-  background: color-mix(in srgb, #a78bfa 20%, transparent);
+  color: #7a6e9e;
+  background: color-mix(in srgb, #7a6e9e 20%, transparent);
 }
 
 .tp-ptr-tag--l {
-  color: #4ade80;
-  background: color-mix(in srgb, #4ade80 20%, transparent);
+  color: #6aa878;
+  background: color-mix(in srgb, #6aa878 20%, transparent);
 }
 
 .tp-ptr-tag--r {
@@ -664,20 +664,20 @@ const staticLabel = computed(() => {
   white-space: nowrap;
   font-size: 8px;
   font-weight: 700;
-  color: #fbbf24;
+  color: #9c8540;
 }
 
 .tp-3sum-zone-bracket {
   width: min(100%, 320px);
   padding: 4px 12px;
   text-align: center;
-  border-top: 1px solid color-mix(in srgb, #22d3ee 30%, transparent);
+  border-top: 1px solid color-mix(in srgb, #3a8a9e 30%, transparent);
 }
 
 .tp-3sum-zone-label {
   font-size: 10px;
   font-weight: 600;
-  color: #22d3ee;
+  color: #3a8a9e;
 }
 
 .tp-3sum-sum-line {
@@ -691,7 +691,7 @@ const staticLabel = computed(() => {
 }
 
 .tp-3sum-sum-line--warn {
-  color: #fbbf24;
+  color: #9c8540;
 }
 
 .tp-3sum-found,
@@ -745,11 +745,11 @@ const staticLabel = computed(() => {
 }
 
 .tp-leg--i {
-  background: #a78bfa;
+  background: #7a6e9e;
 }
 
 .tp-leg--l {
-  background: #4ade80;
+  background: #6aa878;
 }
 
 .tp-leg--r {
@@ -1006,7 +1006,7 @@ const staticLabel = computed(() => {
 }
 
 .ring-dot--fast {
-  background: #f97316;
+  background: #9e6e4a;
   width: 9px;
   height: 9px;
   margin-left: -4.5px;

@@ -734,11 +734,7 @@ watch(
   flex: 1;
   height: 3px;
   border-radius: 2px;
-  background: linear-gradient(
-    90deg,
-    rgba(34, 211, 238, 0.25),
-    var(--alp-color-primary)
-  );
+  background: rgba(58, 138, 158, 0.25);
   background-size: 200% 100%;
   animation: htLineShine 1.8s ease-in-out infinite;
 }
@@ -841,7 +837,7 @@ watch(
 .viz-node {
   padding: 8px 14px;
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(34, 211, 238, 0.18), var(--alp-bg-surface-solid));
+  background: rgba(58, 138, 158, 0.18);
   border: 1px solid rgba(34, 211, 238, 0.35);
   animation: htChainNode 2.4s ease-in-out infinite;
 }
@@ -861,11 +857,7 @@ watch(
   height: 4px;
   margin: 0 2px;
   border-radius: 2px;
-  background: linear-gradient(
-    90deg,
-    rgba(34, 211, 238, 0.35),
-    var(--alp-color-primary)
-  );
+  background: rgba(58, 138, 158, 0.35);
   background-size: 200% 100%;
   animation: htLineShine 1.4s ease-in-out infinite;
 }
@@ -936,7 +928,7 @@ watch(
 }
 
 .twosum-cell--pair {
-  background: linear-gradient(145deg, rgba(34, 211, 238, 0.22), var(--alp-bg-surface-solid));
+  background: rgba(58, 138, 158, 0.22);
   border-color: rgba(34, 211, 238, 0.55);
   animation: htPairGlow 0.85s ease-in-out infinite alternate;
 }

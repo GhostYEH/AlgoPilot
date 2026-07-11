@@ -1043,11 +1043,11 @@ const SUMMARY_GROUPS = [
 .ht-struct-tag {
   font-size: 14px;
   font-weight: 700;
-  color: var(--alp-color-primary, #22d3ee);
+  color: var(--alp-color-primary, #3a8a9e);
 }
 
 .ht-struct-tag--set {
-  color: #4ade80;
+  color: #6aa878;
 }
 
 .ht-struct-tag--map {
@@ -1065,15 +1065,15 @@ const SUMMARY_GROUPS = [
 }
 
 .ht-struct-badge--set {
-  color: #4ade80;
-  background: color-mix(in srgb, #4ade80 12%, transparent);
-  border-color: color-mix(in srgb, #4ade80 35%, transparent);
+  color: #6aa878;
+  background: color-mix(in srgb, #6aa878 12%, transparent);
+  border-color: color-mix(in srgb, #6aa878 35%, transparent);
 }
 
 .ht-struct-badge--map {
   color: #c4b5fd;
-  background: color-mix(in srgb, #a78bfa 12%, transparent);
-  border-color: color-mix(in srgb, #a78bfa 35%, transparent);
+  background: color-mix(in srgb, #7a6e9e 12%, transparent);
+  border-color: color-mix(in srgb, #7a6e9e 35%, transparent);
 }
 
 .ht-card-foot {
@@ -1131,7 +1131,7 @@ const SUMMARY_GROUPS = [
 }
 
 .ht-freq-col--hot .ht-freq-bar {
-  background: #4ade80;
+  background: #6aa878;
 }
 
 .ht-freq-col--zero .ht-freq-bar {
@@ -1395,13 +1395,13 @@ const SUMMARY_GROUPS = [
 
 .ht-idx-cell-wrap--i .learn-viz-cell,
 .ht-idx-cell-wrap--k .learn-viz-cell {
-  border-color: #a78bfa;
-  background: color-mix(in srgb, #a78bfa 18%, transparent);
+  border-color: #7a6e9e;
+  background: color-mix(in srgb, #7a6e9e 18%, transparent);
 }
 
 .ht-idx-cell-wrap--l .learn-viz-cell {
-  border-color: #4ade80;
-  background: color-mix(in srgb, #4ade80 15%, transparent);
+  border-color: #6aa878;
+  background: color-mix(in srgb, #6aa878 15%, transparent);
 }
 
 .ht-idx-cell-wrap--r .learn-viz-cell {
@@ -1426,13 +1426,13 @@ const SUMMARY_GROUPS = [
 
 .ht-ptr-tag--i,
 .ht-ptr-tag--k {
-  color: #a78bfa;
-  background: color-mix(in srgb, #a78bfa 20%, transparent);
+  color: #7a6e9e;
+  background: color-mix(in srgb, #7a6e9e 20%, transparent);
 }
 
 .ht-ptr-tag--l {
-  color: #4ade80;
-  background: color-mix(in srgb, #4ade80 20%, transparent);
+  color: #6aa878;
+  background: color-mix(in srgb, #6aa878 20%, transparent);
 }
 
 .ht-ptr-tag--r {
@@ -1464,7 +1464,7 @@ const SUMMARY_GROUPS = [
   margin: 8px 0 0;
   font-size: 13px;
   font-weight: 700;
-  color: #4ade80;
+  color: #6aa878;
 }
 
 .ht-lookup-line {
@@ -1562,8 +1562,8 @@ const SUMMARY_GROUPS = [
   padding: 3px 10px;
   border-radius: 999px;
   color: #c4b5fd;
-  background: color-mix(in srgb, #a78bfa 14%, transparent);
-  border: 1px solid color-mix(in srgb, #a78bfa 35%, transparent);
+  background: color-mix(in srgb, #7a6e9e 14%, transparent);
+  border: 1px solid color-mix(in srgb, #7a6e9e 35%, transparent);
 }
 
 /* 总结 */
@@ -1603,15 +1603,15 @@ const SUMMARY_GROUPS = [
 }
 
 .ht-summary-card--cyan {
-  border-color: color-mix(in srgb, #4ade80 40%, transparent);
+  border-color: color-mix(in srgb, #6aa878 40%, transparent);
 }
 
 .ht-summary-card--violet {
-  border-color: color-mix(in srgb, #a78bfa 40%, transparent);
+  border-color: color-mix(in srgb, #7a6e9e 40%, transparent);
 }
 
 .ht-summary-card--amber {
-  border-color: color-mix(in srgb, #fbbf24 40%, transparent);
+  border-color: color-mix(in srgb, #9c8540 40%, transparent);
 }
 
 .ht-summary-title {

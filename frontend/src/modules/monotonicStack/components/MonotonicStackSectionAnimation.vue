@@ -272,7 +272,7 @@ const rainCols = computed(() => {
   outline: 2px solid #2563eb;
 }
 .cell.done {
-  border-color: #4ade80;
+  border-color: #6aa878;
   background: rgba(74, 222, 128, 0.15);
 }
 .cell.pop {

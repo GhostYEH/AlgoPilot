@@ -175,7 +175,7 @@ function stepNo(index: number): string {
   content: '';
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, var(--alp-color-border), transparent);
+  background: var(--alp-color-border);
 }
 
 .map-node-wrap {
@@ -194,11 +194,7 @@ function stepNo(index: number): string {
   width: 2px;
   height: 10px;
   border-radius: 1px;
-  background: linear-gradient(
-    180deg,
-    rgba(148, 163, 184, 0.15),
-    rgba(148, 163, 184, 0.45)
-  );
+  background: rgba(148, 163, 184, 0.3);
 }
 
 .connector.is-hidden {
@@ -293,7 +289,7 @@ function stepNo(index: number): string {
 
 .node-icon {
   font-size: 16px;
-  color: #4ade80;
+  color: #6aa878;
 }
 
 .node-icon--muted {
@@ -354,8 +350,8 @@ function stepNo(index: number): string {
 .map-node.is-active .node-ring {
   border-color: var(--node-accent, var(--alp-color-primary));
   box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--node-accent, #22d3ee) 22%, transparent),
-    0 8px 20px color-mix(in srgb, var(--node-accent, #22d3ee) 28%, transparent);
+    0 0 0 3px color-mix(in srgb, var(--node-accent, #3d8a7e) 22%, transparent),
+    0 8px 20px color-mix(in srgb, var(--node-accent, #3d8a7e) 28%, transparent);
 }
 
 .map-node.is-active .node-label {
@@ -363,7 +359,7 @@ function stepNo(index: number): string {
 }
 
 .status-done .node-ring {
-  border-color: rgba(74, 222, 128, 0.55);
+  border-color: rgba(106, 168, 120, 0.55);
 }
 
 .status-planned .node-ring {

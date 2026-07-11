@@ -46,7 +46,7 @@ const enriched = computed(() =>
     return {
       ...r,
       label: meta?.label ?? r.resource_type,
-      color: meta?.color ?? '#94a3b8',
+      color: meta?.color ?? 'var(--alp-color-muted)',
       tagType: STATUS_TAG_TYPE[r.status],
       statusLabel: STATUS_LABEL[r.status],
     }
@@ -88,20 +88,18 @@ const enriched = computed(() =>
 
 <style scoped>
 .status-grid {
-  --grid-bg: #0a0e17;
-  --grid-border: color-mix(in srgb, #38bdf8 30%, #1e293b);
-  --grid-glow: color-mix(in srgb, #38bdf8 20%, transparent);
-  --grid-text: #e2e8f0;
-  --grid-muted: #64748b;
-  --grid-accent: #38bdf8;
+  --grid-bg: var(--alp-bg-code-ish);
+  --grid-border: color-mix(in srgb, var(--alp-color-primary) 30%, #1e293b);
+  --grid-glow: color-mix(in srgb, var(--alp-color-primary) 20%, transparent);
+  --grid-text: var(--alp-color-text-secondary);
+  --grid-muted: var(--alp-color-muted);
+  --grid-accent: var(--alp-color-primary);
 
   border-radius: 16px;
   border: 1px solid var(--grid-border);
-  background:
-    radial-gradient(ellipse 80% 60% at 50% 0%, var(--grid-glow), transparent 55%),
-    linear-gradient(165deg, #0f172a 0%, var(--grid-bg) 45%, #020617 100%);
+  background: var(--grid-bg);
   box-shadow:
-    0 0 0 1px color-mix(in srgb, #38bdf8 6%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--alp-color-primary) 6%, transparent),
     0 12px 32px color-mix(in srgb, #000 40%, transparent),
     inset 0 1px 0 color-mix(in srgb, #fff 5%, transparent);
   overflow: hidden;
@@ -115,15 +113,15 @@ const enriched = computed(() =>
 @keyframes grid-pulse {
   0%, 100% {
     box-shadow:
-      0 0 0 1px color-mix(in srgb, #38bdf8 10%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--alp-color-primary) 10%, transparent),
       0 12px 32px color-mix(in srgb, #000 40%, transparent),
-      0 0 32px color-mix(in srgb, #38bdf8 6%, transparent);
+      0 0 32px color-mix(in srgb, var(--alp-color-primary) 6%, transparent);
   }
   50% {
     box-shadow:
-      0 0 0 1px color-mix(in srgb, #38bdf8 18%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--alp-color-primary) 18%, transparent),
       0 12px 32px color-mix(in srgb, #000 40%, transparent),
-      0 0 48px color-mix(in srgb, #a78bfa 10%, transparent);
+      0 0 48px color-mix(in srgb, var(--alp-color-accent) 10%, transparent);
   }
 }
 
@@ -146,7 +144,7 @@ const enriched = computed(() =>
 
 .live-indicator {
   font-size: 10px;
-  color: #4ade80;
+  color: var(--alp-color-success);
   animation: blink 1.4s step-end infinite;
   font-family: ui-monospace, 'Cascadia Code', 'Fira Code', Consolas, monospace;
 }
@@ -186,27 +184,27 @@ const enriched = computed(() =>
 }
 
 .agent-card--running {
-  border-color: color-mix(in srgb, #38bdf8 40%, transparent);
-  box-shadow: 0 0 20px color-mix(in srgb, #38bdf8 14%, transparent);
+  border-color: color-mix(in srgb, var(--alp-color-primary) 40%, transparent);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--alp-color-primary) 14%, transparent);
   animation: card-pulse 1.8s ease-in-out infinite;
 }
 
 @keyframes card-pulse {
-  0%, 100% { box-shadow: 0 0 12px color-mix(in srgb, #38bdf8 10%, transparent); }
-  50% { box-shadow: 0 0 28px color-mix(in srgb, #38bdf8 22%, transparent); }
+  0%, 100% { box-shadow: 0 0 12px color-mix(in srgb, var(--alp-color-primary) 10%, transparent); }
+  50% { box-shadow: 0 0 28px color-mix(in srgb, var(--alp-color-primary) 22%, transparent); }
 }
 
 .agent-card--done {
-  border-color: color-mix(in srgb, #4ade80 30%, transparent);
+  border-color: color-mix(in srgb, #6aa878 30%, transparent);
 }
 
 .agent-card--failed {
-  border-color: color-mix(in srgb, #f87171 35%, transparent);
+  border-color: color-mix(in srgb, var(--alp-color-danger) 35%, transparent);
   box-shadow: 0 0 12px color-mix(in srgb, #f87171 10%, transparent);
 }
 
 .agent-card--fallback {
-  border-color: color-mix(in srgb, #fbbf24 30%, transparent);
+  border-color: color-mix(in srgb, var(--alp-color-warning) 30%, transparent);
 }
 
 .card-icon {
@@ -264,7 +262,7 @@ const enriched = computed(() =>
 .retry-hint,
 .fallback-hint {
   font-size: 9px;
-  color: #fbbf24;
+  color: var(--alp-color-warning);
   font-family: ui-monospace, 'Cascadia Code', 'Fira Code', Consolas, monospace;
 }
 </style>

@@ -8,11 +8,7 @@
   padding: 32px 32px 28px;
   border-radius: 18px;
   border: 1px solid var(--alp-color-border-strong);
-  background: linear-gradient(
-    165deg,
-    rgba(20, 30, 55, 0.92) 0%,
-    rgba(10, 17, 40, 0.96) 100%
-  );
+  background: rgba(20, 30, 55, 0.92);
   box-shadow:
     var(--alp-shadow-card),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
@@ -31,7 +27,7 @@
   text-transform: uppercase;
   color: var(--alp-color-primary);
   background: var(--alp-color-primary-soft);
-  border: 1px solid rgba(34, 211, 238, 0.2);
+  border: 1px solid rgba(58, 138, 158, 0.2);
   border-radius: var(--alp-radius-pill);
 }
 
@@ -72,7 +68,7 @@
   border: none;
   border-radius: 12px;
   background: var(--alp-gradient-accent);
-  box-shadow: 0 4px 24px rgba(34, 211, 238, 0.3);
+  box-shadow: 0 4px 24px rgba(58, 138, 158, 0.3);
   transition:
     transform var(--alp-transition-fast),
     box-shadow var(--alp-transition-fast),
@@ -80,8 +76,8 @@
 }
 
 .auth-form .submit:hover {
-  filter: brightness(1.1);
-  box-shadow: 0 6px 32px rgba(34, 211, 238, 0.4);
+  filter: brightness(1.08);
+  box-shadow: var(--alp-shadow-btn-hover);
   transform: translateY(-1px);
 }
 
@@ -139,13 +135,13 @@
 .auth-form .el-input__wrapper:hover {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 0 0 1px rgba(34, 211, 238, 0.18);
+    0 0 0 1px rgba(58, 138, 158, 0.18);
 }
 
 .auth-form .el-input__wrapper.is-focus {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 0 0 2px rgba(34, 211, 238, 0.3);
+    0 0 0 2px rgba(58, 138, 158, 0.3);
 }
 
 .auth-form .el-input__prefix {

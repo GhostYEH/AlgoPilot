@@ -3,7 +3,7 @@ import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { Lock, User } from '@element-plus/icons-vue'
+import { Lock, User, Lightning } from '@element-plus/icons-vue'
 
 import AuthPageFrame from '@/components/auth/AuthPageFrame.vue'
 import { loginApi } from '@/api/auth'
@@ -54,6 +54,39 @@ async function submitForm() {
     setSession(res.access_token, res.user)
     await syncLearningProgressAfterAuth()
     ElMessage.success({ message: '登录成功', offset: 60 })
+
+    if (res.user.role === 'teacher') {
+      await router.replace({ name: 'teacher-dashboard' })
+    } else {
+      const redir = route.query.redirect as string | undefined
+      if (redir && redir.startsWith('/') && !(await needsOnboarding())) {
+        await router.replace(redir)
+      } else if (await needsOnboarding()) {
+        await router.replace({ name: 'learning-path', query: { onboarding: '1' } })
+      } else {
+        await router.replace('/')
+      }
+    }
+  } catch {
+    /* 错误由 axios 拦截器提示 */
+  } finally {
+    loading.value = false
+  }
+}
+
+async function loginAsDemo() {
+  if (loading.value) return
+  const demoUsername = loginRole.value === 'teacher' ? 'teacher_demo' : 'demo'
+  loading.value = true
+  try {
+    const res = await loginApi({
+      username: demoUsername,
+      password: '123456',
+      role: loginRole.value,
+    })
+    setSession(res.access_token, res.user)
+    await syncLearningProgressAfterAuth()
+    ElMessage.success({ message: '已一键登录 Demo 账号', offset: 60 })
 
     if (res.user.role === 'teacher') {
       await router.replace({ name: 'teacher-dashboard' })
@@ -153,6 +186,19 @@ async function submitForm() {
         </el-form-item>
       </el-form>
 
+      <div class="demo-login">
+        <button
+          type="button"
+          class="demo-btn"
+          :disabled="loading"
+          @click="loginAsDemo"
+        >
+          <el-icon :size="15"><Lightning /></el-icon>
+          {{ loginRole === 'teacher' ? '一键体验教师 Demo' : '一键体验学生 Demo' }}
+        </button>
+        <p class="demo-hint">demo{{ loginRole === 'teacher' ? ' (教师)' : '' }} / 123456</p>
+      </div>
+
       <div class="auth-card-footer">
         <span class="muted">还没有账号？</span>
         <router-link class="link" :to="{ name: 'register', query: route.query }">立即注册</router-link>
@@ -188,13 +234,16 @@ async function submitForm() {
     border-color var(--alp-transition-fast),
     color var(--alp-transition-fast),
     background var(--alp-transition-fast),
-    box-shadow var(--alp-transition-fast);
+    box-shadow var(--alp-transition-fast),
+    filter var(--alp-transition-fast);
 }
 
 .role-btn:hover {
   border-color: var(--alp-color-primary);
   color: var(--alp-color-primary);
-  box-shadow: 0 0 12px rgba(34, 211, 238, 0.1);
+  transform: translateY(-2px);
+  box-shadow: var(--alp-shadow-btn-hover);
+  filter: brightness(1.08);
 }
 
 .role-btn.active {
@@ -202,5 +251,51 @@ async function submitForm() {
   color: var(--alp-color-primary);
   background: var(--alp-color-primary-soft);
   box-shadow: 0 0 16px rgba(34, 211, 238, 0.12);
+}
+
+.demo-login {
+  margin-top: 14px;
+  text-align: center;
+}
+
+.demo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  padding: 11px 0;
+  border: 1px dashed color-mix(in srgb, var(--alp-color-primary) 55%, var(--alp-color-border));
+  border-radius: var(--alp-radius-sm);
+  background: color-mix(in srgb, var(--alp-color-primary) 6%, transparent);
+  color: var(--alp-color-primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    border-color var(--alp-transition-fast),
+    background var(--alp-transition-fast),
+    box-shadow var(--alp-transition-fast),
+    filter var(--alp-transition-fast);
+}
+
+.demo-btn:hover:not(:disabled) {
+  border-style: solid;
+  background: color-mix(in srgb, var(--alp-color-primary) 12%, transparent);
+  transform: translateY(-2px);
+  box-shadow: var(--alp-shadow-btn-hover);
+  filter: brightness(1.08);
+}
+
+.demo-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.demo-hint {
+  margin: 7px 0 0;
+  color: var(--alp-color-muted);
+  font-size: 12px;
+  letter-spacing: 0.3px;
 }
 </style>

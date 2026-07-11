@@ -194,7 +194,7 @@ function avatarStyle(hue: number) {
 }
 
 .rank[data-rank='1'] {
-  color: #fbbf24;
+  color: #9c8540;
 }
 .rank[data-rank='2'] {
   color: #94a3b8;

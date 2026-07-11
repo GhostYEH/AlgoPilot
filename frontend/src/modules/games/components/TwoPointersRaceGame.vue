@@ -51,7 +51,7 @@ function reset() {
     slow.value = 0
     fast.value = 0
     activeTool.value = 'slow'
-    msg.value = '① 移动 slow 到 0，fast 到 0（已默认）→ ② 交替点 slow+1 / fast+2'
+    msg.value = '环形数组：slow 每次走 1 步、fast 每次 2 步，交替点击直到两者相遇（有环）'
   } else {
     nums.value = [1, 1, 2, 2, 3, 4]
     left.value = 0
@@ -209,17 +209,15 @@ function dedupCommit() {
 function cycleStep(kind: 'slow' | 'fast') {
   if (props.levelId !== 'cycle' || won.value) return
   moveCount.value++
-  if (kind === 'slow') slow.value++
-  else fast.value = Math.min(fast.value + 2, nums.value.length - 1)
+  const n = nums.value.length
+  // 用下标取模模拟环形结构：环内 fast 每步比 slow 多走一步，必在环内追上 slow
+  if (kind === 'slow') slow.value = (slow.value + 1) % n
+  else fast.value = (fast.value + 2) % n
   msg.value = `slow=${slow.value} fast=${fast.value}`
   fail.value = false
-  pushLog(`${kind} 前进`)
-  if (fast.value >= nums.value.length) {
-    won.value = true
-    msg.value = 'fast 到达尾部 → 无环'
-    pushLog('无环')
-    emit('cleared')
-  } else if (slow.value === fast.value) {
+  pushLog(`${kind} 前进 → slow=${slow.value} fast=${fast.value}`)
+  // 起点两者同在 0，第一次移动后必不相同；之后相遇即说明存在环
+  if (moveCount.value >= 2 && slow.value === fast.value) {
     won.value = true
     msg.value = '相遇 → 有环！'
     pushLog('相遇有环')
@@ -273,6 +271,6 @@ function onTool(id: string) {
   margin: 12px 0 0;
   font-size: 14px;
   font-weight: 600;
-  color: var(--game-accent, #22d3ee);
+  color: var(--game-accent, #3a8a9e);
 }
 </style>
