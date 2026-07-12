@@ -2,7 +2,6 @@
 import { onMounted, ref, watch } from 'vue'
 import { Medal, TrendCharts } from '@element-plus/icons-vue'
 import type {
-  ActivityFeedItem,
   LeaderboardEntry,
   PlatformStat,
 } from '@/utils/homeDashboard'
@@ -11,7 +10,6 @@ const props = defineProps<{
   stats: PlatformStat[]
   acBoard: LeaderboardEntry[]
   streakBoard: LeaderboardEntry[]
-  feed: ActivityFeedItem[]
 }>()
 
 const displayStats = ref<PlatformStat[]>([])
@@ -89,21 +87,6 @@ function avatarStyle(hue: number) {
         <el-empty v-if="!streakBoard.length" description="暂无真实打卡数据" :image-size="42" />
       </div>
     </div>
-
-    <div class="feed">
-      <div class="board-head">
-        <span>学习动态</span>
-        <el-tag size="small" type="info" effect="plain" round>数据库</el-tag>
-      </div>
-      <ul class="feed-list">
-        <li v-for="item in feed" :key="item.id" class="feed-item">
-          <strong>{{ item.user }}</strong>
-          <span>{{ item.action }}</span>
-          <time>{{ item.time }}</time>
-        </li>
-      </ul>
-      <el-empty v-if="!feed.length" description="暂无公开学习动态" :image-size="42" />
-    </div>
   </div>
 </template>
 
@@ -153,8 +136,7 @@ function avatarStyle(hue: number) {
   gap: 10px;
 }
 
-.board,
-.feed {
+.board {
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--alp-color-border);
@@ -171,8 +153,7 @@ function avatarStyle(hue: number) {
   color: var(--alp-color-text);
 }
 
-.board-list,
-.feed-list {
+.board-list {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -225,36 +206,6 @@ function avatarStyle(hue: number) {
 .score {
   color: var(--alp-color-primary);
   font-weight: 600;
-  white-space: nowrap;
-}
-
-.feed-item {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 6px;
-  padding: 6px 0;
-  font-size: 12px;
-  border-bottom: 1px dashed rgba(51, 65, 85, 0.5);
-}
-
-.feed-item:last-child {
-  border-bottom: none;
-}
-
-.feed-item strong {
-  color: var(--alp-color-text);
-}
-
-.feed-item span {
-  color: var(--alp-color-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.feed-item time {
-  color: var(--alp-color-muted);
-  font-size: 11px;
   white-space: nowrap;
 }
 

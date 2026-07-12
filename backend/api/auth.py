@@ -19,7 +19,7 @@ def register(body: UserRegister, db: Session = Depends(get_db)) -> TokenResponse
         username=body.username,
         email=body.email,
         hashed_password=hash_password(body.password),
-        role="student",
+        role=body.role,
     )
     db.add(user)
     db.commit()

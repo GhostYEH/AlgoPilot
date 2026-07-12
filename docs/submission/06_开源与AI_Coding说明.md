@@ -157,7 +157,7 @@ AlgoPilot 项目源代码托管于 GitHub 仓库（https://github.com/GhostYEH/A
 | 场景 | 调用方式 | 说明 |
 |------|---------|------|
 | 画像对话 | 流式 SSE | ProfilingAgent 多轮对话，实时返回 |
-| 资源生成 | 非流式 | 五类资源 Agent 生成完整内容 |
+| 资源生成 | 非流式 | 6 种资源 Agent 生成完整内容（5 类核心 + 1 类扩展阅读） |
 | AI 助教答疑 | 流式 SSE | TutorAgent 实时答疑 |
 | AI 深度诊断 | 非流式 | OjDiagnosisAgent 生成诊断报告 |
 | 学情评估 | 非流式 | EvaluationAgent 多维度评估 |
@@ -257,7 +257,7 @@ CI 验证 ← GitHub Actions 自动运行 ruff + pytest + build
 | 模块 | 自主设计内容 | 代码位置 |
 |------|-------------|---------|
 | **多智能体 DAG 编排** | 自研轻量 Orchestrator + Workflow DAG（借鉴状态图与 DAG 编排思想，零 langgraph 依赖，自主实现） | `services/orchestrator/` |
-| **四阶段并行拓扑** | document → (mindmap ∥ exercises) → code_case → trace_animation | `schemas/resources.py` PARALLEL_PHASES |
+| **四阶段并行拓扑** | document → (mindmap ∥ exercises) → code_case → (trace_animation ∥ reading) | `schemas/resources.py` PARALLEL_PHASES |
 | **PipelineContext 协作** | 跨 Agent 摘要传递（doc_summary/quiz_focus/scenario_hook/trace_hint） | `services/orchestrator/pipeline_context.py` |
 | **Agent 注册表** | 22 个注册条目，其中 20 个有真实实现，分属 6 个 layer（profiling/resource/path/tutor/safety/eval）；PptAgent、VideoScriptAgent 为规划中扩展节点，仅注册未实现 | `services/agents/registry.py` |
 | **六维画像模型** | 知识基础/认知风格/代码实操/学习目标/易错偏好/抗挫心理 | `services/agents/persona.py` |

@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ChatDotRound, Promotion, Refresh } from '@element-plus/icons-vue'
@@ -314,51 +314,52 @@ const dimensionEntries = (dims: PersonaDimensions) =>
           从对话更新画像（JSON 入库）
         </el-button>
       </div>
+
+      <aside v-if="hasProfile" class="persona-dims">
+        <div class="dims-head">
+          <el-icon><ChatDotRound /></el-icon>
+          <span>学习画像 · 6 维</span>
+        </div>
+        <p v-if="profile?.summary" class="dims-summary">{{ profile.summary }}</p>
+        <p v-else class="dims-summary muted">完成 3 轮破冰对话后将自动生成画像</p>
+        <div class="dims-body">
+          <PersonaRadarChart
+            v-if="profile?.dimensions && showRadar"
+            :dimensions="profile.dimensions"
+            :scores="profile.dimension_scores"
+            animated
+          />
+          <p v-else-if="autoFlowRunning" class="dims-summary muted">画像抽取中…</p>
+          <ul v-if="profile?.dimensions && profile.updated_at" class="dims-list">
+            <li v-for="d in dimensionEntries(profile.dimensions)" :key="d.key">
+              <span class="dims-label">
+                {{ d.label }}
+                <em v-if="d.score" class="dims-score">{{ d.score }}/10</em>
+              </span>
+              <el-tag v-if="d.confidence === 'explicit'" size="small" type="success" effect="plain">
+                明确
+              </el-tag>
+              <el-tag v-else-if="d.confidence === 'inferred'" size="small" type="info" effect="plain">
+                推断
+              </el-tag>
+              <span class="dims-value">{{ d.value }}</span>
+            </li>
+          </ul>
+        </div>
+        <p v-if="profile?.coverage_missing?.length" class="dims-missing muted">
+          待补全：{{
+            profile.coverage_missing
+              .map((k) => PROFILE_DIMENSION_LABELS[k as keyof PersonaDimensions] ?? k)
+              .join('、')
+          }}
+        </p>
+        <p v-if="profile?.updated_at" class="dims-time">更新于 {{ profile.updated_at }}</p>
+      </aside>
     </div>
 
     <template v-if="hasProfile">
-    <aside class="persona-dims">
-      <div class="dims-head">
-        <el-icon><ChatDotRound /></el-icon>
-        <span>学习画像 · 6 维</span>
-      </div>
-      <p v-if="profile?.summary" class="dims-summary">{{ profile.summary }}</p>
-      <p v-else class="dims-summary muted">完成 3 轮破冰对话后将自动生成画像</p>
-      <PersonaRadarChart
-        v-if="profile?.dimensions && showRadar"
-        :dimensions="profile.dimensions"
-        :scores="profile.dimension_scores"
-        animated
-      />
-      <p v-else-if="autoFlowRunning" class="dims-summary muted">画像抽取中…</p>
-
-      <ul v-if="profile?.dimensions && profile.updated_at" class="dims-list">
-        <li v-for="d in dimensionEntries(profile.dimensions)" :key="d.key">
-          <span class="dims-label">
-            {{ d.label }}
-            <em v-if="d.score" class="dims-score">{{ d.score }}/10</em>
-          </span>
-          <el-tag v-if="d.confidence === 'explicit'" size="small" type="success" effect="plain">
-            明确
-          </el-tag>
-          <el-tag v-else-if="d.confidence === 'inferred'" size="small" type="info" effect="plain">
-            推断
-          </el-tag>
-          <span class="dims-value">{{ d.value }}</span>
-        </li>
-      </ul>
-      <p v-if="profile?.coverage_missing?.length" class="dims-missing muted">
-        待补全：{{
-          profile.coverage_missing
-            .map((k) => PROFILE_DIMENSION_LABELS[k as keyof PersonaDimensions] ?? k)
-            .join('、')
-        }}
-      </p>
-      <p v-if="profile?.updated_at" class="dims-time">更新于 {{ profile.updated_at }}</p>
-    </aside>
-
     <PersonaEvidenceChain
-      class="persona-evidence-full"
+      class="persona-evidence-side"
       :profile="profile"
       :loading="profileLoading"
       :error="profileError"
@@ -371,8 +372,8 @@ const dimensionEntries = (dims: PersonaDimensions) =>
 <style scoped>
 .persona-layout {
   display: grid;
-  grid-template-columns: 1fr 320px;
-  grid-template-rows: auto 1fr;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  grid-template-rows: auto;
   gap: 16px;
 }
 
@@ -382,7 +383,8 @@ const dimensionEntries = (dims: PersonaDimensions) =>
 }
 
 .persona-chat {
-  grid-row: 1 / 3;
+  grid-column: 1;
+  grid-row: 1;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -393,25 +395,72 @@ const dimensionEntries = (dims: PersonaDimensions) =>
   min-height: 0;
 }
 
-.persona-evidence-full {
+/* 画像证据链：聊天右侧 */
+.persona-evidence-side {
   grid-column: 2;
-  grid-row: 2;
+  grid-row: 1;
   align-self: start;
 }
 
-@media (max-width: 900px) {
+/* 学习画像 · 6 维：紧贴搜索栏下方，不分独立区块 */
+.persona-dims {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--alp-color-border);
+}
+
+/* 雷达图 + 维度列表横向排列 */
+.dims-body {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.dims-body > :first-child {
+  flex-shrink: 0;
+}
+
+/* 6 个维度横向排列 */
+.dims-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 1200px) {
   .persona-layout {
     grid-template-columns: 1fr;
     grid-template-rows: auto;
   }
 
   .persona-chat {
+    grid-column: 1;
     grid-row: auto;
   }
 
-  .persona-evidence-full {
+  .persona-evidence-side {
     grid-column: 1;
     grid-row: auto;
+  }
+
+  .dims-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .dims-list {
+    grid-template-columns: 1fr;
+  }
+
+  .dims-body {
+    flex-direction: column;
   }
 }
 
@@ -473,16 +522,6 @@ const dimensionEntries = (dims: PersonaDimensions) =>
   flex: 1;
 }
 
-.persona-dims {
-  grid-column: 2;
-  grid-row: 1;
-  align-self: start;
-  border: 1px solid var(--alp-color-border);
-  border-radius: var(--alp-radius-card);
-  padding: 14px;
-  background: var(--alp-bg-surface);
-}
-
 .dims-head {
   display: flex;
   align-items: center;
@@ -501,14 +540,12 @@ const dimensionEntries = (dims: PersonaDimensions) =>
   color: var(--alp-color-muted);
 }
 
-.dims-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
 .dims-list li {
-  margin-bottom: 10px;
+  margin-bottom: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--alp-color-border);
+  border-radius: 8px;
+  background: var(--alp-bg-soft-block);
 }
 
 .dims-label {

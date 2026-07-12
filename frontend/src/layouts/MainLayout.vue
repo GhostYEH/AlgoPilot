@@ -208,11 +208,11 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
 .app-header {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 24px;
   padding: 0 max(18px, var(--alp-layout-padding-x));
   border-bottom: 1px solid var(--alp-color-border);
-  background: rgba(61, 138, 126, 0.08), var(--alp-bg-header);
-  backdrop-filter: blur(18px) saturate(1.08);
+  background: var(--alp-bg-header);
+  backdrop-filter: blur(16px) saturate(1.02);
   position: sticky;
   top: 0;
   z-index: 20;
@@ -223,7 +223,7 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
 .header-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   cursor: pointer;
   flex-shrink: 0;
   transition: opacity var(--alp-transition-fast);
@@ -237,26 +237,16 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
   position: relative;
   width: 40px;
   height: 40px;
-  border-radius: 8px;
-  border: 1px solid rgba(var(--alp-color-primary-rgb), 0.36);
-  background: rgba(var(--alp-color-primary-rgb), 0.18), var(--alp-bg-code-ish);
-  color: var(--alp-color-text);
+  border-radius: 6px;
+  border: 0;
+  background: #1687f8;
+  color: #fff;
   font-weight: 700;
   font-size: 13px;
   display: grid;
   place-items: center;
   letter-spacing: 0;
-  box-shadow: inset 0 -10px 18px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
-}
-
-.logo-mark::after {
-  content: '';
-  position: absolute;
-  inset: auto 8px 7px 8px;
-  height: 2px;
-  background: var(--alp-color-accent);
-  opacity: 0.88;
+  box-shadow: none;
 }
 
 .brand-text {
@@ -267,8 +257,8 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
 
 .brand-title {
   font-weight: 600;
-  font-size: 16px;
-  color: var(--alp-color-text);
+  font-size: 17px;
+  color: #1687f8;
   letter-spacing: 0;
 }
 
@@ -288,7 +278,7 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
   scrollbar-width: none;
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 7px;
 }
 
 .header-menu::-webkit-scrollbar {
@@ -296,78 +286,55 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
 }
 
 .header-menu :deep(.el-menu-item) {
-  height: 38px;
-  margin: 0 1px;
-  padding: 0 13px;
-  border-radius: 8px;
-  font-weight: 500;
+  height: 40px;
+  margin: 0;
+  padding: 0 9px;
+  border-radius: 6px;
+  color: var(--alp-color-text-secondary) !important;
+  font-weight: 600;
+  font-size: 14px;
   border-bottom-color: transparent !important;
   letter-spacing: 0;
   transition:
     color var(--alp-transition-fast),
-    background var(--alp-transition-fast),
-    box-shadow var(--alp-transition-fast),
-    filter var(--alp-transition-fast);
+    background var(--alp-transition-fast);
 }
 
 .header-menu :deep(.el-menu-item:hover) {
-  background: var(--alp-bg-nav-hover) !important;
-  transform: translateY(-1px);
-  box-shadow: var(--alp-shadow-btn);
-  filter: brightness(1.1);
+  /* Keep the hover cue text-only, matching the simplified navigation treatment. */
+  color: #409eff !important;
+  background: transparent !important;
 }
 
 .header-menu :deep(.el-menu-item.is-active) {
-  color: var(--alp-color-primary) !important;
+  color: #409eff !important;
   border-bottom-color: transparent !important;
-  background: var(--alp-bg-nav-active) !important;
-  box-shadow: inset 3px 0 0 var(--alp-color-primary), var(--alp-shadow-btn);
-  filter: brightness(1.06);
+  background: transparent !important;
 }
 
 .nav-dropdown-trigger {
   display: flex;
   align-items: center;
   gap: 4px;
-  height: 38px;
-  margin: 0 1px;
-  padding: 0 13px;
-  border-radius: 8px;
-  font-weight: 500;
-  color: var(--alp-color-text);
+  height: 40px;
+  margin: 0;
+  padding: 0 9px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--alp-color-text-secondary);
   cursor: pointer;
-  transition: color 0.2s, background 0.2s, box-shadow 0.2s, filter var(--alp-transition-fast);
-  position: relative;
-}
-
-.nav-dropdown-trigger::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 20px;
-  right: 20px;
-  height: 2px;
-  background: transparent;
-  transition: background 0.2s;
+  transition: color var(--alp-transition-fast), background var(--alp-transition-fast);
 }
 
 .nav-dropdown-trigger.is-active {
-  color: var(--alp-color-primary);
-  background: var(--alp-bg-nav-active);
-  box-shadow: inset 3px 0 0 var(--alp-color-primary), var(--alp-shadow-btn);
-  filter: brightness(1.06);
-}
-
-.nav-dropdown-trigger.is-active::after {
+  color: #409eff;
   background: transparent;
 }
 
 .nav-dropdown-trigger:hover {
-  color: var(--alp-color-primary);
-  background: var(--alp-bg-nav-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--alp-shadow-btn);
-  filter: brightness(1.1);
+  color: #409eff;
+  background: transparent;
 }
 
 .arrow-icon {
@@ -375,8 +342,15 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
   transition: transform 0.2s;
 }
 
-.nav-dropdown-trigger:hover .arrow-icon {
+.nav-dropdown-trigger:hover .arrow-icon,
+.nav-dropdown-trigger:focus-visible .arrow-icon {
   transform: rotate(180deg);
+}
+
+.header-menu :deep(.el-menu-item:focus-visible),
+.nav-dropdown-trigger:focus-visible {
+  outline: 2px solid #409eff;
+  outline-offset: 2px;
 }
 
 .header-actions {
@@ -491,11 +465,11 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
   }
 
   .header-menu :deep(.el-menu-item) {
-    padding: 0 10px;
+    padding: 0 9px;
   }
 
   .nav-dropdown-trigger {
-    padding: 0 10px;
+    padding: 0 9px;
   }
 
   .header-actions {
@@ -505,6 +479,12 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
   .header-actions :deep(.el-button) {
     padding-left: 9px;
     padding-right: 9px;
+  }
+}
+
+@media (max-width: 420px) {
+  .brand-title {
+    display: none;
   }
 }
 </style>

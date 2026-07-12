@@ -109,11 +109,19 @@ def test_progress_memory_and_events_are_isolated_by_account(
     assert client.get(f"/api/events/{event_id}", headers=headers_b).status_code == 404
 
 
-def test_public_registration_cannot_create_teacher_and_student_cannot_read_dashboard(
+def test_registration_role_selection_creates_teacher_and_student_accounts(
     client: TestClient,
 ) -> None:
-    body, headers = _register(client, "role_guard", role="teacher")
-    assert body["user"]["role"] == "student"
+    teacher_body, teacher_headers = _register(client, "role_teacher", role="teacher")
+    assert teacher_body["user"]["role"] == "teacher"
 
-    denied = client.get("/api/teacher/dashboard-summary", headers=headers)
+    student_body, student_headers = _register(client, "role_student", role="student")
+    assert student_body["user"]["role"] == "student"
+
+    # 教师账号可以访问教师看板
+    allowed = client.get("/api/teacher/dashboard-summary", headers=teacher_headers)
+    assert allowed.status_code == 200
+
+    # 学生账号无权访问教师看板
+    denied = client.get("/api/teacher/dashboard-summary", headers=student_headers)
     assert denied.status_code == 403

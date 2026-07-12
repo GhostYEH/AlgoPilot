@@ -519,6 +519,8 @@
 /* 示意动画区：宽屏居中、与正文分层 */
 .module-learn-shell .content-visual {
   margin: 4px 0 8px;
+  /* 预留动画舞台高度，避免章节切换时 Transition out-in 中间态导致容器塌陷、页面跳动 */
+  min-height: var(--lv-stage-h, 248px);
 }
 
 .module-learn-shell .content-visual .anim-root,
@@ -1143,6 +1145,8 @@
 .module-learn-shell .step-anim .step-desc {
   margin: 0 0 12px;
   padding: 8px 10px;
+  /* 预留 3 行文字高度，避免不同 step 的 hint 行数变化导致页面高度跳动 */
+  min-height: 54px;
   border-radius: 8px;
   background: rgba(37, 99, 235, 0.08);
   border-left: 3px solid var(--alp-color-primary, #2563eb);

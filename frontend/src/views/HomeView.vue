@@ -172,7 +172,6 @@ const platformStats = computed(() => {
 })
 const acBoard = computed(() => communityData.value?.ac_board ?? [])
 const streakBoard = computed(() => communityData.value?.streak_board ?? [])
-const activityFeed = computed(() => communityData.value?.feed ?? [])
 const dailyProblem = computed(() => pickDailyProblem(ojProblems.value))
 const targetedProblems = computed(() =>
   pickTargetedProblems(overview.value.weakModules, ojProblems.value),
@@ -464,7 +463,6 @@ onMounted(async () => {
               :stats="platformStats"
               :ac-board="acBoard"
               :streak-board="streakBoard"
-              :feed="activityFeed"
             />
           </el-card>
         </el-col>

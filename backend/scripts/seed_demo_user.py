@@ -510,13 +510,14 @@ def _write_demo_learning_data(db, user: User, now) -> None:
             "learning_goals": "系统掌握数据结构与算法，优先攻克链表反转类题目",
             "error_preference": "近期易错/待加强：链表反转、next 指针保存顺序、循环不变量",
             "grit_level": "遇到难题会反复尝试，但连续失败3次以上容易放弃",
+            # 注：分值范围为 1-10，与后端 _clamp_score / PersonaProfileResponse 约定一致
             "_dimension_scores": {
-                "knowledge_base": 55,
-                "cognitive_style": 70,
-                "coding_ability": 40,
-                "learning_goals": 80,
-                "error_preference": 35,
-                "grit_level": 60,
+                "knowledge_base": 6,
+                "cognitive_style": 7,
+                "coding_ability": 4,
+                "learning_goals": 8,
+                "error_preference": 4,
+                "grit_level": 6,
             },
             "_confidence": {
                 "knowledge_base": 0.8,

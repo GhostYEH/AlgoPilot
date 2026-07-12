@@ -21,17 +21,13 @@ jobs:
           cache-dependency-path: backend/requirements-dev.txt
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
-      - name: Ruff lint (新增/核心模块)
-        run: >
-          ruff check
-          services/orchestrator
-          services/knowledge/concept_clusters.py
-          schemas/agent_outputs.py
-          tests
+      - name: Ruff lint
+        run: ruff check .
       - name: Pytest
         env:
-          JWT_SECRET: ci-test-secret
+          JWT_SECRET: ci-test-secret-do-not-use-in-production
         run: pytest -q --cov=services --cov-report=term-missing
+
   frontend:
     runs-on: ubuntu-latest
     defaults:
@@ -46,5 +42,13 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Install dependencies
         run: npm ci
-      - name: Typecheck & build
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build
         run: npm run build
+      - name: Test OJ struggle session
+        run: npm run test:oj-struggle
+      - name: Test path replan diff
+        run: npm run test:path-replan-diff
+      - name: Test graph module contract
+        run: npm run test:graph-module

@@ -52,10 +52,17 @@ const initialCfg = getModuleLearnConfig(props.moduleKey)
 const activeSection = ref(initialCfg ? sectionFromQuery(initialCfg) : '')
 const doneMap = ref<Record<string, boolean>>({})
 
+const animComponentCache = new Map<string, Component>()
 const AnimComponent = computed(() => {
   const cfg = config.value
   if (!cfg) return null
-  return defineAsyncComponent(cfg.animationComponent) as Component
+  const key = cfg.key
+  let comp = animComponentCache.get(key)
+  if (!comp) {
+    comp = defineAsyncComponent(cfg.animationComponent)
+    animComponentCache.set(key, comp)
+  }
+  return comp
 })
 
 const sections = computed(() => config.value?.sections ?? [])

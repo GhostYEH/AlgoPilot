@@ -30,13 +30,7 @@ export default defineConfig(({ mode }) => {
     },
   },
   optimizeDeps: {
-    include: [
-      '@element-plus/icons-vue',
-      'element-plus/es/components/timeline/style/css',
-      'element-plus/es/components/timeline-item/style/css',
-      'element-plus/es/components/collapse/style/css',
-      'element-plus/es/components/collapse-item/style/css',
-    ],
+    include: ['@element-plus/icons-vue', 'element-plus'],
   },
   server: {
     host: '127.0.0.1',
