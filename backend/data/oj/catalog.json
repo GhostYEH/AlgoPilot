@@ -1,0 +1,758 @@
+[
+  {
+    "slug": "two-sum",
+    "title": "两数之和",
+    "lc_id": 1,
+    "module_key": "hash-table"
+  },
+  {
+    "slug": "replace-space-lcof",
+    "title": "替换空格（剑指 Offer 05）",
+    "lc_id": 5,
+    "module_key": "two-pointers"
+  },
+  {
+    "slug": "3sum",
+    "title": "三数之和",
+    "lc_id": 15,
+    "module_key": "hash-table"
+  },
+  {
+    "slug": "4sum",
+    "title": "四数之和",
+    "lc_id": 18,
+    "module_key": "hash-table"
+  },
+  {
+    "slug": "remove-nth-node-from-end-of-list",
+    "title": "删除链表的倒数第 N 个结点",
+    "lc_id": 19,
+    "module_key": "linked-list"
+  },
+  {
+    "slug": "valid-parentheses",
+    "title": "有效的括号",
+    "lc_id": 20,
+    "module_key": "stack-queue"
+  },
+  {
+    "slug": "swap-nodes-in-pairs",
+    "title": "两两交换链表中的节点",
+    "lc_id": 24,
+    "module_key": "linked-list"
+  },
+  {
+    "slug": "reverse-nodes-in-k-group",
+    "title": "K 个一组翻转链表",
+    "lc_id": 25,
+    "module_key": "linked-list"
+  },
+  {
+    "slug": "remove-duplicates-from-sorted-array",
+    "title": "删除有序数组重复项",
+    "lc_id": 26,
+    "module_key": "array"
+  },
+  {
+    "slug": "remove-element",
+    "title": "移除元素",
+    "lc_id": 27,
+    "module_key": "array"
+  },
+  {
+    "slug": "find-first-and-last-position-of-element-in-sorted-array",
+    "title": "排序数组中查找首尾位置",
+    "lc_id": 34,
+    "module_key": "array"
+  },
+  {
+    "slug": "search-insert-position",
+    "title": "搜索插入位置",
+    "lc_id": 35,
+    "module_key": "array"
+  },
+  {
+    "slug": "sudoku-solver",
+    "title": "解数独",
+    "lc_id": 37,
+    "module_key": "backtracking"
+  },
+  {
+    "slug": "trapping-rain-water",
+    "title": "接雨水",
+    "lc_id": 42,
+    "module_key": "monotonic-stack"
+  },
+  {
+    "slug": "jump-game-ii",
+    "title": "跳跃游戏 II",
+    "lc_id": 45,
+    "module_key": "greedy"
+  },
+  {
+    "slug": "permutations",
+    "title": "全排列",
+    "lc_id": 46,
+    "module_key": "backtracking"
+  },
+  {
+    "slug": "permutations-ii",
+    "title": "全排列 II",
+    "lc_id": 47,
+    "module_key": "backtracking"
+  },
+  {
+    "slug": "group-anagrams",
+    "title": "字母异位词分组",
+    "lc_id": 49,
+    "module_key": "hash-table"
+  },
+  {
+    "slug": "n-queens",
+    "title": "N 皇后",
+    "lc_id": 51,
+    "module_key": "backtracking"
+  },
+  {
+    "slug": "spiral-matrix",
+    "title": "螺旋矩阵",
+    "lc_id": 54,
+    "module_key": "array"
+  },
+  {
+    "slug": "jump-game",
+    "title": "跳跃游戏",
+    "lc_id": 55,
+    "module_key": "greedy"
+  },
+  {
+    "slug": "length-of-last-word",
+    "title": "最后一个单词的长度",
+    "lc_id": 58,
+    "module_key": "string"
+  },
+  {
+    "slug": "spiral-matrix-ii",
+    "title": "螺旋矩阵 II",
+    "lc_id": 59,
+    "module_key": "array"
+  },
+  {
+    "slug": "sqrtx",
+    "title": "x 的平方根",
+    "lc_id": 69,
+    "module_key": "array"
+  },
+  {
+    "slug": "climbing-stairs",
+    "title": "爬楼梯",
+    "lc_id": 70,
+    "module_key": "dp"
+  },
+  {
+    "slug": "minimum-window-substring",
+    "title": "最小覆盖子串",
+    "lc_id": 76,
+    "module_key": "array"
+  },
+  {
+    "slug": "combinations",
+    "title": "组合",
+    "lc_id": 77,
+    "module_key": "backtracking"
+  },
+  {
+    "slug": "subsets",
+    "title": "子集",
+    "lc_id": 78,
+    "module_key": "backtracking"
+  },
+  {
+    "slug": "largest-rectangle-in-histogram",
+    "title": "柱状图中最大的矩形",
+    "lc_id": 84,
+    "module_key": "monotonic-stack"
+  },
+  {
+    "slug": "reverse-linked-list-ii",
+    "title": "反转链表 II",
+    "lc_id": 92,
+    "module_key": "linked-list"
+  },
+  {
+    "slug": "binary-tree-inorder-traversal",
+    "title": "二叉树的中序遍历",
+    "lc_id": 94,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "validate-binary-search-tree",
+    "title": "验证二叉搜索树",
+    "lc_id": 98,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "same-tree",
+    "title": "相同的树",
+    "lc_id": 100,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "symmetric-tree",
+    "title": "对称二叉树",
+    "lc_id": 101,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "binary-tree-level-order-traversal",
+    "title": "二叉树的层序遍历",
+    "lc_id": 102,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "maximum-depth-of-binary-tree",
+    "title": "二叉树的最大深度",
+    "lc_id": 104,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "construct-binary-tree-from-preorder-and-inorder-traversal",
+    "title": "从前序与中序遍历序列构造二叉树",
+    "lc_id": 105,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "construct-binary-tree-from-inorder-and-postorder-traversal",
+    "title": "从中序与后序遍历序列构造二叉树",
+    "lc_id": 106,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "binary-tree-level-order-traversal-ii",
+    "title": "二叉树的层序遍历 II",
+    "lc_id": 107,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "convert-sorted-array-to-binary-search-tree",
+    "title": "将有序数组转换为二叉搜索树",
+    "lc_id": 108,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "balanced-binary-tree",
+    "title": "平衡二叉树",
+    "lc_id": 110,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "minimum-depth-of-binary-tree",
+    "title": "二叉树的最小深度",
+    "lc_id": 111,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "path-sum",
+    "title": "路径总和",
+    "lc_id": 112,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "path-sum-ii",
+    "title": "路径总和 II",
+    "lc_id": 113,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "best-time-to-buy-and-sell-stock",
+    "title": "买卖股票的最佳时机",
+    "lc_id": 121,
+    "module_key": "greedy"
+  },
+  {
+    "slug": "best-time-to-buy-and-sell-stock-ii",
+    "title": "买卖股票的最佳时机 II",
+    "lc_id": 122,
+    "module_key": "greedy"
+  },
+  {
+    "slug": "palindrome-partitioning",
+    "title": "分割回文串",
+    "lc_id": 131,
+    "module_key": "backtracking"
+  },
+  {
+    "slug": "gas-station",
+    "title": "加油站",
+    "lc_id": 134,
+    "module_key": "greedy"
+  },
+  {
+    "slug": "linked-list-cycle",
+    "title": "环形链表",
+    "lc_id": 141,
+    "module_key": "linked-list"
+  },
+  {
+    "slug": "linked-list-cycle-ii",
+    "title": "环形链表 II",
+    "lc_id": 142,
+    "module_key": "linked-list"
+  },
+  {
+    "slug": "binary-tree-preorder-traversal",
+    "title": "二叉树的前序遍历",
+    "lc_id": 144,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "binary-tree-postorder-traversal",
+    "title": "二叉树的后序遍历",
+    "lc_id": 145,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "evaluate-reverse-polish-notation",
+    "title": "逆波兰表达式求值",
+    "lc_id": 150,
+    "module_key": "stack-queue"
+  },
+  {
+    "slug": "reverse-words-in-a-string",
+    "title": "反转字符串中的单词",
+    "lc_id": 151,
+    "module_key": "string"
+  },
+  {
+    "slug": "intersection-of-two-linked-lists",
+    "title": "相交链表",
+    "lc_id": 160,
+    "module_key": "linked-list"
+  },
+  {
+    "slug": "two-sum-ii-input-array-is-sorted",
+    "title": "两数之和 II - 输入有序数组",
+    "lc_id": 167,
+    "module_key": "hash-table"
+  },
+  {
+    "slug": "reverse-words-in-a-string-ii",
+    "title": "反转字符串中的单词 II",
+    "lc_id": 186,
+    "module_key": "string"
+  },
+  {
+    "slug": "rotate-array",
+    "title": "轮转数组",
+    "lc_id": 189,
+    "module_key": "string"
+  },
+  {
+    "slug": "binary-tree-right-side-view",
+    "title": "二叉树的右视图",
+    "lc_id": 199,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "number-of-islands",
+    "title": "岛屿数量",
+    "lc_id": 200,
+    "module_key": "graph"
+  },
+  {
+    "slug": "happy-number",
+    "title": "快乐数",
+    "lc_id": 202,
+    "module_key": "hash-table"
+  },
+  {
+    "slug": "remove-linked-list-elements",
+    "title": "移除链表元素",
+    "lc_id": 203,
+    "module_key": "linked-list"
+  },
+  {
+    "slug": "reverse-linked-list",
+    "title": "反转链表",
+    "lc_id": 206,
+    "module_key": "linked-list"
+  },
+  {
+    "slug": "course-schedule",
+    "title": "课程表",
+    "lc_id": 207,
+    "module_key": "graph"
+  },
+  {
+    "slug": "minimum-size-subarray-sum",
+    "title": "长度最小的子数组",
+    "lc_id": 209,
+    "module_key": "array"
+  },
+  {
+    "slug": "shortest-palindrome",
+    "title": "最短回文串",
+    "lc_id": 214,
+    "module_key": "string"
+  },
+  {
+    "slug": "count-complete-tree-nodes",
+    "title": "完全二叉树的节点个数",
+    "lc_id": 222,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "implement-stack-using-queues",
+    "title": "用队列实现栈",
+    "lc_id": 225,
+    "module_key": "stack-queue"
+  },
+  {
+    "slug": "invert-binary-tree",
+    "title": "翻转二叉树",
+    "lc_id": 226,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "implement-queue-using-stacks",
+    "title": "用栈实现队列",
+    "lc_id": 232,
+    "module_key": "stack-queue"
+  },
+  {
+    "slug": "palindrome-linked-list",
+    "title": "回文链表",
+    "lc_id": 234,
+    "module_key": "linked-list"
+  },
+  {
+    "slug": "lowest-common-ancestor-of-a-binary-search-tree",
+    "title": "二叉搜索树的最近公共祖先",
+    "lc_id": 235,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "lowest-common-ancestor-of-a-binary-tree",
+    "title": "二叉树的最近公共祖先",
+    "lc_id": 236,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "delete-node-in-a-linked-list",
+    "title": "删除链表中的节点",
+    "lc_id": 237,
+    "module_key": "linked-list"
+  },
+  {
+    "slug": "sliding-window-maximum",
+    "title": "滑动窗口最大值",
+    "lc_id": 239,
+    "module_key": "stack-queue"
+  },
+  {
+    "slug": "valid-anagram",
+    "title": "有效的字母异位词",
+    "lc_id": 242,
+    "module_key": "hash-table"
+  },
+  {
+    "slug": "binary-tree-paths",
+    "title": "二叉树的所有路径",
+    "lc_id": 257,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "move-zeroes",
+    "title": "移动零",
+    "lc_id": 283,
+    "module_key": "array"
+  },
+  {
+    "slug": "longest-increasing-subsequence",
+    "title": "最长递增子序列",
+    "lc_id": 300,
+    "module_key": "dp"
+  },
+  {
+    "slug": "coin-change",
+    "title": "零钱兑换",
+    "lc_id": 322,
+    "module_key": "dp"
+  },
+  {
+    "slug": "reverse-string",
+    "title": "反转字符串",
+    "lc_id": 344,
+    "module_key": "string"
+  },
+  {
+    "slug": "reverse-vowels-of-a-string",
+    "title": "反转字符串中的元音字母",
+    "lc_id": 345,
+    "module_key": "string"
+  },
+  {
+    "slug": "top-k-frequent-elements",
+    "title": "前 K 个高频元素",
+    "lc_id": 347,
+    "module_key": "stack-queue"
+  },
+  {
+    "slug": "intersection-of-two-arrays",
+    "title": "两个数组的交集",
+    "lc_id": 349,
+    "module_key": "hash-table"
+  },
+  {
+    "slug": "intersection-of-two-arrays-ii",
+    "title": "两个数组的交集 II",
+    "lc_id": 350,
+    "module_key": "hash-table"
+  },
+  {
+    "slug": "valid-perfect-square",
+    "title": "有效的完全平方数",
+    "lc_id": 367,
+    "module_key": "array"
+  },
+  {
+    "slug": "ransom-note",
+    "title": "赎金信",
+    "lc_id": 383,
+    "module_key": "hash-table"
+  },
+  {
+    "slug": "sum-of-left-leaves",
+    "title": "左叶子之和",
+    "lc_id": 404,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "add-strings",
+    "title": "字符串相加",
+    "lc_id": 415,
+    "module_key": "string"
+  },
+  {
+    "slug": "partition-equal-subset-sum",
+    "title": "分割等和子集",
+    "lc_id": 416,
+    "module_key": "dp"
+  },
+  {
+    "slug": "non-overlapping-intervals",
+    "title": "无重叠区间",
+    "lc_id": 435,
+    "module_key": "greedy"
+  },
+  {
+    "slug": "delete-node-in-a-bst",
+    "title": "删除二叉搜索树中的节点",
+    "lc_id": 450,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "minimum-number-of-arrows-to-burst-balloons",
+    "title": "用最少数量的箭引爆气球",
+    "lc_id": 452,
+    "module_key": "greedy"
+  },
+  {
+    "slug": "4sum-ii",
+    "title": "四数相加 II",
+    "lc_id": 454,
+    "module_key": "hash-table"
+  },
+  {
+    "slug": "assign-cookies",
+    "title": "分发饼干",
+    "lc_id": 455,
+    "module_key": "greedy"
+  },
+  {
+    "slug": "repeated-substring-pattern",
+    "title": "重复的子字符串",
+    "lc_id": 459,
+    "module_key": "string"
+  },
+  {
+    "slug": "next-greater-element-i",
+    "title": "下一个更大元素 I",
+    "lc_id": 496,
+    "module_key": "monotonic-stack"
+  },
+  {
+    "slug": "find-mode-in-binary-search-tree",
+    "title": "二叉搜索树中的众数",
+    "lc_id": 501,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "next-greater-element-ii",
+    "title": "下一个更大元素 II",
+    "lc_id": 503,
+    "module_key": "monotonic-stack"
+  },
+  {
+    "slug": "fibonacci-number",
+    "title": "斐波那契数",
+    "lc_id": 509,
+    "module_key": "dp"
+  },
+  {
+    "slug": "find-bottom-left-tree-value",
+    "title": "找树左下角的值",
+    "lc_id": 513,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "coin-change-ii",
+    "title": "零钱兑换 II",
+    "lc_id": 518,
+    "module_key": "dp"
+  },
+  {
+    "slug": "minimum-absolute-difference-in-bst",
+    "title": "二叉搜索树的最小绝对差",
+    "lc_id": 530,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "convert-bst-to-greater-tree",
+    "title": "把二叉搜索树转换为累加树",
+    "lc_id": 538,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "reverse-string-ii",
+    "title": "反转字符串 II",
+    "lc_id": 541,
+    "module_key": "string"
+  },
+  {
+    "slug": "subtree-of-another-tree",
+    "title": "另一棵树的子树",
+    "lc_id": 572,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "merge-two-binary-trees",
+    "title": "合并二叉树",
+    "lc_id": 617,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "average-of-levels-in-binary-tree",
+    "title": "二叉树的层平均值",
+    "lc_id": 637,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "maximum-binary-tree",
+    "title": "最大二叉树",
+    "lc_id": 654,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "trim-a-binary-search-tree",
+    "title": "修剪二叉搜索树",
+    "lc_id": 669,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "search-in-a-binary-search-tree",
+    "title": "二叉搜索树中的搜索",
+    "lc_id": 700,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "insert-into-a-binary-search-tree",
+    "title": "二叉搜索树中的插入操作",
+    "lc_id": 701,
+    "module_key": "binary-tree"
+  },
+  {
+    "slug": "binary-search",
+    "title": "二分查找",
+    "lc_id": 704,
+    "module_key": "array"
+  },
+  {
+    "slug": "design-linked-list",
+    "title": "设计链表",
+    "lc_id": 707,
+    "module_key": "linked-list"
+  },
+  {
+    "slug": "daily-temperatures",
+    "title": "每日温度",
+    "lc_id": 739,
+    "module_key": "monotonic-stack"
+  },
+  {
+    "slug": "rotate-string",
+    "title": "旋转字符串",
+    "lc_id": 796,
+    "module_key": "string"
+  },
+  {
+    "slug": "backspace-string-compare",
+    "title": "比较含退格的字符串",
+    "lc_id": 844,
+    "module_key": "array"
+  },
+  {
+    "slug": "middle-of-the-linked-list",
+    "title": "链表的中间结点",
+    "lc_id": 876,
+    "module_key": "linked-list"
+  },
+  {
+    "slug": "fruit-into-baskets",
+    "title": "水果成篮",
+    "lc_id": 904,
+    "module_key": "array"
+  },
+  {
+    "slug": "squares-of-a-sorted-array",
+    "title": "有序数组的平方",
+    "lc_id": 977,
+    "module_key": "array"
+  },
+  {
+    "slug": "rotting-oranges",
+    "title": "腐烂的橘子",
+    "lc_id": 994,
+    "module_key": "graph"
+  },
+  {
+    "slug": "remove-all-adjacent-duplicates-in-string",
+    "title": "删除字符串中的所有相邻重复项",
+    "lc_id": 1047,
+    "module_key": "stack-queue"
+  },
+  {
+    "slug": "longest-happy-prefix",
+    "title": "最长快乐前缀",
+    "lc_id": 1392,
+    "module_key": "string"
+  },
+  {
+    "slug": "sorting-basic-output",
+    "title": "基础排序输出",
+    "lc_id": 0,
+    "module_key": "sorting"
+  },
+  {
+    "slug": "sorting-inversion-count",
+    "title": "逆序对统计",
+    "lc_id": 0,
+    "module_key": "sorting"
+  },
+  {
+    "slug": "sorting-kth-largest",
+    "title": "第 K 大元素",
+    "lc_id": 0,
+    "module_key": "sorting"
+  }
+]

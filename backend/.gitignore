@@ -6,7 +6,8 @@ __pycache__/
 *.egg-info/
 dist/
 build/
-data/
+data/*
+!data/oj/
 *.db
 scripts/_*.txt
 scripts/_*.cpp

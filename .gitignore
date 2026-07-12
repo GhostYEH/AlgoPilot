@@ -48,7 +48,8 @@ htmlcov/
 *.db
 *.sqlite
 *.sqlite3
-backend/data/
+backend/data/*
+!backend/data/oj/
 
 # Node
 node_modules/
