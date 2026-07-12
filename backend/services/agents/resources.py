@@ -12,6 +12,10 @@ from services.agents.resource_roles import get_role_agent
 from services.knowledge.retriever import KnowledgeChunk, retriever
 
 
+class AgentOutputError(ValueError):
+    """A role agent returned a structurally valid response with no usable content."""
+
+
 class ResourceAgents:
     @staticmethod
     def agent_name(resource_type: ResourceType) -> str:
@@ -35,6 +39,12 @@ class ResourceAgents:
             focus_hint=focus_hint,
             chunks=chunks,
         )
+        if not isinstance(title, str) or not title.strip():
+            raise AgentOutputError(f"{agent.agent_id} returned an empty title")
+        if not isinstance(content, str) or not content.strip():
+            raise AgentOutputError(f"{agent.agent_id} returned empty content")
+        if not isinstance(meta, dict):
+            raise AgentOutputError(f"{agent.agent_id} returned invalid metadata")
         meta["agent_id"] = agent.agent_id
         meta["agent_role"] = agent.role
         return title, content, meta

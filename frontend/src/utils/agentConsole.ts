@@ -119,20 +119,22 @@ export function lineFromWorkflow(w: {
 export function lineFromProgress(p: {
   step: number
   total: number
-  resource_type: string
-  agent_name: string
-  label: string
+  resource_type?: string
+  agent_name?: string
+  label?: string
   percent?: number
   parallel?: boolean
 }): AgentConsoleLine {
+  const agentName = p.agent_name || 'Orchestrator'
+  const label = p.label || p.resource_type || '任务初始化'
   const tag = p.parallel ? ' [并行]' : ''
   return {
     id: nextLogId(),
-    icon: iconForAgent(p.agent_name),
-    agent: p.agent_name,
+    icon: iconForAgent(agentName),
+    agent: agentName,
     message: friendlyAgentMessage(
-      p.agent_name,
-      `[${p.step}/${p.total}] ${p.label}（${p.resource_type}）${tag}`,
+      agentName,
+      `[${p.step}/${p.total}] ${label}${p.resource_type ? `（${p.resource_type}）` : ''}${tag}`,
     ),
     status: 'running',
     ts: Date.now(),

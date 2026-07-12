@@ -5,11 +5,10 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 
 # Prevent unbounded log growth in multi-agent pipeline
 _PIPELINE_LOG_LIMIT: int = 200
-
-from datetime import datetime, timezone
 
 
 @dataclass

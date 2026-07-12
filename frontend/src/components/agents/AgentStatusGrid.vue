@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { RESOURCE_TYPE_META } from '@/api/orchestrator'
 
-export type AgentTaskStatus = 'pending' | 'running' | 'verifying' | 'retrying' | 'safe_checking' | 'done' | 'failed' | 'fallback'
+export type AgentTaskStatus = 'pending' | 'running' | 'verifying' | 'retrying' | 'safe_checking' | 'done' | 'needs_review' | 'failed' | 'fallback'
 
 export interface AgentStatusItem {
   resource_type: string
@@ -25,6 +25,7 @@ const STATUS_TAG_TYPE: Record<AgentTaskStatus, 'info' | 'primary' | 'warning' | 
   retrying: 'warning',
   safe_checking: 'warning',
   done: 'success',
+  needs_review: 'warning',
   failed: 'danger',
   fallback: 'warning',
 }
@@ -36,6 +37,7 @@ const STATUS_LABEL: Record<AgentTaskStatus, string> = {
   retrying: '重试中',
   safe_checking: '安全审查',
   done: '已完成',
+  needs_review: '待复核',
   failed: '失败',
   fallback: '降级',
 }
@@ -80,6 +82,7 @@ const enriched = computed(() =>
           </el-tag>
           <span v-if="item.status === 'retrying'" class="retry-hint">重试中…</span>
           <span v-if="item.status === 'fallback'" class="fallback-hint">模板降级</span>
+          <span v-if="item.status === 'needs_review'" class="fallback-hint">内容未发布</span>
         </div>
       </div>
     </div>

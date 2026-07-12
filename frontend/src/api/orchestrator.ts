@@ -382,27 +382,49 @@ async function consumeSse(
   url: string,
   body: unknown,
   onEvent: (data: Record<string, unknown>) => void,
+  timeoutMs = 150000,
 ): Promise<void> {
-  const res = await fetch(`${getApiBaseUrl()}${url}`, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify(body),
-  })
-  if (!res.ok) {
-    throw new Error(await readHttpError(res, '请求失败'))
+  const controller = new AbortController()
+  let timedOut = false
+  let timeoutId: ReturnType<typeof window.setTimeout> | undefined
+  const resetTimeout = () => {
+    if (timeoutId) window.clearTimeout(timeoutId)
+    timeoutId = window.setTimeout(() => {
+      timedOut = true
+      controller.abort()
+    }, timeoutMs)
   }
-  const reader = res.body?.getReader()
-  if (!reader) throw new Error('无法读取流式响应')
-  const decoder = new TextDecoder()
-  let buf = ''
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    buf += decoder.decode(value, { stream: true })
-    buf = parseSseChunk(buf, onEvent)
+
+  resetTimeout()
+  try {
+    const res = await fetch(`${getApiBaseUrl()}${url}`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    })
+    if (!res.ok) {
+      throw new Error(await readHttpError(res, '请求失败'))
+    }
+    const reader = res.body?.getReader()
+    if (!reader) throw new Error('无法读取流式响应')
+    const decoder = new TextDecoder()
+    let buf = ''
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      resetTimeout()
+      buf += decoder.decode(value, { stream: true })
+      buf = parseSseChunk(buf, onEvent)
+    }
+    buf += decoder.decode()
+    if (buf.trim()) parseSseChunk(`${buf}\n\n`, onEvent)
+  } catch (error) {
+    if (timedOut) throw new Error('生成服务超过 150 秒未返回进度，请稍后重试。')
+    throw error
+  } finally {
+    if (timeoutId) window.clearTimeout(timeoutId)
   }
-  buf += decoder.decode()
-  if (buf.trim()) parseSseChunk(`${buf}\n\n`, onEvent)
 }
 
 export async function fetchPersonaProfile(): Promise<PersonaProfile> {
@@ -675,9 +697,9 @@ export async function streamGenerateAllResources(
     onProgress?: (p: {
       step: number
       total: number
-      resource_type: string
-      agent_name: string
-      label: string
+      resource_type?: string
+      agent_name?: string
+      label?: string
       percent?: number
       parallel?: boolean
     }) => void

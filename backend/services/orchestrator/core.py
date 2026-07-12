@@ -36,6 +36,7 @@ from services.agents.learning_path import LearningPathAgent
 from services.agents.oj_assistant import OjAssistantAgent
 from services.agents.persona import PersonaAgent
 from services.agents.persona_learning import apply_learning_patch
+from services.agents.resources import AgentOutputError
 from services.agents.registry import agent_for_resource, list_agents
 from services.agents.tutor import TutorAgent
 from services.orchestrator.persona_fingerprint import (
@@ -840,7 +841,7 @@ class Orchestrator:
                 pipeline_ctx=pipeline_ctx,
             )
         except Exception as exc:
-            if not is_llm_related_error(exc):
+            if not (is_llm_related_error(exc) or isinstance(exc, AgentOutputError)):
                 raise
             db.rollback()
             return await self.generate_resource_fallback(
@@ -1166,7 +1167,7 @@ class Orchestrator:
             local_db.rollback()
             if fallback_reason:
                 return resource_type, events, None, exc
-            if is_llm_related_error(exc):
+            if is_llm_related_error(exc) or isinstance(exc, AgentOutputError):
                 from fastapi import HTTPException
 
                 reason = (

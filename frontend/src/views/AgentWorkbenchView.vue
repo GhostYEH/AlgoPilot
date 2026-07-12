@@ -89,6 +89,15 @@ const workflowEvents = ref<AgentWorkflowEvent[]>([])
 const activeResourceTab = ref('document')
 const agentStatuses = ref<Map<string, AgentTaskStatus>>(new Map())
 
+function resourceNeedsReview(resource: GeneratedResource): boolean {
+  const verification = resource.verification ?? resource.meta?.verification
+  const finalDecision =
+    verification && typeof verification === 'object'
+      ? (verification as Record<string, unknown>).final_decision
+      : undefined
+  return resource.meta?.status === 'draft' || finalDecision === 'draft' || finalDecision === 'blocked'
+}
+
 const stageDetail = computed(() => {
   const s = pipeline.value[activeStage.value]
   return s ? getStageDetail(s.stage) : null
@@ -128,19 +137,21 @@ function pushWorkflowEvent(event: AgentWorkflowEvent) {
 }
 
 function progressWorkflowEvent(p: {
-  resource_type: string
-  agent_name: string
-  label: string
+  resource_type?: string
+  agent_name?: string
+  label?: string
   percent?: number
 }): AgentWorkflowEvent {
+  const agentName = p.agent_name || 'Orchestrator'
+  const label = p.label || p.resource_type || '任务初始化'
   return {
-    agent: p.agent_name,
-    detail: p.label,
-    agent_id: p.agent_name,
-    agent_name: p.agent_name,
+    agent: agentName,
+    detail: label,
+    agent_id: agentName,
+    agent_name: agentName,
     stage: 'agent_generate',
     status: 'running',
-    message: p.label,
+    message: label,
     timestamp: new Date().toISOString(),
     duration_ms: null,
     validation_result: null,
@@ -191,6 +202,7 @@ async function runResourceGeneration() {
           pushLine(lineFromProgress(p))
           pushWorkflowEvent(progressWorkflowEvent(p))
           if (typeof p.percent === 'number') progress.value = p.percent
+          if (!p.resource_type) return
           activeResourceTab.value = p.resource_type
           statusMap.set(p.resource_type, 'running')
           agentStatuses.value = new Map(statusMap)
@@ -229,7 +241,8 @@ async function runResourceGeneration() {
             ...generatedResources.value.filter((x) => x.id !== r.id),
           ]
           activeResourceTab.value = r.resource_type
-          statusMap.set(r.resource_type, 'done')
+          const needsReview = resourceNeedsReview(r)
+          statusMap.set(r.resource_type, needsReview ? 'needs_review' : 'done')
           agentStatuses.value = new Map(statusMap)
           const roleAgent = RESOURCE_TYPE_META[r.resource_type]?.agentName ?? r.agent_name
           pushWorkflowEvent({
@@ -238,8 +251,8 @@ async function runResourceGeneration() {
             agent_id: roleAgent,
             agent_name: roleAgent,
             stage: 'resource_ready',
-            status: 'success',
-            message: `${r.title} 已就绪`,
+            status: needsReview ? 'failed' : 'success',
+            message: needsReview ? `${r.title} 已生成，等待内容复核` : `${r.title} 已发布`,
             timestamp: r.created_at || new Date().toISOString(),
             duration_ms: null,
             validation_result:
@@ -251,7 +264,7 @@ async function runResourceGeneration() {
             ),
             input_summary: `${topic.value} | ${r.resource_type}`,
             output_summary: `${r.title} | ${r.content.length} chars`,
-            failure_reason: '',
+            failure_reason: needsReview ? '内容校验未通过，资源保留为草稿' : '',
             resource_type: r.resource_type,
           })
           pushLine(
@@ -263,6 +276,7 @@ async function runResourceGeneration() {
         },
         onDone(info) {
           progress.value = 100
+          const reviewCount = [...statusMap.values()].filter((status) => status === 'needs_review').length
           if (info?.fallback_mode) {
             for (const [rt, s] of statusMap) {
               if (s !== 'done') statusMap.set(rt, 'fallback')
@@ -287,6 +301,9 @@ async function runResourceGeneration() {
             }
             pushLine(systemLine(`部分资源生成失败（${failed}），其余已装配完毕`, 'warn'))
             ElMessage.warning(`${failed} 生成失败，其余资源已就绪`)
+          } else if (reviewCount) {
+            pushLine(systemLine(`${reviewCount} 项资源待内容复核，其余资源已发布`, 'warn'))
+            ElMessage.warning(`${reviewCount} 项资源未通过内容校验，已标记为待复核`)
           } else {
             pushLine(systemLine('个性化学习资源装配完毕！', 'success'))
             ElMessage.success('个性化学习资源已全部生成')
