@@ -263,7 +263,7 @@ async function onGenerateAll() {
           resources.value = [r, ...resources.value.filter((x) => x.id !== r.id)]
           if (isTemplateFallback(r.meta)) {
             batchFallbackNotice.value =
-              '当前为无模型 Key 的模板降级资源，配置 SPARK_API_PASSWORD 后可生成更高质量内容。'
+              '当前为无模型 Key 的模板降级资源，配置 AI 模型 API Key 后可生成更高质量内容。'
           }
           if (r.meta?.reused) {
             workflowLogs.value.push(`[复用] ${r.agent_name} · ${r.title}`)
@@ -273,7 +273,7 @@ async function onGenerateAll() {
           const reused = info?.reused_count ?? 0
           if (info?.fallback_mode) {
             batchFallbackNotice.value =
-              '当前为无模型 Key 的模板降级资源，配置 SPARK_API_PASSWORD 后可生成更高质量内容。'
+              '当前为无模型 Key 的模板降级资源，配置 AI 模型 API Key 后可生成更高质量内容。'
             ElMessage.warning('已使用 TemplateFallbackAgent 模板降级完成批量生成（非大模型输出）')
           } else if (reused > 0) {
             ElMessage.success(`完成：${reused} 项画像未变已复用，其余已生成/校验`)

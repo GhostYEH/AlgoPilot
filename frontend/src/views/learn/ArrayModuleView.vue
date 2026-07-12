@@ -39,6 +39,13 @@ const doneMap = ref<Record<string, boolean>>({})
 
 const current = computed(() => ARRAY_SECTIONS.find((s) => s.id === activeSection.value))
 
+function uniqueText(items: string[] | undefined): string[] {
+  return [...new Set((items ?? []).map((item) => item.trim()).filter(Boolean))]
+}
+
+const displayPitfalls = computed(() => uniqueText(current.value?.pitfalls))
+const displayChecklist = computed(() => uniqueText(current.value?.checklist))
+
 const sectionIndex = computed(() =>
   ARRAY_SECTIONS.findIndex((s) => s.id === activeSection.value),
 )
@@ -234,13 +241,13 @@ watch(
               <LearnSectionBody :section="current" />
 
               <SelectableLearnText :section-id="current.id">
-              <template v-if="current.pitfalls?.length">
+              <template v-if="displayPitfalls.length">
                 <el-divider content-position="left">
                   <span class="divider-label">易错点</span>
                 </el-divider>
                 <TransitionGroup name="alert-stagger" tag="div" class="pitfall-group">
                   <el-alert
-                    v-for="(t, idx) in current.pitfalls"
+                    v-for="(t, idx) in displayPitfalls"
                     :key="`${idx}-${t.slice(0, 24)}`"
                     :title="t"
                     type="warning"
@@ -251,12 +258,12 @@ watch(
                 </TransitionGroup>
               </template>
 
-              <template v-if="current.checklist?.length">
+              <template v-if="displayChecklist.length">
                 <el-divider content-position="left">
                   <span class="divider-label">本节自检</span>
                 </el-divider>
                 <ol class="checklist">
-                  <li v-for="(c, idx) in current.checklist" :key="idx">{{ c }}</li>
+                  <li v-for="(c, idx) in displayChecklist" :key="idx">{{ c }}</li>
                 </ol>
               </template>
 

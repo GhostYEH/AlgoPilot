@@ -110,6 +110,7 @@ async def chat_completion_stream(
         "max_tokens": min(max_tokens, settings.spark_max_tokens_limit),
         "stream": True,
     }
+    has_content = False
     try:
         async with httpx.AsyncClient(timeout=settings.spark_stream_timeout) as client:
             async with client.stream(
@@ -136,6 +137,7 @@ async def chat_completion_stream(
                         continue
                     delta = _extract_stream_delta(data)
                     if delta:
+                        has_content = True
                         yield delta
     except httpx.TimeoutException:
         raise HTTPException(status.HTTP_504_GATEWAY_TIMEOUT, "AI 响应超时，请稍后重试") from None
@@ -143,6 +145,9 @@ async def chat_completion_stream(
         raise HTTPException(
             status.HTTP_502_BAD_GATEWAY, f"无法连接星火服务：{exc}"
         ) from exc
+
+    if not has_content:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "星火返回内容为空")
 
 
 def _headers() -> dict[str, str]:

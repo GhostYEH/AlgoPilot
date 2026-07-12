@@ -8,6 +8,15 @@ import {
 } from '@/utils/learningStorage'
 import type { UserInfo } from '@/api/auth'
 import { ACCESS_TOKEN_KEY, USER_JSON_KEY } from '@/constants/authStorage'
+import { usePersonaStore } from '@/stores/pinia/persona'
+
+/** 用户级本地数据键：登出/切换账号时需清理，避免跨账号数据泄漏 */
+const USER_SCOPED_STORAGE_KEYS = [
+  'alp-home-activity-v1',
+  'alp-oj-practice-history',
+  'alp-learning-favorites-v1',
+  'alp-learning-recent-v1',
+]
 
 function readUserFromStorage(): UserInfo | null {
   try {
@@ -47,6 +56,15 @@ export const useAuthStore = defineStore('auth', () => {
     const owner = localStorage.getItem(PROGRESS_OWNER_KEY)
     if (owner && owner !== String(u.id)) {
       clearLocalLearningProgress()
+      for (const key of USER_SCOPED_STORAGE_KEYS) {
+        localStorage.removeItem(key)
+      }
+      // 切换账号时失效旧 persona 画像缓存
+      try {
+        usePersonaStore().invalidate()
+      } catch {
+        /* ignore */
+      }
     }
     token.value = accessToken
     user.value = u
@@ -61,6 +79,15 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem(USER_JSON_KEY)
     localStorage.removeItem(PROGRESS_OWNER_KEY)
     clearLocalLearningProgress()
+    for (const key of USER_SCOPED_STORAGE_KEYS) {
+      localStorage.removeItem(key)
+    }
+    // 失效 persona 画像缓存，防止跨账号读取旧画像
+    try {
+      usePersonaStore().invalidate()
+    } catch {
+      /* persona store 尚未初始化，忽略 */
+    }
   }
 
   async function syncLearningProgressAfterAuth() {

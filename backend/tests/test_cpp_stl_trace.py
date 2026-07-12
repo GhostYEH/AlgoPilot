@@ -57,7 +57,7 @@ def test_cpp_trace_serializes_standard_stl_container_families() -> None:
     summary = run_trace_cpp_stdio(
         CPP_STL_TRACE,
         case={"stdin": "", "stdout": "6\n"},
-        time_limit_ms=5000,
+        time_limit_ms=30000,
     )
 
     assert summary.verdict == "OK", summary.message

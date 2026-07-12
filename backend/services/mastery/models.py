@@ -114,6 +114,7 @@ class MasterySignals(BaseModel):
     quiz_total: int = 0
     quiz_correct: int = 0
     oj_failures: int = 0
+    oj_successes: int = 0
     oj_diagnoses: int = 0
     resource_completions: int = 0
     section_completions: int = 0

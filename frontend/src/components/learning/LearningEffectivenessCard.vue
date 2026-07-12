@@ -3,6 +3,7 @@ import { onMounted, ref, computed } from 'vue'
 import { Download, DataLine, TrendCharts } from '@element-plus/icons-vue'
 import { fetchEffectiveness, getEffectivenessCsvUrl, type EffectivenessResponse } from '@/api/analytics'
 import { isLoggedIn } from '@/stores/auth'
+import { ACCESS_TOKEN_KEY } from '@/constants/authStorage'
 
 const loading = ref(false)
 const data = ref<EffectivenessResponse | null>(null)
@@ -32,7 +33,7 @@ onMounted(async () => {
 
 function handleExportCsv() {
   const url = getEffectivenessCsvUrl()
-  const token = localStorage.getItem('access_token')
+  const token = localStorage.getItem(ACCESS_TOKEN_KEY)
   const a = document.createElement('a')
   a.href = url
   if (token) {

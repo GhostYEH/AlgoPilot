@@ -1365,7 +1365,23 @@ class Orchestrator:
                     })
                 raw_results = gather_task.result()
             elif len(coros) == 1:
-                raw_results = [await coros[0]]
+                # 单协程阶段也需心跳，避免前端 150s 无活动超时
+                single_task = asyncio.ensure_future(coros[0])
+                while not single_task.done():
+                    done, _ = await asyncio.wait({single_task}, timeout=2.5)
+                    if done:
+                        break
+                    yield _sse({
+                        "type": "heartbeat",
+                        "event_type": "heartbeat",
+                        "message": "Agent 正在生成中…",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "percent": int(completed / total * 100),
+                    })
+                try:
+                    raw_results = [single_task.result()]
+                except Exception as exc:
+                    raw_results = [exc]
             elif len(coros) == 0:
                 raw_results = []
 
@@ -1408,6 +1424,50 @@ class Orchestrator:
                         "input_summary": f"{topic} | {rtype}",
                         "output_summary": "reused latest verified resource",
                         "failure_reason": "",
+                        "percent": pct,
+                    })
+                    verification = item.verification or (item.meta or {}).get("verification") or {}
+                    if not isinstance(verification, dict):
+                        verification = {}
+                    final_decision = str(verification.get("final_decision") or "draft")
+                    verifier_status = str(verification.get("verifier_status") or "warning")
+                    safety_status = str(verification.get("safety_status") or "warning")
+                    yield _sse({
+                        "type": "workflow",
+                        "stage": "content_verify",
+                        "agent": "ContentVerifierAgent",
+                        "agent_id": "ContentVerifierAgent",
+                        "agent_name": "ContentVerifierAgent",
+                        "status": "skipped",
+                        "resource_type": rtype,
+                        "detail": "复用已校验资源，未重复调用校验 Agent",
+                        "message": "复用已校验资源，未重复调用校验 Agent",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "duration_ms": 0,
+                        "validation_result": {"status": verifier_status, "final_decision": final_decision},
+                        "retry_count": int(verification.get("retry_count") or 0),
+                        "input_summary": f"reused {rtype}",
+                        "output_summary": f"verification={verifier_status}",
+                        "failure_reason": "" if final_decision == "publish" else "资源保留为草稿，等待复核",
+                        "percent": pct,
+                    })
+                    yield _sse({
+                        "type": "workflow",
+                        "stage": "safety_filter",
+                        "agent": "SafetyAgent",
+                        "agent_id": "SafetyAgent",
+                        "agent_name": "SafetyAgent",
+                        "status": "skipped",
+                        "resource_type": rtype,
+                        "detail": "复用已审查资源，未重复调用安全 Agent",
+                        "message": "复用已审查资源，未重复调用安全 Agent",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "duration_ms": 0,
+                        "validation_result": {"status": safety_status, "final_decision": final_decision},
+                        "retry_count": 0,
+                        "input_summary": f"reused {rtype}",
+                        "output_summary": f"safety={safety_status}",
+                        "failure_reason": "" if safety_status != "failed" else "原资源安全审查未通过",
                         "percent": pct,
                     })
                     yield _sse({

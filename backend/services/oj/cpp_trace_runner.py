@@ -23,11 +23,11 @@ from services.oj.trace_line_refine import refine_trace_step_lines
 TraceVerdict = Literal["OK", "RE", "TLE", "CE"]
 MAX_CPP_TRACE_STEPS = 200
 # 用户代码 GDB 追踪子进程硬上限（秒），防止死循环拖垮沙箱
-CPP_TRACE_SUBPROCESS_CAP_S = 3.0
+CPP_TRACE_SUBPROCESS_CAP_S = 30.0
 
 
 def _trace_subprocess_timeout(time_limit_ms: int) -> float:
-    """动态追踪 GDB 超时：不超过 3 秒，避免死循环占满 worker。"""
+    """动态追踪 GDB 超时：在用户请求与硬上限之间取较小值，避免死循环占满 worker。"""
     requested = max(1.0, time_limit_ms / 1000)
     return min(CPP_TRACE_SUBPROCESS_CAP_S, requested)
 
@@ -840,7 +840,7 @@ def run_trace_cpp(
             return TraceSummary(
                 verdict="TLE",
                 message=(
-                    "动态追踪超时（≤3s）：程序可能在死循环中运行。"
+                    "动态追踪超时：程序可能在死循环中运行。"
                     " 请结合 ASTAnalyzer 静态提示检查 while/for 内 left/right 等是否更新。"
                 ),
                 user_line_count=user_lines,
@@ -940,7 +940,7 @@ def run_trace_cpp_stdio(
             return TraceSummary(
                 verdict="TLE",
                 message=(
-                    "动态追踪超时（≤3s）：疑似死循环。建议检查 while/for 循环变量是否推进，"
+                    "动态追踪超时：疑似死循环。建议检查 while/for 循环变量是否推进，"
                     "或先根据静态分析报告修正后再运行可视化调试。"
                 ),
                 user_line_count=user_lines,

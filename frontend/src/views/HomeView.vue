@@ -161,7 +161,7 @@ const heatmapCells = computed(() => getHeatmapCells(12))
 const platformStats = computed(() => {
   const base = buildPlatformStats(ojReadyCount.value)
   const c = communityData.value
-  if (!c) return base
+  if (!c || !c.stats) return base
   return [
     ...base,
     { key: 'students', label: '注册学员', value: c.stats.student_count, suffix: ' 人' },

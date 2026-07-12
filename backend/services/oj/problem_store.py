@@ -208,7 +208,7 @@ def update_problem_cases(
     hidden: list[dict[str, Any]],
 ) -> dict[str, Any]:
     """更新题目测例（覆盖写入 tests_bundle.json 中该 slug 的 samples/hidden）。"""
-    full = get_problem(slug)  # 不存在会抛 ProblemNotFoundError
+    get_problem(slug)  # 不存在会抛 ProblemNotFoundError
     bundle = _load_tests_bundle()
     entry = bundle.get(slug) or {}
     entry = {**entry}

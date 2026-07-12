@@ -137,6 +137,10 @@ router.beforeEach(async (to) => {
     if (to.meta.public) return true
     return { name: 'login', query: { redirect: to.fullPath } }
   }
+  // 已登录用户访问登录/注册页时重定向到首页，避免陈旧 URL 导致账号切换异常
+  if (to.name === 'login' || to.name === 'register') {
+    return { name: isTeacher.value ? 'teacher-dashboard' : 'home' }
+  }
   // 教师访问学生专属页面时重定向到教师看板
   if (isTeacher.value) {
     const studentOnlyNames = new Set(['home', 'learning-path', 'my-learning'])
@@ -180,5 +184,27 @@ router.afterEach((to) => {
 if (typeof window !== 'undefined') {
   prefetchCommonRoutesIdle()
 }
+
+// 懒加载 chunk 失败时（部署后旧 hash 失效）自动刷新一次，避免永久白屏
+router.onError((error, to) => {
+  if (
+    error instanceof Error &&
+    /Loading chunk|Failed to fetch dynamically imported module|Importing a module script failed/.test(
+      error.message,
+    )
+  ) {
+    if (typeof window !== 'undefined') {
+      const reloadKey = `alp-chunk-reload-${to.fullPath}`
+      if (!sessionStorage.getItem(reloadKey)) {
+        sessionStorage.setItem(reloadKey, '1')
+        window.location.assign(to.fullPath)
+        return
+      }
+      sessionStorage.removeItem(reloadKey)
+    }
+  }
+  // eslint-disable-next-line no-console
+  console.error('[router] navigation error:', error)
+})
 
 export default router

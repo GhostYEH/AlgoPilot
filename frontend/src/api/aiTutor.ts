@@ -88,11 +88,30 @@ export async function streamAiTutorChat(
     onError?: (msg: string) => void
   },
 ): Promise<void> {
-  const res = await fetch(`${getApiBaseUrl()}/api/orchestrator/tutor/chat/stream`, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify(toApiBody(params)),
-  })
+  const controller = new AbortController()
+  const timeoutMs = 150000
+  let timer: ReturnType<typeof setTimeout> | null = null
+  const resetTimeout = () => {
+    if (timer) clearTimeout(timer)
+    timer = setTimeout(() => controller.abort(), timeoutMs)
+  }
+  resetTimeout()
+
+  let res: Response
+  try {
+    res = await fetch(`${getApiBaseUrl()}/api/orchestrator/tutor/chat/stream`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(toApiBody(params)),
+      signal: controller.signal,
+    })
+  } catch (error: unknown) {
+    if (timer) clearTimeout(timer)
+    const msg = '助教连接失败，请检查网络后重试'
+    handlers.onError?.(msg)
+    ElMessage.error(msg)
+    throw error
+  }
   if (!res.ok) {
     const msg = `助教请求失败（${res.status}）`
     handlers.onError?.(msg)
@@ -104,28 +123,41 @@ export async function streamAiTutorChat(
   const decoder = new TextDecoder()
   let buf = ''
   let streamError: string | null = null
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    buf += decoder.decode(value, { stream: true })
-    const parts = buf.split('\n\n')
-    buf = parts.pop() ?? ''
-    for (const part of parts) {
-      for (const line of part.split('\n')) {
-        if (!line.startsWith('data:')) continue
-        try {
-          const ev = JSON.parse(line.slice(5).trim()) as Record<string, string>
-          if (ev.type === 'token' && ev.content) handlers.onToken(ev.content)
-          if (ev.type === 'done' && ev.content) handlers.onDone?.(ev.content)
-          if (ev.type === 'error') {
-            streamError = String(ev.message || 'AI 助教生成失败')
-            handlers.onError?.(streamError)
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      resetTimeout()
+      buf += decoder.decode(value, { stream: true })
+      const parts = buf.split('\n\n')
+      buf = parts.pop() ?? ''
+      for (const part of parts) {
+        for (const line of part.split('\n')) {
+          if (!line.startsWith('data:')) continue
+          try {
+            const ev = JSON.parse(line.slice(5).trim()) as Record<string, string>
+            if (ev.type === 'token' && ev.content) handlers.onToken(ev.content)
+            if (ev.type === 'done' && ev.content) handlers.onDone?.(ev.content)
+            if (ev.type === 'error') {
+              streamError = String(ev.message || 'AI 助教生成失败')
+              handlers.onError?.(streamError)
+            }
+          } catch {
+            /* skip */
           }
-        } catch {
-          /* skip */
         }
       }
     }
+  } catch (error: unknown) {
+    if (controller.signal.aborted) {
+      const msg = 'AI 助教响应超时，请稍后重试'
+      handlers.onError?.(msg)
+      ElMessage.error(msg)
+      throw new Error(msg)
+    }
+    throw error
+  } finally {
+    if (timer) clearTimeout(timer)
   }
   if (streamError) {
     ElMessage.error(streamError)

@@ -76,21 +76,24 @@ async def persona_chat_stream(
 
     async def event_gen():
         parts: list[str] = []
-        async for chunk in orchestrator.persona_chat_stream(
-            db, user, message=body.message, history=body.history
-        ):
-            parts.append(chunk)
-            yield _sse({"type": "token", "content": chunk})
+        try:
+            async for chunk in orchestrator.persona_chat_stream(
+                db, user, message=body.message, history=body.history
+            ):
+                parts.append(chunk)
+                yield _sse({"type": "token", "content": chunk})
 
-        reply = "".join(parts)
-        new_history = [
-            *body.history,
-            ChatHistoryItem(role="user", content=body.message),
-            ChatHistoryItem(role="assistant", content=reply),
-        ]
-        orchestrator.save_persona_history(db, user, new_history)
-        meta = orchestrator.last_persona_chat_meta()
-        yield _sse({"type": "done", "content": reply, "meta": meta})
+            reply = "".join(parts)
+            new_history = [
+                *body.history,
+                ChatHistoryItem(role="user", content=body.message),
+                ChatHistoryItem(role="assistant", content=reply),
+            ]
+            orchestrator.save_persona_history(db, user, new_history)
+            meta = orchestrator.last_persona_chat_meta()
+            yield _sse({"type": "done", "content": reply, "meta": meta})
+        except Exception as exc:
+            yield _sse({"type": "error", "message": str(exc)})
 
     return StreamingResponse(
         event_gen(),

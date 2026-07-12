@@ -22,6 +22,7 @@ const mermaidHost = ref<HTMLElement | null>(null)
 const mermaidError = ref('')
 
 function robustJsonParse(text: string): unknown | null {
+  if (!text || typeof text !== 'string') return null
   let cleaned = text.trim()
   const kbIdx = cleaned.indexOf('---**依据知识库**')
   if (kbIdx >= 0) cleaned = cleaned.slice(0, kbIdx)
@@ -58,7 +59,7 @@ const parsed = computed(() => {
   if (props.resourceType === 'document' || props.resourceType === 'code_case') {
     return null
   }
-  return robustJsonParse(props.content) as Record<string, unknown> | null
+  return robustJsonParse(safeContent.value) as Record<string, unknown> | null
 })
 
 const isQuiz = computed(
@@ -73,7 +74,8 @@ const isReading = computed(
 const isTrace = computed(
   () => props.resourceType === 'trace_animation' || props.meta?.format === 'trace_json',
 )
-const domainStructure = computed(() => parseDomainStructureContent(props.content))
+const safeContent = computed(() => props.content ?? '')
+const domainStructure = computed(() => parseDomainStructureContent(safeContent.value))
 const isDocOrScenario = computed(
   () => props.resourceType === 'document' || props.resourceType === 'code_case',
 )
@@ -83,14 +85,14 @@ const isDomainStructure = computed(
     (isDocOrScenario.value || props.meta?.format === 'domain_structure_json'),
 )
 const unparsedDomainJson = computed(
-  () => isDocOrScenario.value && looksLikeUnparsedDomainJson(props.content),
+  () => isDocOrScenario.value && looksLikeUnparsedDomainJson(safeContent.value),
 )
 const legacyMarkdown = computed(
   () =>
     isDocOrScenario.value &&
     !domainStructure.value &&
     !unparsedDomainJson.value &&
-    !!props.content.trim(),
+    !!safeContent.value.trim(),
 )
 const domainStructureMode = computed((): 'document' | 'scenario' =>
   props.resourceType === 'code_case' ? 'scenario' : 'document',
@@ -98,7 +100,7 @@ const domainStructureMode = computed((): 'document' | 'scenario' =>
 
 const mermaidSrc = computed(() => {
   if (!isMindmap.value) return ''
-  return normalizeMindmapSource(props.content)
+  return normalizeMindmapSource(safeContent.value)
 })
 
 async function loadMermaid() {
@@ -238,7 +240,7 @@ const answeredCount = computed(() => {
         {{ n.label }} <span class="muted">({{ n.parent }})</span>
       </li>
     </ul>
-    <pre class="raw-json">{{ props.content }}</pre>
+    <pre class="raw-json">{{ safeContent }}</pre>
   </div>
 
   <div v-else-if="isTrace && parsed" class="trace-preview">

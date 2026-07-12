@@ -58,7 +58,7 @@ export function useOjAssistantHints(
   async function fetchDsHint() {
     if (!problem.value) return
     if (!(await _checkLlm())) {
-      ElMessage.warning('AI 未配置，请在 .env 中设置 SPARK_API_PASSWORD')
+      ElMessage.warning('AI 未配置，请在 .env 中配置 AI 模型 API Key')
       return
     }
     dsLoading.value = true
@@ -80,7 +80,7 @@ export function useOjAssistantHints(
   async function fetchCodeHint() {
     if (!problem.value) return
     if (!(await _checkLlm())) {
-      ElMessage.warning('AI 未配置，请在 .env 中设置 SPARK_API_PASSWORD')
+      ElMessage.warning('AI 未配置，请在 .env 中配置 AI 模型 API Key')
       return
     }
     codeLoading.value = true

@@ -157,10 +157,19 @@ def _extract_progress_score(payload: dict[str, Any]) -> float | None:
 def _extract_profile_score(dimensions: dict[str, Any]) -> float | None:
     cache = dimensions.get("_mastery_cache")
     if isinstance(cache, dict):
+        # 优先使用课程级总览分数，避免与章节级分数混合求平均导致重复计数
+        course_entry = cache.get("_course")
+        if isinstance(course_entry, dict) and isinstance(
+            course_entry.get("mastery_score"), (int, float)
+        ):
+            return max(0.0, min(100.0, float(course_entry["mastery_score"])))
+        # 无课程总览时，取各章分数的平均
         scores = [
             float(item["mastery_score"])
-            for item in cache.values()
-            if isinstance(item, dict) and isinstance(item.get("mastery_score"), (int, float))
+            for key, item in cache.items()
+            if key != "_course"
+            and isinstance(item, dict)
+            and isinstance(item.get("mastery_score"), (int, float))
         ]
         if scores:
             return max(0.0, min(100.0, mean(scores)))
@@ -490,11 +499,12 @@ def get_student_roster(
         progress = progress_map.get(student.id)
 
         mastery = 0.0
+        score: float | None = None
         if profile:
             score = _extract_profile_score(dict(profile.dimensions or {}))
-            if score is None and progress:
-                score = _extract_progress_score(dict(progress.payload or {}))
-            mastery = score or 0.0
+        if score is None and progress:
+            score = _extract_progress_score(dict(progress.payload or {}))
+        mastery = score or 0.0
 
         progress_percent = 0.0
         if progress:
@@ -561,12 +571,19 @@ def get_student_detail(
         cache = profile.dimensions.get("_mastery_cache")
         if isinstance(cache, dict):
             for key, item in cache.items():
-                if isinstance(item, dict) and isinstance(item.get("mastery_score"), (int, float)):
-                    module_progress.append(StudentDetailModuleProgress(
-                        module_key=key,
-                        module_label=MODULE_LABELS.get(key, key),
-                        mastery_score=round(float(item["mastery_score"]), 1),
-                    ))
+                if key == "_course":
+                    continue
+                if not isinstance(item, dict) or not isinstance(
+                    item.get("mastery_score"), (int, float)
+                ):
+                    continue
+                module_key = CHAPTER_TO_MODULE.get(key, key)
+                module_progress.append(StudentDetailModuleProgress(
+                    module_key=module_key,
+                    module_label=MODULE_LABELS.get(module_key, key),
+                    percent=round(float(item["mastery_score"]), 1),
+                    mastery_score=round(float(item["mastery_score"]), 1),
+                ))
 
     # 最近 10 条学习记忆
     recent_memories = []

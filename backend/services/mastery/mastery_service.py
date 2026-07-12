@@ -112,6 +112,8 @@ def extract_signals(
         pattern = (mem.observed_error_pattern or mem.failed_strategy or "").strip()
         if et == "oj_submit_fail":
             signals.oj_failures += 1
+        elif et == "oj_submit_success":
+            signals.oj_successes += 1
         elif et in ("oj_diagnosis", "trace_diagnosis"):
             signals.oj_diagnoses += 1
             if mem.successful_hint:

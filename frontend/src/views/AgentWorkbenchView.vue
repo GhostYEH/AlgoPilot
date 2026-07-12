@@ -289,7 +289,7 @@ async function runResourceGeneration() {
               ),
             )
             ElMessage.warning(
-              '当前为无模型 Key 的模板降级资源，配置 SPARK_API_PASSWORD 后可生成更高质量内容。',
+              '当前为无模型 Key 的模板降级资源，配置 AI 模型 API Key 后可生成更高质量内容。',
             )
           } else if (info?.partial_failure) {
             const failed = info.errors?.map((e) => e.agent_name ?? e.resource_type ?? '未知').join('、') ?? '部分资源'

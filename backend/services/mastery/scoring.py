@@ -62,7 +62,14 @@ def compute_component_scores(signals: MasterySignals) -> list[MasteryComponentSc
     components.append(_comp("exercise_accuracy", acc, note, available))
 
     # OJ 通过率
-    if signals.oj_failures > 0:
+    oj_total = signals.oj_successes + signals.oj_failures
+    if oj_total > 0:
+        base_rate = signals.oj_successes / oj_total * 100.0
+        penalty = min(60, signals.oj_failures * 12)
+        oj_rate = max(5.0, base_rate - penalty * 0.3)
+        note = f"OJ 通过 {signals.oj_successes}/{oj_total}，通过率 {oj_rate:.0f}"
+        available = True
+    elif signals.oj_failures > 0:
         penalty = min(90, signals.oj_failures * 22)
         oj_rate = max(5.0, 100.0 - penalty)
         note = f"近期 OJ 未通过 {signals.oj_failures} 次，通过率估算 {oj_rate:.0f}"
@@ -75,9 +82,9 @@ def compute_component_scores(signals: MasterySignals) -> list[MasteryComponentSc
         oj_rate = DEFAULT_SCORE
         note = "暂无 OJ 提交记录，使用默认中间值 50"
         available = False
-    if signals.positive_deltas > signals.oj_failures and signals.oj_failures == 0:
-        oj_rate = min(100.0, oj_rate + signals.positive_deltas * 5)
-        note += "；正向学习事件提升 OJ 估算"
+    if signals.oj_successes > 0:
+        oj_rate = min(100.0, oj_rate + signals.oj_successes * 3)
+        note += f"；AC {signals.oj_successes} 次提升估算"
     components.append(_comp("oj_accept_rate", oj_rate, note, available))
 
     # 近期错因改善

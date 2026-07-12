@@ -93,6 +93,7 @@ def handle_oj_submission_failed(db: Session | None, event: LearningEvent) -> Non
 def handle_oj_submission_accepted(db: Session | None, event: LearningEvent) -> None:
     payload = event.payload
     slug = str(payload.get("problem_slug") or "")
+    module_key = str(payload.get("module_key") or "")
     if db is not None:
         try:
             from services.memory.memory_service import MemoryService
@@ -111,6 +112,17 @@ def handle_oj_submission_accepted(db: Session | None, event: LearningEvent) -> N
             event.log("StudentMemory", "record_event", f"AC 记录：{slug}", status="done")
         except Exception:
             event.log("StudentMemory", "record_event", "AC 记忆写入跳过", status="warn")
+
+        try:
+            from services.knowledge.course_loader import chapter_id_for_module, load_manifest
+
+            manifest = load_manifest(event.course_id)
+            cid = event.chapter_id or chapter_id_for_module(manifest, module_key) or ""
+            event.chapter_id = cid
+            event.payload.setdefault("module_key", module_key)
+            handle_mastery_recalculated(db, event)
+        except Exception as exc:
+            event.log("MasteryAgent", "pipeline", str(exc), status="warn")
 
 
 def handle_resource_generated(db: Session | None, event: LearningEvent) -> None:
@@ -299,6 +311,11 @@ def handle_quiz_completed(db: Session | None, event: LearningEvent) -> None:
         ),
     )
     event.log("StudentMemory", "quiz_complete", "测验完成记忆已写入", status="done")
+
+    try:
+        handle_mastery_recalculated(db, event)
+    except Exception as exc:
+        event.log("MasteryAgent", "pipeline", str(exc), status="warn")
 
 
 def handle_gamified_practice_completed(db: Session | None, event: LearningEvent) -> None:

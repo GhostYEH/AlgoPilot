@@ -3,7 +3,6 @@ import { getApiBaseUrl } from '@/utils/apiBase'
 export interface SystemHealth {
   status: string
   llm_configured?: boolean
-  tts_configured?: boolean
   trace_python?: boolean
   trace_cpp?: boolean
   cpp_compiler?: boolean

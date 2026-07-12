@@ -196,7 +196,7 @@ export const HELP_FAQ: HelpFaqItem[] = [
     category: '部署与环境',
     question: '如何本地启动完整环境？',
     answer:
-      '后端：cd backend，激活虚拟环境后 uvicorn main:app --reload --port 9000。前端：cd frontend，npm install && npm run dev。也可在仓库根目录运行 start.bat 一键启动。需在 backend/.env 配置 JWT_SECRET 与 SPARK_API_PASSWORD 等。',
+      '后端：cd backend，激活虚拟环境后 uvicorn main:app --reload --port 9000。前端：cd frontend，npm install && npm run dev。也可在仓库根目录运行 start.bat 一键启动。需在 backend/.env 配置 JWT_SECRET 与 AI 模型 API Key 等。',
   },
 ]
 

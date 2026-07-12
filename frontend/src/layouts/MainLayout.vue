@@ -70,7 +70,6 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
         <div class="logo-mark" aria-hidden="true">AP</div>
         <div class="brand-text">
           <span class="brand-title">AlgoPilot</span>
-          <span class="brand-sub">讯飞星火 Spark · iFlytek TTS</span>
         </div>
       </div>
 
