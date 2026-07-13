@@ -93,6 +93,56 @@ def test_failed_submit_carries_problem_learning_context() -> None:
     assert "memory_id=" in details
 
 
+def test_submit_persists_real_record_retrievable_via_submissions_api() -> None:
+    """每次提交应将代码、判题结果与用例详情写入数据库，可通过列表/详情接口查回。"""
+    headers = _register_user()
+    code = "class Solution:\n    def reverseList(self, head):\n        return head"
+
+    submit_resp = client.post(
+        "/api/oj/problems/reverse-linked-list/submit",
+        headers=headers,
+        json={"language": "python", "code": code},
+    )
+    assert submit_resp.status_code == 200, submit_resp.text
+    submit_body = submit_resp.json()
+    assert submit_body["verdict"] != "AC"
+
+    list_resp = client.get(
+        "/api/oj/problems/reverse-linked-list/submissions",
+        headers=headers,
+    )
+    assert list_resp.status_code == 200, list_resp.text
+    rows = list_resp.json()
+    assert rows, "应至少有一条提交记录"
+    latest = rows[0]
+    assert latest["problem_slug"] == "reverse-linked-list"
+    assert latest["language"] == "python"
+    assert latest["verdict"] == submit_body["verdict"]
+    assert latest["passed"] == submit_body["passed"]
+    assert latest["total"] == submit_body["total"]
+    assert "code" not in latest  # 列表项不返回代码
+
+    detail_resp = client.get(f"/api/oj/submissions/{latest['id']}", headers=headers)
+    assert detail_resp.status_code == 200, detail_resp.text
+    detail = detail_resp.json()
+    assert detail["code"] == code
+    assert detail["compile_error"] == (submit_body["compile_error"] or "")
+    assert len(detail["cases"]) == len(submit_body["cases"])
+    assert detail["event_id"] == submit_body["event_id"]
+
+    other_headers = _register_user()
+    forbidden = client.get(
+        f"/api/oj/submissions/{latest['id']}",
+        headers=other_headers,
+    )
+    assert forbidden.status_code == 404  # 不能查到他人提交
+
+
+def test_submission_list_requires_auth() -> None:
+    no_auth = client.get("/api/oj/problems/reverse-linked-list/submissions")
+    assert no_auth.status_code == 401
+
+
 def test_trace_diagnosis_preserves_judge_verdict() -> None:
     diagnosis = {
         "bug_step_index": 0,

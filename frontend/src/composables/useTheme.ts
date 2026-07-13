@@ -3,7 +3,8 @@ import { computed, ref } from 'vue'
 export type ThemeMode = 'dark' | 'light'
 
 const STORAGE_KEY = 'alp-theme'
-const theme = ref<ThemeMode>('dark')
+const DEFAULT_THEME: ThemeMode = 'light'
+const theme = ref<ThemeMode>(DEFAULT_THEME)
 
 function readStored(): ThemeMode {
   try {
@@ -12,7 +13,7 @@ function readStored(): ThemeMode {
   } catch {
     /* ignore */
   }
-  return 'dark'
+  return DEFAULT_THEME
 }
 
 function applyTheme(mode: ThemeMode) {

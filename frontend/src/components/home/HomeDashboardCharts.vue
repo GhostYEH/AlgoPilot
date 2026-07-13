@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { RadarAxis } from '@/utils/homeDashboard'
 import type { DaySeriesPoint, HeatmapCell } from '@/utils/homeActivityLog'
 
@@ -77,6 +77,62 @@ const heatmapWeeks = computed(() => {
   }
   return weeks
 })
+
+const selectedHeatmapDate = ref<string | null>(null)
+
+const heatmapSummary = computed(() => {
+  const cells = props.heatmap
+  const activeDays = cells.filter((cell) => cell.level > 0).length
+  let currentStreak = 0
+  let longestStreak = 0
+  let runningStreak = 0
+
+  for (const cell of cells) {
+    if (cell.level > 0) {
+      runningStreak += 1
+      longestStreak = Math.max(longestStreak, runningStreak)
+    } else {
+      runningStreak = 0
+    }
+  }
+
+  for (let index = cells.length - 1; index >= 0; index -= 1) {
+    if (cells[index]?.level === 0) break
+    currentStreak += 1
+  }
+
+  return {
+    activeDays,
+    currentStreak,
+    longestStreak,
+    activeRate: cells.length ? Math.round((activeDays / cells.length) * 100) : 0,
+  }
+})
+
+const focusedHeatmapCell = computed(() => {
+  if (selectedHeatmapDate.value) {
+    const selected = props.heatmap.find((cell) => cell.date === selectedHeatmapDate.value)
+    if (selected) return selected
+  }
+
+  return [...props.heatmap].reverse().find((cell) => cell.level > 0)
+    ?? props.heatmap.at(-1)
+    ?? null
+})
+
+const heatLevelLabels = ['未打卡', '轻量学习', '稳定学习', '高效学习', '深度学习'] as const
+
+function formatHeatmapDate(date: string) {
+  return new Intl.DateTimeFormat('zh-CN', {
+    month: 'long',
+    day: 'numeric',
+    weekday: 'short',
+  }).format(new Date(`${date}T00:00:00`))
+}
+
+function heatmapCellLabel(cell: HeatmapCell) {
+  return `${formatHeatmapDate(cell.date)}，${heatLevelLabels[cell.level]}`
+}
 </script>
 
 <template>
@@ -164,28 +220,55 @@ const heatmapWeeks = computed(() => {
 
     <div class="chart-block heatmap-block">
       <div class="chart-head">
-        <span class="chart-title">学习打卡热力</span>
-        <span class="chart-sub">近 12 周</span>
-      </div>
-      <div class="heatmap" role="img" aria-label="学习热力图">
-        <div v-for="(week, wi) in heatmapWeeks" :key="wi" class="heatmap-week">
-          <span
-            v-for="cell in week"
-            :key="cell.date"
-            class="heatmap-cell"
-            :data-level="cell.level"
-            :title="cell.date"
-          />
+        <div>
+          <span class="chart-title">学习打卡热力</span>
+          <span class="heatmap-caption">颜色越深，表示当天投入越充分</span>
         </div>
+        <span class="chart-sub">近 12 周 · {{ heatmapSummary.activeRate }}% 打卡率</span>
       </div>
-      <div class="heatmap-legend">
-        <span>少</span>
-        <span class="heatmap-cell" data-level="0" />
-        <span class="heatmap-cell" data-level="1" />
-        <span class="heatmap-cell" data-level="2" />
-        <span class="heatmap-cell" data-level="3" />
-        <span class="heatmap-cell" data-level="4" />
-        <span>多</span>
+
+      <div class="heatmap-overview" aria-label="学习打卡概览">
+        <span><strong>{{ heatmapSummary.currentStreak }}</strong> 连续天</span>
+        <span><strong>{{ heatmapSummary.activeDays }}</strong> 活跃日</span>
+        <span><strong>{{ heatmapSummary.longestStreak }}</strong> 最长连续</span>
+      </div>
+
+      <div class="heatmap-content">
+        <div class="heatmap-visual">
+          <div class="heatmap" role="group" aria-label="近 12 周学习热力图">
+            <div v-for="(week, wi) in heatmapWeeks" :key="wi" class="heatmap-week">
+              <button
+                v-for="cell in week"
+                :key="cell.date"
+                type="button"
+                class="heatmap-cell"
+                :class="{ selected: focusedHeatmapCell?.date === cell.date }"
+                :data-level="cell.level"
+                :title="heatmapCellLabel(cell)"
+                :aria-label="heatmapCellLabel(cell)"
+                :aria-pressed="focusedHeatmapCell?.date === cell.date"
+                @click="selectedHeatmapDate = cell.date"
+              />
+            </div>
+          </div>
+          <div class="heatmap-legend" aria-label="热力强度图例">
+            <span>少</span>
+            <span class="heatmap-cell" data-level="0" />
+            <span class="heatmap-cell" data-level="1" />
+            <span class="heatmap-cell" data-level="2" />
+            <span class="heatmap-cell" data-level="3" />
+            <span class="heatmap-cell" data-level="4" />
+            <span>多</span>
+          </div>
+        </div>
+
+        <div v-if="focusedHeatmapCell" class="heatmap-detail" aria-live="polite">
+          <span>{{ formatHeatmapDate(focusedHeatmapCell.date) }}</span>
+          <strong>{{ heatLevelLabels[focusedHeatmapCell.level] }}</strong>
+          <small>
+            {{ focusedHeatmapCell.level > 0 ? `学习强度 ${focusedHeatmapCell.level}/4，继续保持这个节奏。` : '当天还没有学习记录，完成一次访问或刷题即可点亮。' }}
+          </small>
+        </div>
       </div>
     </div>
   </div>
@@ -215,6 +298,13 @@ const heatmapWeeks = computed(() => {
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 10px;
+}
+
+.chart-head > div {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
 }
 
 .chart-title {
@@ -270,23 +360,25 @@ const heatmapWeeks = computed(() => {
 
 .heatmap {
   display: flex;
-  gap: 3px;
+  gap: 4px;
   overflow-x: auto;
-  padding-bottom: 4px;
+  padding: 3px 3px 6px;
 }
 
 .heatmap-week {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .heatmap-cell {
-  width: 11px;
-  height: 11px;
-  border-radius: 2px;
-  background: rgba(30, 41, 59, 0.9);
-  border: 1px solid rgba(51, 65, 85, 0.6);
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 1px solid var(--alp-color-border);
+  border-radius: 3px;
+  background: var(--alp-bg-soft-block);
 }
 
 .heatmap-cell[data-level='1'] {
@@ -311,9 +403,121 @@ const heatmapWeeks = computed(() => {
   color: var(--alp-color-muted);
 }
 
+.heatmap-caption {
+  color: var(--alp-color-muted);
+  font-size: 11px;
+}
+
+.heatmap-overview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin: 2px 0 14px;
+  color: var(--alp-color-muted);
+  font-size: 11px;
+}
+
+.heatmap-overview > span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.heatmap-overview strong {
+  color: var(--alp-color-text);
+  font-size: 17px;
+  line-height: 1;
+}
+
+.heatmap-content {
+  display: grid;
+  grid-template-columns: minmax(245px, auto) minmax(180px, 1fr);
+  align-items: center;
+  gap: 24px;
+}
+
+.heatmap-visual {
+  min-width: 0;
+}
+
+button.heatmap-cell {
+  appearance: none;
+  cursor: pointer;
+  transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1), border-color 150ms ease;
+}
+
+button.heatmap-cell:hover {
+  z-index: 1;
+  border-color: var(--alp-color-primary);
+  transform: scale(1.28);
+}
+
+button.heatmap-cell.selected {
+  border-color: var(--alp-color-text);
+  box-shadow: 0 0 0 2px var(--alp-bg-surface-solid), 0 0 0 3px var(--alp-color-primary);
+}
+
+.heatmap-detail {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding-left: 20px;
+  border-left: 1px solid var(--alp-color-border);
+}
+
+.heatmap-detail > span {
+  color: var(--alp-color-muted);
+  font-size: 11px;
+}
+
+.heatmap-detail > strong {
+  color: var(--alp-color-primary);
+  font-size: 15px;
+}
+
+.heatmap-detail > small {
+  max-width: 38ch;
+  color: var(--alp-color-text-secondary);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
 @media (max-width: 900px) {
   .charts-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .chart-head,
+  .chart-head > div {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .chart-head > div {
+    gap: 2px;
+  }
+
+  .heatmap-content {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .heatmap-detail {
+    padding: 12px 0 0;
+    border-top: 1px solid var(--alp-color-border);
+    border-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button.heatmap-cell {
+    transition: none;
+  }
+
+  button.heatmap-cell:hover {
+    transform: none;
   }
 }
 </style>

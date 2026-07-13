@@ -5,13 +5,21 @@ import { ArrowLeft, Clock, Collection, Histogram, Star } from '@element-plus/ico
 import OjPracticeRow from '@/components/oj/OjPracticeRow.vue'
 import OjPracticeSubpage from '@/components/oj/OjPracticeSubpage.vue'
 import { useOjWorkbenchActions } from '@/composables/useOjWorkbenchActions'
-import { resolveProblem, type JudgeResponse, type ProblemDetail, type OjLanguage } from '@/api/oj'
+import {
+  fetchProblemSubmissions,
+  resolveProblem,
+  type JudgeResponse,
+  type OjSubmissionListItem,
+  type ProblemDetail,
+  type OjLanguage,
+} from '@/api/oj'
 import type { AiDiagnoseResponse, TraceDiagnosisReport, TraceResponse } from '@/types/codeTrace'
 import { buildFallbackProblem } from '@/api/ojLocal'
 import { getOjJudgeDemoScenario } from '@/constants/ojDemo'
 import { resetOjStruggleSession } from '@/utils/ojStruggleSession'
 import { getOjPracticeRecords, type OjPracticeRecord } from '@/utils/ojPracticeHistory'
 import { isOjFavorite, toggleOjFavorite } from '@/utils/ojFavorites'
+import { isLoggedIn } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
@@ -31,6 +39,7 @@ const traceCpp = ref(false)
 const language = ref<OjLanguage>('cpp')
 const activePage = ref<'practice' | 'history' | 'favorite' | 'statistics'>('practice')
 const practiceRecords = ref<OjPracticeRecord[]>([])
+const dbSubmissions = ref<OjSubmissionListItem[]>([])
 const favorite = ref(false)
 
 const {
@@ -69,6 +78,18 @@ const {
   loginRedirect: () => route.fullPath,
 })
 
+async function loadDbSubmissions() {
+  if (!isLoggedIn.value || !apiOnline.value) {
+    dbSubmissions.value = []
+    return
+  }
+  try {
+    dbSubmissions.value = await fetchProblemSubmissions(slug.value)
+  } catch {
+    dbSubmissions.value = []
+  }
+}
+
 async function load() {
   loading.value = true
   result.value = null
@@ -93,16 +114,26 @@ async function load() {
   } finally {
     loading.value = false
   }
+  void loadDbSubmissions()
 }
 
 onMounted(() => void load())
 watch(slug, () => void load())
 watch(result, () => { practiceRecords.value = getOjPracticeRecords() }, { flush: 'post' })
+// 提交后刷新数据库记录
+watch(submitting, (next, prev) => {
+  if (prev && !next && result.value) {
+    void loadDbSubmissions()
+  }
+})
 
 function selectPage(page: typeof activePage.value) {
   activePage.value = page
   practiceRecords.value = getOjPracticeRecords()
   favorite.value = isOjFavorite(slug.value)
+  if (page === 'history' || page === 'statistics') {
+    void loadDbSubmissions()
+  }
 }
 
 function onToggleFavorite() {
@@ -196,6 +227,7 @@ async function loadJudgeDemo() {
         :page="activePage"
         :problem="problem"
         :records="practiceRecords"
+        :db-submissions="dbSubmissions"
         :favorite="favorite"
         @back="selectPage('practice')"
         @toggle-favorite="onToggleFavorite"
@@ -235,7 +267,7 @@ async function loadJudgeDemo() {
 .rail-item.is-active { color: var(--alp-color-primary); background: var(--alp-color-primary-soft); }
 .problem-workspace :deep(.oj-practice-layout), .problem-workspace :deep(.oj-practice-shell), .problem-workspace :deep(.oj-practice-center) { height: 100%; min-height: 0; }
 html:not(.dark) .practice-problem-page { background: var(--alp-bg-page); }
-html:not(.dark) .problem-rail { background: #f8fafc; }
+html:not(.dark) .problem-rail { background: var(--alp-bg-surface-muted); }
 
 @media (max-width: 900px) {
   .practice-problem-page { height: auto; min-height: calc(100vh - var(--alp-header-height)); overflow: visible; }

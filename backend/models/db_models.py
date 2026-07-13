@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, JSON, String, func
+from sqlalchemy import DateTime, ForeignKey, Integer, JSON, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.database import Base
@@ -42,6 +42,10 @@ class User(Base):
         cascade="all, delete-orphan",
     )
     learning_events: Mapped[list[LearningEventLog]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    oj_submissions: Mapped[list[OjSubmission]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
     )
@@ -174,3 +178,29 @@ class LearningEventLog(Base):
     )
 
     user: Mapped[User] = relationship(back_populates="learning_events")
+
+
+class OjSubmission(Base):
+    """OJ 题目真实提交记录：每次提交保存代码、判题结果与用例详情。"""
+
+    __tablename__ = "oj_submissions"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    problem_slug: Mapped[str] = mapped_column(String(128), index=True)
+    language: Mapped[str] = mapped_column(String(16), default="python")
+    code: Mapped[str] = mapped_column(Text, default="")
+    verdict: Mapped[str] = mapped_column(String(8), index=True)
+    passed: Mapped[int] = mapped_column(Integer, default=0)
+    total: Mapped[int] = mapped_column(Integer, default=0)
+    compile_error: Mapped[str] = mapped_column(Text, default="")
+    cases: Mapped[list] = mapped_column(JSON, nullable=False, insert_default=list)
+    runtime_ms_avg: Mapped[int] = mapped_column(Integer, default=0)
+    event_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), index=True
+    )
+
+    user: Mapped[User] = relationship(back_populates="oj_submissions")

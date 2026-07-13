@@ -319,6 +319,48 @@ export function practicePath(slug: string) {
   return `/practice/${slug}`
 }
 
+// ──────────────────────────── 提交记录（数据库） ────────────────────────────
+
+export interface OjSubmissionListItem {
+  id: number
+  problem_slug: string
+  language: string
+  verdict: Verdict
+  passed: number
+  total: number
+  runtime_ms_avg: number
+  created_at: string
+}
+
+export interface OjSubmissionDetail extends OjSubmissionListItem {
+  code: string
+  compile_error: string
+  cases: CaseResult[]
+  event_id?: string | null
+}
+
+/** 拉取当前用户在某道题下的真实提交记录（最新在前） */
+export async function fetchProblemSubmissions(
+  slug: string,
+  limit = 50,
+): Promise<OjSubmissionListItem[]> {
+  const { data } = await judgeClient.get<OjSubmissionListItem[]>(
+    `/api/oj/problems/${encodeURIComponent(slug)}/submissions`,
+    { params: { limit } },
+  )
+  return data
+}
+
+/** 拉取单条提交详情（含代码与用例） */
+export async function fetchSubmission(
+  submissionId: number,
+): Promise<OjSubmissionDetail> {
+  const { data } = await judgeClient.get<OjSubmissionDetail>(
+    `/api/oj/submissions/${submissionId}`,
+  )
+  return data
+}
+
 // ──────────────────────────── 教师 OJ 管理 ────────────────────────────
 
 export interface AdminTestCase {

@@ -82,6 +82,7 @@ declare module 'vue' {
     HomeCommunityPanel: typeof import('./../components/home/HomeCommunityPanel.vue')['default']
     HomeDashboardCharts: typeof import('./../components/home/HomeDashboardCharts.vue')['default']
     HomeSortDemo: typeof import('./../components/home/HomeSortDemo.vue')['default']
+    HomeStageLearningMap: typeof import('./../components/home/HomeStageLearningMap.vue')['default']
     HomeTrainingSection: typeof import('./../components/home/HomeTrainingSection.vue')['default']
     InlineOjPractice: typeof import('./../components/oj/InlineOjPractice.vue')['default']
     InterventionReceiptCard: typeof import('./../components/oj/InterventionReceiptCard.vue')['default']

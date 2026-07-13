@@ -94,7 +94,7 @@ export const HELP_GUIDE_STEPS: HelpGuideStep[] = [
   {
     step: 2,
     title: '构建学习画像',
-    desc: '进入「我的学习 → 学习画像」，与学习画像 Agent 对话，描述你的专业背景、目标岗位与薄弱知识点。系统会自动提取 6 维画像并用于后续推荐。',
+    desc: '进入「我的学习 → 学习画像」或「学习路径」页的「新生破冰访谈」区块，与学习画像 Agent 对话，描述你的专业背景、目标与薄弱知识点。完成 4 轮破冰对话后系统会自动提取 6 维画像并用于后续推荐。',
     route: { name: 'my-learning', query: { tab: 'persona' } },
     routeLabel: '打开学习画像',
   },
@@ -148,7 +148,7 @@ export const HELP_FAQ: HelpFaqItem[] = [
     category: '多智能体',
     question: '学习画像 Agent 是做什么的？',
     answer:
-      '通过自然语言对话提取你的知识基础、学习目标、认知风格、薄弱点、学习节奏、兴趣方向与偏好模态共 7 个维度。画像更新后可触发学习路径 Agent 重新排序推荐模块。',
+      '通过自然语言对话提取你的知识基础、认知风格、代码实操能力、学习目标、易错点偏好、抗挫折心理共 6 个维度。画像更新后可触发学习路径 Agent 重新排序推荐模块。',
   },
   {
     id: 'faq-path',

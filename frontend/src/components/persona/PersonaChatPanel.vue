@@ -311,7 +311,7 @@ const dimensionEntries = (dims: PersonaDimensions) =>
       />
       <div class="chat-actions">
         <el-button :icon="Refresh" :loading="syncing" @click="onSyncProfile">
-          从对话更新画像（JSON 入库）
+          从对话更新画像
         </el-button>
       </div>
 
@@ -321,7 +321,7 @@ const dimensionEntries = (dims: PersonaDimensions) =>
           <span>学习画像 · 6 维</span>
         </div>
         <p v-if="profile?.summary" class="dims-summary">{{ profile.summary }}</p>
-        <p v-else class="dims-summary muted">完成 3 轮破冰对话后将自动生成画像</p>
+        <p v-else class="dims-summary muted">画像已生成，可继续对话以补充维度</p>
         <div class="dims-body">
           <PersonaRadarChart
             v-if="profile?.dimensions && showRadar"

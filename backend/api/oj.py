@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from api.deps import get_current_user, get_optional_user
 from core.config import settings
 from core.database import get_db
-from models.db_models import User
+from models.db_models import OjSubmission, User
 from sqlalchemy.orm import Session
 from schemas.oj import (
     AiComplexityReport,
@@ -20,6 +20,8 @@ from schemas.oj import (
     CaseResultOut,
     JudgeRequest,
     JudgeResponse,
+    OjSubmissionDetail,
+    OjSubmissionListItem,
     TraceDiagnosisReport,
     TraceReportRequest,
     ProblemDetail,
@@ -169,6 +171,34 @@ def api_submit(
         event_logs = [log.model_dump() for log in pub.event.agent_logs]
     except Exception:
         pass
+
+    # 持久化真实提交记录：代码、判题结果、用例详情均入库
+    runtime_ms_values = [
+        (c.runtime_ms or 0) for c in resp.cases if c.runtime_ms is not None
+    ]
+    runtime_ms_avg = (
+        sum(runtime_ms_values) // len(runtime_ms_values) if runtime_ms_values else 0
+    )
+    try:
+        submission = OjSubmission(
+            user_id=user.id,
+            problem_slug=slug,
+            language=body.language or "python",
+            code=body.code or "",
+            verdict=resp.verdict,
+            passed=resp.passed,
+            total=resp.total,
+            compile_error=resp.compile_error or "",
+            cases=[c.model_dump() for c in resp.cases],
+            runtime_ms_avg=runtime_ms_avg,
+            event_id=event_id,
+        )
+        db.add(submission)
+        db.commit()
+        db.refresh(submission)
+    except Exception:
+        db.rollback()
+
     return JudgeResponse(
         verdict=resp.verdict,
         passed=resp.passed,
@@ -177,6 +207,68 @@ def api_submit(
         compile_error=resp.compile_error,
         event_id=event_id,
         event_logs=event_logs,
+    )
+
+
+@router.get(
+    "/problems/{slug}/submissions",
+    response_model=list[OjSubmissionListItem],
+)
+def api_list_problem_submissions(
+    slug: str,
+    limit: int = Query(default=50, ge=1, le=200),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """当前用户在某道题下的真实提交记录（最新在前）。"""
+    rows = (
+        db.query(OjSubmission)
+        .filter(
+            OjSubmission.user_id == user.id,
+            OjSubmission.problem_slug == slug,
+        )
+        .order_by(OjSubmission.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    return [
+        OjSubmissionListItem(
+            id=r.id,
+            problem_slug=r.problem_slug,
+            language=r.language,
+            verdict=r.verdict,
+            passed=r.passed,
+            total=r.total,
+            runtime_ms_avg=r.runtime_ms_avg,
+            created_at=r.created_at,
+        )
+        for r in rows
+    ]
+
+
+@router.get("/submissions/{submission_id}", response_model=OjSubmissionDetail)
+def api_get_submission(
+    submission_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """查询单条提交详情（仅限本人）。"""
+    row = db.get(OjSubmission, submission_id)
+    if row is None or row.user_id != user.id:
+        raise HTTPException(404, "提交记录不存在")
+    return OjSubmissionDetail(
+        id=row.id,
+        problem_slug=row.problem_slug,
+        language=row.language,
+        verdict=row.verdict,
+        passed=row.passed,
+        total=row.total,
+        runtime_ms_avg=row.runtime_ms_avg,
+        created_at=row.created_at,
+        code=row.code,
+        compile_error=row.compile_error or "",
+        cases=[CaseResultOut(**c) for c in row.cases],
+        event_id=row.event_id,
     )
 
 

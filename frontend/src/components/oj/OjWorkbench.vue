@@ -191,16 +191,6 @@ function onReset() {
           力扣判题格式：在 <code>class Solution</code> 中实现
           <code>{{ problem.entry.method }}</code>（方法名需与题目一致，{{ langHint }}）
         </p>
-
-        <div class="ai-hint-stack">
-          <OjDsHintCard :problem="problem" :language="language" class="ai-hint-card" />
-          <OjCodeHintCard
-            :problem="problem"
-            :language="language"
-            :user-code="code"
-            class="ai-hint-card"
-          />
-        </div>
       </div>
     </aside>
 
@@ -395,6 +385,16 @@ function onReset() {
       </div>
     </aside>
 
+    <section v-if="!traceLayout" class="oj-ai-hint-row" aria-label="AI 数据结构与思路提示">
+      <OjDsHintCard :problem="problem" :language="language" class="oj-ai-hint-cell" />
+      <OjCodeHintCard
+        :problem="problem"
+        :language="language"
+        :user-code="code"
+        class="oj-ai-hint-cell"
+      />
+    </section>
+
     <section
       v-if="!traceLayout && (traceReport || traceReportLoading || struggleView)"
       class="oj-diagnosis-workspace"
@@ -437,7 +437,7 @@ function onReset() {
 .oj-workbench {
   display: grid;
   grid-template-columns: minmax(280px, 29%) minmax(420px, 42%) minmax(280px, 29%);
-  grid-template-rows: auto auto auto auto;
+  grid-template-rows: auto auto auto auto auto;
   min-height: 0;
   height: 100%;
   width: 100%;
@@ -511,24 +511,46 @@ function onReset() {
 
 .oj-workbench-agent-console {
   grid-column: 1 / -1;
-  grid-row: 3;
+  grid-row: 4;
   min-width: 0;
   max-height: 220px;
 }
 
 .oj-workbench-diagnosis {
   grid-column: 1 / -1;
-  grid-row: 4;
+  grid-row: 5;
   min-width: 0;
 }
 
 .oj-diagnosis-workspace {
   grid-column: 1 / -1;
-  grid-row: 2;
+  grid-row: 3;
   min-width: 0;
   padding: 18px clamp(14px, 2vw, 28px) 24px;
   border-top: 1px solid var(--alp-color-border);
   background: var(--alp-bg-surface-muted);
+}
+
+/* AI 提示行：代码区下方，左右两栏（数据结构提示 / AI 思路提示） */
+.oj-ai-hint-row {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  padding: 16px clamp(14px, 2vw, 28px);
+  border-top: 1px solid var(--alp-color-border);
+  background: var(--alp-bg-surface-muted);
+}
+
+.oj-ai-hint-cell {
+  min-width: 0;
+  display: flex;
+}
+
+.oj-ai-hint-cell :deep(.oj-agent-card) {
+  width: 100%;
+  margin-top: 0;
 }
 
 .oj-diagnosis-workspace :deep(.trace-report) {
@@ -645,21 +667,6 @@ function onReset() {
   color: var(--el-text-color-secondary);
 }
 
-.ai-hint-stack {
-  margin-top: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.ai-hint-card {
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.ai-hint-stack :deep(.oj-agent-card) {
-  margin-top: 0;
-}
 .code-pane-header {
   display: flex;
   align-items: center;
@@ -836,11 +843,20 @@ function onReset() {
   .oj-problem-pane {
     border-right: none;
     border-bottom: 1px solid var(--alp-color-border);
+    grid-row: 1;
   }
 
-  .oj-code-pane, .oj-result-pane { grid-column: 1; }
-  .oj-code-pane { grid-row: 2; }
-  .oj-result-pane { grid-row: 3; min-height: 320px; border-left: 0; border-top: 1px solid var(--alp-color-border); }
+  .oj-code-pane { grid-column: 1; grid-row: 2; }
+  .oj-result-pane { grid-column: 1; grid-row: 3; min-height: 320px; border-left: 0; border-top: 1px solid var(--alp-color-border); }
+
+  .oj-ai-hint-row {
+    grid-row: 4;
+    grid-template-columns: 1fr;
+  }
+
+  .oj-diagnosis-workspace { grid-row: 5; }
+  .oj-workbench-agent-console { grid-row: 6; }
+  .oj-workbench-diagnosis { grid-row: 7; }
 
   .problem-scroll {
     max-height: 320px;
@@ -859,6 +875,11 @@ function onReset() {
 
   .oj-code-pane {
     overflow: hidden;
+  }
+
+  .oj-ai-hint-row {
+    padding: 12px;
+    gap: 10px;
   }
 
   .code-pane-header {

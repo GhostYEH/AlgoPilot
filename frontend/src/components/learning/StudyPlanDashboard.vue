@@ -1,17 +1,27 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import {
-  ArrowRight, Calendar, Check, Download, Document, EditPen, Files,
-  VideoPlay, Trophy, UserFilled,
+  ArrowRight, Calendar, Check, Document, EditPen, Files,
+  VideoPlay, Trophy, UserFilled, MagicStick, Refresh, Loading,
 } from '@element-plus/icons-vue'
 import LearningDimensionRadar from './LearningDimensionRadar.vue'
-import { ALGORITHM_MODULES, MODULE_ROUTE_NAMES } from '@/constants/modules'
+import { ALGORITHM_MODULES, MODULE_ROUTE_NAMES, MODULE_PHASE_LABELS, type ModulePhase } from '@/constants/modules'
 import { buildLearningOverview } from '@/utils/learningOverview'
+import { isLoggedIn } from '@/stores/auth'
+import { useLearningPathPlan } from '@/composables/useLearningPathPlan'
+import {
+  fetchRecommendedResources,
+  RESOURCE_TYPE_META,
+  streamGenerateResource,
+  type GeneratedResource,
+} from '@/api/orchestrator'
 
 const router = useRouter()
 const overview = computed(() => buildLearningOverview())
 const expandedPhase = ref(1)
+const { plan, recommendedNext } = useLearningPathPlan()
 
 const radarDimensions = computed(() => [
   { key: 'structure', label: '数据结构', score: Math.max(58, overview.value.overallPercent) },
@@ -29,11 +39,74 @@ const phases = [
   { title: '冲刺强化阶段', weeks: '第6周', status: '未开始', goal: '通过高强度训练提升解题速度与准确率，适应比赛节奏。', topics: ['高频考点复习', '模拟比赛', '错题复盘', '策略优化'] },
 ]
 
-const resources = [
-  { icon: Document, tone: 'blue', name: '动态规划入门讲义（定制版）', meta: 'PDF · 1.2 MB', action: '下载' },
-  { icon: EditPen, tone: 'green', name: '背包问题专题笔记', meta: 'Markdown · 8.6 KB', action: '下载' },
-  { icon: VideoPlay, tone: 'orange', name: '图论最短路可视化讲解', meta: 'MP4 · 24.5 MB', action: '观看' },
-  { icon: Files, tone: 'blue', name: '算法模板代码库（C++）', meta: 'ZIP · 48.3 KB', action: '下载' },
+/** 当前阶段对应的模块 key（用于驱动资源生成主题） */
+const phaseModuleKey = computed<string>(() => {
+  const next = recommendedNext.value?.key
+  if (next) return next
+  return plan.value?.next_module_key ?? ''
+})
+
+/** 当前阶段对应模块的中文标签 */
+const phaseModuleLabel = computed<string>(() => {
+  const key = phaseModuleKey.value
+  if (!key) return '当前阶段'
+  const m = ALGORITHM_MODULES.find((x) => x.key === key)
+  return m?.label ?? key
+})
+
+/** 当前阶段所属 Phase（用于生成主题） */
+const currentPhaseTag = computed<ModulePhase>(() => {
+  const key = phaseModuleKey.value
+  const m = ALGORITHM_MODULES.find((x) => x.key === key)
+  return m?.phase ?? 'foundation'
+})
+
+const phaseTopicText = computed(() => MODULE_PHASE_LABELS[currentPhaseTag.value] ?? '基础结构')
+
+/** 推荐资源列表（来自后端 recommend_resources） */
+const resources = ref<GeneratedResource[]>([])
+const resLoading = ref(false)
+
+/** 单类型生成状态 */
+const generatingType = ref<string | null>(null)
+const generating = ref(false)
+
+const RESOURCE_ICONS: Record<string, typeof Document> = {
+  document: Document,
+  mindmap: Files,
+  exercises: EditPen,
+  reading: Document,
+  code_case: VideoPlay,
+  trace_animation: VideoPlay,
+}
+
+const RESOURCE_TONES: Record<string, string> = {
+  document: 'blue',
+  mindmap: 'green',
+  exercises: 'orange',
+  reading: 'blue',
+  code_case: 'green',
+  trace_animation: 'orange',
+}
+
+/** 推荐资源展示卡片（最多 4 条） */
+const resourceCards = computed(() =>
+  resources.value.slice(0, 4).map((r) => ({
+    id: r.id,
+    icon: RESOURCE_ICONS[r.resource_type] ?? Document,
+    tone: RESOURCE_TONES[r.resource_type] ?? 'blue',
+    name: r.title,
+    meta: `${RESOURCE_TYPE_META[r.resource_type]?.label ?? r.resource_type} · ${r.agent_name}`,
+    raw: r,
+  })),
+)
+
+/** 资源生成类型选项（精简到 4 类核心，避免卡片过密） */
+const GENERATE_OPTIONS: Array<{ type: string; label: string; icon: typeof Document; tone: string }> = [
+  { type: 'document', label: '概念讲解', icon: Document, tone: 'blue' },
+  { type: 'exercises', label: '个性化题单', icon: EditPen, tone: 'green' },
+  { type: 'code_case', label: '剧本沙盒', icon: VideoPlay, tone: 'orange' },
+  { type: 'mindmap', label: '思维导图', icon: Files, tone: 'blue' },
 ]
 
 const practices = [
@@ -47,6 +120,78 @@ function openModule(key: string) {
   const name = MODULE_ROUTE_NAMES[key]
   if (name) void router.push({ name })
 }
+
+async function loadResources() {
+  if (!isLoggedIn.value) {
+    resources.value = []
+    return
+  }
+  resLoading.value = true
+  try {
+    resources.value = await fetchRecommendedResources({
+      module_key: phaseModuleKey.value,
+      limit: 6,
+    })
+  } catch {
+    resources.value = []
+  } finally {
+    resLoading.value = false
+  }
+}
+
+function openResource(r: GeneratedResource) {
+  void router.push({ name: 'resources', query: { highlight: String(r.id) } })
+}
+
+async function onGenerateOne(type: string) {
+  if (!isLoggedIn.value) {
+    ElMessage.warning('请先登录后生成资源')
+    void router.push({ name: 'login', query: { redirect: '/learning-path' } })
+    return
+  }
+  if (generating.value) return
+  generating.value = true
+  generatingType.value = type
+  const label = RESOURCE_TYPE_META[type]?.label ?? type
+  ElMessage.info(`正在为「${phaseModuleLabel.value}」生成${label}…`)
+  try {
+    await streamGenerateResource(
+      {
+        resource_type: type,
+        topic: phaseModuleLabel.value,
+        module_key: phaseModuleKey.value || undefined,
+        focus_hint: `${phaseTopicText}阶段 · 个性化`,
+      },
+      {
+        onResource(r) {
+          resources.value = [r, ...resources.value.filter((x) => x.id !== r.id)]
+          ElMessage.success(`${r.agent_name} 已生成${label}`)
+        },
+        onError(msg) {
+          ElMessage.error(msg || `${label}生成失败`)
+        },
+      },
+    )
+  } finally {
+    generating.value = false
+    generatingType.value = null
+  }
+}
+
+function gotoResourceLibrary() {
+  void router.push({
+    name: 'resources',
+    query: phaseModuleKey.value ? { module: phaseModuleKey.value } : undefined,
+  })
+}
+
+onMounted(() => {
+  void loadResources()
+})
+
+watch(phaseModuleKey, () => {
+  void loadResources()
+})
 </script>
 
 <template>
@@ -88,8 +233,80 @@ function openModule(key: string) {
       </main>
 
       <aside class="support-column">
-        <section class="support-section"><div class="column-head"><h2>资源生成</h2><button type="button">查看更多 <el-icon><ArrowRight /></el-icon></button></div><div class="resource-list"><article v-for="item in resources" :key="item.name"><div class="resource-icon" :class="item.tone"><el-icon><component :is="item.icon" /></el-icon></div><div><strong>{{ item.name }}</strong><span>{{ item.meta }}</span></div><button type="button"><el-icon><Download v-if="item.action === '下载'" /></el-icon>{{ item.action }}</button></article></div></section>
-        <section class="support-section"><div class="column-head"><h2>练习建议</h2><button type="button">查看更多 <el-icon><ArrowRight /></el-icon></button></div><div class="practice-list"><button v-for="(item, index) in practices" :key="item.name" type="button" @click="openModule(item.key)"><b>{{ String(index + 1).padStart(2, '0') }}</b><span><strong>{{ item.name }}</strong><small>{{ item.source }}</small></span><em>匹配度 {{ item.match }}%</em></button></div></section>
+        <section class="support-section resource-gen-section">
+          <div class="column-head">
+            <h2>资源生成</h2>
+            <button type="button" @click="gotoResourceLibrary">资源库 <el-icon><ArrowRight /></el-icon></button>
+          </div>
+
+          <div class="phase-bind">
+            <el-icon><MagicStick /></el-icon>
+            <span class="phase-bind-label">当前阶段绑定：</span>
+            <el-tag size="small" effect="plain" type="success">{{ phaseTopicText }}</el-tag>
+            <el-tag size="small" effect="dark">{{ phaseModuleLabel }}</el-tag>
+            <button class="refresh-btn" type="button" :disabled="resLoading" @click="loadResources">
+              <el-icon><Refresh /></el-icon>
+            </button>
+          </div>
+
+          <div class="gen-grid">
+            <button
+              v-for="opt in GENERATE_OPTIONS"
+              :key="opt.type"
+              type="button"
+              class="gen-tile"
+              :class="[`tone-${opt.tone}`, { 'is-generating': generatingType === opt.type }]"
+              :disabled="!isLoggedIn || (generating && generatingType !== opt.type)"
+              @click="onGenerateOne(opt.type)"
+            >
+              <el-icon class="gen-tile-icon">
+                <Loading v-if="generatingType === opt.type" />
+                <component :is="opt.icon" v-else />
+              </el-icon>
+              <span class="gen-tile-label">{{ opt.label }}</span>
+              <span class="gen-tile-hint">{{ generatingType === opt.type ? '生成中…' : '点击生成' }}</span>
+            </button>
+          </div>
+
+          <div class="rec-list-wrap">
+            <div class="rec-list-head">
+              <span class="rec-list-title">路径关联推荐</span>
+              <span v-if="resLoading" class="rec-loading">
+                <el-icon class="is-loading"><Loading /></el-icon> 加载中
+              </span>
+              <span v-else-if="resourceCards.length" class="rec-count">{{ resourceCards.length }} 条</span>
+            </div>
+
+            <el-empty
+              v-if="!resLoading && !resourceCards.length"
+              :image-size="48"
+              description="暂无资源，点击上方按钮为当前阶段生成"
+            />
+
+            <div v-else class="resource-list">
+              <article
+                v-for="item in resourceCards"
+                :key="item.id"
+                class="resource-item"
+                role="button"
+                tabindex="0"
+                @click="openResource(item.raw)"
+                @keyup.enter="openResource(item.raw)"
+              >
+                <div class="resource-icon" :class="item.tone">
+                  <el-icon><component :is="item.icon" /></el-icon>
+                </div>
+                <div class="resource-body">
+                  <strong>{{ item.name }}</strong>
+                  <span>{{ item.meta }}</span>
+                </div>
+                <el-icon class="resource-arrow"><ArrowRight /></el-icon>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="support-section"><div class="column-head"><h2>练习建议</h2><button type="button" @click="gotoResourceLibrary">查看更多 <el-icon><ArrowRight /></el-icon></button></div><div class="practice-list"><button v-for="(item, index) in practices" :key="item.name" type="button" @click="openModule(item.key)"><b>{{ String(index + 1).padStart(2, '0') }}</b><span><strong>{{ item.name }}</strong><small>{{ item.source }}</small></span><em>匹配度 {{ item.match }}%</em></button></div></section>
         <section class="reason"><div class="reason-title"><el-icon><Trophy /></el-icon><h2>推荐理由</h2></div><p>基于你的能力画像、学习目标和历史表现，推荐以上内容：</p><ul><li><el-icon><Check /></el-icon>动态规划能力得分偏低，需要系统性强化训练</li><li><el-icon><Check /></el-icon>当前阶段内容与目标匹配度高，适合短期提升</li><li><el-icon><Check /></el-icon>题目覆盖核心考点，难度梯度合理</li></ul></section>
       </aside>
     </div>
@@ -106,4 +323,50 @@ function openModule(key: string) {
 @media(max-width:1250px){.dashboard-columns{grid-template-columns:300px 1fr}.support-column{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}.support-column .reason{grid-column:1/-1}.path-column{border-right:0}.profile-column{border-right:1px solid var(--alp-color-border)}}
 @media(max-width:780px){.plan-toolbar{align-items:flex-start;gap:14px;flex-direction:column}.plan-period{flex-wrap:wrap}.dashboard-columns{display:block}.profile-column,.path-column{padding:18px;border-right:0;border-bottom:1px solid var(--alp-color-border)}.support-column{display:block}.phase-item{grid-template-columns:30px 1fr}.support-section{padding:18px}.practice-list em{display:none}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style>
+
+<style scoped>
+/* 资源生成模块样式 */
+.resource-gen-section{display:flex;flex-direction:column;gap:12px}
+.phase-bind{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border-radius:6px;background:var(--alp-bg-soft-block);border:1px solid var(--alp-color-border);font-size:12px;color:var(--alp-color-muted)}
+.phase-bind .el-icon{color:var(--alp-color-primary)}
+.phase-bind-label{color:var(--alp-color-text-secondary)}
+.refresh-btn{margin-left:auto;border:0;background:transparent;color:var(--alp-color-muted);cursor:pointer;padding:4px;border-radius:4px;display:inline-flex;align-items:center}
+.refresh-btn:hover:not(:disabled){color:var(--alp-color-primary)}
+.refresh-btn:disabled{cursor:not-allowed;opacity:.5}
+
+.gen-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.gen-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:12px 8px;border:1px solid var(--alp-color-border);border-radius:7px;background:var(--alp-bg-surface);cursor:pointer;transition:border-color .15s,transform .15s,box-shadow .15s;color:var(--alp-color-text)}
+.gen-tile:hover:not(:disabled){border-color:var(--alp-color-primary);transform:translateY(-1px);box-shadow:0 4px 12px rgba(59,130,246,.12)}
+.gen-tile:disabled{cursor:not-allowed;opacity:.6}
+.gen-tile.is-generating{border-color:var(--alp-color-primary);background:var(--alp-color-primary-soft)}
+.gen-tile-icon{font-size:20px;color:#3b82f6}
+.gen-tile.tone-green .gen-tile-icon{color:#20a568}
+.gen-tile.tone-orange .gen-tile-icon{color:#f08a24}
+.gen-tile-label{font-size:13px;font-weight:600;color:var(--alp-color-text)}
+.gen-tile-hint{font-size:10px;color:var(--alp-color-muted)}
+.gen-tile.is-generating .gen-tile-hint{color:var(--alp-color-primary)}
+.gen-tile-icon.is-loading,.is-loading{animation:rot 1s linear infinite}
+@keyframes rot{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
+.rec-list-wrap{margin-top:4px}
+.rec-list-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.rec-list-title{font-size:12px;font-weight:600;color:var(--alp-color-text-secondary)}
+.rec-loading{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--alp-color-primary)}
+.rec-count{font-size:11px;color:var(--alp-color-muted);margin-left:auto}
+
+.resource-list{margin-top:0}
+.resource-list .resource-item{display:grid;grid-template-columns:32px 1fr 14px;gap:10px;align-items:center;padding:10px;border-bottom:1px solid var(--alp-color-border);cursor:pointer;transition:background .15s}
+.resource-list .resource-item:last-child{border-bottom:0}
+.resource-list .resource-item:hover{background:var(--alp-bg-soft-block)}
+.resource-list .resource-item .resource-body strong{display:block;font-size:12px;line-height:1.35;color:var(--alp-color-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.resource-list .resource-item .resource-body span{display:block;margin-top:3px;font-size:10px;color:var(--alp-color-muted)}
+.resource-list .resource-item .resource-arrow{color:var(--alp-color-muted);font-size:12px}
+.resource-list .resource-item:hover .resource-arrow{color:var(--alp-color-primary)}
+.resource-list .resource-icon{width:28px;height:32px;border-radius:4px;display:grid;place-items:center;color:#fff;background:#3b82f6}
+.resource-list .resource-icon.green{background:#20a568}
+.resource-list .resource-icon.orange{background:#f08a24}
+
+:deep(.el-empty){padding:14px 0}
+:deep(.el-empty__description){font-size:12px}
 </style>

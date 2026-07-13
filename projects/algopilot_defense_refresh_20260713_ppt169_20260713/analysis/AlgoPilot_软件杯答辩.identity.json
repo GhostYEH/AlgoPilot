@@ -1,0 +1,149 @@
+{
+  "source": "K:\\A3latest\\projects\\algopilot_defense_refresh_20260713_ppt169_20260713\\sources\\AlgoPilot_软件杯答辩.pptx",
+  "slide_count": 24,
+  "canvas": {
+    "width_px": 1280,
+    "height_px": 720,
+    "aspect": 1.7778
+  },
+  "theme": {
+    "palette": {
+      "background": "#F7F8FA",
+      "background_alt": "#EDF0F5",
+      "text": "#1E2024",
+      "text_alt": "#6B7280",
+      "hyperlink": "#2D7DD2",
+      "accent1": "#1B2A4A",
+      "accent2": "#2D7DD2",
+      "accent3": "#4A9FE5",
+      "accent4": "#D1D5DB",
+      "accent5": "#9CA3AF",
+      "accent6": "#10B981",
+      "primary": "#1B2A4A"
+    },
+    "fonts": {
+      "title": {
+        "latin": "Calibri"
+      },
+      "body": {
+        "latin": "Calibri"
+      }
+    },
+    "sizes": {
+      "title": 44.0,
+      "body": 32.0,
+      "body_levels": [
+        32.0,
+        28.0,
+        24.0,
+        20.0,
+        20.0,
+        20.0,
+        20.0,
+        20.0,
+        20.0
+      ]
+    }
+  },
+  "observed": {
+    "fonts": {
+      "latin": [
+        {
+          "value": "Inter",
+          "count": 592
+        },
+        {
+          "value": "JetBrains Mono",
+          "count": 18
+        },
+        {
+          "value": "Courier New",
+          "count": 1
+        }
+      ],
+      "ea": [
+        {
+          "value": "Microsoft YaHei",
+          "count": 416
+        },
+        {
+          "value": "Inter",
+          "count": 176
+        },
+        {
+          "value": "JetBrains Mono",
+          "count": 18
+        },
+        {
+          "value": "Courier New",
+          "count": 1
+        }
+      ]
+    },
+    "sizes_pt": [
+      {
+        "value": 9.0,
+        "count": 155
+      },
+      {
+        "value": 9.8,
+        "count": 140
+      },
+      {
+        "value": 10.5,
+        "count": 87
+      },
+      {
+        "value": 8.2,
+        "count": 60
+      },
+      {
+        "value": 11.2,
+        "count": 41
+      },
+      {
+        "value": 12.0,
+        "count": 34
+      },
+      {
+        "value": 21.0,
+        "count": 21
+      },
+      {
+        "value": 7.5,
+        "count": 16
+      }
+    ],
+    "colors": [
+      {
+        "value": "#FFFFFF",
+        "count": 223
+      },
+      {
+        "value": "#E8F0FE",
+        "count": 26
+      },
+      {
+        "value": "#EDF0F5",
+        "count": 26
+      },
+      {
+        "value": "#EF4444",
+        "count": 20
+      },
+      {
+        "value": "#E8E8E8",
+        "count": 9
+      },
+      {
+        "value": "#0F1D32",
+        "count": 3
+      },
+      {
+        "value": "#F0FDF4",
+        "count": 1
+      }
+    ]
+  },
+  "layout_sizes_pt": []
+}

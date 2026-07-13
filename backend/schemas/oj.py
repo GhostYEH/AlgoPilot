@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field, computed_field
@@ -262,3 +263,25 @@ class TraceReportRequest(BaseModel):
     language: str = "python"
     judge_verdict: str = ""
     failed_cases: list[CaseResultOut] = Field(default_factory=list)
+
+
+class OjSubmissionListItem(BaseModel):
+    """提交记录列表项（不含代码与用例详情）。"""
+
+    id: int
+    problem_slug: str
+    language: str
+    verdict: Literal["AC", "WA", "TLE", "RE", "CE"]
+    passed: int
+    total: int
+    runtime_ms_avg: int = 0
+    created_at: datetime
+
+
+class OjSubmissionDetail(OjSubmissionListItem):
+    """单次提交详情：含代码、用例结果、编译错误与事件 ID。"""
+
+    code: str
+    compile_error: str = ""
+    cases: list[CaseResultOut] = Field(default_factory=list)
+    event_id: str | None = None

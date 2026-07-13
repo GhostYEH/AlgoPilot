@@ -17,7 +17,8 @@ import ModuleGameEntry from '@/components/learning/ModuleGameEntry.vue'
 import HomeAnnounceBar from '@/components/home/HomeAnnounceBar.vue'
 import HomeDashboardCharts from '@/components/home/HomeDashboardCharts.vue'
 import HomeCommunityPanel from '@/components/home/HomeCommunityPanel.vue'
-import HomeTrainingSection from '@/components/home/HomeTrainingSection.vue'
+import HomeTrainingSection from '@/components/home/HomeTrainingSection.vue'
+import HomeStageLearningMap from '@/components/home/HomeStageLearningMap.vue'
 import HomeSortDemo from '@/components/home/HomeSortDemo.vue'
 import { ALGORITHM_MODULES, MODULE_PHASE_LABELS, MODULE_ROUTE_NAMES } from '@/constants/modules'
 import { getApiBaseUrl } from '@/utils/apiBase'
@@ -109,9 +110,23 @@ const phaseGroups = computed(() =>
   })),
 )
 
-const selectedModule = computed(
+const selectedModule = computed(
   () => ALGORITHM_MODULES.find((m) => m.key === activeModule.value) ?? ALGORITHM_MODULES[0],
-)
+)
+
+const selectedPhaseLabel = computed(() => {
+  const phase = selectedModule.value?.phase
+  return phase ? MODULE_PHASE_LABELS[phase] : '学习路径'
+})
+
+const selectedModuleProgress = computed(() =>
+  selectedModule.value ? progressFor(selectedModule.value.key) : 0,
+)
+
+const serviceStatusLabel = computed(() => {
+  if (healthStatus.value === 'checking') return '服务检测中'
+  return healthStatus.value === 'ok' ? '学习服务正常' : '离线模式可用'
+})
 
 function progressFor(key: string) {
   return overview.value.rows.find((row) => row.key === key)?.percent ?? 0
@@ -146,7 +161,7 @@ const quickActions = [
   },
 ]
 
-function onModuleSelect(key: string) {
+function onModuleSelect(key: string) {
   activeModule.value = key
   const mod = ALGORITHM_MODULES.find((m) => m.key === key)
   if (mod) recordModuleVisit(key, mod.label)
@@ -163,7 +178,11 @@ function onModuleSelect(key: string) {
   })
 }
 
-function continueLearning() {
+function previewModule(key: string) {
+  activeModule.value = key
+}
+
+function continueLearning() {
   const next = overview.value.nextModule
   if (!next) {
     router.push({ name: 'learning-path' })
@@ -276,18 +295,124 @@ onMounted(async () => {
 })
 </script>
 
-<template>
-  <div class="home-page">
+<template>
+  <div class="dashboard-home">
+    <header class="dashboard-welcome">
+      <div class="dashboard-welcome-copy">
+        <p class="dashboard-eyebrow">学习总览</p>
+        <h1>{{ overview.nextModule ? `继续学习：${overview.nextModule?.label}` : '今天想学点什么？' }}</h1>
+        <p>{{ hasRealProgress ? `已学习 ${progressSummary.tracked} 个模块，保持现在的节奏。` : '从基础模块开始，完成第一节学习。' }}</p>
+        <div class="dashboard-context" aria-label="当前学习状态">
+          <span>
+            <i class="dashboard-status-dot" :class="`is-${healthStatus}`" />
+            {{ serviceStatusLabel }}
+          </span>
+          <span>已追踪 {{ progressSummary.tracked }} 个模块</span>
+          <span>待复习 {{ reviewQueue.length }} 项</span>
+        </div>
+      </div>
+      <div class="dashboard-welcome-side">
+        <div class="dashboard-focus-summary">
+          <div class="dashboard-focus-head">
+            <span><el-icon><Timer /></el-icon> 今日焦点</span>
+            <b>{{ selectedModuleProgress }}%</b>
+          </div>
+          <strong>{{ selectedModule?.label ?? '选择学习模块' }}</strong>
+          <small>{{ selectedPhaseLabel }} · 建议专注 20 分钟</small>
+          <div class="dashboard-focus-track" aria-hidden="true">
+            <i :style="{ width: `${selectedModuleProgress}%` }" />
+          </div>
+        </div>
+        <div class="dashboard-welcome-actions">
+          <el-button type="primary" :icon="ArrowRight" @click="continueLearning">继续学习</el-button>
+          <el-button :icon="Cpu" @click="router.push({ name: 'practice-list' })">进入题库</el-button>
+        </div>
+      </div>
+    </header>
+
+    <nav class="dashboard-shortcuts" aria-label="常用功能">
+      <button v-for="item in quickActions" :key="item.key" type="button" @mouseenter="prefetchRoute(item.prefetch)" @click="goQuick(item.route, item.prefetch)">
+        <el-icon><component :is="item.icon" /></el-icon>
+        <span><strong>{{ item.label }}</strong><small>{{ item.desc }}</small></span>
+        <el-icon class="dashboard-shortcut-arrow"><ArrowRight /></el-icon>
+      </button>
+      <button type="button" @click="router.push({ name: 'resources' })">
+        <el-icon><Reading /></el-icon>
+        <span><strong>学习资料</strong><small>讲义、题单与参考资料</small></span>
+        <el-icon class="dashboard-shortcut-arrow"><ArrowRight /></el-icon>
+      </button>
+    </nav>
+
+    <HomeStageLearningMap
+      :active-key="activeModule"
+      :overall-percent="progressSummary.overallPercent"
+      @preview="previewModule"
+      @open="onModuleSelect"
+    />
+
+    <div class="dashboard-columns">
+      <main class="dashboard-primary">
+        <section class="dashboard-panel dashboard-analytics">
+          <div class="dashboard-panel-head"><div><h2>数据可视化与进度反馈</h2><p>最近学习情况与知识点掌握度</p></div><span class="dashboard-updated">本地实时更新</span></div>
+          <HomeDashboardCharts :radar="skillRadar" :series="activitySeries" :heatmap="heatmapCells" />
+        </section>
+        <section class="dashboard-panel dashboard-training">
+          <div class="dashboard-panel-head"><div><h2>每日训练推荐</h2><p>从一题开始，复习薄弱知识点</p></div><el-button text type="primary" @click="router.push({ name: 'practice-list' })">查看题库</el-button></div>
+          <HomeTrainingSection :daily="dailyProblem" :targeted="targetedProblems" :review="reviewQueue" :recent="recentVisits" @open-problem="openPractice" @open-module="onModuleSelect" />
+        </section>
+        <section class="dashboard-panel dashboard-progress-panel">
+          <div class="dashboard-panel-head"><div><h2>学习进度概览</h2><p>按阶段查看各模块完成情况</p></div><strong class="dashboard-percent">{{ progressSummary.overallPercent }}%</strong></div>
+          <div class="dashboard-progress-track"><i :style="{ width: `${progressSummary.overallPercent}%` }" /></div>
+          <div class="dashboard-selected-module" aria-live="polite">
+            <div class="dashboard-selected-copy">
+              <span>当前章节</span>
+              <strong>{{ selectedModule?.label }}</strong>
+              <small>{{ selectedModule?.available ? '课程内容已开放' : '已加入学习路径，内容持续完善中' }}</small>
+            </div>
+            <div class="dashboard-selected-progress">
+              <div><span>章节进度</span><strong>{{ selectedModule ? progressFor(selectedModule.key) : 0 }}%</strong></div>
+              <div class="dashboard-selected-track"><i :style="{ width: `${selectedModule ? progressFor(selectedModule.key) : 0}%` }" /></div>
+            </div>
+            <el-button type="primary" plain :icon="ArrowRight" :disabled="!selectedModule" @click="selectedModule && onModuleSelect(selectedModule.key)">打开章节</el-button>
+          </div>
+          <div class="dashboard-module-groups">
+            <div v-for="group in phaseGroups" :key="group.phase" class="dashboard-module-group">
+              <span>{{ group.label }}</span>
+              <div><button v-for="module in group.modules" :key="module.key" type="button" :class="{ done: progressFor(module.key) === 100, active: activeModule === module.key }" :aria-pressed="activeModule === module.key" @mouseenter="activeModule = module.key" @focus="activeModule = module.key" @click="activeModule = module.key">{{ module.label }} <small>{{ progressFor(module.key) }}%</small></button></div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <aside class="dashboard-secondary">
+        <section class="dashboard-panel dashboard-community">
+          <div class="dashboard-panel-head"><div><h2>社区与全站数据</h2><p>本周学习动态</p></div></div>
+          <HomeCommunityPanel :stats="platformStats" :ac-board="acBoard" :streak-board="streakBoard" />
+        </section>
+        <section class="dashboard-panel dashboard-resources">
+          <div class="dashboard-panel-head"><div><h2>推荐资源</h2><p>与你当前进度相关</p></div><el-button text type="primary" size="small" @click="router.push({ name: 'resources' })">更多</el-button></div>
+          <RecommendedResourcesPanel v-if="isLoggedIn" :limit="5" />
+          <div v-else class="dashboard-resource-list"><button v-for="item in recommended.slice(0, 4)" :key="item.id" type="button" @click="router.push({ name: 'resources', query: { highlight: item.id } })"><span>{{ item.title }}</span><small>{{ item.module }}</small></button></div>
+        </section>
+        <section class="dashboard-panel dashboard-continue">
+          <div class="dashboard-panel-head"><div><h2>继续学习</h2><p>回到最近访问的内容</p></div></div>
+          <button v-if="overview.nextModule" type="button" class="dashboard-continue-item" @click="continueLearning"><span><strong>{{ overview.nextModule?.label }}</strong><small>接着上次的位置继续</small></span><el-icon><ArrowRight /></el-icon></button>
+          <button type="button" class="dashboard-continue-item" @click="router.push({ name: 'practice-list' })"><span><strong>在线 OJ</strong><small>{{ ojReadyCount == null ? '打开题库' : `${ojReadyCount} 道题可练` }}</small></span><el-icon><ArrowRight /></el-icon></button>
+        </section>
+      </aside>
+    </div>
+  </div>
+  <div v-if="false" class="home-page">
     <section ref="heroRef" class="home-hero">
       <div class="hero-copy">
-        <p class="hero-kicker">AlgoPilot · 智能算法学习</p>
-        <h1 class="hero-title">算法学习驾驶舱</h1>
+        <p class="hero-kicker">今天从这里开始</p>
+        <h1 class="hero-title">{{ overview.nextModule ? `继续学习 ${overview.nextModule?.label}` : '选择一个模块开始学习' }}</h1>
         <p class="hero-desc">
-          用阶段化学习地图串起讲义、OJ、Trace 动画、游戏化练习与多智能体资源生成，形成完整教学闭环。
+          {{ hasRealProgress ? `当前总进度 ${progressSummary.overallPercent}%，已完成 ${progressSummary.completed} 个模块。` : '按推荐顺序学习，也可以直接进入题库练习。' }}
         </p>
         <div class="hero-actions">
           <el-button type="primary" size="large" :icon="ArrowRight" @click="continueLearning">
-            {{ overview.nextModule ? `继续：${overview.nextModule.label}` : '开始学习路径' }}
+            {{ overview.nextModule ? '继续上次学习' : '查看学习路径' }}
           </el-button>
           <el-button
             size="large"
@@ -296,7 +421,7 @@ onMounted(async () => {
             @mouseenter="prefetchRoute('/practice')"
             @click="router.push({ name: 'practice-list' })"
           >
-            进入在线 OJ
+            去做题
           </el-button>
         </div>
       </div>
@@ -308,8 +433,8 @@ onMounted(async () => {
           <strong>step_07</strong>
         </div>
         <div class="hero-visual-panel hero-visual-panel--bottom">
-          <span>Agent Loop</span>
-          <strong>verify → adapt</strong>
+          <span>学习记录</span>
+          <strong>今日进度</strong>
         </div>
       </div>
 
@@ -351,8 +476,8 @@ onMounted(async () => {
       <div class="map-board">
         <div class="map-board-head">
           <div>
-            <p class="section-kicker">Course Knowledge Map</p>
-            <h2>阶段星轨学习地图</h2>
+            <p class="section-kicker">学习路径</p>
+            <h2>按阶段掌握核心算法</h2>
           </div>
           <div class="map-legend">
             <span><i class="legend-dot done" /> 已完成</span>
@@ -365,7 +490,7 @@ onMounted(async () => {
           <section v-for="group in phaseGroups" :key="group.phase" class="phase-lane">
             <div class="phase-head">
               <span>{{ group.label }}</span>
-              <small>{{ group.modules.length }} modules</small>
+              <small>{{ group.modules.length }} 个模块</small>
             </div>
             <div class="module-track">
               <button
@@ -411,7 +536,7 @@ onMounted(async () => {
 
         <div class="inspector-card compact-map">
           <div class="compact-head">
-            <span class="inspector-label">纵向路径索引</span>
+            <span class="inspector-label">全部模块</span>
             <el-button
               :icon="asideCollapsed ? Expand : Fold"
               circle
@@ -671,12 +796,12 @@ onMounted(async () => {
             </template>
             <p v-if="overview.nextModule" class="continue-lead">
               上次路径建议从
-              <strong>{{ overview.nextModule.label }}</strong>
+              <strong>{{ overview.nextModule?.label }}</strong>
               继续；也可从下方最近访问快速进入。
             </p>
             <p v-else class="continue-lead">选择上方模块或下方入口开始第一条学习路径。</p>
             <el-button type="primary" :icon="ArrowRight" @click="continueLearning">
-              {{ overview.nextModule ? `继续 ${overview.nextModule.label}` : '打开学习路径' }}
+              {{ overview.nextModule ? `继续 ${overview.nextModule?.label}` : '打开学习路径' }}
             </el-button>
             <ul v-if="recentVisits.length" class="continue-recent">
               <li v-for="v in recentVisits.slice(0, 4)" :key="v.moduleKey">
@@ -2391,7 +2516,694 @@ html:not(.dark) .hero-visual-panel {
     font-size: 16px;
   }
 }
-</style>
+</style>
+
+<style scoped>
+.dashboard-home {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 8px 0 56px;
+  color: var(--alp-color-text);
+}
+
+.dashboard-welcome {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.72fr);
+  align-items: center;
+  gap: 40px;
+  padding: 26px 28px;
+  border: 1px solid var(--alp-color-border);
+  border-radius: 10px 10px 0 0;
+  background: var(--alp-bg-surface-solid);
+}
+
+.dashboard-welcome-copy {
+  min-width: 0;
+}
+
+.dashboard-eyebrow {
+  margin: 0 0 5px;
+  color: var(--alp-color-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dashboard-welcome h1 {
+  margin: 0;
+  font-size: 25px;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+}
+
+.dashboard-welcome p:not(.dashboard-eyebrow) {
+  margin: 7px 0 0;
+  color: var(--alp-color-muted);
+  font-size: 13px;
+}
+
+.dashboard-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 15px;
+}
+
+.dashboard-context > span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 9px;
+  color: var(--alp-color-text-secondary);
+  font-size: 11px;
+  font-weight: 550;
+  border-radius: 99px;
+  background: var(--alp-bg-surface-muted);
+}
+
+.dashboard-status-dot {
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--alp-color-muted);
+}
+
+.dashboard-status-dot.is-ok {
+  background: var(--alp-color-success);
+  box-shadow: 0 0 0 3px rgba(74, 138, 94, 0.12);
+}
+
+.dashboard-status-dot.is-error {
+  background: var(--alp-color-warning);
+  box-shadow: 0 0 0 3px rgba(156, 122, 61, 0.12);
+}
+
+.dashboard-welcome-side {
+  display: grid;
+  gap: 15px;
+  min-width: 0;
+  padding-left: 28px;
+  border-left: 1px solid var(--alp-color-border);
+}
+
+.dashboard-focus-summary {
+  min-width: 0;
+}
+
+.dashboard-focus-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dashboard-focus-head > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--alp-color-muted);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.dashboard-focus-head .el-icon,
+.dashboard-focus-head b {
+  color: var(--alp-color-primary);
+}
+
+.dashboard-focus-head b {
+  font-size: 13px;
+}
+
+.dashboard-focus-summary > strong {
+  display: block;
+  overflow: hidden;
+  margin-top: 6px;
+  font-size: 17px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-focus-summary > small {
+  display: block;
+  margin-top: 3px;
+  color: var(--alp-color-muted);
+  font-size: 11px;
+}
+
+.dashboard-focus-track {
+  height: 5px;
+  overflow: hidden;
+  margin-top: 10px;
+  border-radius: 99px;
+  background: var(--alp-bg-soft-block);
+}
+
+.dashboard-focus-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--alp-color-primary);
+  transition: width 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dashboard-welcome-actions {
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.dashboard-welcome-actions :deep(.el-button) {
+  min-height: 40px;
+  border-radius: 6px;
+  font-weight: 650;
+}
+
+.dashboard-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--alp-color-border);
+  border-top: 0;
+  background: var(--alp-bg-surface-solid);
+}
+
+.dashboard-shortcuts > button {
+  display: grid;
+  grid-template-columns: 34px 1fr 18px;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 17px 20px;
+  color: var(--alp-color-text);
+  text-align: left;
+  border: 0;
+  border-right: 1px solid var(--alp-color-border);
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.dashboard-shortcuts > button:last-child { border-right: 0; }
+.dashboard-shortcuts > button:hover { background: var(--alp-bg-surface-muted); }
+.dashboard-shortcuts > button > .el-icon:first-child {
+  width: 32px;
+  height: 32px;
+  color: var(--alp-color-primary);
+  font-size: 17px;
+  border-radius: 8px;
+  background: var(--alp-color-primary-soft);
+  transition: background-color 160ms ease, transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.dashboard-shortcuts > button:hover > .el-icon:first-child {
+  background: rgba(var(--alp-color-primary-rgb), 0.16);
+  transform: translateY(-1px);
+}
+.dashboard-shortcuts span { display: flex; min-width: 0; flex-direction: column; }
+.dashboard-shortcuts strong { font-size: 14px; font-weight: 650; }
+.dashboard-shortcuts small { overflow: hidden; margin-top: 2px; color: var(--alp-color-muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.dashboard-shortcut-arrow {
+  color: var(--alp-color-muted);
+  font-size: 13px;
+  transition: color 160ms ease, transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.dashboard-shortcuts > button:hover .dashboard-shortcut-arrow {
+  color: var(--alp-color-primary);
+  transform: translateX(2px);
+}
+
+.dashboard-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 2.15fr) minmax(390px, 0.95fr);
+  align-items: start;
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.dashboard-primary,
+.dashboard-secondary {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.dashboard-panel {
+  min-width: 0;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--alp-color-border);
+  border-radius: 8px;
+  background: var(--alp-bg-surface-solid);
+}
+
+.dashboard-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 15px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--alp-color-border);
+}
+
+.dashboard-panel-head h2 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+
+.dashboard-panel-head p {
+  margin: 3px 0 0;
+  color: var(--alp-color-muted);
+  font-size: 11px;
+}
+
+.dashboard-updated {
+  color: var(--alp-color-primary);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.dashboard-analytics { min-height: 420px; }
+.dashboard-training { min-height: 360px; }
+.dashboard-community { min-height: 420px; }
+
+.dashboard-map-count {
+  color: var(--alp-color-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.dashboard-map-body {
+  min-height: 260px;
+  padding: 2px 4px 12px;
+}
+
+.dashboard-chapter-map :deep(.algorithm-map) {
+  width: 100%;
+}
+
+.dashboard-chapter-map :deep(.map-node),
+.dashboard-chapter-map :deep(button) {
+  cursor: pointer;
+}
+
+.dashboard-map-detail {
+  margin-top: 4px;
+  padding: 16px;
+  border: 1px solid rgba(var(--alp-color-primary-rgb), 0.28);
+  border-radius: 7px;
+  background: rgba(var(--alp-color-primary-rgb), 0.055);
+}
+
+.dashboard-map-detail > span {
+  color: var(--alp-color-muted);
+  font-size: 11px;
+}
+
+.dashboard-map-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 3px;
+}
+
+.dashboard-map-title strong {
+  font-size: 18px;
+}
+
+.dashboard-map-title b {
+  color: var(--alp-color-primary);
+  font-size: 13px;
+}
+
+.dashboard-map-progress {
+  height: 6px;
+  overflow: hidden;
+  margin-top: 10px;
+  border-radius: 99px;
+  background: var(--alp-bg-soft-block);
+}
+
+.dashboard-map-progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--alp-color-primary);
+  transition: width 220ms ease;
+}
+
+.dashboard-map-detail p {
+  margin: 10px 0 13px;
+  color: var(--alp-color-text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.dashboard-map-detail :deep(.el-button) {
+  width: 100%;
+  border-radius: 6px;
+}
+
+.dashboard-percent {
+  color: var(--alp-color-primary);
+  font-size: 20px;
+}
+
+.dashboard-progress-track {
+  height: 7px;
+  overflow: hidden;
+  margin: -2px 0 18px;
+  border-radius: 99px;
+  background: var(--alp-bg-soft-block);
+}
+
+.dashboard-progress-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--alp-color-primary);
+}
+
+.dashboard-selected-module {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(220px, 1.2fr) auto;
+  align-items: center;
+  gap: 22px;
+  margin-bottom: 18px;
+  padding: 15px 16px;
+  border: 1px solid rgba(var(--alp-color-primary-rgb), 0.28);
+  border-radius: 7px;
+  background: rgba(var(--alp-color-primary-rgb), 0.055);
+}
+
+.dashboard-selected-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.dashboard-selected-copy > span,
+.dashboard-selected-progress span {
+  color: var(--alp-color-muted);
+  font-size: 11px;
+}
+
+.dashboard-selected-copy > strong {
+  font-size: 17px;
+  line-height: 1.45;
+}
+
+.dashboard-selected-copy > small {
+  color: var(--alp-color-text-secondary);
+  font-size: 11px;
+}
+
+.dashboard-selected-progress > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 7px;
+}
+
+.dashboard-selected-progress strong {
+  color: var(--alp-color-primary);
+  font-size: 13px;
+}
+
+.dashboard-selected-track {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--alp-bg-soft-block);
+}
+
+.dashboard-selected-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--alp-color-primary);
+  transition: width 220ms ease;
+}
+
+.dashboard-selected-module :deep(.el-button) {
+  border-radius: 6px;
+}
+
+.dashboard-module-groups { display: grid; gap: 13px; }
+.dashboard-module-group { display: grid; grid-template-columns: 78px 1fr; align-items: start; gap: 12px; }
+.dashboard-module-group > span { padding-top: 6px; color: var(--alp-color-muted); font-size: 12px; font-weight: 650; }
+.dashboard-module-group > div { display: flex; flex-wrap: wrap; gap: 7px; }
+.dashboard-module-group button {
+  padding: 5px 9px;
+  color: var(--alp-color-text-secondary);
+  font: inherit;
+  font-size: 12px;
+  border: 1px solid var(--alp-color-border);
+  border-radius: 5px;
+  background: var(--alp-bg-surface-muted);
+  cursor: pointer;
+}
+.dashboard-module-group button:hover,
+.dashboard-module-group button.active { color: var(--alp-color-primary); border-color: var(--alp-color-primary); }
+.dashboard-module-group button.done { color: #287a52; background: rgba(40, 122, 82, 0.07); }
+.dashboard-module-group small { margin-left: 4px; color: var(--alp-color-muted); }
+
+.dashboard-resource-list { display: grid; }
+.dashboard-resource-list button {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 2px;
+  color: var(--alp-color-text-secondary);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid var(--alp-color-border);
+  background: transparent;
+  cursor: pointer;
+}
+.dashboard-resource-list button:hover span { color: var(--alp-color-primary); }
+.dashboard-resource-list small { color: var(--alp-color-muted); white-space: nowrap; }
+
+.dashboard-continue-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 13px 12px;
+  color: var(--alp-color-text);
+  text-align: left;
+  border: 1px solid var(--alp-color-border);
+  border-radius: 6px;
+  background: var(--alp-bg-surface-muted);
+  cursor: pointer;
+}
+.dashboard-continue-item + .dashboard-continue-item { margin-top: 8px; }
+.dashboard-continue-item:hover { border-color: var(--alp-color-primary); }
+.dashboard-continue-item span { display: flex; flex-direction: column; }
+.dashboard-continue-item strong { font-size: 13px; }
+.dashboard-continue-item small { margin-top: 2px; color: var(--alp-color-muted); font-size: 11px; }
+.dashboard-continue-item .el-icon { color: var(--alp-color-primary); }
+
+@media (max-width: 1020px) {
+  .dashboard-welcome { grid-template-columns: minmax(0, 1fr) minmax(300px, 0.72fr); gap: 24px; }
+  .dashboard-welcome-side { padding-left: 22px; }
+  .dashboard-columns { grid-template-columns: 1fr; }
+  .dashboard-secondary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-continue { grid-column: 1 / -1; }
+}
+
+@media (max-width: 760px) {
+  .dashboard-home { width: 100%; padding-top: 0; }
+  .dashboard-welcome { grid-template-columns: 1fr; align-items: flex-start; gap: 20px; padding: 21px 18px; }
+  .dashboard-welcome-side { width: 100%; padding: 17px 0 0; border-top: 1px solid var(--alp-color-border); border-left: 0; }
+  .dashboard-welcome-actions { width: 100%; }
+  .dashboard-welcome-actions :deep(.el-button) { flex: 1; }
+  .dashboard-shortcuts { grid-template-columns: 1fr 1fr; }
+  .dashboard-shortcuts > button:nth-child(2) { border-right: 0; }
+  .dashboard-shortcuts > button:nth-child(-n + 2) { border-bottom: 1px solid var(--alp-color-border); }
+  .dashboard-secondary { grid-template-columns: 1fr; }
+  .dashboard-continue { grid-column: auto; }
+  .dashboard-panel { padding: 16px 14px; }
+  .dashboard-module-group { grid-template-columns: 1fr; gap: 4px; }
+  .dashboard-selected-module { grid-template-columns: 1fr; gap: 12px; }
+  .dashboard-selected-module :deep(.el-button) { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-focus-track i,
+  .dashboard-shortcuts > button,
+  .dashboard-shortcuts > button > .el-icon:first-child,
+  .dashboard-shortcut-arrow {
+    transition: none;
+  }
+}
+</style>
+
+<style scoped>
+/* 2026 homepage refresh: compact, task-first product UI */
+.home-page {
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 24px 28px 56px;
+}
+
+.home-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(420px, 0.65fr);
+  grid-template-areas:
+    "copy stats";
+  gap: 0;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--alp-color-border);
+  border-radius: 12px;
+  background: var(--alp-bg-surface-solid);
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.05);
+}
+
+.home-hero::before,
+.home-hero::after,
+.hero-visual {
+  display: none !important;
+}
+
+.hero-copy {
+  grid-area: copy;
+  max-width: none;
+  padding: 34px 38px 30px;
+  border-right: 1px solid var(--alp-color-border);
+}
+
+.hero-kicker {
+  margin: 0 0 8px;
+  color: var(--alp-color-primary);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.hero-title {
+  max-width: none;
+  margin: 0;
+  color: var(--alp-color-text);
+  font-size: 30px;
+  font-weight: 720;
+  line-height: 1.3;
+  letter-spacing: -0.025em;
+}
+
+.hero-desc {
+  max-width: 62ch;
+  margin: 10px 0 0;
+  color: var(--alp-color-text-secondary);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.hero-actions {
+  margin-top: 22px;
+}
+
+.hero-actions :deep(.el-button) {
+  min-height: 42px;
+  border-radius: 7px;
+  font-weight: 650;
+}
+
+.hero-stats {
+  grid-area: stats;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: stretch;
+  gap: 0;
+  width: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.stat-card,
+.stat-card.accent {
+  min-width: 0;
+  padding: 24px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.stat-card:nth-child(odd) { border-right: 1px solid var(--alp-color-border); }
+.stat-card:nth-child(-n + 2) { border-bottom: 1px solid var(--alp-color-border); }
+.stat-card:hover { transform: none; background: var(--alp-bg-surface-muted); box-shadow: none; }
+.stat-card .el-icon { color: var(--alp-color-primary); }
+.stat-card strong { color: var(--alp-color-text); font-size: 22px; }
+.stat-card span { color: var(--alp-color-muted); font-size: 12px; }
+
+.map-command {
+  margin-top: 18px;
+  border: 1px solid var(--alp-color-border);
+  border-radius: 12px;
+  background: var(--alp-bg-surface-solid);
+  box-shadow: none;
+}
+
+.map-board-head h2 {
+  font-size: 19px;
+  letter-spacing: -0.01em;
+}
+
+.section-kicker {
+  color: var(--alp-color-primary);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.module-node {
+  border-radius: 7px;
+  box-shadow: none;
+}
+
+.home-toolbar {
+  margin: 14px 0 0;
+  border: 1px solid var(--alp-color-border);
+  border-radius: 8px;
+  background: var(--alp-bg-surface-muted);
+  box-shadow: none;
+}
+
+.quick-row { margin-top: 14px; }
+.quick-card {
+  min-height: 76px;
+  border-radius: 9px;
+  background: var(--alp-bg-surface-solid);
+  box-shadow: none;
+}
+.quick-card:hover { transform: none; border-color: var(--alp-color-primary); box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05); }
+
+@media (max-width: 1080px) {
+  .home-hero {
+    grid-template-columns: 1fr;
+    grid-template-areas: "copy" "stats";
+  }
+  .hero-copy { border-right: 0; border-bottom: 1px solid var(--alp-color-border); }
+}
+
+@media (max-width: 720px) {
+  .home-page { padding: 14px 12px 40px; }
+  .hero-copy { padding: 24px 20px; }
+  .hero-title { font-size: 24px; }
+  .hero-actions { display: grid; gap: 10px; }
+  .hero-actions :deep(.el-button) { width: 100%; margin: 0; }
+  .hero-stats { grid-template-columns: 1fr 1fr; }
+  .stat-card, .stat-card.accent { padding: 18px 16px; }
+}
+</style>
 
 <style>
 /* 首页：禁止 document 滚动，确保仅 .home-right 内滚动 */

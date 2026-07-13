@@ -396,7 +396,7 @@ html::before {
 }
 
 .card-header-title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--alp-color-text);
   letter-spacing: 0.01em;
@@ -408,7 +408,7 @@ html::before {
 }
 
 .el-menu-item {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   transition: color 0.15s ease;
 }

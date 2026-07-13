@@ -1,0 +1,28 @@
+{
+  "schema": "ppt-master.source_to_md.profile.v1",
+  "converter": "ppt_to_md.py",
+  "conversion_type": "pptx",
+  "source": {
+    "path": "AlgoPilot_软件杯答辩.pptx",
+    "name": "AlgoPilot_软件杯答辩.pptx",
+    "suffix": ".pptx",
+    "kind": "file",
+    "exists": true,
+    "size_bytes": 105663
+  },
+  "outputs": {
+    "markdown": "AlgoPilot_软件杯答辩.md",
+    "asset_dir": "",
+    "image_manifest": "",
+    "image_count": 0
+  },
+  "markdown": {
+    "line_count": 1274,
+    "char_count": 8466,
+    "heading_count": 25,
+    "table_count": 1,
+    "image_ref_count": 0,
+    "link_count": 0
+  },
+  "warnings": []
+}

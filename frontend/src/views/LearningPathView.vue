@@ -58,10 +58,15 @@ onMounted(async () => {
       :class="{ 'onboarding-section--highlight': route.query.onboarding === '1' }"
     >
       <div class="onboarding-head">
-        <h3 class="section-title">
-          <el-icon><Timer /></el-icon>
-          新生破冰访谈 · 六维画像
-        </h3>
+        <div class="onboarding-head-main">
+          <h3 class="section-title">
+            <el-icon><Timer /></el-icon>
+            新生破冰访谈 · 六维画像
+          </h3>
+          <p class="muted section-desc">
+            与学习画像 Agent 进行 4 轮破冰对话，系统将自动抽取知识基础、认知风格、代码实操、学习目标、易错偏好、抗挫心理六维画像，驱动个性化学习路径与资源推荐。
+          </p>
+        </div>
         <el-tag type="success" effect="plain" size="small">画像驱动</el-tag>
       </div>
       <PersonaChatPanel @profile-ready="onProfileReady" />
@@ -349,10 +354,14 @@ onMounted(async () => {
 
 .onboarding-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
+}
+
+.onboarding-head-main {
+  min-width: 0;
 }
 
 .section-title {

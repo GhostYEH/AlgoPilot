@@ -56,13 +56,15 @@ def export_effectiveness_csv(
         chapter_id=chapter_id,
     )
     buf = io.StringIO()
+    # 写入 UTF-8 BOM，避免 Excel 用 GBK 解码导致中文乱码
+    buf.write("\ufeff")
     writer = csv.writer(buf)
     for row in build_csv_rows(data):
         writer.writerow(row)
     buf.seek(0)
     return StreamingResponse(
         buf,
-        media_type="text/csv",
+        media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": "attachment; filename=effectiveness_export.csv"},
     )
 

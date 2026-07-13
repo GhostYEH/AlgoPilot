@@ -494,6 +494,11 @@ class Orchestrator:
     async def oj_assistant(self, body: OjAssistantRequest) -> str:
         return await _oj.run_for_request(body)
 
+    async def oj_assistant_stream(self, body: OjAssistantRequest) -> AsyncIterator[str]:
+        """流式产出 OJ 助手回复（ds_hint / code_hint）。"""
+        async for chunk in _oj.run_stream_for_request(body):
+            yield chunk
+
     def list_agents(self) -> list[dict]:
         return list_agents()
 

@@ -1,7 +1,7 @@
 import { ref, watch, type Ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { ProblemDetail } from '@/api/oj'
-import { postOjAssistant } from '@/api/ojAssistant'
+import { streamOjAssistant } from '@/api/ojAssistant'
 import { fetchSystemHealth } from '@/api/health'
 import {
   formatSampleInput,
@@ -28,6 +28,9 @@ export function useOjAssistantHints(
   const codeLoading = ref(false)
   const dsReply = ref('')
   const codeReply = ref('')
+  /** 流式中：用于卡片显示“AI 正在输出”光标 */
+  const dsStreaming = ref(false)
+  const codeStreaming = ref(false)
 
   function buildSamplesText(): string {
     const p = problem.value
@@ -62,18 +65,28 @@ export function useOjAssistantHints(
       return
     }
     dsLoading.value = true
+    dsStreaming.value = true
     dsReply.value = ''
     try {
-      const { reply } = await postOjAssistant({
-        ...baseParams(),
-        mode: 'ds_hint',
-        userCode: '',
-      })
-      dsReply.value = reply
+      await streamOjAssistant(
+        { ...baseParams(), mode: 'ds_hint', userCode: '' },
+        {
+          onToken: (chunk) => {
+            dsReply.value += chunk
+          },
+          onDone: (full) => {
+            if (full) dsReply.value = full
+          },
+          onError: () => {
+            /* toast in api */
+          },
+        },
+      )
     } catch {
       /* toast in api */
     } finally {
       dsLoading.value = false
+      dsStreaming.value = false
     }
   }
 
@@ -84,18 +97,28 @@ export function useOjAssistantHints(
       return
     }
     codeLoading.value = true
+    codeStreaming.value = true
     codeReply.value = ''
     try {
-      const { reply } = await postOjAssistant({
-        ...baseParams(),
-        mode: 'code_hint',
-        userCode: userCode.value,
-      })
-      codeReply.value = reply
+      await streamOjAssistant(
+        { ...baseParams(), mode: 'code_hint', userCode: userCode.value },
+        {
+          onToken: (chunk) => {
+            codeReply.value += chunk
+          },
+          onDone: (full) => {
+            if (full) codeReply.value = full
+          },
+          onError: () => {
+            /* toast in api */
+          },
+        },
+      )
     } catch {
       /* toast in api */
     } finally {
       codeLoading.value = false
+      codeStreaming.value = false
     }
   }
 
@@ -110,6 +133,8 @@ export function useOjAssistantHints(
   return {
     dsLoading,
     codeLoading,
+    dsStreaming,
+    codeStreaming,
     dsReply,
     codeReply,
     fetchDsHint,
