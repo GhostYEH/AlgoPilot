@@ -9,7 +9,7 @@ export interface OjPracticeRecord {
   moduleKey?: string
 }
 
-function loadAll(): OjPracticeRecord[] {
+export function getOjPracticeRecords(): OjPracticeRecord[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return []
@@ -25,14 +25,14 @@ function saveAll(records: OjPracticeRecord[]) {
 }
 
 export function recordOjPractice(slug: string, verdict: string, moduleKey?: string) {
-  const records = loadAll()
+  const records = getOjPracticeRecords()
   records.push({ slug, verdict, at: Date.now(), moduleKey })
   saveAll(records)
 }
 
 export function getOjPracticeBySlug(): Map<string, { ac: number; total: number; lastVerdict: string }> {
   const map = new Map<string, { ac: number; total: number; lastVerdict: string }>()
-  for (const r of loadAll()) {
+  for (const r of getOjPracticeRecords()) {
     const cur = map.get(r.slug) ?? { ac: 0, total: 0, lastVerdict: r.verdict }
     cur.total += 1
     if (r.verdict === 'AC') cur.ac += 1
@@ -44,7 +44,7 @@ export function getOjPracticeBySlug(): Map<string, { ac: number; total: number; 
 
 export function getRecentFailureTags(limit = 5): string[] {
   const tags: string[] = []
-  for (const r of [...loadAll()].reverse()) {
+  for (const r of [...getOjPracticeRecords()].reverse()) {
     if (r.verdict === 'AC') continue
     const tag = r.verdict === 'TLE' ? 'TLE' : r.verdict === 'RE' ? '指针/运行时' : '边界/WA'
     if (!tags.includes(tag)) tags.push(tag)

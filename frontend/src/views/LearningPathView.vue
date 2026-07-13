@@ -1,29 +1,21 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { Guide, TrendCharts, Calendar, DataBoard, Compass, Timer } from '@element-plus/icons-vue'
+import { useRoute } from 'vue-router'
+import { Timer } from '@element-plus/icons-vue'
 import AlgorithmUniverseGraph from '@/components/learning/AlgorithmUniverseGraph.vue'
 import ConceptKnowledgeGraph from '@/components/learning/ConceptKnowledgeGraph.vue'
 import PersonaChatPanel from '@/components/persona/PersonaChatPanel.vue'
 import RecommendedResourcesPanel from '@/components/learning/RecommendedResourcesPanel.vue'
 import PathReplanDiffCard from '@/components/learning/PathReplanDiffCard.vue'
-import LearningProgressRing from '@/components/learning/LearningProgressRing.vue'
-import LearningSectionDonut from '@/components/learning/LearningSectionDonut.vue'
-import LearningModuleBarChart from '@/components/learning/LearningModuleBarChart.vue'
-import LearningActivityHeatmap from '@/components/learning/LearningActivityHeatmap.vue'
+import StudyPlanDashboard from '@/components/learning/StudyPlanDashboard.vue'
 import LearningEffectivenessCard from '@/components/learning/LearningEffectivenessCard.vue'
 import LearningEvaluationPanel from '@/components/learning/LearningEvaluationPanel.vue'
-import { ALGORITHM_MODULES } from '@/constants/modules'
-import { buildLearningOverview } from '@/utils/learningOverview'
 import { useLearningPathPlan } from '@/composables/useLearningPathPlan'
 import { isLoggedIn } from '@/stores/auth'
-import { useLearningActivity } from '@/composables/useLearningActivity'
 import type { PersonaProfile } from '@/api/orchestrator'
 
 const route = useRoute()
-const router = useRouter()
 const { plan, loadPlan, lastReplanDiff, clearReplanDiff } = useLearningPathPlan()
-const { activityDays } = useLearningActivity()
 const universeKey = ref(0)
 
 const highlightKey = computed(() => {
@@ -33,24 +25,6 @@ const highlightKey = computed(() => {
 
 const pathHighlightIds = computed(() => plan.value?.ordered_keys ?? [])
 
-const moduleLabel = computed(() => {
-  if (!highlightKey.value) return ''
-  return ALGORITHM_MODULES.find((m) => m.key === highlightKey.value)?.label ?? highlightKey.value
-})
-
-const overview = computed(() => buildLearningOverview())
-
-const availableRows = computed(() => overview.value.rows.filter(r => r.available && r.hasProgressData))
-
-const phaseStats = computed(() => {
-  const phases = ['foundation', 'technique', 'tree', 'advanced'] as const
-  return phases.map(phase => {
-    const rows = overview.value.rows.filter(r => r.phase === phase)
-    const done = rows.reduce((s, r) => s + r.doneCount, 0)
-    const total = rows.reduce((s, r) => s + r.totalCount, 0)
-    return { phase, done, total, percent: total > 0 ? Math.round(done / total * 100) : 0 }
-  })
-})
 
 async function onProfileReady(_profile: PersonaProfile) {
   await loadPlan()
@@ -74,95 +48,7 @@ onMounted(async () => {
 
 <template>
   <el-card shadow="never" class="page-card">
-    <el-page-header title="学习路径" @back="router.push({ name: 'home' })" />
-    <el-divider />
-
-    <header class="page-hero">
-      <div class="hero-main">
-        <h2 class="hero-title">
-          <el-icon class="hero-icon"><Compass /></el-icon>
-          智能学习路径
-        </h2>
-        <p class="hero-desc">
-          <strong>ProfilerAgent + PlannerAgent</strong>：登录后完成破冰访谈，系统将抽取六维画像并在<strong>算法知识宇宙</strong>中生成可探索的 DAG 星图。
-          <template v-if="highlightKey">
-            当前聚焦：<el-tag type="primary" effect="plain" size="small">{{ moduleLabel }}</el-tag>
-          </template>
-        </p>
-      </div>
-      <div class="hero-stats">
-        <div class="stat-mini">
-          <span class="stat-mini-value">{{ overview.overallPercent }}%</span>
-          <span class="stat-mini-label">总进度</span>
-        </div>
-        <div class="stat-mini">
-          <span class="stat-mini-value">{{ overview.trackedModules }}</span>
-          <span class="stat-mini-label">已跟踪</span>
-        </div>
-        <div class="stat-mini">
-          <span class="stat-mini-value">{{ overview.completedModules }}</span>
-          <span class="stat-mini-label">已完成</span>
-        </div>
-      </div>
-    </header>
-
-    <section class="dashboard-grid">
-      <div class="dash-card dash-card--progress">
-        <div class="dash-head">
-          <el-icon><DataBoard /></el-icon>
-          <span>学习进度总览</span>
-        </div>
-        <div class="dash-body dash-body--centered">
-          <LearningProgressRing
-            :percent="overview.overallPercent"
-            :size="120"
-            label="总进度"
-            :sublabel="`${overview.completedModules}/${overview.trackedModules} 模块`"
-          />
-        </div>
-        <div class="dash-foot">
-          <span>已完成 {{ overview.completedModules }} 个模块</span>
-        </div>
-      </div>
-
-      <div class="dash-card dash-card--donut">
-        <div class="dash-head">
-          <el-icon><TrendCharts /></el-icon>
-          <span>阶段分布</span>
-        </div>
-        <div class="dash-body dash-body--centered">
-          <LearningSectionDonut :rows="overview.rows" />
-        </div>
-        <div class="dash-foot">
-          <template v-for="ps in phaseStats" :key="ps.phase">
-            <span v-if="ps.total > 0">{{ ps.phase }}: {{ ps.done }}/{{ ps.total }}</span>
-          </template>
-        </div>
-      </div>
-
-      <div class="dash-card dash-card--bars">
-        <div class="dash-head">
-          <el-icon><Guide /></el-icon>
-          <span>模块进度</span>
-        </div>
-        <div class="dash-body">
-          <LearningModuleBarChart :rows="availableRows" :max-items="6" />
-        </div>
-      </div>
-
-      <div class="dash-card dash-card--heatmap">
-        <div class="dash-head">
-          <el-icon><Calendar /></el-icon>
-          <span>学习活跃度</span>
-        </div>
-        <div class="dash-body">
-          <LearningActivityHeatmap :days="activityDays" :weeks="10" />
-        </div>
-        <div class="dash-foot">
-          <span>近 10 周学习轨迹</span>
-        </div>
-      </div>
-    </section>
+    <StudyPlanDashboard />
 
     <section
       v-if="isLoggedIn"
@@ -180,29 +66,6 @@ onMounted(async () => {
       </div>
       <PersonaChatPanel @profile-ready="onProfileReady" />
     </section>
-
-    <el-row :gutter="16" class="tip-row">
-      <el-col :xs="24" :md="12">
-        <div class="tip-card">
-          <el-icon class="tip-icon"><Guide /></el-icon>
-          <div>
-            <div class="tip-title">阶段目标</div>
-            <p class="tip-desc">从基础结构到进阶算法，循序渐进掌握面试核心知识体系。</p>
-          </div>
-        </div>
-      </el-col>
-      <el-col :xs="24" :md="12">
-        <div class="tip-card">
-          <el-icon class="tip-icon"><TrendCharts /></el-icon>
-          <div>
-            <div class="tip-title">进度同步</div>
-            <p class="tip-desc">
-              已跟踪 {{ overview.trackedModules }} 个模块，总进度 {{ overview.overallPercent }}%。登录后可将进度同步至云端。
-            </p>
-          </div>
-        </div>
-      </el-col>
-    </el-row>
 
     <PathReplanDiffCard
       v-if="isLoggedIn && lastReplanDiff"

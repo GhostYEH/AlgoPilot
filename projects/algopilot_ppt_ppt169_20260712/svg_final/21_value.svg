@@ -1,0 +1,55 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+  <rect x="0" y="0" width="1280" height="720" fill="#F7F8FA"/>
+  <rect x="0" y="0" width="6" height="720" fill="#1B2A4A"/>
+  <text x="80" y="40" font-family="'Inter', sans-serif" font-weight="500" font-size="12" fill="#2D7DD2" letter-spacing="3">07 · APPLICATION VALUE</text>
+  <text x="80" y="85" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="28" fill="#1B2A4A">三种角色，一套平台</text>
+  <line x1="80" y1="100" x2="350" y2="100" stroke="#2D7DD2" stroke-width="2"/>
+  <!-- Three value pillars -->
+  <!-- Student -->
+  <g transform="translate(80, 140)">
+    <rect x="0" y="0" width="360" height="380" rx="6" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+    <rect x="0" y="0" width="360" height="140" rx="6" fill="#1B2A4A"/>
+    <circle cx="180" cy="80" r="40" fill="#2D7DD2"/>
+    <text x="180" y="78" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="700" font-size="22" fill="#FFFFFF" text-anchor="middle">学生</text>
+    <text x="180" y="102" font-family="'Inter', sans-serif" font-weight="400" font-size="13" fill="#FFFFFF" text-anchor="middle">Student</text>
+    <g transform="translate(20, 160)">
+      <circle cx="12" cy="12" r="8" fill="#2D7DD2"/><text x="26" y="17" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="14" fill="#1E2024">个性化学习路径</text>
+      <circle cx="12" cy="42" r="8" fill="#2D7DD2"/><text x="26" y="47" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="14" fill="#1E2024">多维度智能资源</text>
+      <circle cx="12" cy="72" r="8" fill="#2D7DD2"/><text x="26" y="77" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="14" fill="#1E2024">代码 Trace 可视化</text>
+      <circle cx="12" cy="102" r="8" fill="#2D7DD2"/><text x="26" y="107" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="14" fill="#1E2024">AI 智能辅导答疑</text>
+      <circle cx="12" cy="132" r="8" fill="#2D7DD2"/><text x="26" y="137" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="14" fill="#1E2024">掌握度量化评估</text>
+      <circle cx="12" cy="162" r="8" fill="#2D7DD2"/><text x="26" y="167" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="14" fill="#1E2024">持久化学习记忆</text>
+    </g>
+  </g>
+  <!-- Teacher -->
+  <g transform="translate(460, 140)">
+    <rect x="0" y="0" width="360" height="380" rx="6" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+    <rect x="0" y="0" width="360" height="140" rx="6" fill="#1B2A4A"/>
+    <circle cx="180" cy="80" r="40" fill="#2D7DD2"/>
+    <text x="180" y="78" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="700" font-size="22" fill="#FFFFFF" text-anchor="middle">教师</text>
+    <text x="180" y="102" font-family="'Inter', sans-serif" font-weight="400" font-size="13" fill="#FFFFFF" text-anchor="middle">Teacher</text>
+    <g transform="translate(20, 160)">
+      <circle cx="12" cy="12" r="8" fill="#2D7DD2"/><text x="26" y="17" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="14" fill="#1E2024">全面学情看板</text>
+      <circle cx="12" cy="42" r="8" fill="#2D7DD2"/><text x="26" y="47" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="14" fill="#1E2024">掌握度热力图</text>
+      <circle cx="12" cy="72" r="8" fill="#2D7DD2"/><text x="26" y="77" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="14" fill="#1E2024">精准识别薄弱学生</text>
+      <circle cx="12" cy="102" r="8" fill="#2D7DD2"/><text x="26" y="107" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="14" fill="#1E2024">教学效果量化评估</text>
+      <circle cx="12" cy="132" r="8" fill="#2D7DD2"/><text x="26" y="137" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="14" fill="#1E2024">因材施教辅助决策</text>
+    </g>
+  </g>
+  <!-- Education -->
+  <g transform="translate(840, 140)">
+    <rect x="0" y="0" width="360" height="380" rx="6" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+    <rect x="0" y="0" width="360" height="140" rx="6" fill="#1B2A4A"/>
+    <circle cx="180" cy="80" r="40" fill="#2D7DD2"/>
+    <text x="180" y="78" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="700" font-size="22" fill="#FFFFFF" text-anchor="middle">教育</text>
+    <text x="180" y="102" font-family="'Inter', sans-serif" font-weight="400" font-size="13" fill="#FFFFFF" text-anchor="middle">Education</text>
+    <g transform="translate(20, 160)">
+      <circle cx="12" cy="12" r="8" fill="#2D7DD2"/><text x="26" y="17" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="14" fill="#1E2024">AI+教育深度融合实践</text>
+      <circle cx="12" cy="42" r="8" fill="#2D7DD2"/><text x="26" y="47" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="14" fill="#1E2024">降低大模型幻觉风险</text>
+      <circle cx="12" cy="72" r="8" fill="#2D7DD2"/><text x="26" y="77" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="14" fill="#1E2024">可复制的智能教育范式</text>
+      <circle cx="12" cy="102" r="8" fill="#2D7DD2"/><text x="26" y="107" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="14" fill="#1E2024">多智能体协同参考架构</text>
+      <circle cx="12" cy="132" r="8" fill="#2D7DD2"/><text x="26" y="137" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="14" fill="#1E2024">零 langgraph 轻量部署</text>
+    </g>
+  </g>
+  <text x="1240" y="700" font-family="'Inter', sans-serif" font-weight="400" font-size="12" fill="#9CA3AF" text-anchor="end">21 / 24</text>
+</svg>

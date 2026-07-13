@@ -1,0 +1,96 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+  <defs>
+    <linearGradient id="p4-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1B2A4A" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="#F7F8FA" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="1280" height="720" fill="#F7F8FA"/>
+  <rect x="0" y="0" width="1280" height="300" fill="url(#p4-bg)"/>
+  <rect x="0" y="0" width="6" height="720" fill="#1B2A4A"/>
+
+  <!-- Decorative bg -->
+  <g opacity="0.03">
+    <circle cx="1150" cy="550" r="180" fill="#1B2A4A"/>
+    <circle cx="80" cy="650" r="120" fill="#2D7DD2"/>
+  </g>
+
+  <text x="80" y="40" font-family="'Inter', sans-serif" font-weight="500" font-size="12" fill="#2D7DD2" letter-spacing="3">01 · BACKGROUND</text>
+  <text x="80" y="85" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="28" fill="#1B2A4A">为什么现有方案不够？</text>
+  <line x1="80" y1="100" x2="350" y2="100" stroke="#2D7DD2" stroke-width="2"/>
+
+  <!-- Decorative comparison icon on the right -->
+  <g transform="translate(1040, 120)" opacity="0.06">
+    <rect x="0" y="0" width="120" height="80" rx="4" fill="#1B2A4A"/>
+    <rect x="10" y="15" width="40" height="50" rx="2" fill="none" stroke="#FFFFFF" stroke-width="1.5"/>
+    <rect x="70" y="15" width="40" height="50" rx="2" fill="none" stroke="#FFFFFF" stroke-width="1.5"/>
+    <line x1="30" y1="30" x2="30" y2="35" stroke="#FFFFFF" stroke-width="1.5"/>
+    <line x1="90" y1="30" x2="90" y2="45" stroke="#FFFFFF" stroke-width="1.5"/>
+  </g>
+
+  <!-- Table -->
+  <g transform="translate(80, 140)">
+    <rect x="0" y="0" width="380" height="42" rx="4" fill="#1B2A4A"/>
+    <rect x="390" y="0" width="480" height="42" rx="4" fill="#1B2A4A"/>
+    <rect x="880" y="0" width="100" height="42" rx="4" fill="#1B2A4A"/>
+    <text x="190" y="26" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="14" fill="#FFFFFF" text-anchor="middle">方案</text>
+    <text x="630" y="26" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="14" fill="#FFFFFF" text-anchor="middle">核心不足</text>
+    <text x="930" y="26" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="14" fill="#FFFFFF" text-anchor="middle">评价</text>
+
+    <!-- Rows -->
+    <g transform="translate(0, 48)">
+      <rect x="0" y="0" width="380" height="48" rx="2" fill="#FFFFFF" stroke="#EDF0F5" stroke-width="1"/>
+      <rect x="390" y="0" width="480" height="48" rx="2" fill="#FFFFFF" stroke="#EDF0F5" stroke-width="1"/>
+      <rect x="880" y="0" width="100" height="48" rx="2" fill="#FFFFFF" stroke="#EDF0F5" stroke-width="1"/>
+      <text x="24" y="29" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="14" fill="#1E2024">传统 OJ（力扣/洛谷）</text>
+      <text x="414" y="29" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">只判对错，无诊断、无画像、无路径规划</text>
+      <text x="930" y="29" font-family="'Inter', sans-serif" font-weight="700" font-size="18" fill="#EF4444" text-anchor="middle">✗</text>
+    </g>
+    <g transform="translate(0, 100)">
+      <rect x="0" y="0" width="380" height="48" rx="2" fill="#FFFFFF" stroke="#EDF0F5" stroke-width="1"/>
+      <rect x="390" y="0" width="480" height="48" rx="2" fill="#FFFFFF" stroke="#EDF0F5" stroke-width="1"/>
+      <rect x="880" y="0" width="100" height="48" rx="2" fill="#FFFFFF" stroke="#EDF0F5" stroke-width="1"/>
+      <text x="24" y="29" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="14" fill="#1E2024">MOOC 课程</text>
+      <text x="414" y="29" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">视频单向输出，无个性化、无交互式可视化</text>
+      <text x="930" y="29" font-family="'Inter', sans-serif" font-weight="700" font-size="18" fill="#EF4444" text-anchor="middle">✗</text>
+    </g>
+    <g transform="translate(0, 152)">
+      <rect x="0" y="0" width="380" height="48" rx="2" fill="#FFFFFF" stroke="#EDF0F5" stroke-width="1"/>
+      <rect x="390" y="0" width="480" height="48" rx="2" fill="#FFFFFF" stroke="#EDF0F5" stroke-width="1"/>
+      <rect x="880" y="0" width="100" height="48" rx="2" fill="#FFFFFF" stroke="#EDF0F5" stroke-width="1"/>
+      <text x="24" y="29" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="14" fill="#1E2024">通用 AI 助手</text>
+      <text x="414" y="29" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">无课程知识库约束，易产生幻觉</text>
+      <text x="930" y="29" font-family="'Inter', sans-serif" font-weight="700" font-size="18" fill="#EF4444" text-anchor="middle">△</text>
+    </g>
+    <g transform="translate(0, 204)">
+      <rect x="0" y="0" width="380" height="48" rx="2" fill="#FFFFFF" stroke="#EDF0F5" stroke-width="1"/>
+      <rect x="390" y="0" width="480" height="48" rx="2" fill="#FFFFFF" stroke="#EDF0F5" stroke-width="1"/>
+      <rect x="880" y="0" width="100" height="48" rx="2" fill="#FFFFFF" stroke="#EDF0F5" stroke-width="1"/>
+      <text x="24" y="29" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="14" fill="#1E2024">算法可视化网站</text>
+      <text x="414" y="29" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">只能看预设动画，不能追踪自己写的代码</text>
+      <text x="930" y="29" font-family="'Inter', sans-serif" font-weight="700" font-size="18" fill="#EF4444" text-anchor="middle">✗</text>
+    </g>
+
+    <!-- Highlighted: AlgoPilot -->
+    <g transform="translate(0, 260)">
+      <rect x="0" y="0" width="380" height="48" rx="4" fill="#EDF0F5" stroke="#2D7DD2" stroke-width="2"/>
+      <rect x="390" y="0" width="480" height="48" rx="4" fill="#EDF0F5" stroke="#2D7DD2" stroke-width="2"/>
+      <rect x="880" y="0" width="100" height="48" rx="4" fill="#EDF0F5" stroke="#2D7DD2" stroke-width="2"/>
+      <!-- Accent left bar -->
+      <rect x="0" y="4" width="4" height="40" rx="2" fill="#2D7DD2"/>
+      <text x="24" y="29" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="700" font-size="14" fill="#1B2A4A">AlgoPilot（我们）</text>
+      <text x="414" y="29" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="13" fill="#1B2A4A">全流程智能闭环 — 画像+路径+资源+Trace+辅导</text>
+      <text x="930" y="29" font-family="'Inter', sans-serif" font-weight="700" font-size="18" fill="#10B981" text-anchor="middle">✓</text>
+    </g>
+  </g>
+
+  <!-- Bottom insight box -->
+  <g transform="translate(80, 480)">
+    <rect x="0" y="0" width="720" height="70" rx="8" fill="#FFFFFF" stroke="#2D7DD2" stroke-width="1" stroke-dasharray="5,3"/>
+    <rect x="0" y="0" width="4" height="70" rx="2" fill="#2D7DD2"/>
+    <text x="20" y="28" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="15" fill="#1B2A4A">💡 AlgoPilot 的解决思路</text>
+    <text x="20" y="54" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">多智能体协同 · RAG 知识库 · 大语言模型 · 代码 Trace 可视化    —  四大技术深度融合</text>
+  </g>
+
+  <text x="1240" y="700" font-family="'Inter', sans-serif" font-weight="400" font-size="12" fill="#9CA3AF" text-anchor="end">04 / 24</text>
+</svg>

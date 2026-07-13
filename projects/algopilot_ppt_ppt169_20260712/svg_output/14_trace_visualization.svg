@@ -1,0 +1,91 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+  <defs>
+    <linearGradient id="p14-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1B2A4A" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="#F7F8FA" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="1280" height="720" fill="#F7F8FA"/>
+  <rect x="0" y="0" width="1280" height="200" fill="url(#p14-grad)"/>
+  <rect x="0" y="0" width="6" height="720" fill="#1B2A4A"/>
+  <g opacity="0.03">
+    <circle cx="1200" cy="600" r="130" fill="#1B2A4A"/>
+    <circle cx="80" cy="650" r="100" fill="#2D7DD2"/>
+  </g>
+  <text x="80" y="40" font-family="'Inter', sans-serif" font-weight="500" font-size="12" fill="#2D7DD2" letter-spacing="3">04 · CORE FEATURES</text>
+  <text x="80" y="85" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="28" fill="#1B2A4A">代码 Trace 可视化——看见每一步</text>
+  <line x1="80" y1="100" x2="450" y2="100" stroke="#2D7DD2" stroke-width="2"/>
+
+  <!-- Python Trace Card -->
+  <g transform="translate(80, 130)">
+    <rect x="0" y="0" width="540" height="270" rx="8" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+    <rect x="0" y="0" width="540" height="40" rx="8" fill="#1B2A4A"/>
+    <circle cx="22" cy="20" r="12" fill="#2D7DD2"/>
+    <text x="22" y="25" font-family="'Inter', sans-serif" font-weight="700" font-size="11" fill="#FFFFFF" text-anchor="middle">P</text>
+    <text x="42" y="25" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="14" fill="#FFFFFF">Python Trace：sys.settrace</text>
+    <!-- Step flow -->
+    <g transform="translate(20, 60)">
+      <line x1="0" y1="5" x2="260" y2="5" stroke="#2D7DD2" stroke-width="1"/>
+      <text x="30" y="20" font-family="'Inter', sans-serif" font-weight="400" font-size="12" fill="#6B7280" text-anchor="middle">Step 1</text>
+      <rect x="0" y="30" width="120" height="60" rx="6" fill="#EDF0F5"/>
+      <text x="10" y="50" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="12" fill="#1E2024">变量追踪</text>
+      <text x="10" y="70" font-family="'Inter', monospace" font-weight="400" font-size="11" fill="#2D7DD2">curr → Node(3)</text>
+      <rect x="140" y="30" width="120" height="60" rx="6" fill="#EDF0F5"/>
+      <text x="150" y="50" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="12" fill="#1E2024">调用栈</text>
+      <text x="150" y="70" font-family="'Inter', monospace" font-weight="400" font-size="11" fill="#6B7280">reverse_list</text>
+      <text x="80" y="110" font-family="'Inter', sans-serif" font-weight="400" font-size="11" fill="#9CA3AF" text-anchor="middle">↓ 统一事件流</text>
+      <rect x="40" y="120" width="120" height="30" rx="6" fill="#E8F0FE" stroke="#2D7DD2" stroke-width="1"/>
+      <text x="100" y="140" font-family="'Inter', sans-serif" font-weight="500" font-size="11" fill="#1B2A4A" text-anchor="middle">Normalized</text>
+    </g>
+  </g>
+
+  <!-- C++ Trace Card -->
+  <g transform="translate(650, 130)">
+    <rect x="0" y="0" width="540" height="270" rx="8" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+    <rect x="0" y="0" width="540" height="40" rx="8" fill="#2D7DD2"/>
+    <circle cx="22" cy="20" r="12" fill="#1B2A4A"/>
+    <text x="22" y="25" font-family="'Inter', sans-serif" font-weight="700" font-size="11" fill="#FFFFFF" text-anchor="middle">C</text>
+    <text x="42" y="25" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="14" fill="#FFFFFF">C++ Trace：GDB MI</text>
+    <g transform="translate(20, 60)">
+      <line x1="0" y1="5" x2="220" y2="5" stroke="#1B2A4A" stroke-width="1"/>
+      <text x="30" y="20" font-family="'Inter', sans-serif" font-weight="400" font-size="12" fill="#6B7280" text-anchor="middle">Step 1</text>
+      <rect x="0" y="30" width="130" height="60" rx="6" fill="#EDF0F5"/>
+      <text x="10" y="50" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="12" fill="#1E2024">GDB 单步追踪</text>
+      <text x="10" y="70" font-family="'Inter', monospace" font-weight="400" font-size="10" fill="#6B7280">line 42: curr-&gt;next</text>
+      <rect x="150" y="30" width="130" height="60" rx="6" fill="#EDF0F5"/>
+      <text x="160" y="50" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="12" fill="#1E2024">STL 容器提取</text>
+      <text x="160" y="70" font-family="'Inter', monospace" font-weight="400" font-size="10" fill="#6B7280">gdb_stl_extract</text>
+      <text x="80" y="110" font-family="'Inter', sans-serif" font-weight="400" font-size="11" fill="#9CA3AF" text-anchor="middle">↓ 统一事件流</text>
+      <rect x="40" y="120" width="120" height="30" rx="6" fill="#E8F0FE" stroke="#2D7DD2" stroke-width="1"/>
+      <text x="100" y="140" font-family="'Inter', sans-serif" font-weight="500" font-size="11" fill="#1B2A4A" text-anchor="middle">Normalized</text>
+    </g>
+  </g>
+
+  <!-- 13 Types -->
+  <g transform="translate(80, 425)">
+    <text x="0" y="0" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="16" fill="#1B2A4A">13 种 Trace 可视化类型</text>
+    <line x1="0" y1="14" x2="200" y2="14" stroke="#2D7DD2" stroke-width="2"/>
+    <g transform="translate(0, 30)">
+      <rect x="0" y="0" width="125" height="30" rx="6" fill="#EDF0F5"/><text x="10" y="20" font-family="'Inter', sans-serif" font-weight="400" font-size="12" fill="#1E2024">变量追踪</text>
+      <rect x="137" y="0" width="125" height="30" rx="6" fill="#EDF0F5"/><text x="147" y="20" font-family="'Inter', sans-serif" font-weight="400" font-size="12" fill="#1E2024">调用栈</text>
+      <rect x="274" y="0" width="125" height="30" rx="6" fill="#EDF0F5"/><text x="284" y="20" font-family="'Inter', sans-serif" font-weight="400" font-size="12" fill="#1E2024">内存状态</text>
+      <rect x="411" y="0" width="125" height="30" rx="6" fill="#EDF0F5"/><text x="421" y="20" font-family="'Inter', sans-serif" font-weight="400" font-size="12" fill="#1E2024">链表结构</text>
+      <rect x="548" y="0" width="125" height="30" rx="6" fill="#EDF0F5"/><text x="558" y="20" font-family="'Inter', sans-serif" font-weight="400" font-size="12" fill="#1E2024">树/图</text>
+      <rect x="685" y="0" width="125" height="30" rx="6" fill="#EDF0F5"/><text x="695" y="20" font-family="'Inter', sans-serif" font-weight="400" font-size="12" fill="#1E2024">数组</text>
+      <rect x="0" y="36" width="125" height="30" rx="6" fill="#EDF0F5"/><text x="10" y="56" font-family="'Inter', sans-serif" font-weight="400" font-size="12" fill="#1E2024">指针引用</text>
+      <rect x="137" y="36" width="125" height="30" rx="6" fill="#EDF0F5"/><text x="147" y="56" font-family="'Inter', sans-serif" font-weight="400" font-size="12" fill="#1E2024">递归展开</text>
+      <rect x="274" y="36" width="125" height="30" rx="6" fill="#EDF0F5"/><text x="284" y="56" font-family="'Inter', sans-serif" font-weight="400" font-size="12" fill="#1E2024">循环展开</text>
+      <rect x="411" y="36" width="125" height="30" rx="6" fill="#EDF0F5"/><text x="421" y="56" font-family="'Inter', sans-serif" font-weight="400" font-size="12" fill="#1E2024">条件分支</text>
+      <rect x="548" y="36" width="125" height="30" rx="6" fill="#EDF0F5"/><text x="558" y="56" font-family="'Inter', sans-serif" font-weight="400" font-size="12" fill="#1E2024">时间线</text>
+      <rect x="685" y="36" width="125" height="30" rx="6" fill="#EDF0F5"/><text x="695" y="56" font-family="'Inter', sans-serif" font-weight="400" font-size="12" fill="#1E2024">旁白</text>
+    </g>
+  </g>
+
+  <g transform="translate(80, 540)">
+    <rect x="0" y="0" width="1120" height="44" rx="6" fill="#EDF0F5"/>
+    <rect x="0" y="0" width="4" height="44" rx="2" fill="#2D7DD2"/>
+    <text x="20" y="27" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">✦ Python sys.settrace + C++ GDB MI 统一为 13 类可视化类型 · 确定性旁白确保经典题目可复现</text>
+  </g>
+
+  <text x="1240" y="700" font-family="'Inter', sans-serif" font-weight="400" font-size="12" fill="#9CA3AF" text-anchor="end">14 / 24</text>
+</svg>

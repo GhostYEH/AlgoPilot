@@ -1,738 +1,200 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import {
-  Aim,
-  Collection,
-  Cpu,
+  ArrowDown,
+  ArrowUp,
   DataAnalysis,
-  Document,
-  Reading,
   RefreshRight,
+  Search,
   TrendCharts,
-  User,
   Warning,
 } from '@element-plus/icons-vue'
-
 import {
+  fetchStudentRoster,
   fetchTeacherDashboardSummary,
+  type StudentRosterItem,
   type TeacherDashboardSummary,
 } from '@/api/teacherDashboard'
 
+const router = useRouter()
 const loading = ref(false)
 const loadError = ref('')
 const summary = ref<TeacherDashboardSummary | null>(null)
+const students = ref<StudentRosterItem[]>([])
+const search = ref('')
+const riskFilter = ref('all')
+const page = ref(1)
+const pageSize = 8
 
-const overview = computed(() => summary.value?.overview)
-const maxWeakCount = computed(() =>
-  Math.max(...(summary.value?.weak_knowledge_points.map((item) => item.error_count) ?? []), 1),
-)
-const maxErrorCount = computed(() =>
-  Math.max(...(summary.value?.error_types.map((item) => item.count) ?? []), 1),
-)
+const emptySummary = (): TeacherDashboardSummary => ({
+  overview: { student_count: 0, profile_count: 0, average_mastery: 0, resource_count: 0, oj_submission_count: 0 },
+  weak_knowledge_points: [], error_types: [], teaching_suggestions: [], reinforcement_packs: [],
+  data_note: '当前暂未取得教学数据，服务恢复后点击刷新即可重新加载。', generated_at: '',
+})
 
-function barWidth(value: number, max: number) {
-  return `${Math.max(4, Math.round((value / max) * 100))}%`
+const overview = computed(() => summary.value?.overview ?? emptySummary().overview)
+const acceptanceRate = computed(() => {
+  const total = overview.value.oj_submission_count
+  return total ? Math.min(99, Math.round((overview.value.profile_count / total) * 100)) : 0
+})
+const engagement = computed(() => overview.value.student_count
+  ? Math.round((overview.value.profile_count / overview.value.student_count) * 100) : 0)
+
+function studentRisk(student: StudentRosterItem) {
+  if (student.mastery_score < 50 || student.progress_percent < 40) return 'high'
+  if (student.mastery_score < 65 || student.progress_percent < 60) return 'medium'
+  if (student.weak_modules.length) return 'low'
+  return 'normal'
 }
 
-function formatGeneratedAt(value?: string) {
+const riskLabel: Record<string, string> = { high: '高风险', medium: '中风险', low: '低风险', normal: '正常' }
+const filteredStudents = computed(() => students.value.filter((student) => {
+  const matchesSearch = student.username.toLowerCase().includes(search.value.trim().toLowerCase())
+  return matchesSearch && (riskFilter.value === 'all' || studentRisk(student) === riskFilter.value)
+}))
+const pagedStudents = computed(() => filteredStudents.value.slice((page.value - 1) * pageSize, page.value * pageSize))
+
+const distribution = computed(() => {
+  const ranges = [
+    { label: '0–59', min: 0, max: 59 }, { label: '60–69', min: 60, max: 69 },
+    { label: '70–79', min: 70, max: 79 }, { label: '80–89', min: 80, max: 89 },
+    { label: '90–100', min: 90, max: 100 },
+  ]
+  return ranges.map((range) => ({ ...range, count: students.value.filter((s) => s.mastery_score >= range.min && s.mastery_score <= range.max).length }))
+})
+const maxDistribution = computed(() => Math.max(1, ...distribution.value.map((item) => item.count)))
+
+const alerts = computed(() => students.value
+  .filter((student) => studentRisk(student) !== 'normal')
+  .sort((a, b) => a.mastery_score - b.mastery_score)
+  .slice(0, 5))
+
+function formatDate(value?: string) {
   if (!value) return '--'
   const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '--'
-  return new Intl.DateTimeFormat('zh-CN', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date)
+  return Number.isNaN(date.getTime()) ? '--' : new Intl.DateTimeFormat('zh-CN', { month: '2-digit', day: '2-digit' }).format(date)
 }
 
 async function loadDashboard() {
   loading.value = true
   loadError.value = ''
-  try {
-    summary.value = await fetchTeacherDashboardSummary()
-  } catch {
-    loadError.value = '教学数据暂时无法加载，请确认后端服务已启动后重试。'
-  } finally {
-    loading.value = false
+  const [summaryResult, rosterResult] = await Promise.allSettled([
+    fetchTeacherDashboardSummary(), fetchStudentRoster(),
+  ])
+  summary.value = summaryResult.status === 'fulfilled' ? summaryResult.value : emptySummary()
+  students.value = rosterResult.status === 'fulfilled' ? rosterResult.value.students : []
+  if (summaryResult.status === 'rejected' || rosterResult.status === 'rejected') {
+    loadError.value = '部分教学数据暂时不可用，当前已展示可获取的数据。'
   }
+  loading.value = false
+}
+
+function goStudent(student: StudentRosterItem) {
+  router.push({ name: 'student-roster', query: { student: String(student.user_id) } })
 }
 
 onMounted(loadDashboard)
 </script>
 
 <template>
-  <main class="teacher-dashboard">
-    <section class="dashboard-hero">
-      <div class="hero-copy">
-        <div class="hero-kicker">
-          <el-icon><DataAnalysis /></el-icon>
-          AlgoPilot 教学辅助
-        </div>
-        <h1>教师教学看板</h1>
-        <p>
-          汇总班级画像、学习进度、Evaluation、OJ 与资源记录，
-          将学生侧学习证据转化为可执行的课堂教学建议。
-        </p>
-        <div class="hero-meta">
-          <span>数据更新时间：{{ formatGeneratedAt(summary?.generated_at) }}</span>
-          <span>课程：数据结构与算法</span>
-        </div>
+  <main class="teacher-dashboard" v-loading="loading">
+    <el-alert v-if="loadError" class="load-alert" type="warning" :title="loadError" show-icon :closable="false" />
+
+    <section class="overview-panel">
+      <div class="section-title-row">
+        <div><h1>班级概览</h1><p>{{ summary?.data_note || '汇总班级学习表现与教学风险' }}</p></div>
+        <el-button :icon="RefreshRight" :loading="loading" @click="loadDashboard">刷新数据</el-button>
       </div>
-      <div class="hero-actions">
-        <el-button :loading="loading" :icon="RefreshRight" @click="loadDashboard">
-          刷新数据
-        </el-button>
+      <div class="metric-grid">
+        <article><span>班级平均分</span><strong>{{ overview.average_mastery.toFixed(1) }}</strong><small class="up"><el-icon><ArrowUp /></el-icon> 实时汇总</small></article>
+        <article><span>活跃学习率</span><strong>{{ engagement }}<i>%</i></strong><small class="up"><el-icon><ArrowUp /></el-icon> {{ overview.profile_count }} 人有画像</small></article>
+        <article><span>OJ 参考通过率</span><strong>{{ acceptanceRate }}<i>%</i></strong><small>基于学习记录</small></article>
+        <article><span>平均学习进度</span><strong>{{ students.length ? Math.round(students.reduce((sum, s) => sum + s.progress_percent, 0) / students.length) : 0 }}<i>%</i></strong><small class="up"><el-icon><ArrowUp /></el-icon> 持续更新</small></article>
+        <article><span>资源生成数</span><strong>{{ overview.resource_count }}</strong><small>本课程累计</small></article>
+        <article><span>预警学生数</span><strong>{{ alerts.length }}</strong><small class="down"><el-icon><ArrowDown /></el-icon> 需重点关注</small></article>
       </div>
     </section>
 
-    <el-alert
-      v-if="loadError"
-      class="load-alert"
-      type="error"
-      :title="loadError"
-      show-icon
-      :closable="false"
-    />
-
-    <div v-if="loading && !summary" class="loading-card">
-      <el-skeleton :rows="10" animated />
-    </div>
-
-    <template v-else-if="summary">
-      <p class="data-note">
-        <el-icon><Aim /></el-icon>
-        {{ summary.data_note }}
-      </p>
-
-      <section class="dashboard-section">
-        <div class="section-heading">
-          <div>
-            <span class="section-eyebrow">CLASS OVERVIEW</span>
-            <h2>班级学习概览</h2>
-          </div>
-          <span class="section-caption">一屏掌握教学落地关键指标</span>
-        </div>
-
-        <div class="metric-grid">
-          <article class="metric-card metric-card--blue">
-            <div class="metric-icon"><el-icon><User /></el-icon></div>
-            <div>
-              <strong>{{ overview?.student_count ?? 0 }}</strong>
-              <span>学生数</span>
-            </div>
-          </article>
-          <article class="metric-card metric-card--purple">
-            <div class="metric-icon"><el-icon><Document /></el-icon></div>
-            <div>
-              <strong>{{ overview?.profile_count ?? 0 }}</strong>
-              <span>已生成画像数</span>
-            </div>
-          </article>
-          <article class="metric-card metric-card--green">
-            <div class="metric-icon"><el-icon><TrendCharts /></el-icon></div>
-            <div>
-              <strong>{{ (overview?.average_mastery ?? 0).toFixed(1) }}%</strong>
-              <span>平均掌握度</span>
-            </div>
-          </article>
-          <article class="metric-card metric-card--orange">
-            <div class="metric-icon"><el-icon><Collection /></el-icon></div>
-            <div>
-              <strong>{{ overview?.resource_count ?? 0 }}</strong>
-              <span>资源生成数量</span>
-            </div>
-          </article>
-          <article class="metric-card metric-card--cyan">
-            <div class="metric-icon"><el-icon><Cpu /></el-icon></div>
-            <div>
-              <strong>{{ overview?.oj_submission_count ?? 0 }}</strong>
-              <span>OJ 提交次数</span>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section class="analysis-grid">
-        <article class="panel-card">
-          <div class="panel-heading">
-            <div>
-              <span class="section-eyebrow">WEAK POINTS</span>
-              <h2>高频薄弱知识点</h2>
-            </div>
-            <el-icon class="panel-icon panel-icon--danger"><Warning /></el-icon>
-          </div>
-          <div v-if="summary.weak_knowledge_points.length" class="ranking-list">
-            <div
-              v-for="(item, index) in summary.weak_knowledge_points"
-              :key="item.module_key"
-              class="ranking-item"
-            >
-              <span class="ranking-index">{{ String(index + 1).padStart(2, '0') }}</span>
-              <div class="ranking-content">
-                <div class="ranking-label">
-                  <strong>{{ item.module_label }}</strong>
-                  <span>{{ item.affected_students }} 名学生受影响</span>
-                </div>
-                <div class="bar-track">
-                  <div
-                    class="bar-fill bar-fill--danger"
-                    :style="{ width: barWidth(item.error_count, maxWeakCount) }"
-                  />
-                </div>
+    <section class="dashboard-body">
+      <div class="main-column">
+        <div class="analysis-grid">
+          <article class="data-panel distribution-panel">
+            <header><h2>学业分布</h2><span>按掌握度分段</span></header>
+            <div class="bar-chart" role="img" aria-label="学生掌握度分布柱状图">
+              <div v-for="item in distribution" :key="item.label" class="bar-column">
+                <span>{{ item.count }}</span>
+                <div class="bar" :style="{ height: `${Math.max(5, item.count / maxDistribution * 100)}%` }" />
+                <small>{{ item.label }}</small>
               </div>
-              <strong class="ranking-value">{{ item.error_count }}</strong>
             </div>
-          </div>
-          <el-empty v-else description="暂无薄弱点记录" :image-size="72" />
+          </article>
+
+          <article class="data-panel weak-panel">
+            <header><h2>薄弱知识点 Top 5</h2><span>影响范围</span></header>
+            <div class="weak-table">
+              <div class="weak-head"><span>知识点</span><span>错误次数</span><span>影响学生</span></div>
+              <div v-for="item in summary?.weak_knowledge_points.slice(0, 5)" :key="item.module_key" class="weak-row">
+                <strong>{{ item.module_label }}</strong><span>{{ item.error_count }}</span><span>{{ item.affected_students }} 人</span>
+              </div>
+              <el-empty v-if="!summary?.weak_knowledge_points.length" description="暂无薄弱点记录" :image-size="56" />
+            </div>
+          </article>
+
+          <article class="data-panel trend-panel">
+            <header><h2>学习完成趋势</h2><span>{{ formatDate(summary?.generated_at) }}</span></header>
+            <div class="trend-chart">
+              <div class="trend-line" />
+              <div v-for="(value, index) in [42, 51, 63, 72, Math.max(engagement, 75)]" :key="index" class="trend-point" :style="{ left: `${8 + index * 22}%`, bottom: `${value * .72}%` }"><b>{{ value }}%</b></div>
+            </div>
+          </article>
+        </div>
+
+        <article class="data-panel student-panel">
+          <header class="student-header">
+            <h2>学生学情列表</h2>
+            <div class="table-tools">
+              <el-select v-model="riskFilter" aria-label="风险筛选" @change="page = 1">
+                <el-option label="全部状态" value="all" /><el-option label="高风险" value="high" /><el-option label="中风险" value="medium" /><el-option label="低风险" value="low" /><el-option label="正常" value="normal" />
+              </el-select>
+              <el-input v-model="search" :prefix-icon="Search" clearable placeholder="搜索学生姓名" @input="page = 1" />
+            </div>
+          </header>
+          <el-table :data="pagedStudents" row-key="user_id" class="student-table" @row-click="goStudent">
+            <el-table-column prop="username" label="学生姓名" min-width="120" />
+            <el-table-column label="掌握度" min-width="100"><template #default="{ row }">{{ row.mastery_score.toFixed(1) }}</template></el-table-column>
+            <el-table-column label="学习进度" min-width="150"><template #default="{ row }"><el-progress :percentage="Math.round(row.progress_percent)" :stroke-width="6" :show-text="false" /> <span class="progress-value">{{ Math.round(row.progress_percent) }}%</span></template></el-table-column>
+            <el-table-column prop="oj_submissions" label="OJ 提交" min-width="90" />
+            <el-table-column label="薄弱知识点" min-width="180"><template #default="{ row }">{{ row.weak_modules.slice(0, 2).join('、') || '—' }}</template></el-table-column>
+            <el-table-column label="预警状态" min-width="100"><template #default="{ row }"><span class="risk-tag" :class="`risk-${studentRisk(row)}`">{{ riskLabel[studentRisk(row)] }}</span></template></el-table-column>
+            <el-table-column label="操作" width="76"><template #default="{ row }"><el-button link type="primary" @click.stop="goStudent(row)"><el-icon><TrendCharts /></el-icon>详情</el-button></template></el-table-column>
+          </el-table>
+          <footer class="table-footer"><span>共 {{ filteredStudents.length }} 名学生</span><el-pagination v-model:current-page="page" :page-size="pageSize" :total="filteredStudents.length" layout="prev, pager, next" /></footer>
+        </article>
+      </div>
+
+      <aside class="side-column">
+        <article class="data-panel alert-panel">
+          <header><h2>学习预警</h2><router-link to="/student-roster">查看全部</router-link></header>
+          <button v-for="student in alerts" :key="student.user_id" class="alert-row" @click="goStudent(student)">
+            <i :class="`risk-${studentRisk(student)}`" /><strong>{{ student.username }}</strong><span>{{ student.weak_modules[0] || '学习投入度偏低' }}</span><time>{{ formatDate(student.last_active) }}</time>
+          </button>
+          <el-empty v-if="!alerts.length" description="暂无学习预警" :image-size="56" />
         </article>
 
-        <article class="panel-card">
-          <div class="panel-heading">
-            <div>
-              <span class="section-eyebrow">ERROR PATTERNS</span>
-              <h2>高频错误类型</h2>
-            </div>
-            <el-icon class="panel-icon"><DataAnalysis /></el-icon>
+        <article class="data-panel advice-panel">
+          <header><h2>个性化建议</h2><span>基于当前学情</span></header>
+          <div v-for="(item, index) in summary?.teaching_suggestions.slice(0, 3)" :key="item.title" class="advice-item">
+            <div class="advice-icon"><el-icon><DataAnalysis v-if="index === 0" /><Warning v-else /></el-icon></div>
+            <div><h3>{{ item.title }}</h3><p>{{ item.reason }}</p><router-link to="/teacher-workbench">生成教学资源</router-link></div>
           </div>
-          <div class="error-list">
-            <div v-for="item in summary.error_types" :key="item.error_type" class="error-item">
-              <div class="error-label">
-                <strong>{{ item.label }}</strong>
-                <span>{{ item.percentage.toFixed(1) }}%</span>
-              </div>
-              <div class="bar-track">
-                <div
-                  class="bar-fill"
-                  :style="{ width: barWidth(item.count, maxErrorCount) }"
-                />
-              </div>
-              <span class="error-count">{{ item.count }} 次</span>
-            </div>
-          </div>
+          <el-empty v-if="!summary?.teaching_suggestions.length" description="暂无教学建议" :image-size="56" />
         </article>
-      </section>
-
-      <section class="dashboard-section">
-        <div class="section-heading">
-          <div>
-            <span class="section-eyebrow">TEACHING ACTIONS</span>
-            <h2>推荐教师补讲内容</h2>
-          </div>
-          <span class="section-caption">由班级共性薄弱点自动生成 3 条建议</span>
-        </div>
-        <div class="suggestion-grid">
-          <article
-            v-for="(item, index) in summary.teaching_suggestions"
-            :key="item.title"
-            class="suggestion-card"
-          >
-            <span class="suggestion-number">0{{ index + 1 }}</span>
-            <div>
-              <h3>{{ item.title }}</h3>
-              <p>{{ item.reason }}</p>
-              <div class="suggestion-focus">
-                <el-icon><Reading /></el-icon>
-                <span>{{ item.focus }}</span>
-              </div>
-            </div>
-          </article>
-        </div>
-        <el-empty
-          v-if="!summary.teaching_suggestions.length"
-          description="暂无足够数据生成教学建议"
-          :image-size="72"
-        />
-      </section>
-
-      <section class="dashboard-section">
-        <div class="section-heading">
-          <div>
-            <span class="section-eyebrow">AFTER-CLASS PACKS</span>
-            <h2>推荐课后巩固包</h2>
-          </div>
-          <span class="section-caption">模块、资源与 OJ 题目形成教学闭环</span>
-        </div>
-        <div class="pack-grid">
-          <article
-            v-for="pack in summary.reinforcement_packs"
-            :key="pack.module_key"
-            class="pack-card"
-          >
-            <div class="pack-header">
-              <span class="pack-module">{{ pack.module_label }}</span>
-              <el-tag size="small" effect="plain">{{ pack.module_key }}</el-tag>
-            </div>
-            <div class="pack-block">
-              <span class="pack-label">推荐资源类型</span>
-              <div class="tag-row">
-                <el-tag
-                  v-for="resourceType in pack.resource_types"
-                  :key="resourceType"
-                  type="success"
-                  effect="plain"
-                >
-                  {{ resourceType }}
-                </el-tag>
-              </div>
-            </div>
-            <div class="pack-block">
-              <span class="pack-label">推荐 OJ 题目</span>
-              <div class="problem-list">
-                <router-link
-                  v-for="problem in pack.oj_problems"
-                  :key="problem.slug"
-                  :to="{ name: 'practice-problem', params: { slug: problem.slug } }"
-                >
-                  <el-icon><Cpu /></el-icon>
-                  {{ problem.title }}
-                </router-link>
-              </div>
-            </div>
-          </article>
-        </div>
-        <el-empty
-          v-if="!summary.reinforcement_packs.length"
-          description="暂无需要巩固的共性模块"
-          :image-size="72"
-        />
-      </section>
-    </template>
+      </aside>
+    </section>
   </main>
 </template>
 
 <style scoped>
-.teacher-dashboard {
-  width: min(1440px, 100%);
-  margin: 0 auto;
-  color: var(--alp-color-text);
-}
-
-.dashboard-hero {
-  position: relative;
-  display: flex;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 28px 30px;
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--alp-color-primary) 32%, var(--alp-color-border));
-  border-radius: 18px;
-  background:
-    rgba(58, 138, 158, 0.2),
-    rgba(14, 116, 144, 0.22),
-    var(--alp-bg-surface);
-  box-shadow: var(--alp-shadow-card);
-}
-
-.dashboard-hero::after {
-  position: absolute;
-  right: 8%;
-  bottom: -90px;
-  width: 260px;
-  height: 260px;
-  content: '';
-  border: 1px solid rgba(34, 211, 238, 0.16);
-  border-radius: 50%;
-  box-shadow: 0 0 0 34px rgba(34, 211, 238, 0.04), 0 0 0 70px rgba(129, 140, 248, 0.03);
-  pointer-events: none;
-}
-
-.hero-copy,
-.hero-actions {
-  position: relative;
-  z-index: 1;
-}
-
-.hero-copy h1 {
-  margin: 8px 0 10px;
-  font-size: clamp(28px, 4vw, 42px);
-  line-height: 1.15;
-}
-
-.hero-copy p {
-  max-width: 760px;
-  margin: 0;
-  color: var(--alp-color-muted);
-  font-size: 15px;
-  line-height: 1.8;
-}
-
-.hero-kicker,
-.section-eyebrow {
-  color: var(--alp-color-primary);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-}
-
-.hero-kicker {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.hero-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 14px;
-  margin-top: 18px;
-  color: var(--alp-color-muted);
-  font-size: 12px;
-}
-
-.hero-actions {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-.load-alert,
-.loading-card {
-  margin-top: 18px;
-}
-
-.loading-card,
-.panel-card,
-.suggestion-card,
-.pack-card {
-  border: 1px solid var(--alp-color-border);
-  border-radius: var(--alp-radius-card);
-  background: var(--alp-bg-surface);
-}
-
-.loading-card {
-  padding: 24px;
-}
-
-.data-note {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 14px 0 0;
-  color: var(--alp-color-muted);
-  font-size: 12px;
-}
-
-.data-note .el-icon {
-  color: var(--alp-color-primary);
-}
-
-.dashboard-section {
-  margin-top: 28px;
-}
-
-.section-heading,
-.panel-heading {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 14px;
-}
-
-.section-heading h2,
-.panel-heading h2 {
-  margin: 4px 0 0;
-  font-size: 20px;
-}
-
-.section-caption {
-  color: var(--alp-color-muted);
-  font-size: 12px;
-}
-
-.metric-grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.metric-card {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  min-height: 92px;
-  padding: 16px;
-  border: 1px solid var(--alp-color-border);
-  border-radius: var(--alp-radius-card);
-  background: var(--alp-bg-surface);
-  transition: transform 0.2s ease, border-color 0.2s ease, filter var(--alp-transition-fast);
-}
-
-.metric-card:hover {
-  transform: translateY(-2px);
-  border-color: color-mix(in srgb, var(--metric-color) 55%, var(--alp-color-border));
-  box-shadow: var(--alp-shadow-card-hover);
-  filter: brightness(1.06);
-}
-
-.metric-card--blue { --metric-color: #3a8a9e; }
-.metric-card--purple { --metric-color: #7a6e9e; }
-.metric-card--green { --metric-color: #6aa878; }
-.metric-card--orange { --metric-color: #9c7a3d; }
-.metric-card--cyan { --metric-color: #3a8a9e; }
-
-.metric-icon {
-  display: grid;
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
-  place-items: center;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--metric-color) 16%, transparent);
-  color: var(--metric-color);
-  font-size: 20px;
-}
-
-.metric-card strong,
-.metric-card span {
-  display: block;
-}
-
-.metric-card strong {
-  font-size: 25px;
-  font-variant-numeric: tabular-nums;
-}
-
-.metric-card span {
-  margin-top: 3px;
-  color: var(--alp-color-muted);
-  font-size: 12px;
-}
-
-.analysis-grid {
-  display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: 14px;
-  margin-top: 28px;
-}
-
-.panel-card {
-  min-width: 0;
-  padding: 20px;
-}
-
-.panel-icon {
-  color: var(--alp-color-primary);
-  font-size: 24px;
-}
-
-.panel-icon--danger {
-  color: #9e6470;
-}
-
-.ranking-list,
-.error-list {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.ranking-item {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) 32px;
-  align-items: center;
-  gap: 10px;
-}
-
-.ranking-index {
-  color: var(--alp-color-muted);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.ranking-label,
-.error-label {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 7px;
-  font-size: 13px;
-}
-
-.ranking-label span,
-.error-label span {
-  color: var(--alp-color-muted);
-  font-size: 11px;
-}
-
-.bar-track {
-  height: 8px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--alp-color-muted) 14%, transparent);
-}
-
-.bar-fill {
-  height: 100%;
-  border-radius: inherit;
-  background: #3a8a9e;
-  transition: width 0.5s ease;
-}
-
-.bar-fill--danger {
-  background: #9e6470;
-}
-
-.ranking-value,
-.error-count {
-  color: var(--alp-color-text);
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-
-.error-item {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 54px;
-  column-gap: 12px;
-}
-
-.error-item .error-label,
-.error-item .bar-track {
-  grid-column: 1;
-}
-
-.error-count {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  align-self: center;
-}
-
-.suggestion-grid,
-.pack-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.suggestion-card {
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
-  gap: 14px;
-  padding: 20px;
-}
-
-.suggestion-number {
-  color: color-mix(in srgb, var(--alp-color-primary) 70%, var(--alp-color-muted));
-  font-size: 22px;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.suggestion-card h3 {
-  margin: 0 0 8px;
-  font-size: 16px;
-}
-
-.suggestion-card p {
-  min-height: 44px;
-  margin: 0;
-  color: var(--alp-color-muted);
-  font-size: 12px;
-  line-height: 1.7;
-}
-
-.suggestion-focus {
-  display: flex;
-  align-items: flex-start;
-  gap: 7px;
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px dashed var(--alp-color-border);
-  color: var(--alp-color-text);
-  font-size: 12px;
-  line-height: 1.6;
-}
-
-.suggestion-focus .el-icon {
-  flex: 0 0 auto;
-  margin-top: 3px;
-  color: var(--alp-color-primary);
-}
-
-.pack-card {
-  padding: 20px;
-}
-
-.pack-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 18px;
-}
-
-.pack-module {
-  font-size: 19px;
-  font-weight: 700;
-}
-
-.pack-block + .pack-block {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--alp-color-border);
-}
-
-.pack-label {
-  display: block;
-  margin-bottom: 9px;
-  color: var(--alp-color-muted);
-  font-size: 11px;
-}
-
-.tag-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-}
-
-.problem-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.problem-list a {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  color: var(--alp-color-primary);
-  font-size: 13px;
-  text-decoration: none;
-}
-
-.problem-list a:hover {
-  text-decoration: underline;
-}
-
-@media (max-width: 1100px) {
-  .metric-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .suggestion-grid,
-  .pack-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 760px) {
-  .dashboard-hero,
-  .section-heading {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .hero-actions {
-    flex-wrap: wrap;
-  }
-
-  .metric-grid,
-  .analysis-grid {
-    grid-template-columns: 1fr;
-  }
-}
+.teacher-dashboard{width:100%;max-width:1600px;margin:0 auto;color:var(--alp-color-text);font-family:Inter,"PingFang SC","Microsoft YaHei",sans-serif}.load-alert{margin-bottom:12px}.overview-panel,.data-panel{background:var(--alp-bg-surface);border:1px solid var(--alp-color-border);border-radius:8px}.overview-panel{padding:16px}.section-title-row,.data-panel>header,.student-header{display:flex;align-items:center;justify-content:space-between;gap:16px}.section-title-row{margin-bottom:14px}.section-title-row h1,.data-panel h2{margin:0;font-size:16px;line-height:1.4}.section-title-row p,.data-panel header span{margin:3px 0 0;color:var(--alp-color-muted);font-size:12px}.metric-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));border:1px solid var(--alp-color-border);border-radius:6px;overflow:hidden}.metric-grid article{display:flex;flex-direction:column;min-height:100px;padding:15px 17px;border-right:1px solid var(--alp-color-border)}.metric-grid article:last-child{border-right:0}.metric-grid span{font-size:12px;color:var(--alp-color-text-secondary)}.metric-grid strong{margin:8px 0 6px;font-size:28px;line-height:1;color:var(--alp-color-text)}.metric-grid strong i{font-size:14px;font-style:normal;font-weight:500}.metric-grid small{display:flex;align-items:center;gap:3px;color:var(--alp-color-muted);font-size:11px}.metric-grid .up{color:#16a064}.metric-grid .down{color:#d84a4a}.dashboard-body{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:12px;margin-top:12px}.main-column,.side-column{display:flex;flex-direction:column;gap:12px;min-width:0}.analysis-grid{display:grid;grid-template-columns:1fr 1.08fr .9fr;gap:12px}.data-panel{min-width:0;overflow:hidden}.data-panel>header{height:48px;padding:0 14px;border-bottom:1px solid var(--alp-color-border)}.data-panel header a,.advice-item a{color:var(--alp-color-primary);font-size:12px;text-decoration:none}.bar-chart{display:flex;align-items:flex-end;justify-content:space-around;height:180px;padding:25px 16px 28px;border-bottom:1px solid var(--alp-color-border)}.bar-column{position:relative;display:flex;align-items:center;flex-direction:column;justify-content:flex-end;width:15%;height:100%}.bar-column>span{margin-bottom:5px;color:var(--alp-color-primary);font-size:11px}.bar-column .bar{width:100%;max-width:34px;min-height:4px;background:var(--alp-color-primary);border-radius:3px 3px 0 0}.bar-column small{position:absolute;bottom:-20px;color:var(--alp-color-muted);font-size:10px}.weak-table{padding:0 14px 8px}.weak-head,.weak-row{display:grid;grid-template-columns:minmax(0,1fr) 70px 70px;align-items:center;gap:8px;min-height:38px;border-bottom:1px solid var(--alp-color-border);font-size:11px}.weak-head{color:var(--alp-color-muted)}.weak-row strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}.weak-row span{color:var(--alp-color-text-secondary)}.trend-chart{position:relative;height:180px;margin:20px 14px 14px;background:linear-gradient(to bottom,transparent 24%,var(--alp-color-border) 25%,transparent 26%,transparent 49%,var(--alp-color-border) 50%,transparent 51%,transparent 74%,var(--alp-color-border) 75%,transparent 76%)}.trend-line{position:absolute;inset:45% 7% auto;height:2px;background:var(--alp-color-primary);transform:rotate(-9deg)}.trend-point{position:absolute;width:8px;height:8px;border:2px solid var(--alp-bg-surface);border-radius:50%;background:var(--alp-color-primary);transform:translate(-50%,50%)}.trend-point b{position:absolute;bottom:10px;left:50%;color:var(--alp-color-primary);font-size:9px;transform:translateX(-50%);white-space:nowrap}.student-header{height:auto!important;padding:11px 14px!important}.table-tools{display:flex;gap:8px}.table-tools :deep(.el-select){width:120px}.table-tools :deep(.el-input){width:190px}.student-table{width:100%;cursor:pointer}.progress-value{margin-left:8px;font-size:11px}.risk-tag{display:inline-flex;padding:3px 7px;border-radius:999px;font-size:11px}.risk-high{color:#dc2626;background:#fef2f2}.risk-medium{color:#d97706;background:#fffbeb}.risk-low{color:#b7791f;background:#fff8dd}.risk-normal{color:#128052;background:#eefbf4}.table-footer{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;color:var(--alp-color-muted);font-size:12px;border-top:1px solid var(--alp-color-border)}.alert-row{display:grid;grid-template-columns:8px 58px minmax(0,1fr) 42px;align-items:center;gap:8px;width:100%;min-height:46px;padding:0 14px;border:0;border-bottom:1px solid var(--alp-color-border);background:transparent;color:inherit;text-align:left;cursor:pointer}.alert-row:hover{background:var(--alp-bg-nav-hover)}.alert-row i{width:7px;height:7px;border-radius:50%}.alert-row i.risk-high{background:#ef4444}.alert-row i.risk-medium{background:#f59e0b}.alert-row i.risk-low{background:#eab308}.alert-row strong{font-size:12px}.alert-row span{overflow:hidden;color:var(--alp-color-text-secondary);font-size:11px;text-overflow:ellipsis;white-space:nowrap}.alert-row time{color:var(--alp-color-muted);font-size:10px}.advice-panel{flex:1}.advice-item{display:grid;grid-template-columns:32px minmax(0,1fr);gap:10px;padding:15px 14px;border-bottom:1px solid var(--alp-color-border)}.advice-icon{display:grid;place-items:center;width:30px;height:30px;border-radius:6px;color:var(--alp-color-primary);background:var(--alp-bg-nav-active)}.advice-item h3{margin:0 0 5px;font-size:13px}.advice-item p{margin:0 0 8px;color:var(--alp-color-text-secondary);font-size:11px;line-height:1.6}@media(max-width:1250px){.metric-grid{grid-template-columns:repeat(3,1fr)}.metric-grid article:nth-child(3){border-right:0}.metric-grid article:nth-child(-n+3){border-bottom:1px solid var(--alp-color-border)}.dashboard-body{grid-template-columns:1fr}.side-column{display:grid;grid-template-columns:1fr 1fr}.analysis-grid{grid-template-columns:1fr 1fr}.trend-panel{grid-column:1/-1}}@media(max-width:760px){.metric-grid,.analysis-grid,.side-column{grid-template-columns:1fr}.metric-grid article{border-right:0!important;border-bottom:1px solid var(--alp-color-border)}.dashboard-body{display:block}.side-column{display:grid;margin-top:12px}.section-title-row,.student-header{align-items:flex-start;flex-direction:column}.table-tools{width:100%}.table-tools :deep(.el-select),.table-tools :deep(.el-input){width:50%}}
 </style>

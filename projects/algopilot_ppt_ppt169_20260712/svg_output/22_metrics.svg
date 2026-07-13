@@ -1,0 +1,106 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+  <defs>
+    <linearGradient id="p22-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1B2A4A" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#F7F8FA" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="1280" height="720" fill="#F7F8FA"/>
+  <rect x="0" y="0" width="1280" height="200" fill="url(#p22-grad)"/>
+  <rect x="0" y="0" width="6" height="720" fill="#1B2A4A"/>
+  <g opacity="0.03">
+    <circle cx="1100" cy="600" r="200" fill="#1B2A4A"/>
+    <circle cx="200" cy="80" r="100" fill="#2D7DD2"/>
+  </g>
+  <text x="80" y="40" font-family="'Inter', sans-serif" font-weight="500" font-size="12" fill="#2D7DD2" letter-spacing="3">07 · APPLICATION VALUE</text>
+  <text x="80" y="85" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="28" fill="#1B2A4A">用数据证明完成度</text>
+  <line x1="80" y1="100" x2="350" y2="100" stroke="#2D7DD2" stroke-width="2"/>
+  <!-- Row 1 -->
+  <g transform="translate(80, 140)">
+    <rect x="0" y="0" width="340" height="200" rx="8" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+    <rect x="0" y="0" width="340" height="5" rx="2" fill="#1B2A4A"/>
+    <!-- Decorative bar chart bg -->
+    <g opacity="0.06">
+      <rect x="20" y="50" width="12" height="90" fill="#1B2A4A"/>
+      <rect x="45" y="30" width="12" height="110" fill="#2D7DD2"/>
+      <rect x="70" y="60" width="12" height="80" fill="#1B2A4A"/>
+      <rect x="95" y="40" width="12" height="100" fill="#2D7DD2"/>
+    </g>
+    <text x="170" y="80" font-family="'Inter', sans-serif" font-weight="700" font-size="64" fill="#2D7DD2" text-anchor="middle">188</text>
+    <text x="170" y="110" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="15" fill="#6B7280" text-anchor="middle">Backend pytest passed</text>
+    <line x1="50" y1="125" x2="290" y2="125" stroke="#EDF0F5" stroke-width="1"/>
+    <text x="170" y="148" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#9CA3AF" text-anchor="middle">32 个测试文件 · 全覆盖核心逻辑</text>
+    <text x="170" y="170" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#9CA3AF" text-anchor="middle">Frontend typecheck + build 均通过</text>
+  </g>
+  <g transform="translate(460, 140)">
+    <rect x="0" y="0" width="340" height="200" rx="8" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+    <rect x="0" y="0" width="340" height="5" rx="2" fill="#2D7DD2"/>
+    <g opacity="0.06">
+      <circle cx="100" cy="80" r="40" fill="none" stroke="#2D7DD2" stroke-width="1"/>
+      <circle cx="100" cy="80" r="25" fill="none" stroke="#2D7DD2" stroke-width="1"/>
+      <circle cx="100" cy="80" r="10" fill="#2D7DD2"/>
+    </g>
+    <text x="170" y="80" font-family="'Inter', sans-serif" font-weight="700" font-size="52" fill="#2D7DD2" text-anchor="middle">22</text>
+    <text x="170" y="110" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="15" fill="#6B7280" text-anchor="middle">多智能体注册 / 20 已实现</text>
+    <line x1="50" y1="125" x2="290" y2="125" stroke="#EDF0F5" stroke-width="1"/>
+    <text x="170" y="148" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#9CA3AF" text-anchor="middle">6 个 Layer · 端到端覆盖</text>
+    <text x="170" y="170" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#9CA3AF" text-anchor="middle">2 个规划中扩展节点</text>
+  </g>
+  <g transform="translate(840, 140)">
+    <rect x="0" y="0" width="340" height="200" rx="8" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+    <rect x="0" y="0" width="340" height="5" rx="2" fill="#1B2A4A"/>
+    <g opacity="0.06">
+      <path d="M50,80 L70,50 L90,65 L110,40 L130,55 L150,30" fill="none" stroke="#1B2A4A" stroke-width="2"/>
+      <circle cx="150" cy="30" r="4" fill="#1B2A4A"/>
+    </g>
+    <text x="170" y="80" font-family="'Inter', sans-serif" font-weight="700" font-size="52" fill="#2D7DD2" text-anchor="middle">13</text>
+    <text x="170" y="110" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="15" fill="#6B7280" text-anchor="middle">Trace 可视化类型</text>
+    <line x1="50" y1="125" x2="290" y2="125" stroke="#EDF0F5" stroke-width="1"/>
+    <text x="170" y="148" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#9CA3AF" text-anchor="middle">Python sys.settrace</text>
+    <text x="170" y="170" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#9CA3AF" text-anchor="middle">C++ GDB MI 统一归一化</text>
+  </g>
+  <!-- Row 2 -->
+  <g transform="translate(80, 370)">
+    <rect x="0" y="0" width="340" height="200" rx="8" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+    <rect x="0" y="0" width="340" height="5" rx="2" fill="#2D7DD2"/>
+    <g opacity="0.06">
+      <rect x="20" y="60" width="80" height="60" rx="4" fill="none" stroke="#2D7DD2" stroke-width="1"/>
+      <text x="60" y="95" font-family="'Inter', sans-serif" font-weight="700" font-size="24" fill="#2D7DD2" text-anchor="middle">&lt;/&gt;</text>
+    </g>
+    <text x="170" y="80" font-family="'Inter', sans-serif" font-weight="700" font-size="52" fill="#2D7DD2" text-anchor="middle">70+</text>
+    <text x="170" y="110" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="15" fill="#6B7280" text-anchor="middle">Vue 组件 / 30+ 页面</text>
+    <line x1="50" y1="125" x2="290" y2="125" stroke="#EDF0F5" stroke-width="1"/>
+    <text x="170" y="148" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#9CA3AF" text-anchor="middle">Vue 3 + TypeScript + Element Plus</text>
+    <text x="170" y="170" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#9CA3AF" text-anchor="middle">13 个算法游戏 + 13 个 Trace 组件</text>
+  </g>
+  <g transform="translate(460, 370)">
+    <rect x="0" y="0" width="340" height="200" rx="8" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+    <rect x="0" y="0" width="340" height="5" rx="2" fill="#1B2A4A"/>
+    <g opacity="0.06">
+      <rect x="30" y="50" width="30" height="50" rx="3" fill="none" stroke="#1B2A4A" stroke-width="1"/>
+      <rect x="70" y="60" width="30" height="40" rx="3" fill="none" stroke="#1B2A4A" stroke-width="1"/>
+      <rect x="110" y="70" width="30" height="30" rx="3" fill="none" stroke="#1B2A4A" stroke-width="1"/>
+    </g>
+    <text x="170" y="80" font-family="'Inter', sans-serif" font-weight="700" font-size="52" fill="#2D7DD2" text-anchor="middle">6</text>
+    <text x="170" y="110" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="15" fill="#6B7280" text-anchor="middle">Layer / 6 种资源类型</text>
+    <line x1="50" y1="125" x2="290" y2="125" stroke="#EDF0F5" stroke-width="1"/>
+    <text x="170" y="148" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#9CA3AF" text-anchor="middle">画像/资源/路径/辅导/安全/评估</text>
+    <text x="170" y="170" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#9CA3AF" text-anchor="middle">6 种资源覆盖学习全链路</text>
+  </g>
+  <g transform="translate(840, 370)">
+    <rect x="0" y="0" width="340" height="200" rx="8" fill="#E8F0FE" stroke="#2D7DD2" stroke-width="1.5"/>
+    <rect x="0" y="0" width="340" height="5" rx="2" fill="#2D7DD2"/>
+    <g opacity="0.06">
+      <rect x="30" y="55" width="50" height="60" rx="2" fill="#2D7DD2"/>
+      <line x1="35" y1="65" x2="75" y2="65" stroke="#FFFFFF" stroke-width="2"/>
+      <line x1="35" y1="75" x2="70" y2="75" stroke="#FFFFFF" stroke-width="2"/>
+      <line x1="35" y1="85" x2="65" y2="85" stroke="#FFFFFF" stroke-width="2"/>
+    </g>
+    <text x="170" y="65" font-family="'Inter', sans-serif" font-weight="700" font-size="40" fill="#2D7DD2" text-anchor="middle">6 份</text>
+    <text x="170" y="95" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="15" fill="#6B7280" text-anchor="middle">完整比赛文档</text>
+    <line x1="50" y1="110" x2="290" y2="110" stroke="#D1D5DB" stroke-width="1"/>
+    <text x="170" y="138" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280" text-anchor="middle">项目说明书 · 系统开发说明书</text>
+    <text x="170" y="160" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280" text-anchor="middle">测试 · 部署 · 手册 · 开源说明</text>
+  </g>
+  <text x="1240" y="700" font-family="'Inter', sans-serif" font-weight="400" font-size="12" fill="#9CA3AF" text-anchor="end">22 / 24</text>
+</svg>

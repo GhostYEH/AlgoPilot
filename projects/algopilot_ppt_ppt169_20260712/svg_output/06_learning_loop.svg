@@ -1,0 +1,84 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+  <defs>
+    <linearGradient id="p6-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1B2A4A" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="#F7F8FA" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="1280" height="720" fill="#F7F8FA"/>
+  <rect x="0" y="0" width="1280" height="250" fill="url(#p6-bg)"/>
+  <rect x="0" y="0" width="6" height="720" fill="#1B2A4A"/>
+  <g opacity="0.03">
+    <circle cx="1150" cy="100" r="100" fill="#2D7DD2"/>
+    <circle cx="80" cy="680" r="80" fill="#1B2A4A"/>
+  </g>
+  <text x="80" y="40" font-family="'Inter', sans-serif" font-weight="500" font-size="12" fill="#2D7DD2" letter-spacing="3">02 · SOLUTION</text>
+  <text x="80" y="85" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="28" fill="#1B2A4A">从"不会"到"掌握"的智能闭环</text>
+  <line x1="80" y1="100" x2="400" y2="100" stroke="#2D7DD2" stroke-width="2"/>
+
+  <!-- Circular learning loop - enhanced -->
+  <g transform="translate(640, 370)">
+    <!-- Outer ring decorations -->
+    <circle cx="0" cy="0" r="230" fill="none" stroke="#D1D5DB" stroke-width="0.5" stroke-dasharray="3,6"/>
+    <circle cx="0" cy="0" r="210" fill="none" stroke="#EDF0F5" stroke-width="1"/>
+
+    <!-- Connection arrows -->
+    <g stroke="#1B2A4A" stroke-width="1.5" fill="none">
+      <path d="M 0,-190 A 190,190 0 0,1 190,0"/>
+      <path d="M 190,0 A 190,190 0 0,1 0,190"/>
+      <path d="M 0,190 A 190,190 0 0,1 -190,0"/>
+      <path d="M -190,0 A 190,190 0 0,1 0,-190"/>
+    </g>
+    <!-- Arrowheads -->
+    <polygon points="185,-25 178,-18 193,-13" fill="#1B2A4A"/>
+    <polygon points="25,185 18,178 13,193" fill="#1B2A4A"/>
+    <polygon points="-185,25 -178,18 -193,13" fill="#1B2A4A"/>
+    <polygon points="-25,-185 -18,-178 -13,-193" fill="#1B2A4A"/>
+
+    <!-- Center hub -->
+    <circle cx="0" cy="0" r="55" fill="#1B2A4A"/>
+    <circle cx="0" cy="0" r="55" fill="none" stroke="#2D7DD2" stroke-width="2" opacity="0.4"/>
+    <text x="0" y="-8" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="600" font-size="16" fill="#FFFFFF" text-anchor="middle">智能</text>
+    <text x="0" y="12" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="600" font-size="16" fill="#FFFFFF" text-anchor="middle">闭环</text>
+
+    <!-- Step nodes with labels -->
+    <g transform="translate(0, -260)">
+      <circle cx="0" cy="0" r="42" fill="#FFFFFF" stroke="#1B2A4A" stroke-width="2.5"/>
+      <circle cx="0" cy="0" r="35" fill="#1B2A4A"/>
+      <text x="0" y="5" font-family="'Inter', sans-serif" font-weight="700" font-size="14" fill="#FFFFFF" text-anchor="middle">01</text>
+      <text x="0" y="60" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="13" fill="#1B2A4A" text-anchor="middle">学生画像</text>
+    </g>
+    <g transform="translate(260, 0)">
+      <circle cx="0" cy="0" r="42" fill="#FFFFFF" stroke="#1B2A4A" stroke-width="2.5"/>
+      <circle cx="0" cy="0" r="35" fill="#1B2A4A"/>
+      <text x="0" y="5" font-family="'Inter', sans-serif" font-weight="700" font-size="14" fill="#FFFFFF" text-anchor="middle">02</text>
+      <text x="0" y="60" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="13" fill="#1B2A4A" text-anchor="middle">学习路径</text>
+    </g>
+    <g transform="translate(0, 260)">
+      <circle cx="0" cy="0" r="42" fill="#FFFFFF" stroke="#1B2A4A" stroke-width="2.5"/>
+      <circle cx="0" cy="0" r="35" fill="#1B2A4A"/>
+      <text x="0" y="5" font-family="'Inter', sans-serif" font-weight="700" font-size="14" fill="#FFFFFF" text-anchor="middle">03</text>
+      <text x="0" y="60" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="13" fill="#1B2A4A" text-anchor="middle">资源生成</text>
+    </g>
+    <g transform="translate(-260, 0)">
+      <circle cx="0" cy="0" r="42" fill="#FFFFFF" stroke="#1B2A4A" stroke-width="2.5"/>
+      <circle cx="0" cy="0" r="35" fill="#1B2A4A"/>
+      <text x="0" y="5" font-family="'Inter', sans-serif" font-weight="700" font-size="14" fill="#FFFFFF" text-anchor="middle">04</text>
+      <text x="0" y="60" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="13" fill="#1B2A4A" text-anchor="middle">OJ/Trace</text>
+    </g>
+  </g>
+
+  <!-- Side panel -->
+  <g transform="translate(900, 250)">
+    <rect x="0" y="0" width="240" height="120" rx="8" fill="#FFFFFF" stroke="#2D7DD2" stroke-width="1.5"/>
+    <rect x="0" y="0" width="240" height="35" rx="8" fill="#2D7DD2"/>
+    <text x="120" y="23" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="13" fill="#FFFFFF" text-anchor="middle">持续迭代</text>
+    <text x="15" y="60" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">掌握度评估 → 路径调整</text>
+    <text x="15" y="82" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">画像更新 → 资源重生成</text>
+    <text x="15" y="104" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="12" fill="#9CA3AF">动态优化 · 持续迭代</text>
+  </g>
+  <line x1="830" y1="370" x2="890" y2="310" stroke="#2D7DD2" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <polygon points="890,310 882,306 882,314" fill="#2D7DD2"/>
+
+  <text x="1240" y="700" font-family="'Inter', sans-serif" font-weight="400" font-size="12" fill="#9CA3AF" text-anchor="end">06 / 24</text>
+</svg>

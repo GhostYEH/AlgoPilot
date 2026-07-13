@@ -8,12 +8,13 @@
 @import './auth-page.css';
 @import './page-transitions.css';
 @import './games.css';
+@import './product-shell.css';
 
 html.dark {
   color-scheme: dark;
 }
 
-/* ── 全局排版基准 ── */
+/* 鈹€鈹€ 鍏ㄥ眬鎺掔増鍩哄噯 鈹€鈹€ */
 html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
@@ -29,7 +30,7 @@ body {
   background: var(--alp-bg-page);
 }
 
-/* ── 选区 ── */
+/* 鈹€鈹€ 閫夊尯 鈹€鈹€ */
 ::selection {
   background: rgba(var(--alp-color-primary-rgb), 0.25);
   color: #fff;
@@ -40,13 +41,13 @@ html:not(.dark) ::selection {
   color: #0f172a;
 }
 
-/* ── 焦点环 ── */
+/* 鈹€鈹€ 鐒︾偣鐜?鈹€鈹€ */
 :focus-visible {
   outline: 2px solid var(--alp-color-primary);
   outline-offset: 2px;
 }
 
-/* ── Element Plus 全局覆盖 ── */
+/* 鈹€鈹€ Element Plus 鍏ㄥ眬瑕嗙洊 鈹€鈹€ */
 .el-card {
   --el-card-border-color: var(--alp-color-border);
   box-shadow: var(--alp-shadow-card);
@@ -121,8 +122,8 @@ html:not(.dark) ::selection {
   filter: brightness(1.1);
 }
 
-/* ── 全局浮起工具类（透明白光影） ── */
-/* 卡片浮起：白色高光 + 外辉 + 亮度提升 */
+/* 鈹€鈹€ 鍏ㄥ眬娴捣宸ュ叿绫伙紙閫忔槑鐧藉厜褰憋級 鈹€鈹€ */
+/* 鍗＄墖娴捣锛氱櫧鑹查珮鍏?+ 澶栬緣 + 浜害鎻愬崌 */
 .alp-lift-card {
   box-shadow: var(--alp-shadow-card);
   transition:
@@ -144,7 +145,7 @@ html:not(.dark) ::selection {
   filter: brightness(0.98);
 }
 
-/* 按钮浮起：白高光 + 亮度提升 */
+/* 鎸夐挳娴捣锛氱櫧楂樺厜 + 浜害鎻愬崌 */
 .alp-lift-btn {
   box-shadow: var(--alp-shadow-btn);
   transition:
@@ -168,7 +169,7 @@ html:not(.dark) ::selection {
   filter: brightness(0.98);
 }
 
-/* 链接浮起：微亮度提升 */
+/* 閾炬帴娴捣锛氬井浜害鎻愬崌 */
 .alp-lift-link {
   transition:
     transform var(--alp-transition-fast),
@@ -182,4 +183,287 @@ html:not(.dark) ::selection {
   transform: translateY(-1px);
   box-shadow: var(--alp-shadow-btn);
   filter: brightness(1.06);
+}
+
+/* ════════════════════════════════════════════
+   Impeccable Design Polish — Micro-interactions
+   ════════════════════════════════════════════ */
+
+/* ── Subtle animated background ── */
+html::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(61, 138, 126, 0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 90%, rgba(61, 138, 126, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 40% at 20% 100%, rgba(156, 122, 61, 0.025) 0%, transparent 50%);
+}
+
+/* ── Refined card: remove Element Plus default bg, use our tokens ── */
+.el-card {
+  --el-card-bg-color: var(--alp-bg-soft-block) !important;
+}
+
+.el-card__body {
+  padding: var(--alp-space-5) var(--alp-space-6);
+}
+
+/* ── Enhanced button micro-motion ── */
+.el-button:active:not(.is-disabled) {
+  transform: scale(0.97);
+}
+
+.el-button.is-loading {
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+/* ── Tag refinement ── */
+.el-tag {
+  --el-tag-border-color: transparent;
+  transition:
+    background-color var(--alp-transition-fast),
+    color var(--alp-transition-fast),
+    transform var(--alp-transition-instant);
+}
+
+.el-tag:hover {
+  transform: translateY(-1px);
+}
+
+/* ── Smooth scrollbar enhancement ── */
+.el-scrollbar__bar.is-horizontal > .el-scrollbar__thumb,
+.el-scrollbar__bar.is-vertical > .el-scrollbar__thumb {
+  background: rgba(255, 255, 255, 0.08);
+  transition: background var(--alp-transition-fast), width var(--alp-transition-fast), height var(--alp-transition-fast);
+}
+.el-scrollbar__bar.is-vertical > .el-scrollbar__thumb:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* ── Menu item subtle glow ── */
+.el-menu-item:hover,
+.el-menu-item.is-active {
+  position: relative;
+}
+
+.el-menu-item:hover::after,
+.el-menu-item.is-active::after {
+  content: '';
+  position: absolute;
+  inset: 4px 8px;
+  border-radius: 6px;
+  background: rgba(61, 138, 126, 0.06);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ── Progress bar glow ── */
+.el-progress-bar__inner {
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1), background 0.3s ease;
+}
+
+/* ── Smooth focus ring ── */
+*:focus-visible {
+  outline: 2px solid var(--alp-color-primary);
+  outline-offset: 2px;
+  transition: outline-offset 0.12s ease;
+}
+
+/* ── Skeleton / loading shimmer ── */
+@keyframes alp-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.alp-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 75%
+  );
+  background-size: 200% 100%;
+  animation: alp-shimmer 1.6s ease-in-out infinite;
+  border-radius: var(--alp-radius-sm);
+}
+
+/* ── Page enter subtle drif t── */
+.page-fade-slide-enter-active,
+.page-fade-slide-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.page-fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.page-fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+/* ── Auth page transition ── */
+.page-auth-enter-active,
+.page-auth-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.page-auth-enter-from {
+  opacity: 0;
+  transform: scale(0.97) translateY(12px);
+}
+.page-auth-leave-to {
+  opacity: 0;
+  transform: scale(0.96) translateY(-8px);
+}
+
+/* ── Learn page transition ── */
+.page-learn-enter-active {
+  transition: opacity 0.3s ease 0.05s, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.page-learn-leave-active {
+  transition: opacity 0.15s ease, transform 0.2s ease;
+}
+.page-learn-enter-from {
+  opacity: 0;
+  transform: translateX(16px);
+}
+.page-learn-leave-to {
+  opacity: 0;
+  transform: translateX(-12px);
+}
+
+/* ── Instant transition ── */
+.page-instant-enter-active,
+.page-instant-leave-active {
+  transition: opacity 0.12s ease;
+}
+.page-instant-enter-from,
+.page-instant-leave-to {
+  opacity: 0;
+}
+
+/* ── Transition root fix ── */
+.page-transition-root {
+  contain: layout style;
+}
+/* Impeccable Product UI — clean, familiar, trustable */
+/* Card — clean border, no glassmorphism */
+.el-card {
+  --el-card-bg-color: var(--alp-bg-soft-block);
+  border: 1px solid var(--alp-color-border);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.el-card:hover {
+  border-color: var(--alp-color-border-strong);
+}
+
+.el-card__body {
+  padding: 20px 24px;
+}
+
+/* Button — clean, no gradient */
+.el-button--primary {
+  background: var(--alp-color-primary);
+  border-color: var(--alp-color-primary);
+  box-shadow: none;
+}
+
+.el-button--primary:hover {
+  background: rgba(var(--alp-color-primary-rgb), 0.85);
+  border-color: rgba(var(--alp-color-primary-rgb), 0.85);
+  box-shadow: 0 0 0 1px rgba(var(--alp-color-primary-rgb), 0.3);
+}
+
+.el-button.is-plain {
+  border: 1px solid var(--alp-color-border-strong);
+  background: transparent;
+}
+
+.el-button.is-plain:hover {
+  border-color: var(--alp-color-primary);
+  color: var(--alp-color-primary);
+  background: rgba(var(--alp-color-primary-rgb), 0.06);
+}
+
+/* Typography — tighter, product scale */
+.el-card__header {
+  padding: 16px 24px 12px;
+  border-bottom: 1px solid var(--alp-color-border);
+}
+
+.card-header-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--alp-color-text);
+  letter-spacing: 0.01em;
+}
+
+/* Navigation — clean, readable */
+.el-menu--horizontal {
+  border-bottom: none !important;
+}
+
+.el-menu-item {
+  font-size: 13px;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.el-menu-item:hover {
+  color: var(--alp-color-primary) !important;
+}
+
+.el-menu-item.is-active {
+  color: var(--alp-color-primary) !important;
+  font-weight: 600;
+}
+
+/* Tag — clean pill */
+.el-tag {
+  border: none;
+  font-weight: 500;
+  transition: none;
+}
+
+.el-tag:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Progress bar — clean */
+.el-progress-bar__outer {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.el-progress-bar__inner {
+  background: var(--alp-color-primary);
+  border-radius: 99px;
+  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: none;
+}
+
+/* Scrollbar — minimal */
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 99px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* Selection */
+::selection {
+  background: rgba(var(--alp-color-primary-rgb), 0.2);
+}
+
+/* Focus ring — visible but not loud */
+:focus-visible {
+  outline: 1.5px solid var(--alp-color-primary);
+  outline-offset: 2px;
+  border-radius: 2px;
 }

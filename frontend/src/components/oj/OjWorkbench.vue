@@ -86,6 +86,7 @@ const showVisualDiagnoseCta = computed(() => {
   const v = props.result?.verdict
   return v === 'WA' || v === 'RE' || v === 'TLE'
 })
+const judging = computed(() => props.running || props.submitting)
 
 const hasJudgeDemo = computed(() => props.problem.slug === 'reverse-linked-list')
 
@@ -355,6 +356,45 @@ function onReset() {
       </div>
     </section>
 
+    <aside v-if="!traceLayout" class="oj-result-pane">
+      <header class="result-pane-header">
+        <span class="pane-title">判题结果</span>
+        <span class="result-state" :class="result ? `is-${result.verdict.toLowerCase()}` : judging ? 'is-judging' : ''">
+          {{ result ? VERDICT_LABEL[result.verdict as Verdict] : judging ? '判题中' : '等待运行' }}
+        </span>
+      </header>
+      <div class="result-pane-body">
+        <div v-if="judging" class="result-loading" aria-live="polite">
+          <el-skeleton :rows="5" animated />
+          <p>{{ submitting ? '正在提交并运行完整测试用例…' : '正在运行样例并同步结果…' }}</p>
+        </div>
+        <template v-else-if="result">
+          <div class="result-summary">
+            <div><span>通过用例</span><strong>{{ result.passed }} / {{ result.total }}</strong></div>
+            <div><span>判题状态</span><strong>{{ result.verdict }}</strong></div>
+          </div>
+          <div class="case-table">
+            <div class="case-table__head"><span>#</span><span>状态</span><span>结果</span></div>
+            <div v-for="item in result.cases" :key="item.index" class="case-table__row">
+              <span>{{ item.index + 1 }}</span>
+              <span :class="item.verdict === 'AC' ? 'case-ok' : 'case-error'">{{ item.verdict }}</span>
+              <span>{{ item.message || (item.verdict === 'AC' ? '通过' : '未通过') }}</span>
+            </div>
+          </div>
+        </template>
+        <div v-else class="result-empty">
+          <el-icon><VideoPlay /></el-icon>
+          <h3>运行代码查看结果</h3>
+          <p>测试用例、运行状态和诊断建议会集中显示在这里。</p>
+          <ol>
+            <li>在中间编辑器完成代码</li>
+            <li>点击运行验证样例</li>
+            <li>提交后查看完整判题结果</li>
+          </ol>
+        </div>
+      </div>
+    </aside>
+
     <section
       v-if="!traceLayout && (traceReport || traceReportLoading || struggleView)"
       class="oj-diagnosis-workspace"
@@ -396,13 +436,15 @@ function onReset() {
 <style scoped>
 .oj-workbench {
   display: grid;
-  grid-template-columns: minmax(0, 38%) minmax(0, 62%);
+  grid-template-columns: minmax(280px, 29%) minmax(420px, 42%) minmax(280px, 29%);
   grid-template-rows: auto auto auto auto;
-  min-height: 520px;
+  min-height: 0;
+  height: 100%;
   width: 100%;
   border: 1px solid var(--alp-color-border);
   border-radius: var(--alp-radius-card);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: var(--alp-bg-surface);
   box-shadow: var(--alp-shadow-card);
 }
@@ -424,6 +466,48 @@ function onReset() {
   min-width: 0;
   background: #1e1e1e;
 }
+
+.oj-result-pane {
+  grid-column: 3;
+  grid-row: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--alp-color-border);
+  background: var(--alp-bg-surface-muted);
+}
+
+.result-pane-header {
+  min-height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--alp-color-border);
+}
+.result-state { font-size: 12px; color: var(--alp-color-muted); }
+.result-state.is-ac { color: var(--alp-color-success); }
+.result-state.is-wa, .result-state.is-re, .result-state.is-tle, .result-state.is-ce { color: var(--alp-color-danger); }
+.result-pane-body { flex: 1; min-height: 0; overflow: auto; padding: 14px; }
+.result-loading p { margin: 12px 0 0; color: var(--alp-color-muted); font-size: 12px; text-align: center; }
+.result-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid var(--alp-color-border); }
+.result-summary > div { padding: 12px; }
+.result-summary > div + div { border-left: 1px solid var(--alp-color-border); }
+.result-summary span, .result-summary strong { display: block; }
+.result-summary span { color: var(--alp-color-muted); font-size: 11px; }
+.result-summary strong { margin-top: 5px; color: var(--alp-color-text); font-size: 16px; }
+.case-table { margin-top: 14px; border: 1px solid var(--alp-color-border); }
+.case-table__head, .case-table__row { display: grid; grid-template-columns: 34px 56px minmax(0, 1fr); gap: 8px; padding: 8px 10px; font-size: 12px; }
+.case-table__head { background: var(--alp-bg-soft-block); color: var(--alp-color-muted); font-weight: 600; }
+.case-table__row + .case-table__row { border-top: 1px solid var(--alp-color-border); }
+.case-ok { color: var(--alp-color-success); }
+.case-error { color: var(--alp-color-danger); }
+.result-empty { max-width: 280px; margin: 18vh auto 0; color: var(--alp-color-muted); text-align: center; }
+.result-empty > .el-icon { font-size: 28px; color: var(--alp-color-primary); }
+.result-empty h3 { margin: 12px 0 6px; color: var(--alp-color-text); font-size: 15px; }
+.result-empty p { margin: 0; font-size: 12px; line-height: 1.6; }
+.result-empty ol { margin: 18px 0 0; padding: 14px 14px 14px 32px; border-top: 1px solid var(--alp-color-border); text-align: left; font-size: 12px; line-height: 2; }
 
 .oj-workbench-agent-console {
   grid-column: 1 / -1;
@@ -739,19 +823,24 @@ function onReset() {
 }
 @media (min-width: 1400px) {
   .oj-workbench {
-    grid-template-columns: minmax(0, 40%) minmax(0, 60%);
+    grid-template-columns: minmax(300px, 29%) minmax(440px, 42%) minmax(300px, 29%);
   }
 }
 
 @media (max-width: 1100px) {
   .oj-workbench {
     grid-template-columns: 1fr;
+    height: auto;
   }
 
   .oj-problem-pane {
     border-right: none;
     border-bottom: 1px solid var(--alp-color-border);
   }
+
+  .oj-code-pane, .oj-result-pane { grid-column: 1; }
+  .oj-code-pane { grid-row: 2; }
+  .oj-result-pane { grid-row: 3; min-height: 320px; border-left: 0; border-top: 1px solid var(--alp-color-border); }
 
   .problem-scroll {
     max-height: 320px;

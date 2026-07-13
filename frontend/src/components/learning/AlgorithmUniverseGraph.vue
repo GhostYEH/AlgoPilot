@@ -2,12 +2,14 @@
 import * as d3 from 'd3'
 import {
   computed,
+  defineAsyncComponent,
   nextTick,
   onMounted,
   onUnmounted,
   ref,
   shallowRef,
   watch,
+  type Component,
 } from 'vue'
 import { useRouter } from 'vue-router'
 import {
@@ -39,6 +41,11 @@ import { useLearningPathPlan } from '@/composables/useLearningPathPlan'
 import { useModuleNavigation } from '@/composables/useModuleNavigation'
 import { isLoggedIn } from '@/stores/auth'
 import { useUniverseGraphEnhancements } from '@/composables/useUniverseGraphEnhancements'
+import { getModuleLearnConfig } from '@/modules/shared/moduleRegistry'
+import { ARRAY_CURRICULUM_INTRO } from '@/modules/array/arrayCurriculum'
+import { HASH_TABLE_CURRICULUM_INTRO } from '@/modules/hashTable/hashTableCurriculum'
+import { STRING_CURRICULUM_INTRO } from '@/modules/string/stringCurriculum'
+import { TWO_POINTERS_CURRICULUM_INTRO } from '@/modules/twoPointers/twoPointersCurriculum'
 
 /** 模块 key → 画像维度 */
 const MODULE_DIMENSION: Record<string, keyof PersonaProfile['dimensions']> = {
@@ -63,6 +70,21 @@ const PERSONALIZED_SLOTS = [
   { type: 'exercises', label: '个性化题单', icon: '📝' },
   { type: 'trace_animation', label: '轨迹动画', icon: '✨' },
 ] as const
+
+/** 独立学习页模块（不在 registry 中）的概述与动画组件加载器 */
+const INDEPENDENT_MODULE_INTROS: Record<string, string> = {
+  array: ARRAY_CURRICULUM_INTRO,
+  'hash-table': HASH_TABLE_CURRICULUM_INTRO,
+  string: STRING_CURRICULUM_INTRO,
+  'two-pointers': TWO_POINTERS_CURRICULUM_INTRO,
+}
+
+const INDEPENDENT_MODULE_ANIMATIONS: Record<string, () => Promise<Component>> = {
+  array: () => import('@/modules/array/components/ArrayConceptAnimations.vue'),
+  'hash-table': () => import('@/modules/hashTable/components/HashTableSectionAnimation.vue'),
+  string: () => import('@/modules/string/components/StringSectionAnimation.vue'),
+  'two-pointers': () => import('@/modules/twoPointers/components/TwoPointersSectionAnimation.vue'),
+}
 
 export type UniverseNodeStatus = 'mastered' | 'active' | 'progress' | 'locked' | 'remediation' | 'next'
 
@@ -112,6 +134,7 @@ const personaScores = ref<Record<string, number>>({})
 const hoveredNode = ref<UniverseGraphNode | null>(null)
 const tooltipPos = ref({ x: 0, y: 0 })
 const selectedKey = ref(props.highlightKey ?? 'array')
+const drawerNode = ref<UniverseGraphNode | null>(null)
 const drawerVisible = ref(false)
 const drawerResources = ref<GeneratedResource[]>([])
 const drawerLoading = ref(false)
@@ -128,6 +151,10 @@ let starsAnimId = 0
 let renderToken = 0
 const graphNodes = shallowRef<UniverseGraphNode[]>([])
 const graphLinks = shallowRef<Array<{ source: string; target: string }>>([])
+
+function motionDuration(ms: number): number {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : ms
+}
 
 const remediationStep = computed(
   () => plan.value?.steps?.find((s) => s.is_remediation) ?? null,
@@ -237,9 +264,9 @@ const {
   displayEdges,
   selectedConceptDetail,
   selectedModuleConcepts,
-  runSearch,
+  runSearch: runEnhancementSearch,
   clearSearch,
-  applySearchHit,
+  applySearchHit: applyEnhancementSearchHit,
 } = enhancements
 
 const tourActive = computed(() => tour.active.value)
@@ -267,8 +294,42 @@ const tooltipDimensions = computed(() => {
 })
 
 const selectedNode = computed(() =>
-  displayNodes.value.find((n) => n.id === selectedKey.value),
+  drawerNode.value ?? displayNodes.value.find((n) => n.id === selectedKey.value),
 )
+
+/** 抽屉中展示的知识点概述与动画配置（照搬学习界面源码） */
+const drawerModulePreview = computed(() => {
+  const key = selectedNode.value?.id
+  if (!key) return null
+  const cfg = getModuleLearnConfig(key)
+  if (cfg) {
+    return {
+      intro: cfg.intro,
+      animLoader: cfg.animationComponent,
+      firstSectionId: cfg.sections[0]?.id ?? 'theory',
+    }
+  }
+  const intro = INDEPENDENT_MODULE_INTROS[key]
+  const animLoader = INDEPENDENT_MODULE_ANIMATIONS[key]
+  if (intro && animLoader) {
+    return { intro, animLoader, firstSectionId: 'theory' }
+  }
+  return null
+})
+
+const drawerAnimCache = new Map<string, Component>()
+const drawerAnimComponent = computed(() => {
+  const key = selectedNode.value?.id
+  if (!key) return null
+  const preview = drawerModulePreview.value
+  if (!preview) return null
+  let comp = drawerAnimCache.get(key)
+  if (!comp) {
+    comp = defineAsyncComponent(preview.animLoader)
+    drawerAnimCache.set(key, comp)
+  }
+  return comp
+})
 
 const drawerSlots = computed(() => {
   const byType = new Map(drawerResources.value.map((r) => [r.resource_type, r]))
@@ -409,12 +470,12 @@ function applyFocusStyles(focusId: string | null) {
   nodeSelection
     .select<SVGCircleElement>('.node-core')
     .transition()
-    .duration(320)
+    .duration(motionDuration(320))
     .attr('r', (d) => (d.id === focusId ? d.radius * 1.28 : d.radius))
 
   linkSelection
     .transition()
-    .duration(320)
+    .duration(motionDuration(320))
     .attr('stroke-opacity', (d) => {
       if (!focusId) return 0.6
       const link = d as { source: string | UniverseGraphNode; target: string | UniverseGraphNode }
@@ -465,7 +526,7 @@ function focusNodeSpread(node: UniverseGraphNode) {
     applyFocusStyles(null)
     simulation?.alpha(0.35).restart()
     focusReleaseTimer = undefined
-  }, 1500)
+  }, motionDuration(1500))
 }
 
 function clearNodeFocus() {
@@ -495,7 +556,7 @@ function panToNode(nodeId: string) {
   const ty = height / 2 - scale * (node.y ?? height / 2)
   d3.select(svgEl)
     .transition()
-    .duration(450)
+    .duration(motionDuration(450))
     .call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(scale))
 }
 
@@ -718,6 +779,8 @@ function resetView() {
 }
 
 async function onNodeClick(node: UniverseGraphNode) {
+  hoveredNode.value = null
+  drawerNode.value = { ...node }
   selectedKey.value = node.id
   focusNodeSpread(node)
   emit('select', node.id)
@@ -725,13 +788,39 @@ async function onNodeClick(node: UniverseGraphNode) {
   drawerLoading.value = true
   try {
     drawerResources.value = isLoggedIn.value
-      ? await fetchRecommendedResources({ module_key: node.id, limit: 8 })
+      ? await fetchRecommendedResources({
+          module_key:
+            enhancements.conceptNodesRaw.value.find((concept) => concept.id === node.id)?.moduleKey ?? node.id,
+          limit: 8,
+        })
       : []
   } catch {
     drawerResources.value = []
   } finally {
     drawerLoading.value = false
   }
+}
+
+async function animateSearchHit(hit: import('@/api/search').SemanticSearchResult, openDrawer = false) {
+  hoveredNode.value = null
+  applyEnhancementSearchHit(hit)
+  await nextTick()
+  await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+  const targetId = hit.concept_ids[0] || hit.module_key || hit.node_ids[0] || hit.id
+  const node = graphNodes.value.find((item) => item.id === targetId)
+  if (!node) return
+  focusNodeSpread(node)
+  if (openDrawer) void onNodeClick(node)
+}
+
+async function runSearch() {
+  await runEnhancementSearch()
+  if (searchResults.value[0]) await animateSearchHit(searchResults.value[0])
+}
+
+function onSearchHit(hit: import('@/api/search').SemanticSearchResult) {
+  searchResults.value = []
+  void animateSearchHit(hit, true)
 }
 
 function openResource(r: GeneratedResource) {
@@ -909,8 +998,8 @@ onUnmounted(() => {
             :key="`${hit.kind}-${hit.id}`"
             role="button"
             tabindex="0"
-            @click="applySearchHit(hit)"
-            @keyup.enter="applySearchHit(hit)"
+            @click="onSearchHit(hit)"
+            @keyup.enter="onSearchHit(hit)"
           >
             <span class="hit-kind">{{ hit.kind }}</span>
             <strong>{{ hit.title }}</strong>
@@ -1047,6 +1136,27 @@ onUnmounted(() => {
           </div>
         </div>
 
+        <template v-if="drawerModulePreview">
+          <h4 class="drawer-section-title">
+            <el-icon><MagicStick /></el-icon>
+            知识点概述
+          </h4>
+          <p class="drawer-overview-text">{{ drawerModulePreview.intro }}</p>
+
+          <h4 class="drawer-section-title">
+            <el-icon><MagicStick /></el-icon>
+            动画演示
+          </h4>
+          <div class="drawer-anim-stage">
+            <component
+              v-if="drawerAnimComponent"
+              :is="drawerAnimComponent"
+              :key="selectedNode.id"
+              :section-id="drawerModulePreview.firstSectionId"
+            />
+          </div>
+        </template>
+
         <h4 class="drawer-section-title">
           <el-icon><MagicStick /></el-icon>
           五种个性化学习资源
@@ -1084,13 +1194,15 @@ onUnmounted(() => {
             type="primary"
             @click="goModule(selectedNode.id)"
           >
-            {{ selectedNode.percent > 0 ? '继续学习' : '开始学习' }}
+            立即学习
             <el-icon class="el-icon--right"><ArrowRight /></el-icon>
           </el-button>
           <el-button v-else disabled>内容规划中</el-button>
           <el-button @click="router.push({ name: 'resources' })">资源库</el-button>
         </div>
       </template>
+
+      <el-empty v-else description="未找到该知识节点的详情，请重新选择图谱节点" />
 
       <template #footer>
         <el-button :icon="Close" @click="drawerVisible = false">关闭</el-button>
@@ -1447,6 +1559,33 @@ onUnmounted(() => {
   margin: 0 0 12px;
   font-size: 14px;
   font-weight: 600;
+}
+
+.drawer-overview-text {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--alp-color-text);
+  line-height: 1.7;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--alp-bg-soft-block);
+  border: 1px solid var(--alp-color-border);
+}
+
+.drawer-anim-stage {
+  margin-bottom: 18px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--alp-bg-surface);
+  border: 1px solid var(--alp-color-border);
+  min-height: 200px;
+  overflow: hidden;
+}
+
+.drawer-anim-stage :deep(.anim-stage),
+.drawer-anim-stage :deep(.section-animation),
+.drawer-anim-stage :deep(.concept-animations) {
+  min-height: 200px;
 }
 
 .resource-grid {

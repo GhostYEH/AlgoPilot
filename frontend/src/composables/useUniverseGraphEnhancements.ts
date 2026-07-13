@@ -3,6 +3,8 @@ import {
   buildConceptGraphEdges,
   buildConceptGraphNodes,
   getConceptsForModule,
+  getConceptCatalog,
+  getProblemCatalog,
   getProblemsForConcept,
   validateConceptGraph,
 } from '@/constants/conceptGraph'
@@ -11,6 +13,7 @@ import { useGuidedTour } from '@/composables/useGuidedTour'
 import { useLearningImpact } from '@/composables/useLearningImpact'
 import { usePersonaUiDensity } from '@/composables/usePersonaUiDensity'
 import { semanticSearch, type SemanticSearchResult } from '@/api/search'
+import { ALGORITHM_MODULES } from '@/constants/modules'
 import type { LearningPathPlan } from '@/api/orchestrator'
 
 import type { UniverseNodeStatus } from '@/components/learning/AlgorithmUniverseGraph.vue'
@@ -131,16 +134,83 @@ export function useUniverseGraphEnhancements(
     searchLoading.value = true
     try {
       const res = await semanticSearch({ q, top_k: 8 })
-      searchResults.value = res.results
-      highlightIds.value = new Set(res.highlight_node_ids)
+      const localResults = searchLocalKnowledge(q)
+      const merged = [...res.results, ...localResults].filter(
+        (hit, index, all) => all.findIndex((item) => `${item.kind}:${item.id}` === `${hit.kind}:${hit.id}`) === index,
+      )
+      searchResults.value = merged.slice(0, 8)
+      highlightIds.value = new Set([
+        ...res.highlight_node_ids,
+        ...searchResults.value.flatMap((hit) => hit.node_ids),
+      ])
       if (res.highlight_node_ids.some((id) => conceptNodesRaw.value.some((c) => c.id === id))) {
         graphView.value = 'concept'
       }
     } catch {
-      searchResults.value = []
+      searchResults.value = searchLocalKnowledge(q)
+      highlightIds.value = new Set(searchResults.value.flatMap((hit) => hit.node_ids))
     } finally {
       searchLoading.value = false
     }
+  }
+
+  function searchLocalKnowledge(query: string): SemanticSearchResult[] {
+    const terms = query.toLocaleLowerCase().split(/\s+/).filter(Boolean)
+    const matches = (values: string[]) => {
+      const haystack = values.join(' ').toLocaleLowerCase()
+      return terms.every((term) => haystack.includes(term))
+    }
+    const score = (values: string[]) => {
+      const haystack = values.join(' ').toLocaleLowerCase()
+      return terms.reduce((total, term) => total + (haystack.includes(term) ? 1 : 0), 0) / terms.length
+    }
+
+    const modules: SemanticSearchResult[] = ALGORITHM_MODULES
+      .filter((module) => matches([module.label, module.key]))
+      .map((module) => ({
+        id: module.key,
+        kind: 'module',
+        title: module.label,
+        snippet: '已有算法知识库模块',
+        module_key: module.key,
+        concept_ids: [],
+        node_ids: [module.key],
+        score: score([module.label, module.key]),
+        slug: '',
+        difficulty: '',
+      }))
+
+    const concepts: SemanticSearchResult[] = getConceptCatalog()
+      .filter((concept) => matches([concept.label, concept.description ?? '', ...concept.keywords, concept.module_key]))
+      .map((concept) => ({
+        id: concept.id,
+        kind: 'concept',
+        title: concept.label,
+        snippet: concept.description ?? '已有知识图谱概念',
+        module_key: concept.module_key,
+        concept_ids: [concept.id],
+        node_ids: [concept.id],
+        score: score([concept.label, concept.description ?? '', ...concept.keywords]),
+        slug: '',
+        difficulty: '',
+      }))
+
+    const problems: SemanticSearchResult[] = getProblemCatalog()
+      .filter((problem) => matches([problem.label, problem.slug, ...problem.keywords, problem.module_key]))
+      .map((problem) => ({
+        id: problem.id,
+        kind: 'problem',
+        title: problem.label,
+        snippet: `${problem.difficulty} · 已有题库`,
+        module_key: problem.module_key,
+        concept_ids: problem.concept_ids,
+        node_ids: problem.concept_ids,
+        score: score([problem.label, problem.slug, ...problem.keywords]),
+        slug: problem.slug,
+        difficulty: problem.difficulty,
+      }))
+
+    return [...modules, ...concepts, ...problems].sort((a, b) => b.score - a.score).slice(0, 8)
   }
 
   function clearSearch() {

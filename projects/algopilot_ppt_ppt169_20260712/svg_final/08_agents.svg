@@ -1,0 +1,127 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+  <rect x="0" y="0" width="1280" height="720" fill="#F7F8FA"/>
+  <rect x="0" y="0" width="6" height="720" fill="#1B2A4A"/>
+
+  <text x="80" y="40" font-family="'Inter', sans-serif" font-weight="500" font-size="12" fill="#2D7DD2" letter-spacing="3">03 · ARCHITECTURE</text>
+  <text x="80" y="85" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="28" fill="#1B2A4A">22 个智能体 · 6 层协作</text>
+  <line x1="80" y1="100" x2="400" y2="100" stroke="#2D7DD2" stroke-width="2"/>
+
+  <!-- Layer 1: Profiling -->
+  <g transform="translate(80, 135)">
+    <rect x="0" y="0" width="160" height="55" rx="4" fill="#FFFFFF" stroke="#1B2A4A" stroke-width="1"/>
+    <rect x="0" y="0" width="160" height="22" rx="4" fill="#1B2A4A"/>
+    <text x="80" y="15" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="11" fill="#FFFFFF" text-anchor="middle">L1 画像层</text>
+    <text x="10" y="38" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="11" fill="#1E2024">ProfilingAgent</text>
+    <text x="10" y="50" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="10" fill="#6B7280">PersonaInitAgent</text>
+  </g>
+
+  <!-- Layer 2: Resource -->
+  <g transform="translate(260, 135)">
+    <rect x="0" y="0" width="300" height="55" rx="4" fill="#FFFFFF" stroke="#1B2A4A" stroke-width="1"/>
+    <rect x="0" y="0" width="300" height="22" rx="4" fill="#1B2A4A"/>
+    <text x="150" y="15" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="11" fill="#FFFFFF" text-anchor="middle">L2 资源层</text>
+    <text x="10" y="38" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="11" fill="#1E2024">Concept · Graph · Quiz · Scenario</text>
+    <text x="10" y="50" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="10" fill="#6B7280">Trace · Reading · ResourceDispatch</text>
+  </g>
+
+  <!-- Layer 3: Path -->
+  <g transform="translate(590, 135)">
+    <rect x="0" y="0" width="160" height="55" rx="4" fill="#FFFFFF" stroke="#1B2A4A" stroke-width="1"/>
+    <rect x="0" y="0" width="160" height="22" rx="4" fill="#1B2A4A"/>
+    <text x="80" y="15" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="11" fill="#FFFFFF" text-anchor="middle">L3 路径层</text>
+    <text x="10" y="38" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="11" fill="#1E2024">LearningPathAgent</text>
+  </g>
+
+  <!-- Layer 4: Tutor -->
+  <g transform="translate(780, 135)">
+    <rect x="0" y="0" width="220" height="55" rx="4" fill="#FFFFFF" stroke="#1B2A4A" stroke-width="1"/>
+    <rect x="0" y="0" width="220" height="22" rx="4" fill="#1B2A4A"/>
+    <text x="110" y="15" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="11" fill="#FFFFFF" text-anchor="middle">L4 辅导层</text>
+    <text x="10" y="38" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="11" fill="#1E2024">AiTutor · CodeReview · Hint</text>
+    <text x="10" y="50" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="10" fill="#6B7280">MisconceptionAgent</text>
+  </g>
+
+  <!-- Layer 5: Safety -->
+  <g transform="translate(80, 210)">
+    <rect x="0" y="0" width="460" height="55" rx="4" fill="#FFFFFF" stroke="#2D7DD2" stroke-width="1.5"/>
+    <rect x="0" y="0" width="460" height="22" rx="4" fill="#2D7DD2"/>
+    <text x="230" y="15" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="11" fill="#FFFFFF" text-anchor="middle">L5 安全层 ★</text>
+    <text x="10" y="38" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="11" fill="#1E2024">ContentVerifierAgent · SafetyAgent · ASTAnalyzerAgent</text>
+  </g>
+
+  <!-- Layer 6: Eval -->
+  <g transform="translate(570, 210)">
+    <rect x="0" y="0" width="430" height="55" rx="4" fill="#FFFFFF" stroke="#1B2A4A" stroke-width="1"/>
+    <rect x="0" y="0" width="430" height="22" rx="4" fill="#1B2A4A"/>
+    <text x="215" y="15" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="11" fill="#FFFFFF" text-anchor="middle">L6 评估层</text>
+    <text x="10" y="38" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="11" fill="#1E2024">MasteryEval · LearningEvent · TeacherDashboard</text>
+  </g>
+
+  <!-- DAG flow visualization -->
+  <g transform="translate(80, 300)">
+    <text x="0" y="0" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="16" fill="#1B2A4A">智能体协作流程</text>
+    <line x1="0" y1="12" x2="200" y2="12" stroke="#2D7DD2" stroke-width="2"/>
+
+    <!-- DAG nodes flow -->
+    <g transform="translate(0, 40)">
+      <!-- Input -->
+      <rect x="0" y="25" width="100" height="35" rx="17" fill="#1B2A4A"/>
+      <text x="50" y="47" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="12" fill="#FFFFFF" text-anchor="middle">用户输入</text>
+      <line x1="100" y1="42" x2="140" y2="42" stroke="#1B2A4A" stroke-width="1.5"/>
+      <polygon points="140,42 132,37 132,47" fill="#1B2A4A"/>
+
+      <!-- Profile -->
+      <rect x="140" y="25" width="110" height="35" rx="4" fill="#EDF0F5" stroke="#1B2A4A" stroke-width="1"/>
+      <text x="195" y="47" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="11" fill="#1E2024" text-anchor="middle">画像对话</text>
+      <line x1="250" y1="42" x2="280" y2="42" stroke="#1B2A4A" stroke-width="1.5"/>
+      <polygon points="280,42 272,37 272,47" fill="#1B2A4A"/>
+
+      <!-- Path -->
+      <rect x="280" y="25" width="110" height="35" rx="4" fill="#EDF0F5" stroke="#1B2A4A" stroke-width="1"/>
+      <text x="335" y="47" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="11" fill="#1E2024" text-anchor="middle">路径规划</text>
+      <line x1="390" y1="42" x2="420" y2="42" stroke="#1B2A4A" stroke-width="1.5"/>
+      <polygon points="420,42 412,37 412,47" fill="#1B2A4A"/>
+
+      <!-- Resources (branch) -->
+      <rect x="420" y="15" width="110" height="35" rx="4" fill="#E8F0FE" stroke="#2D7DD2" stroke-width="1"/>
+      <text x="475" y="37" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="11" fill="#1B2A4A" text-anchor="middle">资源生成</text>
+      <line x1="530" y1="32" x2="560" y2="32" stroke="#2D7DD2" stroke-width="1.5"/>
+      <polygon points="560,32 552,27 552,37" fill="#2D7DD2"/>
+
+      <!-- OJ/Trace -->
+      <rect x="560" y="15" width="110" height="35" rx="4" fill="#E8F0FE" stroke="#2D7DD2" stroke-width="1"/>
+      <text x="615" y="37" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="11" fill="#1B2A4A" text-anchor="middle">OJ / Trace</text>
+      <line x1="670" y1="32" x2="700" y2="32" stroke="#2D7DD2" stroke-width="1.5"/>
+      <polygon points="700,32 692,27 692,37" fill="#2D7DD2"/>
+
+      <!-- AI Tutor (lower branch) -->
+      <line x1="420" y1="60" x2="420" y2="80" stroke="#2D7DD2" stroke-width="1" stroke-dasharray="3,2"/>
+      <line x1="420" y1="80" x2="700" y2="80" stroke="#2D7DD2" stroke-width="1" stroke-dasharray="3,2"/>
+      <line x1="700" y1="80" x2="700" y2="60" stroke="#2D7DD2" stroke-width="1" stroke-dasharray="3,2"/>
+      <polygon points="700,60 694,65 706,65" fill="#2D7DD2"/>
+      <rect x="560" y="68" width="110" height="35" rx="4" fill="#EDF0F5" stroke="#D1D5DB" stroke-width="1"/>
+      <text x="615" y="90" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="11" fill="#6B7280" text-anchor="middle">AI 辅导</text>
+
+      <!-- Eval -->
+      <line x1="700" y1="32" x2="730" y2="32" stroke="#1B2A4A" stroke-width="1.5"/>
+      <polygon points="730,32 722,27 722,37" fill="#1B2A4A"/>
+      <rect x="730" y="25" width="110" height="35" rx="4" fill="#EDF0F5" stroke="#1B2A4A" stroke-width="1"/>
+      <text x="785" y="47" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="11" fill="#1E2024" text-anchor="middle">评估反馈</text>
+      <line x1="840" y1="42" x2="870" y2="42" stroke="#1B2A4A" stroke-width="1.5"/>
+      <polygon points="870,42 862,37 862,47" fill="#1B2A4A"/>
+
+      <!-- Output -->
+      <rect x="870" y="25" width="100" height="35" rx="17" fill="#10B981"/>
+      <text x="920" y="47" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="12" fill="#FFFFFF" text-anchor="middle">掌握度</text>
+    </g>
+  </g>
+
+  <!-- Status badge -->
+  <g transform="translate(80, 470)">
+    <rect x="0" y="0" width="1120" height="40" rx="6" fill="#EDF0F5"/>
+    <text x="20" y="25" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">📋 注册 22 个 Agent 条目 · 20 个已实现 · 2 个规划中扩展节点（PptAgent / VideoScriptAgent）· 6 个 Layer 端到端覆盖</text>
+  </g>
+
+  <!-- Page number -->
+  <text x="1240" y="700" font-family="'Inter', sans-serif" font-weight="400" font-size="12" fill="#9CA3AF" text-anchor="end">08 / 24</text>
+</svg>

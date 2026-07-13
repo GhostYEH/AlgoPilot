@@ -1,0 +1,74 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+  <rect x="0" y="0" width="1280" height="720" fill="#F7F8FA"/>
+  <rect x="0" y="0" width="6" height="720" fill="#1B2A4A"/>
+
+  <text x="80" y="40" font-family="'Inter', sans-serif" font-weight="500" font-size="12" fill="#2D7DD2" letter-spacing="3">04 · CORE FEATURES</text>
+  <text x="80" y="85" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="28" fill="#1B2A4A">陪你：六种覆盖全场景学习资源</text>
+  <line x1="80" y1="100" x2="450" y2="100" stroke="#2D7DD2" stroke-width="2"/>
+
+  <!-- 2x3 Card Grid -->
+  <!-- Row 1 -->
+  <g transform="translate(80, 140)">
+    <rect x="0" y="0" width="340" height="140" rx="6" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+    <rect x="0" y="0" width="340" height="5" rx="3" fill="#1B2A4A"/>
+    <text x="20" y="35" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="18" fill="#1B2A4A">📄 讲解文档</text>
+    <text x="20" y="60" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">ConceptAgent 生成</text>
+    <text x="20" y="82" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">结合 RAG 知识库</text>
+    <text x="20" y="104" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">个性化课程讲解</text>
+  </g>
+
+  <g transform="translate(470, 140)">
+    <rect x="0" y="0" width="340" height="140" rx="6" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+    <rect x="0" y="0" width="340" height="5" rx="3" fill="#2D7DD2"/>
+    <text x="20" y="35" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="18" fill="#1B2A4A">🧠 思维导图</text>
+    <text x="20" y="60" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">GraphAgent 生成</text>
+    <text x="20" y="82" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">Mermaid 格式</text>
+    <text x="20" y="104" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">知识结构化可视化</text>
+  </g>
+
+  <g transform="translate(860, 140)">
+    <rect x="0" y="0" width="340" height="140" rx="6" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+    <rect x="0" y="0" width="340" height="5" rx="3" fill="#1B2A4A"/>
+    <text x="20" y="35" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="18" fill="#1B2A4A">📝 分层练习题</text>
+    <text x="20" y="60" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">QuizAgent 生成</text>
+    <text x="20" y="82" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">Bloom 认知分层</text>
+    <text x="20" y="104" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">5 道个性化习题</text>
+  </g>
+
+  <!-- Row 2 -->
+  <g transform="translate(80, 310)">
+    <rect x="0" y="0" width="340" height="140" rx="6" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+    <rect x="0" y="0" width="340" height="5" rx="3" fill="#2D7DD2"/>
+    <text x="20" y="35" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="18" fill="#1B2A4A">💻 代码实操案例</text>
+    <text x="20" y="60" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">ScenarioAgent 生成</text>
+    <text x="20" y="82" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">交互式代码沙盒</text>
+    <text x="20" y="104" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">即学即练</text>
+  </g>
+
+  <g transform="translate(470, 310)">
+    <rect x="0" y="0" width="340" height="140" rx="6" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+    <rect x="0" y="0" width="340" height="5" rx="3" fill="#1B2A4A"/>
+    <text x="20" y="35" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="18" fill="#1B2A4A">🎬 Trace 执行动画</text>
+    <text x="20" y="60" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">TraceAgent 生成</text>
+    <text x="20" y="82" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">13 种可视化类型</text>
+    <text x="20" y="104" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">代码逐行追踪诊断</text>
+  </g>
+
+  <g transform="translate(860, 310)">
+    <rect x="0" y="0" width="340" height="140" rx="6" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+    <rect x="0" y="0" width="340" height="5" rx="3" fill="#2D7DD2"/>
+    <text x="20" y="35" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="18" fill="#1B2A4A">📖 分层拓展阅读</text>
+    <text x="20" y="60" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">ReadingAgent 推荐</text>
+    <text x="20" y="82" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">分层难度匹配</text>
+    <text x="20" y="104" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">拓展知识边界</text>
+  </g>
+
+  <!-- Learning chain label -->
+  <g transform="translate(80, 490)">
+    <rect x="0" y="0" width="1120" height="36" rx="18" fill="#EDF0F5"/>
+    <text x="560" y="23" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280" text-anchor="middle">理解 → 结构化 → 练习 → 实践 → 调试 → 拓展    全链路学习闭环</text>
+  </g>
+
+  <!-- Page number -->
+  <text x="1240" y="700" font-family="'Inter', sans-serif" font-weight="400" font-size="12" fill="#9CA3AF" text-anchor="end">12 / 24</text>
+</svg>

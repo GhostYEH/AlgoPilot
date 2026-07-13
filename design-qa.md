@@ -40,7 +40,32 @@ The header region is clearly visible in `nav-desktop.png`. On hover, computed st
 
 final result: passed
 
+## 2026-07-12 OJ structural redesign QA
+
+- Reference: supplied dark AlgoPilot OJ workbench screenshot.
+- Implementation: `audit/oj-workbench-refactor.png`, captured at 1680 × 945.
+- Replaced the old centered two-column card with a full-height workspace: route toolbar, compact utility rail, problem pane, editor pane, and persistent judge-result pane.
+- Existing run, submit, Trace, AI diagnosis, CodeMirror, and responsive behavior remain wired to the original handlers.
+- No animation infrastructure, trace visualization component, chapter animation, or game animation was changed.
+- TypeScript and production build passed; no P0, P1, or P2 visual issue remains in the captured desktop state.
+
+final result: passed
+
 ## Post-handoff regression check
 
 - Reloaded the app from a clean browser page and triggered a stylesheet HMR update; the reported `render function` / `ce` exception did not recur.
 - `npm run typecheck`, `npm run build`, `npm run test:oj-struggle`, `npm run test:path-replan-diff`, and `npm run test:graph-module` all passed.
+
+## 2026-07-12 full product-shell redesign QA
+
+- Visual sources: the four supplied AlgoPilot learning-center, teacher-dashboard, learning-path, and OJ-workbench references.
+- Implementation captures: `audit/algopilot-teacher-light.png`, `audit/algopilot-oj-dark.png`, and `audit/algopilot-mobile-dark.png`.
+- Desktop viewports: 1680 × 945. Narrow viewport: 390 × 844.
+- Light theme now uses white analytical surfaces, cool neutral page chrome, restrained blue-teal emphasis, fine borders, compact controls, and readable navy text.
+- Dark theme now uses a blue-black workspace, layered but non-glowing panels, teal actions, semantic status colors, and high-density OJ tables.
+- The shared header, controls, cards, tables, form fields, overlays, spacing, and responsive tokens remain consistent between themes.
+- No protected GSAP, stepped-animation, chapter-animation, trace-animation, or game-animation file was edited.
+- Teacher data panels could not populate in the isolated capture because the backend was not running; the empty/error state rendered without layout breakage.
+- No actionable P0, P1, or P2 visual issue was found in the captured states.
+
+final result: passed

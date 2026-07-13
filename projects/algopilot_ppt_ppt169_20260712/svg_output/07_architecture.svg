@@ -1,0 +1,109 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+  <rect x="0" y="0" width="1280" height="720" fill="#F7F8FA"/>
+  <rect x="0" y="0" width="6" height="720" fill="#1B2A4A"/>
+
+  <text x="80" y="40" font-family="'Inter', sans-serif" font-weight="500" font-size="12" fill="#2D7DD2" letter-spacing="3">03 · ARCHITECTURE</text>
+  <text x="80" y="85" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="28" fill="#1B2A4A">三层架构 + 多智能体编排</text>
+  <line x1="80" y1="100" x2="400" y2="100" stroke="#2D7DD2" stroke-width="2"/>
+
+  <!-- Architecture Layers -->
+  <!-- Layer 1: Frontend -->
+  <g transform="translate(80, 140)">
+    <rect x="0" y="0" width="1120" height="120" rx="6" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+    <!-- Layer label -->
+    <rect x="0" y="0" width="140" height="120" rx="6" fill="#1B2A4A"/>
+    <text x="70" y="55" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="700" font-size="16" fill="#FFFFFF" text-anchor="middle">前端</text>
+    <text x="70" y="78" font-family="'Inter', sans-serif" font-weight="400" font-size="12" fill="#4A9FE5" text-anchor="middle">Frontend</text>
+    <!-- Tech stack cards -->
+    <g transform="translate(160, 20)">
+      <rect x="0" y="0" width="160" height="80" rx="4" fill="#EDF0F5"/>
+      <text x="80" y="35" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="14" fill="#1E2024" text-anchor="middle">Vue 3 + TypeScript</text>
+      <text x="80" y="58" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="12" fill="#6B7280" text-anchor="middle">Element Plus · CodeMirror</text>
+    </g>
+    <g transform="translate(340, 20)">
+      <rect x="0" y="0" width="160" height="80" rx="4" fill="#EDF0F5"/>
+      <text x="80" y="35" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="14" fill="#1E2024" text-anchor="middle">30+ 页面</text>
+      <text x="80" y="58" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="12" fill="#6B7280" text-anchor="middle">70+ 组件 · 13 游戏</text>
+    </g>
+    <g transform="translate(520, 20)">
+      <rect x="0" y="0" width="160" height="80" rx="4" fill="#EDF0F5"/>
+      <text x="80" y="35" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="14" fill="#1E2024" text-anchor="middle">Mermaid · D3.js</text>
+      <text x="80" y="58" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="12" fill="#6B7280" text-anchor="middle">Vue Flow · Pinia</text>
+    </g>
+    <!-- Arrow down -->
+    <text x="560" y="105" font-family="'Inter', sans-serif" font-weight="400" font-size="16" fill="#2D7DD2" text-anchor="middle">▼</text>
+  </g>
+
+  <!-- Layer 2: API -->
+  <g transform="translate(80, 275)">
+    <rect x="0" y="0" width="1120" height="105" rx="6" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+    <rect x="0" y="0" width="140" height="105" rx="6" fill="#1B2A4A"/>
+    <text x="70" y="48" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="700" font-size="16" fill="#FFFFFF" text-anchor="middle">API 层</text>
+    <text x="70" y="70" font-family="'Inter', sans-serif" font-weight="400" font-size="12" fill="#4A9FE5" text-anchor="middle">API Layer</text>
+    <g transform="translate(160, 15)">
+      <rect x="0" y="0" width="160" height="75" rx="4" fill="#EDF0F5"/>
+      <text x="80" y="32" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="14" fill="#1E2024" text-anchor="middle">FastAPI</text>
+      <text x="80" y="54" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="12" fill="#6B7280" text-anchor="middle">16 路由 · Pydantic</text>
+    </g>
+    <g transform="translate(340, 15)">
+      <rect x="0" y="0" width="160" height="75" rx="4" fill="#EDF0F5"/>
+      <text x="80" y="32" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="14" fill="#1E2024" text-anchor="middle">JWT 鉴权</text>
+      <text x="80" y="54" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="12" fill="#6B7280" text-anchor="middle">bcrypt · 角色隔离</text>
+    </g>
+    <g transform="translate(520, 15)">
+      <rect x="0" y="0" width="160" height="75" rx="4" fill="#EDF0F5"/>
+      <text x="80" y="32" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="14" fill="#1E2024" text-anchor="middle">SSE 流式</text>
+      <text x="80" y="54" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="12" fill="#6B7280" text-anchor="middle">AI 辅导实时输出</text>
+    </g>
+    <text x="560" y="92" font-family="'Inter', sans-serif" font-weight="400" font-size="16" fill="#2D7DD2" text-anchor="middle">▼</text>
+  </g>
+
+  <!-- Layer 3: Agent Engine -->
+  <g transform="translate(80, 395)">
+    <rect x="0" y="0" width="1120" height="140" rx="6" fill="#FFFFFF" stroke="#2D7DD2" stroke-width="1.5"/>
+    <rect x="0" y="0" width="140" height="140" rx="6" fill="#2D7DD2"/>
+    <text x="70" y="60" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="700" font-size="15" fill="#FFFFFF" text-anchor="middle">AI 引擎</text>
+    <text x="70" y="82" font-family="'Inter', sans-serif" font-weight="400" font-size="11" fill="#FFFFFF" text-anchor="middle">Agent Engine</text>
+    <text x="70" y="105" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="11" fill="#FFFFFF" text-anchor="middle">★ 核心层</text>
+    <!-- Agent cards -->
+    <g transform="translate(160, 12)">
+      <rect x="0" y="0" width="230" height="55" rx="4" fill="#E8F0FE"/>
+      <text x="10" y="22" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="13" fill="#1B2A4A">编排层</text>
+      <text x="10" y="42" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="11" fill="#6B7280">自研 DAG Orchestrator · 零 langgraph 依赖</text>
+    </g>
+    <g transform="translate(160, 73)">
+      <rect x="0" y="0" width="230" height="55" rx="4" fill="#E8F0FE"/>
+      <text x="10" y="22" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="13" fill="#1B2A4A">Agent 层</text>
+      <text x="10" y="42" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="11" fill="#6B7280">22 注册 · 20 已实现 · 6 Layer</text>
+    </g>
+    <g transform="translate(410, 12)">
+      <rect x="0" y="0" width="230" height="55" rx="4" fill="#E8F0FE"/>
+      <text x="10" y="22" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="13" fill="#1B2A4A">RAG 知识层</text>
+      <text x="10" y="42" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="11" fill="#6B7280">BM25 检索 · 同义词扩展 · 课程Markdown</text>
+    </g>
+    <g transform="translate(410, 73)">
+      <rect x="0" y="0" width="230" height="55" rx="4" fill="#E8F0FE"/>
+      <text x="10" y="22" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="13" fill="#1B2A4A">OJ + 安全层</text>
+      <text x="10" y="42" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="11" fill="#6B7280">Python/C++ · AST 审计 · 3s 超时</text>
+    </g>
+    <g transform="translate(660, 12)">
+      <rect x="0" y="0" width="230" height="55" rx="4" fill="#E8F0FE"/>
+      <text x="10" y="22" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="13" fill="#1B2A4A">数据层</text>
+      <text x="10" y="42" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="11" fill="#6B7280">SQLAlchemy 2.0 · 7 表 · SQLite/MySQL</text>
+    </g>
+    <g transform="translate(660, 73)">
+      <rect x="0" y="0" width="230" height="55" rx="4" fill="#E8F0FE"/>
+      <text x="10" y="22" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="13" fill="#1B2A4A">LLM 层</text>
+      <text x="10" y="42" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="11" fill="#6B7280">讯飞星火 · OpenAI 兼容 · 流式+非流式</text>
+    </g>
+  </g>
+
+  <!-- Highlight: 零 langgraph 依赖 -->
+  <g transform="translate(880, 550)">
+    <rect x="0" y="0" width="280" height="36" rx="18" fill="#EDF0F5" stroke="#2D7DD2" stroke-width="1"/>
+    <text x="140" y="23" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="13" fill="#1B2A4A" text-anchor="middle">✦ 自研轻量编排 · 零 langgraph 依赖</text>
+  </g>
+
+  <!-- Page number -->
+  <text x="1240" y="700" font-family="'Inter', sans-serif" font-weight="400" font-size="12" fill="#9CA3AF" text-anchor="end">07 / 24</text>
+</svg>

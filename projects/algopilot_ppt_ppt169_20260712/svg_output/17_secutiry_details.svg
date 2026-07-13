@@ -1,0 +1,107 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+  <defs>
+    <linearGradient id="p17-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1B2A4A" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#F7F8FA" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="1280" height="720" fill="#F7F8FA"/>
+  <rect x="0" y="0" width="1280" height="300" fill="url(#p17-grad)"/>
+  <rect x="0" y="0" width="6" height="720" fill="#1B2A4A"/>
+  <!-- Decorative bg -->
+  <g opacity="0.03">
+    <circle cx="1200" cy="80" r="130" fill="#2D7DD2"/>
+    <circle cx="80" cy="680" r="100" fill="#1B2A4A"/>
+  </g>
+  <text x="80" y="40" font-family="'Inter', sans-serif" font-weight="500" font-size="12" fill="#2D7DD2" letter-spacing="3">05 · SAFETY &amp; INNOVATION</text>
+  <text x="80" y="85" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="28" fill="#1B2A4A">从代码到内容，层层设防</text>
+  <line x1="80" y1="100" x2="400" y2="100" stroke="#2D7DD2" stroke-width="2"/>
+
+  <!-- 6 cards in 3x2 -->
+  <g transform="translate(80, 130)">
+    <rect x="0" y="0" width="345" height="130" rx="8" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+    <rect x="0" y="0" width="6" height="130" rx="3" fill="#1B2A4A"/>
+    <g transform="translate(290, 15)" opacity="0.1">
+      <rect x="0" y="0" width="35" height="35" rx="4" fill="#1B2A4A"/>
+      <text x="17" y="23" font-family="'Inter', sans-serif" font-weight="700" font-size="16" fill="#FFFFFF" text-anchor="middle">&lt;/&gt;</text>
+    </g>
+    <text x="24" y="32" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="16" fill="#1B2A4A">🔍 AST 静态审计</text>
+    <text x="24" y="58" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">ASTAnalyzerAgent</text>
+    <text x="24" y="80" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">识别死循环、数组越界</text>
+    <text x="24" y="100" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">执行前熔断，防止资源耗尽</text>
+  </g>
+  <g transform="translate(460, 130)">
+    <rect x="0" y="0" width="345" height="130" rx="8" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+    <rect x="0" y="0" width="6" height="130" rx="3" fill="#2D7DD2"/>
+    <g transform="translate(290, 15)" opacity="0.1">
+      <path d="M10,0 L25,0 L35,10 L25,35 L10,35 L0,25 L0,10 Z" fill="#2D7DD2"/>
+      <text x="17" y="23" font-family="'Inter', sans-serif" font-weight="700" font-size="14" fill="#FFFFFF" text-anchor="middle">✓</text>
+    </g>
+    <text x="24" y="32" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="16" fill="#1B2A4A">🛡️ C++ 安全拦截</text>
+    <text x="24" y="58" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">check_cpp_security 正则</text>
+    <text x="24" y="80" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">拦截 system() / fork() / exec()</text>
+    <text x="24" y="100" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">防止危险系统调用</text>
+  </g>
+  <g transform="translate(840, 130)">
+    <rect x="0" y="0" width="345" height="130" rx="8" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+    <rect x="0" y="0" width="6" height="130" rx="3" fill="#1B2A4A"/>
+    <g transform="translate(290, 15)" opacity="0.1">
+      <circle cx="17" cy="17" r="17" fill="#1B2A4A"/>
+      <text x="17" y="22" font-family="'Inter', sans-serif" font-weight="700" font-size="16" fill="#FFFFFF" text-anchor="middle">3s</text>
+    </g>
+    <text x="24" y="32" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="16" fill="#1B2A4A">⏱️ 子进程超时</text>
+    <text x="24" y="58" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">Python 判题 3 秒硬上限</text>
+    <text x="24" y="80" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">C++ Trace 3 秒硬上限</text>
+    <text x="24" y="100" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">TLE 自动返回，不阻塞系统</text>
+  </g>
+  <g transform="translate(80, 280)">
+    <rect x="0" y="0" width="345" height="130" rx="8" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+    <rect x="0" y="0" width="6" height="130" rx="3" fill="#2D7DD2"/>
+    <g transform="translate(290, 15)" opacity="0.1">
+      <rect x="5" y="0" width="25" height="35" rx="2" fill="#2D7DD2"/>
+      <line x1="17" y1="10" x2="17" y2="25" stroke="#FFFFFF" stroke-width="2"/>
+      <line x1="10" y1="17" x2="24" y2="17" stroke="#FFFFFF" stroke-width="2"/>
+    </g>
+    <text x="24" y="32" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="16" fill="#1B2A4A">✂️ 输出截断保护</text>
+    <text x="24" y="58" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">防止无限输出</text>
+    <text x="24" y="80" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">控制输出长度上限</text>
+  </g>
+  <g transform="translate(460, 280)">
+    <rect x="0" y="0" width="345" height="130" rx="8" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+    <rect x="0" y="0" width="6" height="130" rx="3" fill="#1B2A4A"/>
+    <g transform="translate(290, 15)" opacity="0.1">
+      <circle cx="17" cy="17" r="16" fill="none" stroke="#1B2A4A" stroke-width="2"/>
+      <text x="17" y="22" font-family="'Inter', sans-serif" font-weight="700" font-size="14" fill="#1B2A4A" text-anchor="middle">!</text>
+    </g>
+    <text x="24" y="32" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="16" fill="#1B2A4A">🚫 内容安全检测</text>
+    <text x="24" y="58" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">敏感词 / 幻觉检测</text>
+    <text x="24" y="80" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">题目编号真实性校验</text>
+  </g>
+  <g transform="translate(840, 280)">
+    <rect x="0" y="0" width="345" height="130" rx="8" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+    <rect x="0" y="0" width="6" height="130" rx="3" fill="#2D7DD2"/>
+    <g transform="translate(290, 15)" opacity="0.1">
+      <g fill="none" stroke="#2D7DD2" stroke-width="2">
+        <rect x="3" y="3" width="28" height="28" rx="4"/>
+        <path d="M12,12 L22,22 M22,12 L12,22"/>
+      </g>
+    </g>
+    <text x="24" y="32" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="16" fill="#1B2A4A">🔐 Prompt 防护</text>
+    <text x="24" y="58" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">Prompt 注入检测</text>
+    <text x="24" y="80" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#6B7280">防止恶意指令绕过</text>
+  </g>
+
+  <!-- Summary bar -->
+  <g transform="translate(80, 440)">
+    <rect x="0" y="0" width="1120" height="65" rx="8" fill="#1B2A4A"/>
+    <text x="560" y="28" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="500" font-size="15" fill="#FFFFFF" text-anchor="middle">六道安全防线 · 覆盖代码执行 + 内容生成 + 输出全链路</text>
+    <text x="560" y="50" font-family="'Source Han Sans SC', 'Inter', sans-serif" font-weight="400" font-size="13" fill="#4A9FE5" text-anchor="middle">大模型生成内容仍可能存在错误，重要学术内容应由学生或教师进一步复核</text>
+  </g>
+
+  <!-- Decorative element -->
+  <g transform="translate(80, 540)" opacity="0.06">
+    <rect x="0" y="0" width="1120" height="1" fill="#1B2A4A"/>
+  </g>
+
+  <text x="1240" y="700" font-family="'Inter', sans-serif" font-weight="400" font-size="12" fill="#9CA3AF" text-anchor="end">17 / 24</text>
+</svg>
