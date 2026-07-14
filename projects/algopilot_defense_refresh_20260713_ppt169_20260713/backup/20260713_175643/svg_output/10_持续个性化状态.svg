@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" data-pptx-page-role="content">
+  <rect id="page-bg" data-pptx-role="background" x="0" y="0" width="1280" height="720" fill="#071521"/>
+  <g id="header">
+    <text x="56" y="82" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="54" font-weight="700" fill="#F3F7FA">个性化不是一句 Prompt，而是持续更新的状态</text>
+    <text x="56" y="128" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#A9C2D3">画像、记忆、掌握度与路径 DAG 共同决定下一步。</text>
+  </g>
+  <g id="learning-path-screenshot">
+    <rect x="154" y="152" width="972" height="552" fill="#10283B" stroke="#24455B" stroke-width="2"/>
+    <image href="../images/learning-path.png" x="160" y="158" width="960" height="540" preserveAspectRatio="xMidYMid meet"/>
+  </g>
+  <g id="portrait-input">
+    <path d="M204 158V206" fill="none" stroke="#4CC9F0" stroke-width="4"/>
+    <polygon points="204,206 195,190 213,190" fill="#4CC9F0"/>
+    <rect x="72" y="166" width="260" height="52" rx="2" fill="#071521" stroke="#24455B" stroke-width="2"/>
+    <text x="202" y="200" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#F3F7FA">六维画像输入路径计划</text>
+  </g>
+  <g id="mastery-hotspot">
+    <rect x="718" y="304" width="214" height="136" fill="none" stroke="#4CC9F0" stroke-width="2"/>
+    <circle cx="718" cy="304" r="15" fill="#071521" stroke="#4CC9F0" stroke-width="2"/>
+    <text x="718" y="312" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="18" font-weight="700" fill="#F3F7FA">1</text>
+    <line x1="932" y1="372" x2="1184" y2="372" stroke="#FFB703" stroke-width="2"/>
+    <text x="1184" y="344" text-anchor="end" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#FFB703">掌握度决定推进状态</text>
+    <text x="1184" y="404" text-anchor="end" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">完成 / 继续 / 待学习</text>
+  </g>
+  <g id="frustration-writeback">
+    <rect x="354" y="468" width="222" height="142" fill="none" stroke="#4CC9F0" stroke-width="2"/>
+    <circle cx="354" cy="610" r="15" fill="#071521" stroke="#4CC9F0" stroke-width="2"/>
+    <text x="354" y="618" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="18" font-weight="700" fill="#F3F7FA">2</text>
+    <path d="M354 610C208 654 142 618 114 562" fill="none" stroke="#52B788" stroke-width="2" stroke-dasharray="8,4"/>
+    <text x="72" y="522" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#52B788">错误记忆回写</text>
+    <text x="72" y="554" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">受挫时插入巩固节点</text>
+  </g>
+  <g id="footer" data-pptx-role="footer">
+    <text x="56" y="706" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#6E8CA0">LOCKED SCREENSHOT · learning-path.png · persistent state driven</text>
+    <text x="1224" y="706" text-anchor="end" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#6E8CA0">10 / 20</text>
+  </g>
+</svg>

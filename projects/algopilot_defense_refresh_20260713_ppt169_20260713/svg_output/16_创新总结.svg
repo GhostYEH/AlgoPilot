@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" data-pptx-page-role="section">
+  <rect id="page-bg" data-pptx-role="background" x="0" y="0" width="1280" height="720" fill="#071521"/>
+  <g id="header">
+    <text x="56" y="86" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="54" font-weight="700" fill="#F3F7FA">真正的创新，是把“生成”接回学习过程</text>
+    <text x="56" y="134" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#A9C2D3">单点模型调用不稀缺；可验证的生成—诊断—记忆—重规划闭环才稀缺。</text>
+  </g>
+  <g id="innovation-center">
+    <circle cx="640" cy="410" r="112" fill="#10283B" stroke="#FFB703" stroke-width="4"/>
+    <text x="640" y="392" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="42" font-weight="600" fill="#F3F7FA">学习状态</text>
+    <text x="640" y="442" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#FFB703">持续更新</text>
+    <path d="M554 338L438 258 M726 338L842 258 M554 482L438 562 M726 482L842 562" fill="none" stroke="#4CC9F0" stroke-width="3"/>
+  </g>
+  <g id="innovation-dag">
+    <text x="72" y="220" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#4CC9F0">01 · LIGHTWEIGHT DAG</text>
+    <text x="72" y="260" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">传统：串行生成或黑盒编排</text>
+    <text x="72" y="296" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#F3F7FA">机制：自研依赖 DAG + PipelineContext</text>
+    <text x="72" y="330" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#6E8CA0">证据：orchestrator/workflow.py</text>
+    <text x="72" y="364" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#52B788">价值：并行可解释，失败可定位</text>
+  </g>
+  <g id="innovation-trace">
+    <text x="860" y="220" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#4CC9F0">02 · TRACE PROTOCOL</text>
+    <text x="860" y="260" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">传统：运行结果与过程割裂</text>
+    <text x="860" y="296" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#F3F7FA">机制：Python / C++ 统一事件协议</text>
+    <text x="860" y="330" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#6E8CA0">证据：trace_runner + cpp_trace_runner</text>
+    <text x="860" y="364" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#52B788">价值：错误过程可视、可复盘</text>
+  </g>
+  <g id="innovation-verification">
+    <text x="72" y="526" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#4CC9F0">03 · VERIFIED CONTENT</text>
+    <text x="72" y="566" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">传统：生成正确性只靠模型自觉</text>
+    <text x="72" y="602" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#F3F7FA">机制：RAG + Verifier + Safety</text>
+    <text x="72" y="636" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#6E8CA0">证据：retriever.py · workflow.py</text>
+    <text x="72" y="670" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#52B788">价值：内容有依据、有回流</text>
+  </g>
+  <g id="innovation-frustration">
+    <text x="860" y="526" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#4CC9F0">04 · FRUSTRATION LOOP</text>
+    <text x="860" y="566" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">传统：WA 只结束一次提交</text>
+    <text x="860" y="602" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#F3F7FA">机制：失败事件触发巩固节点</text>
+    <text x="860" y="636" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#6E8CA0">证据：evaluation.py · EventBus</text>
+    <text x="860" y="670" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#52B788">价值：错误直接改变下一步</text>
+  </g>
+  <g id="page-number" data-pptx-role="page-number">
+    <text x="1224" y="698" text-anchor="end" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#6E8CA0">16 / 20</text>
+  </g>
+</svg>

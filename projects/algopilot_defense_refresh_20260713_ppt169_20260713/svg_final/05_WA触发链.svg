@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" data-pptx-page-role="content">
+  <rect id="page-bg" data-pptx-role="background" x="0" y="0" width="1280" height="720" fill="#071521"/>
+  <g id="header">
+    <text x="56" y="88" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="54" font-weight="700" fill="#F3F7FA">一次 WA，触发的不只是一次提示</text>
+    <text x="56" y="142" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="42" font-weight="600" fill="#A9C2D3">错误被写入事件、记忆、掌握度与下一步路径。</text>
+  </g>
+  <g id="event-baseline">
+    <line x1="92" y1="366" x2="1188" y2="366" stroke="#24455B" stroke-width="2"/>
+    <path d="M92 366H352" fill="none" stroke="#FF6B6B" stroke-width="4"/>
+    <path d="M352 366H850" fill="none" stroke="#FFB703" stroke-width="4"/>
+    <path d="M850 366H1188" fill="none" stroke="#52B788" stroke-width="4"/>
+    <polygon points="1188,366 1172,357 1172,375" fill="#52B788"/>
+  </g>
+  <g id="failure-trigger">
+    <circle cx="112" cy="366" r="38" fill="#071521" stroke="#FF6B6B" stroke-width="4"/>
+    <text x="112" y="376" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="32" font-weight="700" fill="#FF6B6B">WA</text>
+    <text x="112" y="288" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" font-weight="600" fill="#F3F7FA">连续失败 ≥3</text>
+    <text x="112" y="326" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#FFB703">当前默认配置</text>
+  </g>
+  <g id="evaluator">
+    <circle cx="294" cy="366" r="18" fill="#FFB703"/>
+    <text x="294" y="448" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#F3F7FA">EvaluatorAgent</text>
+    <text x="294" y="482" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">归因与诊断</text>
+  </g>
+  <g id="eventbus">
+    <rect x="418" y="330" width="164" height="72" rx="2" fill="#10283B" stroke="#24455B" stroke-width="2"/>
+    <text x="500" y="360" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#FFB703">EventBus</text>
+    <text x="500" y="390" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#F3F7FA">失败事件广播</text>
+  </g>
+  <g id="path-adjustment">
+    <circle cx="682" cy="366" r="18" fill="#FFB703"/>
+    <text x="682" y="286" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#F3F7FA">LearningPathAgent</text>
+    <text x="682" y="320" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">插入巩固节点</text>
+  </g>
+  <g id="corrected-ac">
+    <circle cx="862" cy="366" r="38" fill="#071521" stroke="#52B788" stroke-width="4"/>
+    <text x="862" y="376" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="32" font-weight="700" fill="#52B788">AC</text>
+    <text x="862" y="448" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">修正提交</text>
+  </g>
+  <g id="mastery-update">
+    <circle cx="1014" cy="366" r="18" fill="#52B788"/>
+    <text x="1014" y="286" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#F3F7FA">MasteryAgent</text>
+    <text x="1014" y="320" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">更新掌握度</text>
+  </g>
+  <g id="profile-patch">
+    <circle cx="1170" cy="366" r="18" fill="#52B788"/>
+    <text x="1170" y="448" text-anchor="end" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#F3F7FA">ProfilingAgent</text>
+    <text x="1170" y="482" text-anchor="end" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">patch 动态画像</text>
+  </g>
+  <g id="implementation-note">
+    <line x1="56" y1="558" x2="1224" y2="558" stroke="#24455B" stroke-width="1.5"/>
+    <text x="56" y="604" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#F3F7FA">阈值机制属于当前工程配置，不代表普适教学规律。</text>
+    <text x="56" y="642" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#6E8CA0">backend/app/schemas/evaluation.py:48 · backend/app/services/agents/evaluation.py:163</text>
+  </g>
+  <g id="footer" data-pptx-role="footer">
+    <text x="1224" y="686" text-anchor="end" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#6E8CA0">05 / 20</text>
+  </g>
+</svg>

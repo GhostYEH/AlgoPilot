@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" data-pptx-page-role="content">
+  <rect id="page-bg" data-pptx-role="background" x="0" y="0" width="1280" height="720" fill="#071521"/>
+  <g id="header">
+    <text x="56" y="84" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="54" font-weight="700" fill="#F3F7FA">能运行、能演示，不等于已经生产化</text>
+    <text x="56" y="132" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#A9C2D3">价值、推广路径与生产化边界必须同时讲清楚。</text>
+  </g>
+  <g id="value-center">
+    <circle cx="640" cy="342" r="94" fill="#10283B" stroke="#FFB703" stroke-width="4"/>
+    <text x="640" y="334" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="42" font-weight="600" fill="#F3F7FA">AlgoPilot</text>
+    <text x="640" y="380" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#FFB703">课程智能学习系统</text>
+    <path d="M558 296L396 234 M722 296L884 234 M548 382L382 444 M732 382L898 444 M640 436V500" fill="none" stroke="#4CC9F0" stroke-width="3"/>
+  </g>
+  <g id="student-value">
+    <text x="72" y="206" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#4CC9F0">STUDENT VALUE</text>
+    <text x="72" y="252" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#F3F7FA">错误过程可见</text>
+    <text x="72" y="290" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">路径随状态调整</text>
+  </g>
+  <g id="teacher-value">
+    <text x="918" y="206" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#4CC9F0">TEACHER VALUE</text>
+    <text x="918" y="252" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#F3F7FA">学情证据聚合</text>
+    <text x="918" y="290" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">薄弱点可定位</text>
+  </g>
+  <g id="course-value">
+    <text x="72" y="428" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#4CC9F0">COURSE BUILDING</text>
+    <text x="72" y="474" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#F3F7FA">资源生成可复用</text>
+    <text x="72" y="512" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">题库、实验、项目联动</text>
+  </g>
+  <g id="deployment-path">
+    <text x="918" y="428" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#4CC9F0">DEPLOYMENT PATH</text>
+    <text x="918" y="474" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#F3F7FA">课程试点 → 班级使用</text>
+    <text x="918" y="512" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">再进入校级推广</text>
+  </g>
+  <g id="production-boundary">
+    <text x="640" y="536" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#FF6B6B">PRODUCTION BOUNDARY</text>
+  </g>
+  <g id="capability-bands">
+    <rect x="56" y="568" width="356" height="86" rx="2" fill="#10283B" stroke="#24455B" stroke-width="2"/>
+    <text x="78" y="600" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#52B788">当前可运行能力</text>
+    <text x="78" y="634" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#F3F7FA">画像 · 路径 · 资源 · OJ / Trace</text>
+    <rect x="462" y="568" width="356" height="86" rx="2" fill="#10283B" stroke="#24455B" stroke-width="2"/>
+    <text x="484" y="600" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#4CC9F0">可直接演示能力</text>
+    <text x="484" y="634" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#F3F7FA">主页 · 学习路径 · OJ 工作台</text>
+    <rect x="868" y="568" width="356" height="86" rx="2" fill="#10283B" stroke="#24455B" stroke-width="2"/>
+    <text x="890" y="600" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#FF6B6B">后续生产化升级</text>
+    <text x="890" y="628" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="18" fill="#F3F7FA">容器沙箱 · HTTPS · 监控 · 备份</text>
+    <text x="890" y="650" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="18" fill="#F3F7FA">高并发 · 判题队列</text>
+  </g>
+  <g id="page-number" data-pptx-role="page-number">
+    <text x="1224" y="678" text-anchor="end" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#6E8CA0">19 / 20</text>
+  </g>
+</svg>

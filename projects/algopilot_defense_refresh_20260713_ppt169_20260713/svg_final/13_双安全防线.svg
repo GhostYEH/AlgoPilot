@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" data-pptx-page-role="content">
+  <rect id="page-bg" data-pptx-role="background" x="0" y="0" width="1280" height="720" fill="#071521"/>
+  <g id="header">
+    <text x="56" y="84" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="54" font-weight="700" fill="#F3F7FA">AI 可信，来自内容与执行两条独立防线</text>
+    <text x="56" y="132" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#A9C2D3">生成内容与代码执行使用不同门闸，最终只汇入可追溯输出。</text>
+  </g>
+  <g id="content-safety-lane">
+    <text x="72" y="202" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#4CC9F0">LANE A · CONTENT RELIABILITY</text>
+    <line x1="72" y1="276" x2="1032" y2="276" stroke="#4CC9F0" stroke-width="4"/>
+    <rect x="72" y="236" width="178" height="80" rx="2" fill="#10283B" stroke="#24455B" stroke-width="2"/>
+    <text x="161" y="270" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#F3F7FA">BM25 RAG</text>
+    <text x="161" y="300" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#FFB703">top_k=4 · 当前配置</text>
+    <rect x="292" y="236" width="178" height="80" rx="2" fill="#10283B" stroke="#24455B" stroke-width="2"/>
+    <text x="381" y="284" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#F3F7FA">内容生成</text>
+    <rect x="512" y="236" width="218" height="80" rx="2" fill="#10283B" stroke="#24455B" stroke-width="3"/>
+    <text x="621" y="270" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#F3F7FA">ContentVerifier</text>
+    <text x="621" y="300" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="18" fill="#FFB703">失败最多重试 2 次</text>
+    <rect x="772" y="236" width="220" height="80" rx="2" fill="#10283B" stroke="#24455B" stroke-width="2"/>
+    <text x="882" y="270" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#F3F7FA">SafetyAgent</text>
+    <text x="882" y="300" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="18" fill="#A9C2D3">注入 · 敏感词 · 幻觉题号</text>
+    <path d="M621 236C621 182 380 182 380 236" fill="none" stroke="#FFB703" stroke-width="2" stroke-dasharray="8,4"/>
+    <polygon points="380,236 371,220 389,220" fill="#FFB703"/>
+  </g>
+  <g id="execution-safety-lane">
+    <text x="72" y="384" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#FF6B6B">LANE B · EXECUTION SAFETY</text>
+    <line x1="72" y1="458" x2="1032" y2="458" stroke="#FF6B6B" stroke-width="4"/>
+    <rect x="72" y="418" width="178" height="80" rx="2" fill="#10283B" stroke="#24455B" stroke-width="2"/>
+    <text x="161" y="452" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#F3F7FA">AST GATE</text>
+    <text x="161" y="482" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="18" fill="#A9C2D3">危险调用拦截</text>
+    <rect x="292" y="418" width="178" height="80" rx="2" fill="#10283B" stroke="#24455B" stroke-width="2"/>
+    <text x="381" y="452" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#F3F7FA">PY / C++</text>
+    <text x="381" y="482" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="18" fill="#A9C2D3">隔离边界内执行</text>
+    <rect x="512" y="418" width="218" height="80" rx="2" fill="#10283B" stroke="#24455B" stroke-width="3"/>
+    <text x="621" y="452" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#F3F7FA">超时与输出截断</text>
+    <text x="621" y="482" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#FFB703">OJ default 3000 ms</text>
+    <rect x="772" y="418" width="220" height="80" rx="2" fill="#10283B" stroke="#24455B" stroke-width="2"/>
+    <text x="882" y="452" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#F3F7FA">Trace 上限</text>
+    <text x="882" y="482" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#FFB703">200 steps · 当前配置</text>
+  </g>
+  <g id="traceable-output">
+    <path d="M992 276H1060V366H1104" fill="none" stroke="#52B788" stroke-width="4"/>
+    <path d="M992 458H1060V366" fill="none" stroke="#52B788" stroke-width="4"/>
+    <polygon points="1104,366 1088,357 1088,375" fill="#52B788"/>
+    <rect x="1104" y="304" width="120" height="124" rx="2" fill="#10283B" stroke="#24455B" stroke-width="3"/>
+    <!-- icon: tabler-outline/shield-check -->
+  <g transform="translate(1140, 320) scale(2)" fill="none" stroke="#52B788" stroke-width="3">
+    <path d="M11.46 20.846a12 12 0 0 1 -7.96 -14.846a12 12 0 0 0 8.5 -3a12 12 0 0 0 8.5 3a12 12 0 0 1 -.09 7.06" />
+    <path d="M15 19l2 2l4 -4" />
+  </g>
+    <text x="1164" y="396" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#F3F7FA">可追溯</text>
+  </g>
+  <g id="production-boundary">
+    <line x1="72" y1="554" x2="1208" y2="554" stroke="#24455B" stroke-width="1.5"/>
+    <text x="72" y="600" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#FF6B6B">当前边界：课程学习场景的轻量执行环境</text>
+    <text x="72" y="636" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">生产部署仍需容器隔离、资源限制、判题队列与高并发治理。</text>
+  </g>
+  <g id="footer" data-pptx-role="footer">
+    <text x="72" y="674" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#6E8CA0">retriever.py:196 · workflow.py:30 · trace_runner.py:21 · schemas/oj.py:35</text>
+    <text x="1224" y="674" text-anchor="end" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#6E8CA0">13 / 20</text>
+  </g>
+</svg>

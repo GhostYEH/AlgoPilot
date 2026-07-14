@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" data-pptx-page-role="content">
+  <rect id="page-bg" data-pptx-role="background" x="0" y="0" width="1280" height="720" fill="#071521"/>
+  <g id="header">
+    <text x="56" y="86" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="54" font-weight="700" fill="#F3F7FA">并行，只发生在依赖允许的位置</text>
+    <text x="56" y="134" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#A9C2D3">资源生成按跨 Agent 摘要依赖组织为四阶段 DAG，而不是盲目并发。</text>
+  </g>
+  <g id="phase-guides">
+    <text x="120" y="200" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#4CC9F0">PHASE 1</text>
+    <text x="402" y="200" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#4CC9F0">PHASE 2 · PARALLEL</text>
+    <text x="742" y="200" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#FFB703">PHASE 3</text>
+    <text x="986" y="200" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#52B788">PHASE 4 · PARALLEL</text>
+    <line x1="72" y1="218" x2="1208" y2="218" stroke="#24455B" stroke-width="1.5"/>
+  </g>
+  <g id="dependency-edges">
+    <path d="M260 382H352V302H422" fill="none" stroke="#4CC9F0" stroke-width="4"/>
+    <polygon points="422,302 406,293 406,311" fill="#4CC9F0"/>
+    <path d="M260 382H352V462H422" fill="none" stroke="#4CC9F0" stroke-width="4"/>
+    <polygon points="422,462 406,453 406,471" fill="#4CC9F0"/>
+    <path d="M598 302H676V382H746" fill="none" stroke="#FFB703" stroke-width="4"/>
+    <polygon points="746,382 730,373 730,391" fill="#FFB703"/>
+    <path d="M598 462H676V382" fill="none" stroke="#FFB703" stroke-width="4"/>
+    <path d="M922 382H974V302H1026" fill="none" stroke="#52B788" stroke-width="4"/>
+    <polygon points="1026,302 1010,293 1010,311" fill="#52B788"/>
+    <path d="M922 382H974V462H1026" fill="none" stroke="#52B788" stroke-width="4"/>
+    <polygon points="1026,462 1010,453 1010,471" fill="#52B788"/>
+    <text x="332" y="350" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#4CC9F0">doc_summary</text>
+    <text x="614" y="350" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#FFB703">quiz_focus</text>
+    <text x="932" y="350" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#52B788">scenario_hook</text>
+  </g>
+  <g id="resource-document">
+    <path d="M92 330L176 306L260 330L176 354Z" fill="#163246" stroke="#4CC9F0" stroke-width="2"/>
+    <path d="M92 330V406L176 430V354Z" fill="#0B1D2A" stroke="#4CC9F0" stroke-width="1.5"/>
+    <path d="M176 354V430L260 406V330Z" fill="#10283B" stroke="#4CC9F0" stroke-width="1.5"/>
+    <text x="176" y="372" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#F3F7FA">document</text>
+    <text x="176" y="404" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">ConceptAgent</text>
+  </g>
+  <g id="resource-mindmap">
+    <path d="M422 260L510 236L598 260L510 284Z" fill="#163246" stroke="#4CC9F0" stroke-width="2"/>
+    <path d="M422 260V334L510 358V284Z" fill="#0B1D2A" stroke="#4CC9F0" stroke-width="1.5"/>
+    <path d="M510 284V358L598 334V260Z" fill="#10283B" stroke="#4CC9F0" stroke-width="1.5"/>
+    <text x="510" y="304" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#F3F7FA">mindmap</text>
+    <text x="510" y="336" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">GraphAgent</text>
+  </g>
+  <g id="resource-exercises">
+    <path d="M422 420L510 396L598 420L510 444Z" fill="#163246" stroke="#4CC9F0" stroke-width="2"/>
+    <path d="M422 420V494L510 518V444Z" fill="#0B1D2A" stroke="#4CC9F0" stroke-width="1.5"/>
+    <path d="M510 444V518L598 494V420Z" fill="#10283B" stroke="#4CC9F0" stroke-width="1.5"/>
+    <text x="510" y="464" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#F3F7FA">exercises</text>
+    <text x="510" y="496" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">QuizAgent</text>
+  </g>
+  <g id="resource-code-case">
+    <path d="M746 330L834 306L922 330L834 354Z" fill="#163246" stroke="#FFB703" stroke-width="3"/>
+    <path d="M746 330V406L834 430V354Z" fill="#0B1D2A" stroke="#FFB703" stroke-width="2"/>
+    <path d="M834 354V430L922 406V330Z" fill="#10283B" stroke="#FFB703" stroke-width="2"/>
+    <text x="834" y="372" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#F3F7FA">code_case</text>
+    <text x="834" y="404" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">ScenarioAgent</text>
+  </g>
+  <g id="resource-trace">
+    <path d="M1026 260L1114 236L1202 260L1114 284Z" fill="#163246" stroke="#52B788" stroke-width="2"/>
+    <path d="M1026 260V334L1114 358V284Z" fill="#0B1D2A" stroke="#52B788" stroke-width="1.5"/>
+    <path d="M1114 284V358L1202 334V260Z" fill="#10283B" stroke="#52B788" stroke-width="1.5"/>
+    <text x="1114" y="304" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#F3F7FA">trace_animation</text>
+    <text x="1114" y="336" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">TraceAgent</text>
+  </g>
+  <g id="resource-reading">
+    <path d="M1026 420L1114 396L1202 420L1114 444Z" fill="#163246" stroke="#52B788" stroke-width="2" stroke-dasharray="8,4"/>
+    <path d="M1026 420V494L1114 518V444Z" fill="#0B1D2A" stroke="#52B788" stroke-width="1.5" stroke-dasharray="8,4"/>
+    <path d="M1114 444V518L1202 494V420Z" fill="#10283B" stroke="#52B788" stroke-width="1.5" stroke-dasharray="8,4"/>
+    <text x="1114" y="464" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#F3F7FA">reading</text>
+    <text x="1114" y="496" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#52B788">扩展资源</text>
+  </g>
+  <g id="resource-summary">
+    <line x1="72" y1="570" x2="1208" y2="570" stroke="#24455B" stroke-width="1.5"/>
+    <text x="72" y="616" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#F3F7FA">6 类注册资源</text>
+    <text x="328" y="616" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#FFB703">5 类 A3 核心展示</text>
+    <text x="672" y="616" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#52B788">1 类扩展阅读资源</text>
+  </g>
+  <g id="footer" data-pptx-role="footer">
+    <text x="56" y="686" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#6E8CA0">workflow.py · pipeline_context.py · registry.py: RESOURCE_TYPE_TO_AGENT</text>
+    <text x="1224" y="686" text-anchor="end" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#6E8CA0">09 / 20</text>
+  </g>
+</svg>

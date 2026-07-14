@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" data-pptx-page-role="content">
+  <rect id="page-bg" data-pptx-role="background" x="0" y="0" width="1280" height="720" fill="#071521"/>
+  <g id="header">
+    <text x="56" y="86" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="54" font-weight="700" fill="#F3F7FA">Trace：让学生看见自己的代码如何出错</text>
+    <text x="56" y="134" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#A9C2D3">Python 与 C++ 的不同追踪技术，被归一为同一套可视化事件协议。</text>
+  </g>
+  <g id="python-track">
+    <rect x="72" y="216" width="286" height="120" rx="2" fill="#10283B" stroke="#24455B" stroke-width="2"/>
+    <text x="100" y="254" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#4CC9F0">PYTHON TRACK</text>
+    <text x="100" y="296" font-family="Consolas, Noto Sans SC, monospace" font-size="32" font-weight="600" fill="#F3F7FA">sys.settrace</text>
+    <text x="100" y="326" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">行级变量快照</text>
+    <path d="M358 276H502" fill="none" stroke="#4CC9F0" stroke-width="4"/>
+    <polygon points="502,276 486,267 486,285" fill="#4CC9F0"/>
+  </g>
+  <g id="cpp-track">
+    <rect x="72" y="394" width="286" height="120" rx="2" fill="#10283B" stroke="#24455B" stroke-width="2"/>
+    <text x="100" y="432" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#4CC9F0">C++ TRACK</text>
+    <text x="100" y="474" font-family="Consolas, Noto Sans SC, monospace" font-size="32" font-weight="600" fill="#F3F7FA">GDB / MI</text>
+    <text x="100" y="504" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">单步追踪 · STL 状态提取</text>
+    <path d="M358 454H502" fill="none" stroke="#4CC9F0" stroke-width="4"/>
+    <polygon points="502,454 486,445 486,463" fill="#4CC9F0"/>
+  </g>
+  <g id="protocol-convergence">
+    <path d="M502 276C566 276 566 330 606 350" fill="none" stroke="#4CC9F0" stroke-width="4"/>
+    <path d="M502 454C566 454 566 400 606 380" fill="none" stroke="#4CC9F0" stroke-width="4"/>
+    <rect x="606" y="278" width="270" height="174" rx="2" fill="#10283B" stroke="#24455B" stroke-width="4"/>
+    <!-- icon: tabler-outline/scan-traces -->
+  <g transform="translate(632, 308) scale(2)" fill="none" stroke="#FFB703" stroke-width="3">
+    <path d="M4 8v-2a2 2 0 0 1 2 -2h2" />
+    <path d="M4 16v2a2 2 0 0 0 2 2h2" />
+    <path d="M16 4h2a2 2 0 0 1 2 2v2" />
+    <path d="M16 20h2a2 2 0 0 0 2 -2v-2" />
+    <path d="M11 12h6" />
+    <path d="M8 8h5" />
+    <path d="M9 16h5" />
+  </g>
+    <text x="696" y="338" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#FFB703">TRACE EVENT BUS</text>
+    <line x1="632" y1="370" x2="850" y2="370" stroke="#24455B" stroke-width="1.5"/>
+    <text x="632" y="408" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#F3F7FA">统一事件模型</text>
+    <text x="632" y="438" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#A9C2D3">line · vars · structure · narration</text>
+  </g>
+  <g id="visualization-output">
+    <path d="M876 365H958" fill="none" stroke="#52B788" stroke-width="4"/>
+    <polygon points="958,365 942,356 942,374" fill="#52B788"/>
+    <text x="992" y="246" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#52B788">UNIFIED OUTPUT</text>
+    <text x="992" y="318" font-family="Consolas, Noto Sans SC, monospace" font-size="72" font-weight="700" fill="#F3F7FA">13</text>
+    <text x="1082" y="318" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#A9C2D3">类可视化组件</text>
+    <text x="992" y="372" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#F3F7FA">链表 · 树 · 矩阵</text>
+    <text x="992" y="414" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#F3F7FA">栈 · 队列 · 图结构</text>
+    <text x="992" y="462" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">经典题目使用确定性旁白</text>
+  </g>
+  <g id="trace-limit">
+    <line x1="72" y1="566" x2="1208" y2="566" stroke="#24455B" stroke-width="1.5"/>
+    <text x="72" y="616" font-family="Consolas, Noto Sans SC, monospace" font-size="42" font-weight="700" fill="#FFB703">MAX 200 STEPS</text>
+    <text x="426" y="612" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#F3F7FA">当前实现上限，用于控制追踪规模</text>
+    <text x="426" y="646" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#6E8CA0">backend/services/trace/trace_runner.py:21</text>
+  </g>
+  <g id="footer" data-pptx-role="footer">
+    <text x="1224" y="676" text-anchor="end" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#6E8CA0">11 / 20</text>
+  </g>
+</svg>

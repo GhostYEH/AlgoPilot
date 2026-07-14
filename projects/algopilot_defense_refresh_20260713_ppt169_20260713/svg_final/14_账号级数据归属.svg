@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" data-pptx-page-role="content">
+  <rect id="page-bg" data-pptx-role="background" x="0" y="0" width="1280" height="720" fill="#071521"/>
+  <g id="header">
+    <text x="56" y="84" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="54" font-weight="700" fill="#F3F7FA">记住学生，不等于混淆学生</text>
+    <text x="56" y="132" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#A9C2D3">个性化建立在账号级数据归属、角色校验与只读聚合边界之上。</text>
+  </g>
+  <g id="identity-root">
+    <rect x="72" y="196" width="250" height="100" rx="2" fill="#10283B" stroke="#24455B" stroke-width="3"/>
+    <text x="100" y="232" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#4CC9F0">IDENTITY ROOT</text>
+    <text x="100" y="276" font-family="Consolas, Noto Sans SC, monospace" font-size="42" font-weight="700" fill="#F3F7FA">JWT + role</text>
+    <path d="M322 246H404" fill="none" stroke="#4CC9F0" stroke-width="4"/>
+    <polygon points="404,246 388,237 388,255" fill="#4CC9F0"/>
+  </g>
+  <g id="ownership-rules">
+    <text x="72" y="364" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#FFB703">SERVER-SIDE RULES</text>
+    <text x="72" y="414" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#F3F7FA">路由守卫 + 后端 role 校验</text>
+    <text x="72" y="462" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#F3F7FA">学生只操作自身数据</text>
+    <text x="72" y="510" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#F3F7FA">教师只读班级聚合学情</text>
+    <rect x="72" y="552" width="310" height="74" rx="2" fill="#10283B" stroke="#24455B" stroke-width="2"/>
+    <text x="92" y="582" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#FF6B6B">拒绝客户端指定 user_id</text>
+    <text x="92" y="612" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="18" fill="#A9C2D3">身份从认证上下文解析</text>
+  </g>
+  <g id="data-ownership-graph">
+    <rect x="430" y="184" width="778" height="450" rx="2" fill="#0B1D2A" stroke="#24455B" stroke-width="2"/>
+    <text x="462" y="224" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#4CC9F0">8 ORM TABLES · CURRENT FROZEN REPOSITORY</text>
+    <rect x="466" y="258" width="210" height="58" rx="2" fill="#10283B" stroke="#24455B" stroke-width="2"/>
+    <text x="571" y="296" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#F3F7FA">users</text>
+    <rect x="740" y="258" width="210" height="58" rx="2" fill="#10283B" stroke="#24455B" stroke-width="2"/>
+    <text x="845" y="296" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#F3F7FA">student_profiles</text>
+    <rect x="966" y="258" width="210" height="58" rx="2" fill="#10283B" stroke="#24455B" stroke-width="2"/>
+    <text x="1071" y="296" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#F3F7FA">learning_progress</text>
+    <rect x="466" y="356" width="210" height="58" rx="2" fill="#10283B" stroke="#24455B" stroke-width="2"/>
+    <text x="571" y="394" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#F3F7FA">generated_resources</text>
+    <rect x="740" y="356" width="210" height="58" rx="2" fill="#10283B" stroke="#24455B" stroke-width="2"/>
+    <text x="845" y="394" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#F3F7FA">learning_path_plans</text>
+    <rect x="966" y="356" width="210" height="58" rx="2" fill="#10283B" stroke="#24455B" stroke-width="2"/>
+    <text x="1071" y="394" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#F3F7FA">learning_memories</text>
+    <rect x="548" y="454" width="254" height="58" rx="2" fill="#10283B" stroke="#24455B" stroke-width="2"/>
+    <text x="675" y="492" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#F3F7FA">learning_event_logs</text>
+    <rect x="852" y="454" width="254" height="58" rx="2" fill="#10283B" stroke="#24455B" stroke-width="2"/>
+    <text x="979" y="492" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#F3F7FA">oj_submissions</text>
+    <path d="M676 287H740 M571 316V356 M845 316V356 M1071 316V356 M676 385H740 M950 385H966 M675 414V454 M979 414V454" fill="none" stroke="#4CC9F0" stroke-width="2"/>
+    <path d="M466 540H1148" fill="none" stroke="#52B788" stroke-width="2" stroke-dasharray="8,4"/>
+    <text x="466" y="580" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#52B788">学生边界：user_id 实线归属</text>
+    <text x="820" y="580" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">教师边界：只读聚合虚线</text>
+  </g>
+  <g id="footer" data-pptx-role="footer">
+    <text x="56" y="674" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#6E8CA0">backend/models/db_models.py · 8 __tablename__ declarations</text>
+    <text x="1224" y="674" text-anchor="end" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#6E8CA0">14 / 20</text>
+  </g>
+</svg>

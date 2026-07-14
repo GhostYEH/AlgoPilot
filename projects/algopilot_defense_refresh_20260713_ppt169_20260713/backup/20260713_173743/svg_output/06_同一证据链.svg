@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" data-pptx-page-role="content">
+  <rect id="page-bg" data-pptx-role="background" x="0" y="0" width="1280" height="720" fill="#071521"/>
+  <g id="header">
+    <text x="56" y="88" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="54" font-weight="700" fill="#F3F7FA">同一条证据链，服务学生也服务教师</text>
+    <text x="56" y="138" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#A9C2D3">学生获得个性化反馈；教师看到同一批学习记录的聚合结果。</text>
+  </g>
+  <g id="student-events">
+    <text x="72" y="216" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#4CC9F0">STUDENT EVENT STREAM</text>
+    <line x1="90" y1="260" x2="90" y2="532" stroke="#24455B" stroke-width="2"/>
+    <circle cx="90" cy="284" r="10" fill="#4CC9F0"/>
+    <text x="126" y="294" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#F3F7FA">答疑记录</text>
+    <text x="126" y="328" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">提问、知识点、响应</text>
+    <circle cx="90" cy="386" r="10" fill="#FFB703"/>
+    <text x="126" y="396" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#F3F7FA">诊断与错因</text>
+    <text x="126" y="430" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">WA / TLE、Trace、评估</text>
+    <circle cx="90" cy="488" r="10" fill="#52B788"/>
+    <text x="126" y="498" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#F3F7FA">薄弱点与掌握度</text>
+    <text x="126" y="532" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">画像 patch、路径更新</text>
+  </g>
+  <g id="database-evidence">
+    <path d="M420 366H606" fill="none" stroke="#4CC9F0" stroke-width="4"/>
+    <polygon points="606,366 590,357 590,375" fill="#4CC9F0"/>
+    <rect x="440" y="314" width="146" height="104" rx="2" fill="#10283B" stroke="#4CC9F0" stroke-width="2"/>
+    <use data-icon="tabler-outline/database" x="489" y="326" width="48" height="48" fill="#4CC9F0" stroke-width="3"/>
+    <text x="513" y="402" text-anchor="middle" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#F3F7FA">学习证据</text>
+    <text x="513" y="444" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#6E8CA0">user_id ownership</text>
+  </g>
+  <g id="teacher-screenshot">
+    <text x="646" y="216" font-family="Consolas, Noto Sans SC, monospace" font-size="24" fill="#4CC9F0">TEACHER VIEW · REAL SCREENSHOT</text>
+    <rect x="640" y="232" width="584" height="329" fill="#10283B" stroke="#4CC9F0" stroke-width="2"/>
+    <image href="../images/teacher-dashboard.png" x="646" y="238" width="572" height="322" preserveAspectRatio="xMidYMid meet" opacity="0.98"/>
+    <rect x="683" y="333" width="494" height="26" fill="none" stroke="#FF6B6B" stroke-width="2"/>
+    <circle cx="683" cy="333" r="15" fill="#071521" stroke="#FF6B6B" stroke-width="2"/>
+    <text x="683" y="341" text-anchor="middle" font-family="Consolas, Noto Sans SC, monospace" font-size="18" font-weight="700" fill="#F3F7FA">1</text>
+  </g>
+  <g id="boundary-note">
+    <line x1="646" y1="592" x2="1218" y2="592" stroke="#24455B" stroke-width="1.5"/>
+    <text x="646" y="630" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="32" fill="#FF6B6B">当前截图状态：教学数据暂时无法加载</text>
+    <text x="646" y="664" font-family="Noto Sans SC, Segoe UI, sans-serif" font-size="24" fill="#A9C2D3">看板入口可运行；聚合数据展示需后端服务与真实记录就绪。</text>
+  </g>
+  <g id="footer" data-pptx-role="footer">
+    <text x="56" y="686" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#6E8CA0">EVIDENCE: events → persistent records → aggregation</text>
+    <text x="1224" y="686" text-anchor="end" font-family="Consolas, Noto Sans SC, monospace" font-size="18" fill="#6E8CA0">06 / 20</text>
+  </g>
+</svg>

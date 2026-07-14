@@ -1,5 +1,5 @@
 {
-  "stage": "stage2",
+  "stage": "stage3",
   "lang": "zh",
   "recommend": {
     "canvas": "ppt169",
@@ -7,100 +7,45 @@
     "visual_style": "blueprint",
     "delivery_purpose": "presentation",
     "icons": "tabler-outline",
-    "formula_policy": "text-only"
+    "formula_policy": "text-only",
+    "image_usage": ["ai", "provided"],
+    "image_ai_path": "host-native",
+    "generation_mode": "continuous"
   },
   "page_count": { "value": "20" },
   "audience": { "value": "中国软件杯 A3 赛题评委：高校计算机教师、企业技术专家与教育数字化方向评审" },
   "content_divergence": { "value": "在项目已有事实范围内重构和丰富，压缩重复内容，强化产品闭环、技术创新与验证证据" },
-  "color": {
+  "image_notes": {
+    "value": "真实产品截图用于功能与完成度证明；AI 图片只用于封面、章节转场和抽象系统概念，不生成虚构界面、虚构人物案例或带事实数据的图片。架构、闭环、Agent DAG 和验证指标仍用可编辑 SVG。"
+  },
+  "image_strategy": {
     "selected": 0,
     "candidates": [
       {
-        "name_zh": "深海工程蓝图",
-        "name_en": "Deep Blueprint",
-        "note_zh": "深海军蓝底配高亮青蓝，系统结构清晰，最符合技术答辩与工程可信感。",
-        "note_en": "Deep navy with cyan highlights for architecture clarity and engineering credibility.",
-        "palette": {
-          "background": "#071521",
-          "secondary_bg": "#10283B",
-          "primary": "#4CC9F0",
-          "accent": "#FFB703",
-          "secondary_accent": "#52B788",
-          "body_text": "#F3F7FA"
-        }
+        "name": "技术蓝图主视觉",
+        "rendering": "blueprint",
+        "palette": "tech-neon",
+        "visual": "深色工程图纸、细线网格、等距模块、尺寸线与局部高亮路径",
+        "color": "深海背景占主导，青蓝承担结构线，黄色仅标记关键节点，绿色用于验证状态",
+        "mood": "可信、精密、系统化，像可运行系统的工程图而非概念海报"
       },
       {
-        "name_zh": "明亮实验室",
-        "name_en": "Bright Laboratory",
-        "note_zh": "冷白底与深蓝文字，更接近高校评审材料，投影环境稳定、阅读负担低。",
-        "note_en": "Cool white and navy for dependable projection and academic readability.",
-        "palette": {
-          "background": "#F5F7FA",
-          "secondary_bg": "#E8EEF5",
-          "primary": "#16324F",
-          "accent": "#137CBD",
-          "secondary_accent": "#13A89E",
-          "body_text": "#17202A"
-        }
+        "name": "等距系统模型",
+        "rendering": "3d-isometric",
+        "palette": "cool-corporate",
+        "visual": "克制的等距三维模块、分层系统组件与明确的数据流连接",
+        "color": "深色背景与冷蓝结构块为主，强调色集中在核心链路和输入输出",
+        "mood": "更具产品展示感，同时保持企业级技术可信度"
       },
       {
-        "name_zh": "开发者舞台",
-        "name_en": "Developer Stage",
-        "note_zh": "炭黑底、冰蓝与橙色信号点，产品发布感更强，适合突出 Trace 与 Agent。",
-        "note_en": "Charcoal, ice blue, and signal orange for a stronger developer-keynote tone.",
-        "palette": {
-          "background": "#0C111B",
-          "secondary_bg": "#171F2D",
-          "primary": "#6EA8FE",
-          "accent": "#FF8A3D",
-          "secondary_accent": "#8CE99A",
-          "body_text": "#F2F5F9"
-        }
+        "name": "数据产品舞台",
+        "rendering": "digital-dashboard",
+        "palette": "dark-cinematic",
+        "visual": "高完成度数据界面语言、发光轨迹、指标节点与抽象代码流",
+        "color": "低亮深色占大面积，冰蓝数据元素为主体，暖色只用于警示和焦点",
+        "mood": "更有发布会冲击力，适合 Trace、Agent 与实时反馈主题"
       }
     ]
   },
-  "typography": {
-    "selected": 0,
-    "candidates": [
-      {
-        "name_zh": "现代工程无衬线",
-        "name_en": "Modern Engineering Sans",
-        "note_zh": "Noto Sans SC 与 Segoe UI，清晰、理性，适合架构图与产品界面。",
-        "sample_heading": "让算法学习形成可验证的智能闭环",
-        "sample_heading_latin": "A Verifiable Learning Loop",
-        "sample_body": "画像、路径、资源、诊断与评估持续联动。",
-        "sample_body_latin": "Profile, path, resources, diagnosis, and evaluation stay connected.",
-        "heading": { "cjk": "Noto Sans SC", "latin": "Segoe UI", "css": "'Noto Sans SC','Segoe UI',sans-serif" },
-        "body": { "cjk": "Noto Sans SC", "latin": "Segoe UI", "css": "'Noto Sans SC','Segoe UI',sans-serif" },
-        "body_size": 32,
-        "sizes": { "title": 54, "subtitle": 42, "annotation": 24 }
-      },
-      {
-        "name_zh": "稳健答辩字体",
-        "name_en": "Reliable Defense Sans",
-        "note_zh": "微软雅黑与 Arial，跨 Windows/WPS 兼容性最好，视觉更传统稳健。",
-        "sample_heading": "多智能体协同，不止生成内容",
-        "sample_heading_latin": "Multi-Agent Collaboration Beyond Generation",
-        "sample_body": "从学习状态到路径重规划，形成系统级闭环。",
-        "sample_body_latin": "The system closes the loop from learning state to replanning.",
-        "heading": { "cjk": "Microsoft YaHei", "latin": "Arial", "css": "'Microsoft YaHei',Arial,sans-serif" },
-        "body": { "cjk": "Microsoft YaHei", "latin": "Arial", "css": "'Microsoft YaHei',Arial,sans-serif" },
-        "body_size": 32,
-        "sizes": { "title": 52, "subtitle": 40, "annotation": 24 }
-      },
-      {
-        "name_zh": "技术文档气质",
-        "name_en": "Technical Documentation",
-        "note_zh": "等线与 Segoe UI，字面更紧凑；代码、指标与技术标签可辅以 Consolas。",
-        "sample_heading": "Python 与 C++ Trace 统一协议",
-        "sample_heading_latin": "Unified Python and C++ Trace Protocol",
-        "sample_body": "不同追踪技术归一为统一事件流与可视化协议。",
-        "sample_body_latin": "Different tracing engines normalize into one visual event protocol.",
-        "heading": { "cjk": "DengXian", "latin": "Segoe UI", "css": "DengXian,'Segoe UI',sans-serif" },
-        "body": { "cjk": "DengXian", "latin": "Segoe UI", "css": "DengXian,'Segoe UI',sans-serif" },
-        "body_size": 32,
-        "sizes": { "title": 54, "subtitle": 42, "annotation": 24 }
-      }
-    ]
-  }
+  "refine_spec": { "value": true }
 }
