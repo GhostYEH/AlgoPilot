@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { Cpu, DataLine, TrendCharts } from '@element-plus/icons-vue'
 
 const props = withDefaults(
   defineProps<{
@@ -15,22 +14,16 @@ const router = useRouter()
 const hero = computed(() =>
   props.variant === 'register'
     ? {
-        kicker: 'Create Account',
-        title: '注册账号，进度云端同步',
-        desc: '完成注册后，数组、链表等模块的小节完成度将自动保存到服务端，换设备也能接着学。',
+        title: '建立自己的学习档案',
+        desc: '保存章节进度、练习记录与学习路径，换一台设备也能接着学。',
+        note: '完成注册后即可开始',
       }
     : {
-        kicker: 'Welcome Back',
-        title: '登录后继续你的算法路径',
-        desc: '同步学习进度、衔接多智能体推荐与资源生成能力，在同一账号下延续训练节奏。',
+        title: '从上次停下的地方继续',
+        desc: '登录后，你的章节进度、练习记录与学习路径会保持同步。',
+        note: '登录只需要几秒钟',
       },
 )
-
-const features = [
-  { icon: TrendCharts, text: '章节进度本机 + 云端双备份' },
-  { icon: DataLine, text: '学习路径与力扣题单串联' },
-  { icon: Cpu, text: '暗色终端风，专注刷题与复盘' },
-]
 
 function goHome() {
   router.push({ name: 'home' })
@@ -39,48 +32,35 @@ function goHome() {
 
 <template>
   <div class="auth-shell">
-    <div class="auth-bg" aria-hidden="true">
-      <span class="auth-orb auth-orb-a" />
-      <span class="auth-orb auth-orb-b" />
-      <span class="auth-grid" />
-    </div>
-
     <header class="auth-top">
-      <button type="button" class="brand" @click="goHome">
+      <button type="button" class="brand" aria-label="返回算法智能学习平台首页" @click="goHome">
         <span class="logo" aria-hidden="true">AL</span>
         <span class="brand-text">
           <span class="brand-title">算法智能学习平台</span>
-          <span class="brand-sub">个性化算法学习平台</span>
+          <span class="brand-sub">AlgoPilot</span>
         </span>
       </button>
-      <el-button class="home-btn" type="primary" plain round size="small" @click="goHome">
-        返回首页
-      </el-button>
+
     </header>
 
     <main class="auth-main">
       <aside class="auth-hero">
-        <p class="hero-kicker">{{ hero.kicker }}</p>
-        <h1 class="hero-title">{{ hero.title }}</h1>
-        <p class="hero-desc">{{ hero.desc }}</p>
+        <div class="hero-content">
+          <p class="hero-context">算法学习，不必每次从头开始</p>
+          <h1 class="hero-title">{{ hero.title }}</h1>
+          <p class="hero-desc">{{ hero.desc }}</p>
+        </div>
 
-        <ul class="hero-features">
-          <li v-for="(f, i) in features" :key="i">
-            <span class="feature-icon">
-              <el-icon :size="18"><component :is="f.icon" /></el-icon>
-            </span>
-            <span>{{ f.text }}</span>
-          </li>
-        </ul>
-
-        <div class="hero-code" aria-hidden="true">
-          <span class="code-line"><span class="code-kw">const</span> session = <span class="code-fn">await</span> auth.login()</span>
-          <span class="code-line"><span class="code-fn">syncProgress</span>(session.user)</span>
-          <span class="code-line code-dim">// 数组 · 链表 · 哈希 · 字符串</span>
+        <div class="continuity-note">
+          <span class="status-dot" aria-hidden="true" />
+          <div>
+            <strong>学习记录持续同步</strong>
+            <span>{{ hero.note }}</span>
+          </div>
         </div>
       </aside>
 
-      <section class="auth-panel">
+      <section class="auth-panel" :aria-label="variant === 'login' ? '账号登录' : '注册账号'">
         <slot />
       </section>
     </main>
@@ -89,125 +69,104 @@ function goHome() {
 
 <style scoped>
 .auth-shell {
-  position: relative;
+  --auth-ink: #15211e;
+  --auth-muted: #5d6b67;
+  --auth-primary: #2e6b62;
+  --auth-primary-hover: #24584f;
+  --auth-tint: #edf4f1;
+  --auth-line: #d8e1dd;
+  --auth-surface: #ffffff;
   min-height: 100vh;
+  position: relative;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  color: var(--alp-color-text);
-  background: var(--alp-bg-page);
+  isolation: isolate;
+  color-scheme: light;
+  color: var(--auth-ink);
+  background: #fbfcfa;
 }
 
-.auth-bg {
+.auth-shell::before {
+  content: '';
   position: fixed;
-  inset: 0;
-  pointer-events: none;
+  inset: -42px;
   z-index: 0;
+  pointer-events: none;
+  background-image: url('@/assets/auth-background.webp');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  transform: translate3d(-12px, -8px, 0) scale(1.04);
+  animation: authBackgroundDrift 28s ease-in-out infinite alternate;
+  will-change: transform;
 }
 
-.auth-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(100px);
-  opacity: 0.5;
-}
-
-.auth-orb-a {
-  width: 480px;
-  height: 480px;
-  top: -140px;
-  left: -100px;
-  background: var(--alp-color-primary-soft);
-  animation: orbFloat 12s ease-in-out infinite alternate;
-}
-
-.auth-orb-b {
-  width: 400px;
-  height: 400px;
-  bottom: -120px;
-  right: 8%;
-  background: var(--alp-color-accent-soft);
-  animation: orbFloat 10s ease-in-out infinite alternate-reverse;
-}
-
-@keyframes orbFloat {
-  0% { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(20px, -15px) scale(1.05); }
-}
-
-.auth-grid {
-  position: absolute;
-  inset: 0;
-  background-image: none;
-  background-size: 52px 52px;
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 20%, transparent 75%);
+@keyframes authBackgroundDrift {
+  to {
+    transform: translate3d(12px, 8px, 0) scale(1.04);
+  }
 }
 
 .auth-top {
   position: relative;
-  z-index: 2;
+  z-index: 1;
+  height: 72px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px var(--alp-layout-padding-x, 24px);
-  border-bottom: 1px solid var(--alp-color-border);
-  background: var(--alp-bg-header);
-  backdrop-filter: blur(14px);
+  padding: 0 clamp(20px, 3vw, 48px);
+  border-bottom: 1px solid var(--auth-line);
+  background: rgba(255, 255, 255, 0.88);
+  box-sizing: border-box;
 }
 
 .brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  border: none;
-  background: none;
-  padding: 0;
-  text-align: left;
-  color: inherit;
+  border: 0;
   font: inherit;
+  cursor: pointer;
 }
 
-.brand:focus-visible {
-  outline: 2px solid var(--alp-color-primary);
-  outline-offset: 4px;
-  border-radius: var(--alp-radius-card);
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0;
+  color: var(--auth-ink);
+  background: transparent;
+  text-align: left;
 }
 
 .logo {
-  width: 42px;
-  height: 42px;
-  border-radius: var(--alp-radius-lg);
-  background: var(--alp-gradient-accent);
-  color: #fff;
-  font-weight: 800;
-  font-size: 14px;
+  width: 38px;
+  height: 38px;
   display: grid;
   place-items: center;
-  letter-spacing: 0.5px;
-  flex-shrink: 0;
-  box-shadow: 0 4px 20px var(--alp-color-primary-glow);
+  flex: 0 0 auto;
+  border-radius: 9px;
+  color: #fff;
+  background: var(--auth-primary);
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
 }
 
 .brand-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  min-width: 0;
+  gap: 1px;
 }
 
 .brand-title {
-  font-weight: 700;
-  font-size: 15px;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.35;
 }
 
 .brand-sub {
+  color: var(--auth-muted);
   font-size: 11px;
-  color: var(--alp-color-muted);
-}
-
-.home-btn {
-  flex-shrink: 0;
+  line-height: 1.35;
 }
 
 .auth-main {
@@ -215,155 +174,169 @@ function goHome() {
   z-index: 1;
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 480px);
-  gap: clamp(24px, 5vw, 64px);
-  align-items: center;
-  max-width: 1120px;
-  width: 100%;
-  margin: 0 auto;
-  padding: clamp(28px, 5vh, 56px) var(--alp-layout-padding-x, 24px) 48px;
-  box-sizing: border-box;
+  grid-template-columns: minmax(360px, 0.92fr) minmax(480px, 1.08fr);
+  min-height: 0;
 }
 
 .auth-hero {
-  padding-right: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(64px, 9vh, 104px) clamp(44px, 7vw, 112px) clamp(44px, 7vh, 72px);
+  border-right: 1px solid var(--auth-line);
+  background: rgba(237, 244, 241, 0.86);
 }
 
-.hero-kicker {
-  margin: 0 0 12px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--alp-color-primary);
+.hero-content {
+  max-width: 490px;
+}
+
+.hero-context {
+  margin: 0 0 24px;
+  color: var(--auth-primary);
+  font-size: 14px;
+  font-weight: 650;
 }
 
 .hero-title {
-  margin: 0 0 14px;
-  font-size: clamp(1.75rem, 3.5vw, 2.25rem);
-  font-weight: 800;
-  line-height: 1.2;
-  letter-spacing: -0.03em;
-  max-width: 14ch;
-  background: var(--alp-gradient-text);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  max-width: 10ch;
+  margin: 0 0 22px;
+  color: var(--auth-ink);
+  font-size: clamp(2.25rem, 4.2vw, 4rem);
+  font-weight: 720;
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
 }
 
 .hero-desc {
-  margin: 0 0 28px;
-  font-size: 15px;
-  color: var(--alp-color-muted);
-  line-height: 1.7;
-  max-width: 42ch;
+  max-width: 38ch;
+  margin: 0;
+  color: var(--auth-muted);
+  font-size: 16px;
+  line-height: 1.8;
+  text-wrap: pretty;
 }
 
-.hero-features {
-  margin: 0 0 32px;
-  padding: 0;
-  list-style: none;
+.continuity-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  color: var(--auth-ink);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--auth-primary);
+}
+
+.continuity-note div {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 2px;
 }
 
-.hero-features li {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 14px;
-  color: var(--alp-color-text);
+.continuity-note strong {
+  font-size: 13px;
+  font-weight: 650;
 }
 
-.feature-icon {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: var(--alp-radius-lg);
-  background: var(--alp-color-primary-soft);
-  border: 1px solid var(--alp-color-primary-glow);
-  color: var(--alp-color-primary);
-  flex-shrink: 0;
-}
-
-.hero-code {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 16px 18px;
-  border-radius: var(--alp-radius-card);
-  border: 1px solid var(--alp-color-border);
-  background: var(--alp-bg-code-ish);
-  font-family: 'Cascadia Code', ui-monospace, Consolas, monospace;
+.continuity-note span:last-child {
+  color: var(--auth-muted);
   font-size: 12px;
-  line-height: 1.55;
-  max-width: 360px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-}
-
-.code-line {
-  display: block;
-}
-
-.code-kw {
-  color: var(--alp-color-muted);
-}
-
-.code-fn {
-  color: var(--alp-color-primary);
-}
-
-.code-dim {
-  color: var(--alp-color-muted);
 }
 
 .auth-panel {
   display: flex;
+  align-items: center;
   justify-content: center;
-  width: 100%;
+  padding: clamp(40px, 7vh, 72px) clamp(28px, 7vw, 96px);
+  background: rgba(255, 255, 255, 0.82);
 }
 
-@media (max-width: 900px) {
+.brand:focus-visible {
+  outline: 2px solid var(--auth-primary);
+  outline-offset: 3px;
+}
+
+@media (max-width: 880px) {
   .auth-main {
     grid-template-columns: 1fr;
-    gap: 28px;
-    align-items: start;
   }
 
   .auth-hero {
-    text-align: center;
-    padding-right: 0;
+    min-height: auto;
+    padding: 42px clamp(24px, 7vw, 64px);
+    border-right: 0;
+    border-bottom: 1px solid var(--auth-line);
   }
 
   .hero-title {
-    max-width: none;
-    margin-left: auto;
-    margin-right: auto;
+    max-width: 14ch;
+    margin-bottom: 14px;
+    font-size: 2.35rem;
   }
 
-  .hero-desc {
-    margin-left: auto;
-    margin-right: auto;
+  .hero-context {
+    margin-bottom: 14px;
   }
 
-  .hero-features {
-    align-items: center;
+  .continuity-note {
+    display: none;
   }
 
-  .hero-code {
-    margin: 0 auto;
+  .auth-panel {
+    align-items: flex-start;
+    padding-top: 48px;
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 560px) {
+  .auth-shell::before {
+    background-size: 100% 100%;
+  }
+
+  .auth-top {
+    height: 64px;
+    padding: 0 18px;
+  }
+
   .brand-sub {
     display: none;
   }
 
-  .hero-code {
+  .auth-hero {
+    padding: 30px 22px 32px;
+  }
+
+  .hero-context {
     display: none;
   }
+
+  .hero-title {
+    margin-bottom: 10px;
+    font-size: 1.85rem;
+  }
+
+  .hero-desc {
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .auth-panel {
+    padding: 34px 22px 48px;
+  }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-shell::before {
+    animation: none;
+    transform: scale(1.03);
+  }
+}
+
 </style>
