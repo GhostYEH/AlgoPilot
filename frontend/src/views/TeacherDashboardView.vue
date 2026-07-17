@@ -34,10 +34,6 @@ const emptySummary = (): TeacherDashboardSummary => ({
 })
 
 const overview = computed(() => summary.value?.overview ?? emptySummary().overview)
-const acceptanceRate = computed(() => {
-  const total = overview.value.oj_submission_count
-  return total ? Math.min(99, Math.round((overview.value.profile_count / total) * 100)) : 0
-})
 const engagement = computed(() => overview.value.student_count
   ? Math.round((overview.value.profile_count / overview.value.student_count) * 100) : 0)
 
@@ -103,13 +99,13 @@ onMounted(loadDashboard)
 
     <section class="overview-panel">
       <div class="section-title-row">
-        <div><h1>班级概览</h1><p>{{ summary?.data_note || '汇总班级学习表现与教学风险' }}</p></div>
+        <div><h1>系统实例学情概览</h1><p>{{ summary?.data_note || '当前系统实例内学生学习记录的只读聚合视图' }}</p></div>
         <el-button :icon="RefreshRight" :loading="loading" @click="loadDashboard">刷新数据</el-button>
       </div>
       <div class="metric-grid">
-        <article><span>班级平均分</span><strong>{{ overview.average_mastery.toFixed(1) }}</strong><small class="up"><el-icon><ArrowUp /></el-icon> 实时汇总</small></article>
+        <article><span>平均掌握度</span><strong>{{ overview.average_mastery.toFixed(1) }}</strong><small class="up"><el-icon><ArrowUp /></el-icon> 实时汇总</small></article>
         <article><span>活跃学习率</span><strong>{{ engagement }}<i>%</i></strong><small class="up"><el-icon><ArrowUp /></el-icon> {{ overview.profile_count }} 人有画像</small></article>
-        <article><span>OJ 参考通过率</span><strong>{{ acceptanceRate }}<i>%</i></strong><small>基于学习记录</small></article>
+        <article><span>OJ 学习记录数</span><strong>{{ overview.oj_submission_count }}</strong><small>成功与失败事件合计</small></article>
         <article><span>平均学习进度</span><strong>{{ students.length ? Math.round(students.reduce((sum, s) => sum + s.progress_percent, 0) / students.length) : 0 }}<i>%</i></strong><small class="up"><el-icon><ArrowUp /></el-icon> 持续更新</small></article>
         <article><span>资源生成数</span><strong>{{ overview.resource_count }}</strong><small>本课程累计</small></article>
         <article><span>预警学生数</span><strong>{{ alerts.length }}</strong><small class="down"><el-icon><ArrowDown /></el-icon> 需重点关注</small></article>
@@ -141,13 +137,6 @@ onMounted(loadDashboard)
             </div>
           </article>
 
-          <article class="data-panel trend-panel">
-            <header><h2>学习完成趋势</h2><span>{{ formatDate(summary?.generated_at) }}</span></header>
-            <div class="trend-chart">
-              <div class="trend-line" />
-              <div v-for="(value, index) in [42, 51, 63, 72, Math.max(engagement, 75)]" :key="index" class="trend-point" :style="{ left: `${8 + index * 22}%`, bottom: `${value * .72}%` }"><b>{{ value }}%</b></div>
-            </div>
-          </article>
         </div>
 
         <article class="data-panel student-panel">

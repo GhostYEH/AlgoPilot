@@ -35,7 +35,7 @@ const errorSummary = computed(() => {
   <section v-if="showPanel && state" class="struggle-panel">
     <header class="struggle-head">
       <el-icon><Warning /></el-icon>
-      <span>智能体学情干预 · EvaluatorAgent</span>
+      <span>学情干预</span>
       <el-tag v-if="state.consecutiveFailures >= 3" size="small" type="danger" effect="plain">
         连续 {{ state.consecutiveFailures }} 次未通过
       </el-tag>
@@ -117,7 +117,7 @@ const errorSummary = computed(() => {
 
       <p v-if="state.pathAdjustSuggested && state.result.remediation_label" class="path-hint">
         <el-icon><Collection /></el-icon>
-        PlannerAgent：优先巩固「{{ state.result.remediation_label }}」
+        建议优先巩固「{{ state.result.remediation_label }}」
         <template v-if="state.result.path_updated">（路径已更新）</template>
       </p>
 

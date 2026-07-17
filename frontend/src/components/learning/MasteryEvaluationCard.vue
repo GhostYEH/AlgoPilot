@@ -96,7 +96,7 @@ defineExpose({ reload: () => loadReport(true) })
   <el-card v-loading="loading" shadow="never" class="mastery-card">
     <div class="mastery-head">
       <el-icon><TrendCharts /></el-icon>
-      <span>MasteryAgent · 学习效果掌握度评估</span>
+      <span>学习效果掌握度评估</span>
       <el-button size="small" :loading="loading" @click="loadReport(true)">重新计算</el-button>
     </div>
 

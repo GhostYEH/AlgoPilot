@@ -187,7 +187,7 @@ async function autoCompleteProfileFlow() {
     ElMessage.success('六维画像已生成，雷达图已更新')
     try {
       await replanPath({ trigger: 'persona', triggerLabel: '画像更新后重排' })
-      ElMessage.success('PlannerAgent 已根据画像生成千人千面学习路径')
+      ElMessage.success('已根据画像生成千人千面学习路径')
     } catch {
       ElMessage.warning('路径规划稍后可在「学习路径」页重试')
     }
@@ -221,7 +221,7 @@ async function onSyncProfile() {
     ElMessage.success(message)
     try {
       await ElMessageBox.confirm(
-        '画像已更新。是否立即调用 PlannerAgent 重排模块顺序？',
+        '画像已更新。是否立即重排模块顺序？',
         '重排学习路径',
         { confirmButtonText: '重排', cancelButtonText: '稍后' },
       )

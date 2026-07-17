@@ -119,7 +119,7 @@ def _now_iso() -> str:
 def _empty_summary() -> TeacherDashboardSummaryResponse:
     return TeacherDashboardSummaryResponse(
         overview=ClassLearningOverview(),
-        data_note="暂无可统计的真实学生学习记录。",
+        data_note="当前系统实例内学生学习记录的只读聚合视图；暂无可统计的真实学习记录。",
         generated_at=_now_iso(),
     )
 
@@ -408,7 +408,7 @@ def get_dashboard_summary(
         error_types=error_stats,
         teaching_suggestions=suggestions,
         reinforcement_packs=reinforcement_packs,
-        data_note="统计结果由现有用户、学习进度、Evaluation/掌握度、OJ 学习记忆和资源记录实时聚合。",
+        data_note="当前系统实例内学生学习记录的只读聚合视图；数据由现有用户、学习进度、Evaluation/掌握度、OJ 学习记忆和资源记录实时聚合。",
         generated_at=_now_iso(),
     )
 

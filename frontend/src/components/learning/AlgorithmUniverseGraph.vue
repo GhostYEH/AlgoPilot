@@ -156,10 +156,6 @@ function motionDuration(ms: number): number {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : ms
 }
 
-const remediationStep = computed(
-  () => plan.value?.steps?.find((s) => s.is_remediation) ?? null,
-)
-
 function scoreForModule(key: string): number {
   const dim = MODULE_DIMENSION[key]
   if (dim && personaScores.value[dim] != null) return personaScores.value[dim]
@@ -929,26 +925,12 @@ onUnmounted(() => {
       show-icon
       class="universe-banner"
     >
-      <template #title>{{ plan?.agent_name }} · 算法知识宇宙已同步</template>
+      <template #title>算法知识宇宙已同步</template>
       <p class="banner-text">{{ plan?.summary }}</p>
     </el-alert>
 
-    <el-alert
-      v-if="plan?.remediation_inserted && remediationStep"
-      type="warning"
-      :closable="false"
-      show-icon
-      class="universe-banner"
-    >
-      <template #title>EvaluatorAgent → PlannerAgent 学情降级</template>
-      巩固节点「{{
-        overview.rows.find((r) => r.key === remediationStep?.module_key)?.label ??
-        remediationStep?.module_key
-      }}」已在星图中高亮闪烁
-    </el-alert>
-
-    <el-alert v-else-if="isLoggedIn && !hasPlan" type="info" :closable="false" show-icon class="universe-banner">
-      <template #title>PlannerAgent 待激活</template>
+    <el-alert v-if="isLoggedIn && !hasPlan" type="info" :closable="false" show-icon class="universe-banner">
+      <template #title>个性化宇宙待生成</template>
       完成画像访谈或点击下方按钮，生成千人千面 DAG 星图。
       <el-button type="primary" size="small" :loading="loading" class="banner-btn" @click="onReplan">
         生成个性化宇宙
@@ -1104,7 +1086,7 @@ onUnmounted(() => {
             <span class="preview-pct">{{ selectedNode.percent }}%</span>
           </div>
           <p v-if="selectedNode.reason" class="drawer-reason">
-            <strong>PlannerAgent：</strong>{{ selectedNode.reason }}
+            {{ selectedNode.reason }}
           </p>
           <p v-if="MODULE_PATH_HINTS[selectedNode.id]" class="drawer-summary">
             {{ MODULE_PATH_HINTS[selectedNode.id].summary }}

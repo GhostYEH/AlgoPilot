@@ -1,13 +1,29 @@
 # AlgoPilot 第三方开源依赖与 AI Coding 使用说明
 
-> 文档版本：v1.2 · 适用赛题：A3 · 更新日期：2026-07-16
-> 对应代码版本：`a493bb03df876313eb57f6d5425abed8de745901`（提交前需随最终代码重新确认）
-> 文档状态：提交候选版
+> 文档版本：v1.2 · 适用赛题：A3 · 更新日期：2026-07-17
+> 对应代码版本：`318f21c2bbaf9826dc94e8e31401b247b2c8f6d1`
+> 文档状态：正式提交版
 > 本文档依据官方要求，如实标注 AlgoPilot 项目中使用的开源项目、开源协议、第三方库、AI 大模型与 AI Coding 工具的使用情况，以及团队自主设计与开发的部分。
 
 ---
 
 ## 一、开源项目使用清单
+
+![图 6-1 第三方依赖分类](images/D08-dependency-categories.png)
+
+*图 6-1 第三方依赖分类*
+
+![图 6-2 AI Coding 人工复核流程](images/D09-ai-review-flow.png)
+
+*图 6-2 AI Coding 人工复核流程*
+
+```text
+仓库根目录/
+├─ LICENSE
+└─ THIRD_PARTY_LICENSES.md
+```
+
+*图 6-3 LICENSE 与 THIRD_PARTY_LICENSES 文件位置（仓库实扫）*
 
 ### 1.1 前端开源项目
 

@@ -407,7 +407,7 @@ async function onReplan() {
 
       <template #title>
 
-        <span class="agent-banner-title">{{ plan?.agent_name }} · 已个性化重排</span>
+        <span class="agent-banner-title">学习路径已个性化重排</span>
 
       </template>
 
@@ -421,29 +421,7 @@ async function onReplan() {
 
     <el-alert
 
-      v-if="plan?.remediation_inserted && remediationStep"
-
-      type="warning"
-
-      :closable="false"
-
-      show-icon
-
-      class="agent-banner remediation-banner"
-
-    >
-
-      <template #title>🚑 EvaluatorAgent → PlannerAgent 学情降级</template>
-
-      检测到连续作答受挫，已临时插播巩固关卡「{{ overview.rows.find((r) => r.key === remediationStep?.module_key)?.label ?? remediationStep?.module_key }}」：{{ remediationStep?.reason }}
-
-    </el-alert>
-
-
-
-    <el-alert
-
-      v-else-if="isLoggedIn"
+      v-if="isLoggedIn && !hasPlan"
 
       type="info"
 
@@ -455,7 +433,7 @@ async function onReplan() {
 
     >
 
-      <template #title>学习路径 Agent</template>
+      <template #title>个性化路径待生成</template>
 
       登录后可根据学习画像与进度自动重排模块顺序。
 

@@ -128,7 +128,7 @@ const resourceTypeLabel: Record<string, string> = {
         :closable="false"
         show-icon
         title="已更新掌握度评估"
-        :description="tutoring.mastery_update_summary || 'MasteryAgent 已重算掌握度'"
+        :description="tutoring.mastery_update_summary || '掌握度已重算'"
         class="outcome-alert"
       />
       <el-alert

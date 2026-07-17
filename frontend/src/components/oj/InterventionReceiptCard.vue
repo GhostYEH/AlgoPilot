@@ -110,37 +110,37 @@ interface ChainNode {
 
 const agentChain = computed<ChainNode[]>(() => [
   {
-    name: 'OjDiagnosisAgent',
+    name: '错因诊断',
     status: errorPattern.value ? 'done' : 'not_triggered',
     detail: errorPattern.value
       ? `${errorPatternLabel.value || errorPattern.value}${(bugStepIndex.value ?? -1) >= 0 ? ` · Trace Step ${bugStepIndex.value! + 1}` : ''}`
       : '未触发',
   },
   {
-    name: 'SkillRouter',
+    name: '技能匹配',
     status: matchedSkill.value ? 'done' : 'not_triggered',
     detail: matchedSkill.value
       ? `${matchedSkill.value.name}（${matchedSkill.value.id}）`
       : '未触发',
   },
   {
-    name: 'MemoryAgent',
+    name: '错因记忆',
     status: memoryRecorded.value ? 'done' : 'not_triggered',
     detail: memoryRecorded.value
       ? memoryEventId.value
-        ? `StudentMemory #${memoryEventId.value} 已写入`
+        ? `错因记录 #${memoryEventId.value} 已写入`
         : '错因摘要已入库'
       : '未触发',
   },
   {
-    name: 'MasteryAgent',
+    name: '掌握度重算',
     status: masteryUpdated.value ? 'done' : 'not_triggered',
     detail: masteryUpdated.value
       ? masteryUpdateSummary.value || '掌握度已重算'
       : '未触发',
   },
   {
-    name: 'LearningPathAgent',
+    name: '路径调整',
     status: pathAdjustment.value ? 'done' : 'not_triggered',
     detail: pathAdjustment.value || '未触发',
   },
