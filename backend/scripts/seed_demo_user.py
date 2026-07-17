@@ -142,6 +142,107 @@ LEARNING_PROGRESS_PAYLOAD = {
 }
 
 
+# ── 游戏化练习进度（学习打卡热力图数据源） ──────────────────────────────
+
+GAME_PROGRESS_PAYLOAD_KEY = "alp_game_progress_v1"
+
+# (days_ago, game_id, level_id, game_title, level_title, module_key)
+# 37 条通关记录分布在近 10 周内，前疏后密，呈现真实学习节奏；
+# 登录后经 applyRemoteProgressPayload 写入 localStorage，
+# 「我的学习」热力图即可展示近 10 周活跃度。
+_DEMO_GAME_SCHEDULE: list[tuple[int, str, str, str, str, str]] = [
+    # 数组（第 1 周，最远）
+    (67, "binary-search", "find", "夹逼寻宝", "找目标", "array"),
+    (65, "binary-search", "lower", "夹逼寻宝", "第一个 ≥ x", "array"),
+    (62, "binary-search", "rotated", "夹逼寻宝", "旋转最小值", "array"),
+    # 链表（第 2 周）
+    (60, "linked-list-repair", "reverse", "断链修理工", "反转链表", "linked-list"),
+    (58, "linked-list-repair", "delete", "断链修理工", "删除结点", "linked-list"),
+    (55, "linked-list-repair", "cycle", "断链修理工", "龟兔赛跑", "linked-list"),
+    # 哈希表（第 3 周）
+    (53, "hash-locker", "basic", "快递柜取件", "入桶", "hash-table"),
+    (51, "hash-locker", "chain", "快递柜取件", "拉链法", "hash-table"),
+    (48, "hash-locker", "rehash", "快递柜取件", "扩容", "hash-table"),
+    # 字符串（第 4 周）
+    (46, "palindrome", "palindrome", "回文消消乐", "验证回文", "string"),
+    (44, "palindrome", "kmp-next", "回文消消乐", "next 填空", "string"),
+    # 双指针
+    (41, "two-pointers-race", "dedup", "双指针赛跑", "有序去重", "two-pointers"),
+    (39, "two-pointers-race", "sum", "双指针赛跑", "三数之和", "two-pointers"),
+    (37, "two-pointers-race", "cycle", "双指针赛跑", "环检测", "two-pointers"),
+    # 栈与队列（第 5 周）
+    (35, "canteen-stack-queue", "stack", "食堂出餐口", "栈关", "stack-queue"),
+    (33, "canteen-stack-queue", "queue", "食堂出餐口", "队列关", "stack-queue"),
+    (30, "canteen-stack-queue", "dual-stack", "食堂出餐口", "双栈", "stack-queue"),
+    (28, "canteen-stack-queue", "paren", "食堂出餐口", "括号接龙", "stack-queue"),
+    (26, "canteen-stack-queue", "deque", "食堂出餐口", "窗口", "stack-queue"),
+    # 二叉树（第 6 周）
+    (24, "tree-cave", "traverse", "树洞探险", "遍历关", "binary-tree"),
+    (22, "tree-cave", "bst", "树洞探险", "BST 关", "binary-tree"),
+    (20, "tree-cave", "path", "树洞探险", "路径和", "binary-tree"),
+    # 回溯（第 7 周）
+    (18, "backtrack-room", "n4", "密室排列", "4 皇后", "backtracking"),
+    (16, "backtrack-room", "perm", "密室排列", "全排列", "backtracking"),
+    # 贪心
+    (14, "greedy-courier", "jump", "贪心快递员", "跳跃游戏", "greedy"),
+    (12, "greedy-courier", "interval", "贪心快递员", "会议室", "greedy"),
+    # 动态规划（第 8 周）
+    (10, "knapsack-lite", "knapsack", "背包小偷 Lite", "0/1 背包", "dp"),
+    (9, "knapsack-lite", "rob", "背包小偷 Lite", "打家劫舍", "dp"),
+    (7, "knapsack-lite", "stairs", "背包小偷 Lite", "爬楼梯", "dp"),
+    # 图论（第 9 周）
+    (6, "graph-explorer", "representation", "图岛探路员", "建图关", "graph"),
+    (5, "graph-explorer", "bfs", "图岛探路员", "最短层序", "graph"),
+    (3, "graph-explorer", "dfs", "图岛探路员", "深搜回溯", "graph"),
+    # 综合 + 单调栈（最近 1 周）
+    (2, "algo-detective", "dfs-queue", "算法侦探", "结构误用", "_global"),
+    (2, "algo-detective", "bst-inorder", "算法侦探", "BST 验证", "_global"),
+    (1, "algo-detective", "dp-order", "算法侦探", "DP 填表", "_global"),
+    (0, "monotonic-barrier", "temp", "地震挡板", "每日温度", "monotonic-stack"),
+    (0, "monotonic-barrier", "rect", "地震挡板", "最大矩形", "monotonic-stack"),
+]
+
+
+def _build_demo_game_progress_payload(now: datetime) -> dict:
+    """构造 demo 用户的游戏化练习进度（alp_game_progress_v1）。
+
+    含 37 条通关历史，clearedAt 按上海时区对齐到正确的日历日，
+    登录后经 applyRemoteProgressPayload 写入 localStorage，
+    「我的学习」热力图即可展示近 10 周活跃度。
+    """
+    # 以上海时区（UTC+8）的"今天"为基准，避免 UTC 晚间导致日历日错位
+    shanghai_today = (now + timedelta(hours=8)).date()
+
+    cleared_levels: dict[str, list[str]] = {}
+    history: list[dict] = []
+
+    for idx, (days_ago, gid, lid, gtitle, ltitle, mkey) in enumerate(_DEMO_GAME_SCHEDULE):
+        cleared_levels.setdefault(gid, [])
+        if lid not in cleared_levels[gid]:
+            cleared_levels[gid].append(lid)
+
+        target_date = shanghai_today - timedelta(days=days_ago)
+        # 04:00 UTC = 12:00 上海时间，落在目标日历日中段，避免跨日
+        cleared_at_dt = datetime(
+            target_date.year, target_date.month, target_date.day,
+            4, idx % 50, 0, tzinfo=timezone.utc,
+        )
+        cleared_at_ms = int(cleared_at_dt.timestamp() * 1000)
+
+        history.append({
+            "gameId": gid,
+            "levelId": lid,
+            "gameTitle": gtitle,
+            "levelTitle": ltitle,
+            "moduleKey": mkey,
+            "clearedAt": cleared_at_ms,
+        })
+
+    # 历史按时间倒序（最近在前），与前端 getGameHistory 约定一致
+    history.sort(key=lambda r: r["clearedAt"], reverse=True)
+    return {"clearedLevels": cleared_levels, "history": history}
+
+
 # ── 4 个子数据写入函数（被 _write_demo_learning_data 调用，幂等） ──
 
 
@@ -487,10 +588,13 @@ def _write_demo_learning_data(db, user: User, now) -> None:
     包含：学习进度、六维画像、学习路径、记忆、事件日志、生成资源。
     幂等：可重复调用，由调用方负责清理旧数据。
     """
-    # ── 1. 学习进度 ──
+    # ── 1. 学习进度（含游戏化练习历史，作为热力图数据源） ──
     progress = LearningProgress(
         user_id=user.id,
-        payload=LEARNING_PROGRESS_PAYLOAD,
+        payload={
+            **LEARNING_PROGRESS_PAYLOAD,
+            GAME_PROGRESS_PAYLOAD_KEY: _build_demo_game_progress_payload(now),
+        },
     )
     db.add(progress)
 
@@ -615,6 +719,7 @@ def seed() -> None:
         print(f"  学习记忆: 6条（含 reverse-linked-list WA 失败记忆）")
         print(f"  事件日志: 10条")
         print(f"  生成资源: 3条")
+        print(f"  游戏通关历史: 37条（近 10 周分布，登录后写入热力图）")
 
         seed_teacher_demo(db)
 

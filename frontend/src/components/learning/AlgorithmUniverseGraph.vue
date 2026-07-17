@@ -79,7 +79,7 @@ const INDEPENDENT_MODULE_INTROS: Record<string, string> = {
   'two-pointers': TWO_POINTERS_CURRICULUM_INTRO,
 }
 
-const INDEPENDENT_MODULE_ANIMATIONS: Record<string, () => Promise<Component>> = {
+const INDEPENDENT_MODULE_ANIMATIONS: Partial<Record<string, () => Promise<Component>>> = {
   array: () => import('@/modules/array/components/ArrayConceptAnimations.vue'),
   'hash-table': () => import('@/modules/hashTable/components/HashTableSectionAnimation.vue'),
   string: () => import('@/modules/string/components/StringSectionAnimation.vue'),

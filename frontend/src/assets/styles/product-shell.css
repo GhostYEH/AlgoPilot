@@ -58,47 +58,47 @@
 }
 
 html:not(.dark) {
-  --alp-color-primary: #087f88;
-  --alp-color-primary-rgb: 8, 127, 136;
-  --alp-color-primary-soft: rgba(8, 127, 136, 0.08);
-  --alp-color-primary-glow: rgba(8, 127, 136, 0.14);
+  --alp-color-primary: #0f8588;
+  --alp-color-primary-rgb: 15, 133, 136;
+  --alp-color-primary-soft: #eaf6f5;
+  --alp-color-primary-glow: rgba(15, 133, 136, 0.14);
   --alp-color-accent: #b87813;
   --alp-color-accent-rgb: 184, 120, 19;
-  --alp-color-text: #12233f;
-  --alp-color-text-secondary: #34435a;
-  --alp-color-muted: #69778a;
-  --alp-color-border: #dbe2e9;
-  --alp-color-border-strong: #c6d0db;
-  --alp-bg-page: #f4f7fa;
-  --alp-bg-shell: #f4f7fa;
+  --alp-color-text: #172b2d;
+  --alp-color-text-secondary: #667779;
+  --alp-color-muted: #98a6a7;
+  --alp-color-border: #dde7e7;
+  --alp-color-border-strong: #c7d6d6;
+  --alp-bg-page: #f5f8f8;
+  --alp-bg-shell: #f5f8f8;
   --alp-bg-header: rgba(255, 255, 255, 0.97);
   --alp-bg-toolbar: #f8fafc;
   --alp-bg-surface: #ffffff;
   --alp-bg-surface-solid: #ffffff;
-  --alp-bg-surface-muted: #f8fafc;
-  --alp-bg-soft-block: #f5f8fb;
+  --alp-bg-surface-muted: #f0f5f5;
+  --alp-bg-soft-block: #e8f0f0;
   --alp-bg-main-panel: #ffffff;
   --alp-bg-aside-gradient: #fbfcfd;
-  --alp-bg-nav: #eef4f7;
-  --alp-bg-nav-hover: rgba(8, 127, 136, 0.06);
-  --alp-bg-nav-active: rgba(8, 127, 136, 0.1);
+  --alp-bg-nav: #eef5f5;
+  --alp-bg-nav-hover: rgba(15, 133, 136, 0.06);
+  --alp-bg-nav-active: rgba(15, 133, 136, 0.1);
   --alp-bg-code-ish: #f5f8fb;
   --alp-bg-elevated: #ffffff;
   --alp-bg-hover: rgba(18, 35, 63, 0.035);
   --alp-shadow-card: 0 1px 2px rgba(18, 35, 63, 0.035);
   --alp-shadow-card-hover: 0 4px 14px rgba(18, 35, 63, 0.07);
-  --alp-shadow-glow: 0 0 0 3px rgba(8, 127, 136, 0.1);
-  --el-color-primary: #087f88;
+  --alp-shadow-glow: 0 0 0 3px rgba(15, 133, 136, 0.1);
+  --el-color-primary: #0f8588;
   --el-bg-color: #ffffff;
   --el-bg-color-overlay: #ffffff;
   --el-fill-color-blank: #ffffff;
   --el-fill-color-light: #f5f8fb;
   --el-fill-color-lighter: #f8fafc;
-  --el-text-color-primary: #12233f;
-  --el-text-color-regular: #34435a;
-  --el-text-color-secondary: #69778a;
-  --el-border-color: #dbe2e9;
-  --el-border-color-light: #e8edf2;
+  --el-text-color-primary: #172b2d;
+  --el-text-color-regular: #667779;
+  --el-text-color-secondary: #98a6a7;
+  --el-border-color: #dde7e7;
+  --el-border-color-light: #e8eeee;
 }
 
 html, body, #app { min-height: 100%; }

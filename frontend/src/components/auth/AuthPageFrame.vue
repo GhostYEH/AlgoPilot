@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import LoginGlobe from '@/components/auth/LoginGlobe.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -34,10 +35,10 @@ function goHome() {
   <div class="auth-shell">
     <header class="auth-top">
       <button type="button" class="brand" aria-label="返回算法智能学习平台首页" @click="goHome">
-        <span class="logo" aria-hidden="true">AL</span>
+        <span class="logo" aria-hidden="true">AP</span>
         <span class="brand-text">
-          <span class="brand-title">算法智能学习平台</span>
-          <span class="brand-sub">AlgoPilot</span>
+          <span class="brand-title">AlgoPilot</span>
+          <span class="brand-sub">算法智能学习平台</span>
         </span>
       </button>
 
@@ -49,6 +50,10 @@ function goHome() {
           <p class="hero-context">算法学习，不必每次从头开始</p>
           <h1 class="hero-title">{{ hero.title }}</h1>
           <p class="hero-desc">{{ hero.desc }}</p>
+        </div>
+
+        <div v-if="variant === 'login'" class="hero-visual">
+          <LoginGlobe />
         </div>
 
         <div class="continuity-note">
@@ -179,9 +184,11 @@ function goHome() {
 }
 
 .auth-hero {
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  gap: clamp(18px, 3vh, 32px);
   padding: clamp(64px, 9vh, 104px) clamp(44px, 7vw, 112px) clamp(44px, 7vh, 72px);
   border-right: 1px solid var(--auth-line);
   background: rgba(237, 244, 241, 0.86);
@@ -216,6 +223,16 @@ function goHome() {
   font-size: 16px;
   line-height: 1.8;
   text-wrap: pretty;
+}
+
+.hero-visual {
+  min-height: 280px;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: clamp(-18px, -2vh, -8px) clamp(-28px, -2vw, 0px) clamp(-24px, -2vh, -8px);
+  pointer-events: auto;
 }
 
 .continuity-note {
@@ -289,6 +306,11 @@ function goHome() {
     display: none;
   }
 
+  .hero-visual {
+    min-height: 300px;
+    margin: 0;
+  }
+
   .auth-panel {
     align-items: flex-start;
     padding-top: 48px;
@@ -325,6 +347,10 @@ function goHome() {
   .hero-desc {
     font-size: 14px;
     line-height: 1.7;
+  }
+
+  .hero-visual {
+    display: none;
   }
 
   .auth-panel {

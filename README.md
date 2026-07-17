@@ -104,11 +104,14 @@ npm run build
 
 | 项目 | 状态 |
 |------|------|
-| Backend pytest | 188 passed |
+| Backend pytest | 190 passed（2026-07-16 本地执行，104.14s） |
 | Frontend typecheck | passed |
 | Frontend build | passed |
+| Frontend test:oj-struggle | passed |
+| Frontend test:path-replan-diff | passed |
+| Frontend test:graph-module | passed |
 
-> 上述测试结果基于本次本地真实执行。GitHub Actions CI 状态以实际工作流运行结果为准。
+> 上述测试结果基于 2026-07-16 本地真实执行（Python 3.13 / Node.js 22.x LTS / Windows）。GitHub Actions CI 状态以实际工作流运行结果为准。
 
 ## 比赛文档
 

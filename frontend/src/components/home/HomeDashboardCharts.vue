@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import type { RadarAxis } from '@/utils/homeDashboard'
 import type { DaySeriesPoint, HeatmapCell } from '@/utils/homeActivityLog'
 
@@ -9,515 +9,433 @@ const props = defineProps<{
   heatmap: HeatmapCell[]
 }>()
 
+const hasActivity = computed(() => props.series.some((day) => day.total > 0))
+const lineChart = computed(() => {
+  const width = 560
+  const height = 150
+  const xPadding = 18
+  const yPadding = 18
+  const max = Math.max(1, ...props.series.map((day) => day.total))
+  const step = props.series.length > 1
+    ? (width - xPadding * 2) / (props.series.length - 1)
+    : 0
+  const points = props.series.map((day, index) => ({
+    ...day,
+    x: xPadding + index * step,
+    y: height - yPadding - (day.total / max) * (height - yPadding * 2),
+  }))
+  return {
+    width,
+    height,
+    max,
+    points,
+    line: points.map((point) => `${point.x},${point.y}`).join(' '),
+  }
+})
+
 const radarPoints = computed(() => {
-  const n = props.radar.length
-  const cx = 100
-  const cy = 100
-  const maxR = 72
-  const angle0 = -Math.PI / 2
-  return props.radar.map((axis, i) => {
-    const angle = angle0 + (i * 2 * Math.PI) / n
-    const r = (Math.min(100, Math.max(0, axis.value)) / 100) * maxR
+  const center = 90
+  const radius = 58
+  const count = Math.max(1, props.radar.length)
+  return props.radar.map((axis, index) => {
+    const angle = -Math.PI / 2 + (index * 2 * Math.PI) / count
+    const valueRadius = radius * Math.min(100, Math.max(0, axis.value)) / 100
     return {
-      x: cx + r * Math.cos(angle),
-      y: cy + r * Math.sin(angle),
-      labelX: cx + (maxR + 14) * Math.cos(angle),
-      labelY: cy + (maxR + 14) * Math.sin(angle),
-      label: axis.label,
-      value: axis.value,
+      ...axis,
+      x: center + valueRadius * Math.cos(angle),
+      y: center + valueRadius * Math.sin(angle),
+      labelX: center + (radius + 18) * Math.cos(angle),
+      labelY: center + (radius + 18) * Math.sin(angle),
     }
   })
 })
-
 const radarPolygon = computed(() =>
-  radarPoints.value.map((p) => `${p.x},${p.y}`).join(' '),
+  radarPoints.value.map((point) => `${point.x},${point.y}`).join(' '),
 )
-
-const gridPolygons = computed(() => {
-  const levels = [0.25, 0.5, 0.75, 1]
-  const n = props.radar.length
-  const cx = 100
-  const cy = 100
-  const maxR = 72
-  const angle0 = -Math.PI / 2
-  return levels.map((lv) => {
-    const pts = Array.from({ length: n }, (_, i) => {
-      const angle = angle0 + (i * 2 * Math.PI) / n
-      const r = maxR * lv
-      return `${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`
-    })
-    return pts.join(' ')
-  })
-})
-
-const lineChart = computed(() => {
-  const w = 280
-  const h = 88
-  const pad = 8
-  const max = Math.max(1, ...props.series.map((s) => s.total))
-  const step = props.series.length > 1 ? (w - pad * 2) / (props.series.length - 1) : 0
-  const points = props.series.map((s, i) => {
-    const x = pad + i * step
-    const y = h - pad - (s.total / max) * (h - pad * 2)
-    return { x, y, ...s }
-  })
-  const line = points.map((p) => `${p.x},${p.y}`).join(' ')
-  const area =
-    `${pad},${h - pad} ` +
-    line +
-    ` ${w - pad},${h - pad}`
-  return { w, h, points, line, area, max }
+const radarGrid = computed(() => {
+  const center = 90
+  const count = Math.max(1, props.radar.length)
+  return [0.5, 1].map((level) =>
+    props.radar.map((_, index) => {
+      const angle = -Math.PI / 2 + (index * 2 * Math.PI) / count
+      return `${center + 58 * level * Math.cos(angle)},${center + 58 * level * Math.sin(angle)}`
+    }).join(' '),
+  )
 })
 
 const heatmapWeeks = computed(() => {
-  const cells = props.heatmap
   const weeks: HeatmapCell[][] = []
-  for (let i = 0; i < cells.length; i += 7) {
-    weeks.push(cells.slice(i, i + 7))
+  for (let index = 0; index < props.heatmap.length; index += 7) {
+    weeks.push(props.heatmap.slice(index, index + 7))
   }
   return weeks
 })
+const activeDays = computed(() => props.heatmap.filter((cell) => cell.level > 0).length)
 
-const selectedHeatmapDate = ref<string | null>(null)
-
-const heatmapSummary = computed(() => {
-  const cells = props.heatmap
-  const activeDays = cells.filter((cell) => cell.level > 0).length
-  let currentStreak = 0
-  let longestStreak = 0
-  let runningStreak = 0
-
-  for (const cell of cells) {
-    if (cell.level > 0) {
-      runningStreak += 1
-      longestStreak = Math.max(longestStreak, runningStreak)
-    } else {
-      runningStreak = 0
-    }
-  }
-
-  for (let index = cells.length - 1; index >= 0; index -= 1) {
-    if (cells[index]?.level === 0) break
-    currentStreak += 1
-  }
-
-  return {
-    activeDays,
-    currentStreak,
-    longestStreak,
-    activeRate: cells.length ? Math.round((activeDays / cells.length) * 100) : 0,
-  }
-})
-
-const focusedHeatmapCell = computed(() => {
-  if (selectedHeatmapDate.value) {
-    const selected = props.heatmap.find((cell) => cell.date === selectedHeatmapDate.value)
-    if (selected) return selected
-  }
-
-  return [...props.heatmap].reverse().find((cell) => cell.level > 0)
-    ?? props.heatmap.at(-1)
-    ?? null
-})
-
-const heatLevelLabels = ['未打卡', '轻量学习', '稳定学习', '高效学习', '深度学习'] as const
-
-function formatHeatmapDate(date: string) {
-  return new Intl.DateTimeFormat('zh-CN', {
-    month: 'long',
+function heatmapLabel(cell: HeatmapCell) {
+  const date = new Intl.DateTimeFormat('zh-CN', {
+    month: 'numeric',
     day: 'numeric',
-    weekday: 'short',
-  }).format(new Date(`${date}T00:00:00`))
-}
-
-function heatmapCellLabel(cell: HeatmapCell) {
-  return `${formatHeatmapDate(cell.date)}，${heatLevelLabels[cell.level]}`
+  }).format(new Date(`${cell.date}T00:00:00`))
+  return `${date}，学习强度 ${cell.level}/4`
 }
 </script>
 
 <template>
-  <div class="charts-grid">
-    <div class="chart-block">
-      <div class="chart-head">
-        <span class="chart-title">能力雷达</span>
-        <span class="chart-sub">各知识维度章节进度</span>
+  <div class="learning-charts">
+    <section class="learning-charts__trend">
+      <header>
+        <div>
+          <h3>近 7 天学习活跃度</h3>
+          <p>访问记 1 分，完成题目记 2 分</p>
+        </div>
+        <strong v-if="hasActivity">{{ series.reduce((sum, day) => sum + day.total, 0) }} 分</strong>
+      </header>
+
+      <div v-if="hasActivity" class="trend-chart">
+        <div class="trend-chart__axis">
+          <span>{{ lineChart.max }}</span>
+          <span>0</span>
+        </div>
+        <svg
+          :viewBox="`0 0 ${lineChart.width} ${lineChart.height}`"
+          preserveAspectRatio="none"
+          aria-label="近 7 天学习活跃度折线图"
+        >
+          <line
+            x1="18"
+            :x2="lineChart.width - 18"
+            :y1="lineChart.height - 18"
+            :y2="lineChart.height - 18"
+            class="trend-chart__base"
+          />
+          <polyline :points="lineChart.line" class="trend-chart__line" />
+          <circle
+            v-for="point in lineChart.points"
+            :key="point.date"
+            :cx="point.x"
+            :cy="point.y"
+            r="3.5"
+            class="trend-chart__point"
+          />
+        </svg>
+        <div class="trend-chart__labels">
+          <span v-for="day in series" :key="day.date">{{ day.label }}</span>
+        </div>
       </div>
-      <svg class="radar-svg" viewBox="0 0 200 200" aria-label="能力雷达图">
+      <div v-else class="learning-charts__empty">
+        还没有近 7 天学习记录，完成一次学习或练习后这里会显示趋势。
+      </div>
+    </section>
+
+    <section class="learning-charts__radar">
+      <header>
+        <div>
+          <h3>能力变化</h3>
+          <p>按已有章节完成度汇总</p>
+        </div>
+      </header>
+      <svg viewBox="0 0 180 180" aria-label="能力维度雷达图">
         <polygon
-          v-for="(poly, idx) in gridPolygons"
-          :key="idx"
-          :points="poly"
-          fill="none"
-          stroke="rgba(148, 163, 184, 0.2)"
-          stroke-width="1"
+          v-for="(polygon, index) in radarGrid"
+          :key="index"
+          :points="polygon"
+          class="radar-grid"
         />
-        <polygon
-          :points="radarPolygon"
-          fill="rgba(61, 138, 126, 0.22)"
-          stroke="rgba(61, 138, 126, 0.85)"
-          stroke-width="2"
-        />
-        <g v-for="(p, i) in radarPoints" :key="i">
-          <circle :cx="p.x" :cy="p.y" r="3" fill="#3d8a7e" />
+        <polygon :points="radarPolygon" class="radar-value" />
+        <g v-for="point in radarPoints" :key="point.key">
+          <circle :cx="point.x" :cy="point.y" r="2.5" class="radar-point" />
           <text
-            :x="p.labelX"
-            :y="p.labelY"
+            :x="point.labelX"
+            :y="point.labelY"
             text-anchor="middle"
             dominant-baseline="middle"
-            class="radar-label"
           >
-            {{ p.label }}
+            {{ point.label }}
           </text>
         </g>
       </svg>
-      <div class="radar-legend">
-        <span v-for="p in radarPoints" :key="p.label" class="radar-legend-item">
-          {{ p.label }} <strong>{{ p.value }}%</strong>
-        </span>
-      </div>
-    </div>
+    </section>
 
-    <div class="chart-block">
-      <div class="chart-head">
-        <span class="chart-title">近 7 日学习</span>
-        <span class="chart-sub">访问 + 刷题加权</span>
-      </div>
-      <svg
-        class="line-svg"
-        :viewBox="`0 0 ${lineChart.w} ${lineChart.h}`"
-        preserveAspectRatio="none"
-        aria-label="近7日折线图"
-      >
-        <defs>
-          <linearGradient id="homeLineFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="rgba(61, 138, 126, 0.35)" />
-            <stop offset="100%" stop-color="rgba(61, 138, 126, 0)" />
-          </linearGradient>
-        </defs>
-        <polygon :points="lineChart.area" fill="url(#homeLineFill)" />
-        <polyline
-          :points="lineChart.line"
-          fill="none"
-          stroke="#3d8a7e"
-          stroke-width="2.5"
-          stroke-linejoin="round"
-        />
-        <circle
-          v-for="(p, i) in lineChart.points"
-          :key="i"
-          :cx="p.x"
-          :cy="p.y"
-          r="3.5"
-          fill="#3d8a7e"
-          stroke="#e0f2fe"
-          stroke-width="1"
-        />
-      </svg>
-      <div class="line-labels">
-        <span v-for="s in series" :key="s.date">{{ s.label }}</span>
-      </div>
-    </div>
-
-    <div class="chart-block heatmap-block">
-      <div class="chart-head">
+    <section class="learning-charts__heatmap">
+      <header>
         <div>
-          <span class="chart-title">学习打卡热力</span>
-          <span class="heatmap-caption">颜色越深，表示当天投入越充分</span>
+          <h3>近 12 周学习记录</h3>
+          <p>{{ activeDays ? `${activeDays} 个活跃日，颜色越深表示当天学习更集中。` : '还没有可显示的学习记录。' }}</p>
         </div>
-        <span class="chart-sub">近 12 周 · {{ heatmapSummary.activeRate }}% 打卡率</span>
-      </div>
-
-      <div class="heatmap-overview" aria-label="学习打卡概览">
-        <span><strong>{{ heatmapSummary.currentStreak }}</strong> 连续天</span>
-        <span><strong>{{ heatmapSummary.activeDays }}</strong> 活跃日</span>
-        <span><strong>{{ heatmapSummary.longestStreak }}</strong> 最长连续</span>
-      </div>
-
-      <div class="heatmap-content">
-        <div class="heatmap-visual">
-          <div class="heatmap" role="group" aria-label="近 12 周学习热力图">
-            <div v-for="(week, wi) in heatmapWeeks" :key="wi" class="heatmap-week">
-              <button
-                v-for="cell in week"
-                :key="cell.date"
-                type="button"
-                class="heatmap-cell"
-                :class="{ selected: focusedHeatmapCell?.date === cell.date }"
-                :data-level="cell.level"
-                :title="heatmapCellLabel(cell)"
-                :aria-label="heatmapCellLabel(cell)"
-                :aria-pressed="focusedHeatmapCell?.date === cell.date"
-                @click="selectedHeatmapDate = cell.date"
-              />
-            </div>
-          </div>
-          <div class="heatmap-legend" aria-label="热力强度图例">
-            <span>少</span>
-            <span class="heatmap-cell" data-level="0" />
-            <span class="heatmap-cell" data-level="1" />
-            <span class="heatmap-cell" data-level="2" />
-            <span class="heatmap-cell" data-level="3" />
-            <span class="heatmap-cell" data-level="4" />
-            <span>多</span>
+      </header>
+      <div class="heatmap-row">
+        <div class="heatmap" aria-label="近 12 周学习热力图">
+          <div v-for="(week, index) in heatmapWeeks" :key="index">
+            <span
+              v-for="cell in week"
+              :key="cell.date"
+              :data-level="cell.level"
+              :title="heatmapLabel(cell)"
+            />
           </div>
         </div>
-
-        <div v-if="focusedHeatmapCell" class="heatmap-detail" aria-live="polite">
-          <span>{{ formatHeatmapDate(focusedHeatmapCell.date) }}</span>
-          <strong>{{ heatLevelLabels[focusedHeatmapCell.level] }}</strong>
-          <small>
-            {{ focusedHeatmapCell.level > 0 ? `学习强度 ${focusedHeatmapCell.level}/4，继续保持这个节奏。` : '当天还没有学习记录，完成一次访问或刷题即可点亮。' }}
-          </small>
+        <div class="heatmap-legend">
+          <span>少</span>
+          <i v-for="level in [0, 1, 2, 3, 4]" :key="level" :data-level="level" />
+          <span>多</span>
         </div>
       </div>
-    </div>
+    </section>
   </div>
 </template>
 
 <style scoped>
-.charts-grid {
+.learning-charts {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  grid-template-columns: minmax(0, 1.8fr) minmax(240px, 0.7fr);
+  border-top: 1px solid var(--color-border);
 }
 
-.chart-block {
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--alp-color-border);
-  background: rgba(15, 23, 42, 0.35);
-}
-
-.heatmap-block {
-  grid-column: 1 / -1;
-}
-
-.chart-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.chart-head > div {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
+.learning-charts section {
   min-width: 0;
 }
 
-.chart-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--alp-color-text);
+.learning-charts__trend {
+  padding: 18px 24px 4px 0;
+  border-right: 1px solid var(--color-border);
 }
 
-.chart-sub {
-  font-size: 11px;
-  color: var(--alp-color-muted);
+.learning-charts__radar {
+  padding: 18px 0 4px 24px;
 }
 
-.radar-svg {
-  width: 100%;
-  max-width: 220px;
-  margin: 0 auto;
-  display: block;
+.learning-charts__heatmap {
+  grid-column: 1 / -1;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--color-border);
 }
 
-.radar-label {
-  font-size: 9px;
-  fill: var(--alp-color-muted);
-}
-
-.radar-legend {
+.learning-charts header {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px 12px;
-  margin-top: 8px;
-  font-size: 11px;
-  color: var(--alp-color-muted);
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-.radar-legend strong {
-  color: var(--alp-color-primary);
-  margin-left: 2px;
+.learning-charts h3 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 13px;
 }
 
-.line-svg {
-  width: 100%;
-  height: 88px;
+.learning-charts header p {
+  margin: 3px 0 0;
+  color: var(--color-text-muted);
+  font-size: 10px;
+}
+
+.learning-charts header > strong {
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.trend-chart {
+  position: relative;
+  margin-top: 15px;
+  padding-left: 26px;
+}
+
+.trend-chart svg {
   display: block;
+  width: 100%;
+  height: 150px;
 }
 
-.line-labels {
+.trend-chart__base {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.trend-chart__line {
+  fill: none;
+  stroke: var(--color-brand);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.trend-chart__point {
+  fill: var(--color-bg-surface);
+  stroke: var(--color-brand);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.trend-chart__axis {
+  position: absolute;
+  inset: 0 auto 18px 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: var(--color-text-muted);
+  font-size: 9px;
+}
+
+.trend-chart__labels {
   display: flex;
   justify-content: space-between;
-  margin-top: 6px;
-  font-size: 10px;
-  color: var(--alp-color-muted);
+  padding-left: 4px;
+  color: var(--color-text-muted);
+  font-size: 9px;
+}
+
+.learning-charts__empty {
+  display: flex;
+  min-height: 176px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 12px;
+  padding: 20px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  line-height: 1.7;
+  text-align: center;
+  border-block: 1px solid var(--color-border);
+}
+
+.learning-charts__radar svg {
+  display: block;
+  width: min(100%, 210px);
+  margin: 8px auto 0;
+}
+
+.radar-grid {
+  fill: none;
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.radar-value {
+  fill: color-mix(in srgb, var(--color-brand) 14%, transparent);
+  stroke: var(--color-brand);
+  stroke-width: 1.5;
+}
+
+.radar-point {
+  fill: var(--color-brand);
+}
+
+.learning-charts__radar text {
+  fill: var(--color-text-muted);
+  font-size: 8px;
+}
+
+.heatmap-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 13px;
 }
 
 .heatmap {
   display: flex;
   gap: 4px;
-  overflow-x: auto;
-  padding: 3px 3px 6px;
 }
 
-.heatmap-week {
-  display: flex;
-  flex-direction: column;
+.heatmap > div {
+  display: grid;
   gap: 4px;
 }
 
-.heatmap-cell {
-  flex: 0 0 auto;
-  width: 14px;
-  height: 14px;
-  padding: 0;
-  border: 1px solid var(--alp-color-border);
-  border-radius: 3px;
-  background: var(--alp-bg-soft-block);
+.heatmap span,
+.heatmap-legend i {
+  width: 11px;
+  height: 11px;
+  border: 1px solid var(--color-border);
+  border-radius: 2px;
+  background: var(--color-bg-subtle);
 }
 
-.heatmap-cell[data-level='1'] {
-  background: rgba(var(--alp-color-primary-rgb), 0.25);
+.heatmap [data-level='1'],
+.heatmap-legend [data-level='1'] {
+  background: color-mix(in srgb, var(--color-brand) 22%, var(--color-bg-surface));
 }
-.heatmap-cell[data-level='2'] {
-  background: rgba(var(--alp-color-primary-rgb), 0.45);
+
+.heatmap [data-level='2'],
+.heatmap-legend [data-level='2'] {
+  background: color-mix(in srgb, var(--color-brand) 42%, var(--color-bg-surface));
 }
-.heatmap-cell[data-level='3'] {
-  background: rgba(var(--alp-color-primary-rgb), 0.65);
+
+.heatmap [data-level='3'],
+.heatmap-legend [data-level='3'] {
+  background: color-mix(in srgb, var(--color-brand) 66%, var(--color-bg-surface));
 }
-.heatmap-cell[data-level='4'] {
-  background: rgba(var(--alp-color-primary-rgb), 0.9);
+
+.heatmap [data-level='4'],
+.heatmap-legend [data-level='4'] {
+  background: var(--color-brand);
 }
 
 .heatmap-legend {
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-top: 8px;
-  font-size: 10px;
-  color: var(--alp-color-muted);
+  color: var(--color-text-muted);
+  font-size: 9px;
+  white-space: nowrap;
 }
 
-.heatmap-caption {
-  color: var(--alp-color-muted);
-  font-size: 11px;
+.heatmap-legend i {
+  display: block;
 }
 
-.heatmap-overview {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 18px;
-  margin: 2px 0 14px;
-  color: var(--alp-color-muted);
-  font-size: 11px;
-}
-
-.heatmap-overview > span {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 4px;
-}
-
-.heatmap-overview strong {
-  color: var(--alp-color-text);
-  font-size: 17px;
-  line-height: 1;
-}
-
-.heatmap-content {
-  display: grid;
-  grid-template-columns: minmax(245px, auto) minmax(180px, 1fr);
-  align-items: center;
-  gap: 24px;
-}
-
-.heatmap-visual {
-  min-width: 0;
-}
-
-button.heatmap-cell {
-  appearance: none;
-  cursor: pointer;
-  transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1), border-color 150ms ease;
-}
-
-button.heatmap-cell:hover {
-  z-index: 1;
-  border-color: var(--alp-color-primary);
-  transform: scale(1.28);
-}
-
-button.heatmap-cell.selected {
-  border-color: var(--alp-color-text);
-  box-shadow: 0 0 0 2px var(--alp-bg-surface-solid), 0 0 0 3px var(--alp-color-primary);
-}
-
-.heatmap-detail {
-  display: grid;
-  gap: 3px;
-  min-width: 0;
-  padding-left: 20px;
-  border-left: 1px solid var(--alp-color-border);
-}
-
-.heatmap-detail > span {
-  color: var(--alp-color-muted);
-  font-size: 11px;
-}
-
-.heatmap-detail > strong {
-  color: var(--alp-color-primary);
-  font-size: 15px;
-}
-
-.heatmap-detail > small {
-  max-width: 38ch;
-  color: var(--alp-color-text-secondary);
-  font-size: 11px;
-  line-height: 1.6;
-}
-
-@media (max-width: 900px) {
-  .charts-grid {
+@media (max-width: 820px) {
+  .learning-charts {
     grid-template-columns: 1fr;
+  }
+
+  .learning-charts__trend {
+    padding-right: 0;
+    border-right: 0;
+  }
+
+  .learning-charts__radar {
+    margin-top: 20px;
+    padding: 18px 0 0;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .learning-charts__heatmap {
+    grid-column: auto;
   }
 }
 
-@media (max-width: 620px) {
-  .chart-head,
-  .chart-head > div {
+@media (max-width: 520px) {
+  .trend-chart {
+    padding-left: 20px;
+  }
+
+  .trend-chart svg {
+    height: 126px;
+  }
+
+  .heatmap-row {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .chart-head > div {
-    gap: 2px;
+  .heatmap {
+    max-width: 100%;
+    gap: 3px;
   }
 
-  .heatmap-content {
-    grid-template-columns: 1fr;
-    gap: 14px;
+  .heatmap > div {
+    gap: 3px;
   }
 
-  .heatmap-detail {
-    padding: 12px 0 0;
-    border-top: 1px solid var(--alp-color-border);
-    border-left: 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  button.heatmap-cell {
-    transition: none;
-  }
-
-  button.heatmap-cell:hover {
-    transform: none;
+  .heatmap span {
+    width: 10px;
+    height: 10px;
   }
 }
 </style>

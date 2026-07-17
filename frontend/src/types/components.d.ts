@@ -98,6 +98,7 @@ declare module 'vue' {
     LearningQuickPanel: typeof import('./../components/layout/LearningQuickPanel.vue')['default']
     LearningSectionDonut: typeof import('./../components/learning/LearningSectionDonut.vue')['default']
     LearnSectionBody: typeof import('./../components/learning/LearnSectionBody.vue')['default']
+    LoginGlobe: typeof import('./../components/auth/LoginGlobe.vue')['default']
     MasteryEvaluationCard: typeof import('./../components/learning/MasteryEvaluationCard.vue')['default']
     ModuleGameEntry: typeof import('./../components/learning/ModuleGameEntry.vue')['default']
     OjAiDiagnosisPanel: typeof import('./../components/oj/OjAiDiagnosisPanel.vue')['default']

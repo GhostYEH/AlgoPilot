@@ -1,6 +1,8 @@
 # AlgoPilot 第三方开源依赖与 AI Coding 使用说明
 
-> 文档版本：v1.1 · 日期：2026-07-12
+> 文档版本：v1.2 · 适用赛题：A3 · 更新日期：2026-07-16
+> 对应代码版本：`a493bb03df876313eb57f6d5425abed8de745901`（提交前需随最终代码重新确认）
+> 文档状态：提交候选版
 > 本文档依据官方要求，如实标注 AlgoPilot 项目中使用的开源项目、开源协议、第三方库、AI 大模型与 AI Coding 工具的使用情况，以及团队自主设计与开发的部分。
 
 ---
@@ -35,6 +37,9 @@
 | **unplugin-auto-import** | ^21.0.0 | MIT | API 自动导入 | https://github.com/unplugin/unplugin-auto-import |
 | **unplugin-vue-components** | ^32.0.0 | MIT | 组件自动导入 | https://github.com/unplugin/unplugin-vue-components |
 | **@vue/tsconfig** | ^0.9.1 | MIT | Vue TS 配置预设 | https://github.com/vuejs/tsconfig |
+| **GSAP** | ^3.15.0 | GSAP Standard License (no charge) | 动画引擎（算法游戏过渡动画） | https://github.com/greensock/GSAP |
+| **three.js** | ^0.185.1 | MIT | 3D 可视化 | https://github.com/mrdoob/three.js |
+| **world-atlas** | ^2.0.2 | ISC | 世界地图 TopoJSON 数据 | https://github.com/topojson/world-atlas |
 
 ### 1.2 后端开源项目
 
@@ -121,7 +126,6 @@ AlgoPilot 项目源代码托管于 GitHub 仓库（https://github.com/GhostYEH/A
 |---------|------|
 | LangChain | 过重，本项目自研轻量 DAG 编排即可满足需求 |
 | LangGraph | 同上，系统借鉴状态图与 DAG 编排思想，自主实现轻量级多智能体工作流 |
-| OpenAI SDK | 本项目使用讯飞星火 OpenAI 兼容接口，直接用 httpx 调用 |
 | numpy / pandas | 本项目无数据分析需求，避免重依赖 |
 | matplotlib | 前端使用 D3/Mermaid 可视化，后端无需绘图 |
 
@@ -179,9 +183,9 @@ AlgoPilot 项目源代码托管于 GitHub 仓库（https://github.com/GhostYEH/A
 
 | 工具 | 提供方 | 使用范围 | 使用方式 |
 |------|--------|---------|---------|
-| **TRAE IDE** | 字节跳动 | 辅助代码编写、重构、调试、文档生成 | 交互式对话生成代码片段、代码审查、问题排查 |
+| **讯飞 iFlyCode** | 科大讯飞 | 辅助代码编写、重构、调试、文档生成 | 交互式对话生成代码片段、代码审查、问题排查 |
 
-> 说明：仅列出实际使用过的工具。团队成员在项目开发过程中使用 TRAE IDE 辅助完成代码解释、问题定位、测试用例建议、局部代码生成、文档整理与重构建议。所有 AI 生成或修改内容均由团队成员进行人工审核、运行测试和版本控制。项目需求设计、系统架构、功能取舍、数据设计、联调测试和最终交付由团队负责。
+> 说明：仅列出实际使用过的工具。团队成员在项目开发过程中使用讯飞 iFlyCode 辅助完成代码解释、问题定位、测试用例建议、局部代码生成、文档整理与重构建议。所有 AI 生成或修改内容均由团队成员进行人工审核、运行测试和版本控制。项目需求设计、系统架构、功能取舍、数据设计、联调测试和最终交付由团队负责。
 
 ### 5.2 AI Coding 工具使用范围
 
@@ -244,9 +248,9 @@ CI 验证 ← GitHub Actions 自动运行 ruff + pytest + build
 #### 5.3.3 测试覆盖
 
 所有 AI 辅助生成的代码均纳入测试体系：
-- 后端：188 个 pytest 用例，全部通过（详见 03_测试说明书.md）
-- 前端：TypeScript 类型检查 + 构建验证 + 工具函数单元测试
-- CI：GitHub Actions 自动化检查（后端 ruff + pytest，前端 build）
+- 后端：191 个 pytest 测试函数（实际收集并通过 190 个，2026-07-16 本地执行结果），详见 [03_测试说明书.md](03_测试说明书.md)
+- 前端：TypeScript 类型检查 + 构建验证 + 3 个工具函数单元测试脚本（`test:oj-struggle`、`test:path-replan-diff`、`test:graph-module`）
+- CI：GitHub Actions 自动化检查（后端 ruff + pytest，前端 typecheck + build + 3 个测试脚本）
 
 ---
 
@@ -288,7 +292,7 @@ CI 验证 ← GitHub Actions 自动运行 ruff + pytest + build
 | **知识切片** | 按模块分块的概念/例题/常见错误/代码模板 | `knowledge_base/chunks.json` |
 | **学生画像模板** | 4 个典型学生画像 JSON | `knowledge_base/student_profiles/` |
 | **Agent Prompt** | 20 个已实现 Agent 的系统 Prompt（PptAgent、VideoScriptAgent 为规划中扩展节点，未实现） | `services/agents/*.py`、`services/oj/ai_diagnosis.py` |
-| **前端组件** | 70 个 Vue 组件（学习、OJ、Trace、画像、资源等） | `frontend/src/components/` |
+| **前端组件** | 74 个通用 Vue 组件（学习、OJ、Trace、画像、资源等，统计自 `frontend/src/components/`） | `frontend/src/components/` |
 | **算法游戏** | 13 个游戏化学习组件 | `frontend/src/modules/games/` |
 
 ### 6.4 自主设计的 Prompt 工程
@@ -307,27 +311,48 @@ CI 验证 ← GitHub Actions 自动运行 ruff + pytest + build
 
 ---
 
-## 七、AI 辅助比例说明
+## 七、AI 辅助使用范围说明
 
-### 7.1 代码量估算
+> 说明：本节不使用无法验证的精确百分比（如"前端 50%""文档 60%""整体 30%–40%"等），改为按"主要使用场景—影响范围—人工审查方式—是否涉及核心逻辑—最终责任归属"的口径如实说明。如后续能提供 commit、生成记录或审查记录支持的精确比例，可在此基础上补充。
 
-| 模块 | AI 辅助比例 | 说明 |
-|------|-----------|------|
-| 后端 API 路由 | ~40% | 样板代码（FastAPI 路由定义）AI 辅助较多；业务逻辑自主实现 |
-| 后端 Agent 实现 | ~20% | 核心 Prompt 与编排逻辑自主设计；工具函数 AI 辅助 |
-| 后端 OJ/Trace 引擎 | ~10% | 核心算法自主实现；边界处理 AI 辅助 |
-| 前端 Vue 组件 | ~50% | UI 组件模板 AI 辅助较多；交互逻辑自主实现 |
-| 前端工具函数 | ~30% | 类型定义与纯函数 AI 辅助；Trace 协议自主实现 |
-| 知识库内容 | ~0% | 全部人工编写 |
-| OJ 题库 | ~0% | 全部人工编写 |
-| 测试用例 | ~30% | 测试骨架 AI 辅助；断言与边界用例人工补充 |
-| 文档 | ~60% | 文档初稿 AI 辅助；内容审校与修正人工完成 |
+### 7.1 主要使用场景
 
-### 7.2 整体估算
+AI Coding 工具（讯飞 iFlyCode）在项目中的主要使用场景：
 
-- **AI 辅助生成代码占比**：约 30-40%（主要是样板代码、UI 模板、工具函数）
-- **团队自主设计与实现占比**：约 60-70%（架构、算法、Prompt、知识库、核心业务逻辑）
-- **所有 AI 生成代码均经人工审查与测试**
+| 使用场景 | 影响范围 | 是否涉及核心逻辑 |
+|---------|---------|----------------|
+| 样板代码生成 | FastAPI 路由骨架、Pydantic Schema 定义、Vue 组件模板 | 否（结构化样板，业务逻辑由团队填充） |
+| 代码补全 | 工具函数实现、类型注解、异常处理片段 | 否（局部片段，需人工审查并适配） |
+| 重构建议 | 提取公共逻辑、优化循环、简化条件 | 否（建议性质，评估后选择性采纳） |
+| 文档初稿 | 函数 docstring、注释、README 片段、提交文档初稿 | 否（内容审校与修正由人工完成） |
+| Bug 排查 | 分析错误堆栈、定位问题根因 | 否（验证后由人工修复） |
+| 测试用例骨架 | pytest 测试函数骨架 | 否（断言与边界用例由人工补充） |
+
+### 7.2 团队自主完成的工作
+
+以下工作未使用 AI Coding 工具，由团队自主设计与实现：
+
+- **架构设计**：多智能体 DAG 编排、四阶段并行拓扑、PipelineContext 协作机制
+- **核心算法实现**：BM25 检索算法、BKT-lite 掌握度计算、AST 静态分析、GDB MI STL 提取
+- **Trace 协议设计**：13 类可视化类型归一化协议
+- **知识库内容**：14 章课程 Markdown、6 个实验、2 个综合项目
+- **OJ 题库**：126 道题目（含题面、测例、隐藏测例）
+- **技能卡 YAML**：13 张技能卡
+- **Prompt 工程**：各 Agent 的系统 Prompt 设计与调优
+- **安全机制设计**：AST 熔断、C++ 危险调用拦截、SafetyAgent 审查策略
+- **产品决策**：功能优先级、用户流程、交互设计
+
+### 7.3 人工审查方式
+
+- 所有 AI 生成或修改内容均由团队成员进行人工逐行审查
+- 审查维度包括功能正确性、类型安全、错误处理、安全性、性能、代码风格、架构一致性与数据归属
+- 所有 AI 辅助生成的代码均纳入测试体系：后端 190 个测试用例通过（2026-07-16）、前端 typecheck + build + 3 个测试脚本通过、GitHub Actions CI 自动化检查
+
+### 7.4 最终责任归属
+
+项目需求设计、系统架构、功能取舍、数据设计、Prompt 设计、知识库内容、安全机制、联调测试和最终交付由团队审核并负责。AI Coding 工具的使用不改变团队对项目最终质量与合规性的责任归属。
+
+> AI 辅助比例的精确数值目前缺乏可核验的量化证据（如 commit 级生成记录、自动审查日志等），暂不给出百分比。如后续取得可核验证据，可在本节补充。
 
 ---
 
@@ -418,17 +443,21 @@ codemirror ^6.0.2
 d3 ^7.9.0
 element-plus ^2.14.0
 fuse.js ^7.3.0
+gsap ^3.15.0
 mermaid ^11.15.0
 pinia ^3.0.4
+three ^0.185.1
 vue ^3.5.34
 vue-codemirror ^6.1.1
 vue-router ^4.6.4
+world-atlas ^2.0.2
 ```
 
 **devDependencies**:
 ```
 @types/d3 ^7.4.3
 @types/node ^24.12.3
+@types/three ^0.185.1
 @vitejs/plugin-vue ^6.0.6
 @vue/tsconfig ^0.9.1
 typescript ~6.0.2

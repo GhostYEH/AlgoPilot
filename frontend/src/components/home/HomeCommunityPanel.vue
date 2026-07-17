@@ -1,217 +1,160 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
-import { Medal, TrendCharts } from '@element-plus/icons-vue'
-import type {
-  LeaderboardEntry,
-  PlatformStat,
-} from '@/utils/homeDashboard'
+import type { LeaderboardEntry, PlatformStat } from '@/utils/homeDashboard'
 
-const props = defineProps<{
+defineProps<{
   stats: PlatformStat[]
   acBoard: LeaderboardEntry[]
   streakBoard: LeaderboardEntry[]
 }>()
-
-const displayStats = ref<PlatformStat[]>([])
-
-function animateStats(target: PlatformStat[]) {
-  displayStats.value = target.map((s) => ({ ...s, value: 0 }))
-  const start = performance.now()
-  const duration = 900
-  function frame(now: number) {
-    const t = Math.min(1, (now - start) / duration)
-    const ease = 1 - (1 - t) ** 3
-    displayStats.value = target.map((s) => ({
-      ...s,
-      value: Math.round(s.value * ease),
-    }))
-    if (t < 1) requestAnimationFrame(frame)
-  }
-  requestAnimationFrame(frame)
-}
-
-onMounted(() => animateStats(props.stats))
-watch(
-  () => props.stats,
-  (v) => animateStats(v),
-  { deep: true },
-)
-
-function avatarStyle(hue: number) {
-  return {
-    background: `hsl(${hue} 70% 42%)`,
-  }
-}
 </script>
 
 <template>
-  <div class="community-panel">
-    <div class="platform-stats">
-      <div v-for="s in displayStats" :key="s.key" class="platform-stat">
-        <span class="stat-num">
-          {{ s.value.toLocaleString() }}<small v-if="s.suffix">{{ s.suffix }}</small>
-        </span>
-        <span class="stat-lbl">{{ s.label }}</span>
+  <div class="community-summary">
+    <dl class="community-summary__stats">
+      <div v-for="stat in stats" :key="stat.key">
+        <dt>{{ stat.label }}</dt>
+        <dd>{{ stat.value.toLocaleString() }}<small>{{ stat.suffix }}</small></dd>
       </div>
-    </div>
+    </dl>
 
-    <div class="boards-row">
-      <div class="board">
-        <div class="board-head">
-          <el-icon><Medal /></el-icon>
-          <span>本周 AC 榜</span>
-        </div>
-        <ul class="board-list">
-          <li v-for="e in acBoard" :key="e.rank" class="board-item">
-            <span class="rank" :data-rank="e.rank">{{ e.rank }}</span>
-            <span class="avatar" :style="avatarStyle(e.avatarHue)">{{ e.name.slice(0, 1) }}</span>
-            <span class="name">{{ e.name }}</span>
-            <span class="score">{{ e.score }} {{ e.unit }}</span>
+    <div class="community-summary__boards">
+      <section>
+        <h3>本周通过</h3>
+        <ol v-if="acBoard.length">
+          <li v-for="entry in acBoard.slice(0, 3)" :key="entry.rank">
+            <span>{{ entry.rank }}. {{ entry.name }}</span>
+            <strong>{{ entry.score }} {{ entry.unit }}</strong>
           </li>
-        </ul>
-        <el-empty v-if="!acBoard.length" description="暂无真实排行数据" :image-size="42" />
-      </div>
-      <div class="board">
-        <div class="board-head">
-          <el-icon><TrendCharts /></el-icon>
-          <span>连续打卡榜</span>
-        </div>
-        <ul class="board-list">
-          <li v-for="e in streakBoard" :key="e.rank" class="board-item">
-            <span class="rank" :data-rank="e.rank">{{ e.rank }}</span>
-            <span class="avatar" :style="avatarStyle(e.avatarHue)">{{ e.name.slice(0, 1) }}</span>
-            <span class="name">{{ e.name }}</span>
-            <span class="score">{{ e.score }} {{ e.unit }}</span>
+        </ol>
+        <p v-else>暂时没有真实排行数据。</p>
+      </section>
+
+      <section>
+        <h3>连续学习</h3>
+        <ol v-if="streakBoard.length">
+          <li v-for="entry in streakBoard.slice(0, 3)" :key="entry.rank">
+            <span>{{ entry.rank }}. {{ entry.name }}</span>
+            <strong>{{ entry.score }} {{ entry.unit }}</strong>
           </li>
-        </ul>
-        <el-empty v-if="!streakBoard.length" description="暂无真实打卡数据" :image-size="42" />
-      </div>
+        </ol>
+        <p v-else>暂时没有真实打卡数据。</p>
+      </section>
     </div>
   </div>
 </template>
 
 <style scoped>
-.community-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  height: 100%;
+.community-summary {
+  border-top: 1px solid var(--color-border);
 }
 
-.platform-stats {
+.community-summary__stats {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
 }
 
-.platform-stat {
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--alp-color-border);
-  background: rgba(15, 23, 42, 0.4);
+.community-summary__stats > div {
+  padding: 14px 12px 14px 0;
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
 }
 
-.stat-num {
-  display: block;
+.community-summary__stats > div:nth-child(2n) {
+  padding-left: 14px;
+  border-right: 0;
+}
+
+.community-summary__stats dt {
+  color: var(--color-text-muted);
+  font-size: 10px;
+}
+
+.community-summary__stats dd {
+  margin: 3px 0 0;
+  color: var(--color-text-primary);
   font-size: 18px;
-  font-weight: 700;
-  color: var(--alp-color-primary);
-  line-height: 1.2;
+  font-weight: 680;
+  font-variant-numeric: tabular-nums;
 }
 
-.stat-num small {
-  font-size: 12px;
+.community-summary__stats small {
+  margin-left: 2px;
+  color: var(--color-text-muted);
+  font-size: 10px;
   font-weight: 500;
-  color: var(--alp-color-muted);
 }
 
-.stat-lbl {
-  font-size: 11px;
-  color: var(--alp-color-muted);
-}
-
-.boards-row {
+.community-summary__boards {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
 }
 
-.board {
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--alp-color-border);
-  background: rgba(15, 23, 42, 0.35);
+.community-summary__boards section {
+  min-width: 0;
+  padding: 16px 14px 0 0;
+  border-right: 1px solid var(--color-border);
 }
 
-.board-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--alp-color-text);
+.community-summary__boards section:last-child {
+  padding-right: 0;
+  padding-left: 14px;
+  border-right: 0;
 }
 
-.board-list {
-  list-style: none;
+.community-summary__boards h3 {
+  margin: 0 0 8px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.community-summary__boards ol {
   margin: 0;
   padding: 0;
+  list-style: none;
 }
 
-.board-item {
-  display: grid;
-  grid-template-columns: 22px 24px 1fr auto;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 0;
-  font-size: 12px;
-}
-
-.rank {
-  font-weight: 700;
-  color: var(--alp-color-muted);
-  text-align: center;
-}
-
-.rank[data-rank='1'] {
-  color: #9c8540;
-}
-.rank[data-rank='2'] {
-  color: #94a3b8;
-}
-.rank[data-rank='3'] {
-  color: #d97706;
-}
-
-.avatar {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
+.community-summary__boards li {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-  color: #fff;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  color: var(--color-text-secondary);
+  font-size: 10px;
 }
 
-.name {
-  color: var(--alp-color-text);
+.community-summary__boards li span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.score {
-  color: var(--alp-color-primary);
-  font-weight: 600;
+.community-summary__boards li strong {
+  color: var(--color-text-primary);
   white-space: nowrap;
 }
 
-@media (max-width: 1100px) {
-  .boards-row {
+.community-summary__boards p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+@media (max-width: 420px) {
+  .community-summary__boards {
     grid-template-columns: 1fr;
+  }
+
+  .community-summary__boards section,
+  .community-summary__boards section:last-child {
+    padding: 14px 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .community-summary__boards section:last-child {
+    border-bottom: 0;
   }
 }
 </style>

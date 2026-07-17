@@ -6,9 +6,7 @@ AlgoPilot 项目自身的软件著作权及授权方式以根目录 [LICENSE](./
 
 完整依赖清单、版本、用途及许可证说明请参见：
 
-- [docs/submission/06_第三方开源依赖与AI_Coding使用说明.md](./docs/submission/06_第三方开源依赖与AI_Coding使用说明.md)
-
-> 说明：仓库中实际文件名为 `06_开源与AI_Coding说明.md`，与上述目标文件名指向同一份第三方依赖与 AI Coding 使用说明文档。如后续按比赛要求统一重命名，应同步更新本链接。
+- [docs/submission/06_开源与AI_Coding说明.md](./docs/submission/06_开源与AI_Coding说明.md)
 
 ## 主要前端依赖
 
@@ -36,6 +34,9 @@ AlgoPilot 项目自身的软件著作权及授权方式以根目录 [LICENSE](./
 | TypeScript | Apache-2.0 | 类型系统 |
 | unplugin-auto-import | MIT | API 自动导入 |
 | unplugin-vue-components | MIT | 组件自动导入 |
+| GSAP | GSAP Standard License (no charge) | 动画引擎（算法游戏过渡动画） |
+| three.js | MIT | 3D 可视化 |
+| world-atlas | ISC | 世界地图 TopoJSON 数据 |
 
 ## 主要后端依赖
 
@@ -50,9 +51,9 @@ AlgoPilot 项目自身的软件著作权及授权方式以根目录 [LICENSE](./
 | bcrypt | Apache-2.0 | 密码哈希 |
 | cryptography | Apache-2.0 OR BSD-3-Clause | 加密库 |
 | httpx | BSD-3-Clause | HTTP 客户端 |
-| websocket-client | LGPL-2.1-or-later | WebSocket 客户端 |
+| websocket-client | BSD-3-Clause | WebSocket 客户端 |
 | PyYAML | MIT | YAML 解析 |
-| email-validator | CC0-1.0 | 邮箱校验 |
+| email-validator | UNLICENSE | 邮箱校验 |
 | python-multipart | Apache-2.0 | 表单解析 |
 
 ## 开发与测试工具
@@ -60,7 +61,7 @@ AlgoPilot 项目自身的软件著作权及授权方式以根目录 [LICENSE](./
 | 工具 | 许可证 | 用途 |
 |------|--------|------|
 | pytest | MIT | 后端测试框架 |
-| pytest-asyncio | MIT | 异步测试支持 |
+| pytest-asyncio | Apache-2.0 | 异步测试支持 |
 | pytest-cov | MIT | 覆盖率统计 |
 | ruff | MIT | Python lint |
 
@@ -70,7 +71,7 @@ AlgoPilot 项目自身的软件著作权及授权方式以根目录 [LICENSE](./
 |------|--------|------|
 | Python | PSF License | 后端运行时 |
 | Node.js | MIT | 前端构建 |
-| g++ (MinGW ucrt64) | GPL-3.0-with-GCC-exception | C++ OJ 编译 |
+| g++ (MinGW ucrt64) | GPL-3.0 | C++ OJ 编译 |
 | gdb (MinGW ucrt64) | GPL-3.0 | C++ Trace |
 
 ## 第三方服务
