@@ -479,22 +479,86 @@ def get_student_roster(
     ):
         resource_counts[row[0]] = row[1]
 
-    # 按用户分组学习记忆
-    all_memories = (
-        db.query(StudentLearningMemory)
+    # 用 SQL 聚合替代把全部记忆拉到 Python 里循环：
+    # 1) OJ 提交数与 AC 数：按 user_id 分组 count
+    oj_event_types = ("oj_submit_fail", "oj_submit_success", "oj_failure", "oj_accept")
+    oj_sub_rows = (
+        db.query(
+            StudentLearningMemory.user_id,
+            StudentLearningMemory.event_type,
+            func.count(StudentLearningMemory.id).label("cnt"),
+        )
+        .filter(
+            StudentLearningMemory.user_id.in_(student_ids),
+            StudentLearningMemory.course_id == course_id,
+            StudentLearningMemory.event_type.in_(oj_event_types),
+        )
+        .group_by(StudentLearningMemory.user_id, StudentLearningMemory.event_type)
+        .all()
+    )
+    oj_subs_by_user: dict[int, int] = defaultdict(int)
+    oj_ac_by_user: dict[int, int] = defaultdict(int)
+    for user_id, event_type, cnt in oj_sub_rows:
+        et = (event_type or "").lower()
+        oj_subs_by_user[user_id] += cnt
+        if et == "oj_accept":
+            oj_ac_by_user[user_id] += cnt
+
+    # 2) 最近活跃时间：按 user_id 取 max(created_at)
+    last_active_rows = (
+        db.query(
+            StudentLearningMemory.user_id,
+            func.max(StudentLearningMemory.created_at).label("last"),
+        )
         .filter(
             StudentLearningMemory.user_id.in_(student_ids),
             StudentLearningMemory.course_id == course_id,
         )
+        .group_by(StudentLearningMemory.user_id)
         .all()
     )
-    memories_by_user: dict[int, list[StudentLearningMemory]] = defaultdict(list)
-    for memory in all_memories:
-        memories_by_user[memory.user_id].append(memory)
+    last_active_by_user: dict[int, str] = {
+        user_id: (last.isoformat() if last else "")
+        for user_id, last in last_active_rows
+    }
+
+    # 3) 薄弱模块：只拉失败记忆（过滤后行数远小于全量），用于推导薄弱模块
+    failure_event_types = ("oj_submit_fail", "oj_failure", "oj_diagnosis", "trace_diagnosis", "evaluation_struggle")
+    failure_memories = (
+        db.query(
+            StudentLearningMemory.user_id,
+            StudentLearningMemory.chapter_id,
+            StudentLearningMemory.evidence_json,
+            StudentLearningMemory.event_type,
+        )
+        .filter(
+            StudentLearningMemory.user_id.in_(student_ids),
+            StudentLearningMemory.course_id == course_id,
+            StudentLearningMemory.event_type.in_(failure_event_types),
+        )
+        .order_by(StudentLearningMemory.created_at.desc())
+        .all()
+    )
+    weak_by_user: dict[int, list[str]] = {}
+    for user_id, chapter_id, evidence_json, event_type in failure_memories:
+        # 兼容 AC/WA/TLE/RE/CE 判定（verdict 字段在 evidence_json 中）
+        verdict = str((evidence_json or {}).get("verdict") or "").upper()
+        if verdict not in {"WA", "TLE", "RE", "CE"} and (event_type or "").lower() not in failure_event_types:
+            continue
+        module_key = str((evidence_json or {}).get("module_key") or "").strip()
+        if not module_key:
+            module_key = CHAPTER_TO_MODULE.get(chapter_id or "", "")
+        if not module_key:
+            continue
+        bucket = weak_by_user.setdefault(user_id, [])
+        if module_key not in bucket:
+            bucket.append(module_key)
+        if len(bucket) >= 3:
+            # 达到上限后跳过该学生后续行，减少处理量
+            continue
 
     items: list[StudentRosterItem] = []
     for student in students:
-        memories = memories_by_user.get(student.id, [])
         profile = profiles.get(student.id)
         progress = progress_map.get(student.id)
 
@@ -511,8 +575,6 @@ def get_student_roster(
             score = _extract_progress_score(dict(progress.payload or {}))
             progress_percent = score or 0.0
 
-        oj_subs, oj_ac = _oj_counts_for_user(memories)
-
         items.append(StudentRosterItem(
             user_id=student.id,
             username=student.username,
@@ -520,11 +582,11 @@ def get_student_roster(
             mastery_score=round(mastery, 1),
             progress_percent=round(progress_percent, 1),
             profile_summary=(profile.summary if profile else "")[:200],
-            oj_submissions=oj_subs,
-            oj_accepted=oj_ac,
+            oj_submissions=oj_subs_by_user.get(student.id, 0),
+            oj_accepted=oj_ac_by_user.get(student.id, 0),
             resource_count=resource_counts.get(student.id, 0),
-            weak_modules=_weak_modules_for_user(memories),
-            last_active=_last_active(memories),
+            weak_modules=weak_by_user.get(student.id, [])[:3],
+            last_active=last_active_by_user.get(student.id, ""),
         ))
 
     return StudentRosterResponse(total=len(items), students=items, generated_at=_now_iso())

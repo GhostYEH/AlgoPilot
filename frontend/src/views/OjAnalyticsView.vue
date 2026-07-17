@@ -372,14 +372,13 @@ onMounted(loadData)
   border: 1px solid var(--alp-color-border);
   border-radius: var(--alp-radius-card);
   background: var(--alp-bg-surface);
-  transition: transform 0.2s ease, border-color 0.2s ease, filter var(--alp-transition-fast);
+  transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
 .metric-card:hover {
   transform: translateY(-2px);
   border-color: color-mix(in srgb, var(--metric-color) 55%, var(--alp-color-border));
   box-shadow: var(--alp-shadow-card-hover);
-  filter: brightness(1.06);
 }
 
 .metric-card--blue { --metric-color: #3a8a9e; }
@@ -514,7 +513,7 @@ onMounted(loadData)
 }
 
 :deep(.problem-row:hover) {
-  filter: brightness(1.04);
+  background: var(--alp-bg-nav-hover);
 }
 
 @media (max-width: 1100px) {

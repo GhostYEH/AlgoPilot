@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { Search, RefreshRight, User, TrendCharts, Cpu, Collection, View } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import {
@@ -9,12 +10,17 @@ import {
   type StudentDetailResponse,
 } from '@/api/teacherDashboard'
 
+const route = useRoute()
+const router = useRouter()
+
 const loading = ref(false)
 const loadError = ref('')
 const roster = ref<StudentRosterItem[]>([])
 const generatedAt = ref('')
 const searchQuery = ref('')
 const filterWeak = ref(false)
+const currentPage = ref(1)
+const pageSize = ref(10)
 
 // 详情抽屉
 const detailVisible = ref(false)
@@ -31,6 +37,15 @@ const filteredStudents = computed(() => {
     list = list.filter((s) => s.weak_modules.length > 0)
   }
   return list
+})
+
+const pagedStudents = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return filteredStudents.value.slice(start, start + pageSize.value)
+})
+
+watch([searchQuery, filterWeak], () => {
+  currentPage.value = 1
 })
 
 const summary = computed(() => {
@@ -90,6 +105,14 @@ async function loadRoster() {
     const res = await fetchStudentRoster()
     roster.value = res.students
     generatedAt.value = res.generated_at
+    const studentId = route.query.student
+    if (studentId) {
+      const target = roster.value.find((s) => String(s.user_id) === String(studentId))
+      if (target) {
+        openDetail(target)
+      }
+      router.replace({ query: {} })
+    }
   } catch {
     loadError.value = '学情数据暂时无法加载，请确认后端服务已启动后重试。'
   } finally {
@@ -216,7 +239,7 @@ onMounted(loadRoster)
 
         <div class="table-card">
           <el-table
-            :data="filteredStudents"
+            :data="pagedStudents"
             stripe
             style="width: 100%"
             @row-click="openDetail"
@@ -292,6 +315,17 @@ onMounted(loadRoster)
               </template>
             </el-table-column>
           </el-table>
+          <div class="table-pagination">
+            <el-pagination
+              v-model:current-page="currentPage"
+              v-model:page-size="pageSize"
+              :total="filteredStudents.length"
+              :page-sizes="[10, 20, 50, 100]"
+              layout="total, sizes, prev, pager, next, jumper"
+              background
+              small
+            />
+          </div>
         </div>
       </section>
     </template>
@@ -537,14 +571,13 @@ onMounted(loadRoster)
   border: 1px solid var(--alp-color-border);
   border-radius: var(--alp-radius-card);
   background: var(--alp-bg-surface);
-  transition: transform 0.2s ease, border-color 0.2s ease, filter var(--alp-transition-fast);
+  transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
 .metric-card:hover {
   transform: translateY(-2px);
   border-color: color-mix(in srgb, var(--metric-color) 55%, var(--alp-color-border));
   box-shadow: var(--alp-shadow-card-hover);
-  filter: brightness(1.06);
 }
 
 .metric-card--blue { --metric-color: #3a8a9e; }
@@ -586,6 +619,14 @@ onMounted(loadRoster)
   border-radius: var(--alp-radius-card);
   background: var(--alp-bg-surface);
   overflow: hidden;
+}
+
+.table-pagination {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 16px;
+  border-top: 1px solid var(--alp-color-border);
+  background: var(--alp-bg-surface);
 }
 
 .student-cell {
@@ -660,7 +701,7 @@ onMounted(loadRoster)
 }
 
 :deep(.roster-row:hover) {
-  filter: brightness(1.04);
+  background: var(--alp-bg-nav-hover);
 }
 
 /* 抽屉详情 */

@@ -52,39 +52,28 @@ html:not(.dark) ::selection {
   --el-card-border-color: var(--alp-color-border);
   box-shadow: var(--alp-shadow-card);
   transition:
-    transform var(--alp-transition-smooth),
-    box-shadow var(--alp-transition-smooth),
-    border-color var(--alp-transition-fast),
-    filter var(--alp-transition-smooth);
+    box-shadow var(--alp-transition-fast),
+    border-color var(--alp-transition-fast);
 }
 
 .el-card.is-hoverable:hover,
 .el-card.is-always-shadow:hover {
-  transform: translateY(-3px);
   box-shadow: var(--alp-shadow-card-hover);
-  filter: brightness(1.06);
 }
 
 .el-button {
   transition:
-    transform var(--alp-transition-fast),
-    box-shadow var(--alp-transition-fast),
     background-color var(--alp-transition-fast),
     border-color var(--alp-transition-fast),
-    color var(--alp-transition-fast),
-    filter var(--alp-transition-fast);
+    color var(--alp-transition-fast);
 }
 
 .el-button:not(.is-disabled):hover {
-  transform: translateY(-1px);
   box-shadow: var(--alp-shadow-btn-hover);
-  filter: brightness(1.08);
 }
 
 .el-button:not(.is-disabled):active {
-  transform: translateY(0);
   box-shadow: var(--alp-shadow-btn);
-  filter: brightness(0.98);
 }
 
 .el-button--primary {
@@ -109,17 +98,8 @@ html:not(.dark) ::selection {
 .el-menu-item,
 .el-sub-menu__title {
   transition:
-    transform var(--alp-transition-fast),
     background-color var(--alp-transition-fast),
-    color var(--alp-transition-fast),
-    box-shadow var(--alp-transition-fast),
-    filter var(--alp-transition-fast);
-}
-
-.el-menu-item:not(.is-disabled):hover,
-.el-sub-menu__title:not(.is-disabled):hover {
-  transform: translateY(-1px);
-  filter: brightness(1.1);
+    color var(--alp-transition-fast);
 }
 
 /* 鈹€鈹€ 鍏ㄥ眬娴捣宸ュ叿绫伙紙閫忔槑鐧藉厜褰憋級 鈹€鈹€ */
@@ -127,62 +107,44 @@ html:not(.dark) ::selection {
 .alp-lift-card {
   box-shadow: var(--alp-shadow-card);
   transition:
-    transform var(--alp-transition-smooth),
-    box-shadow var(--alp-transition-smooth),
-    border-color var(--alp-transition-fast),
-    filter var(--alp-transition-smooth);
-  will-change: transform;
+    box-shadow var(--alp-transition-fast),
+    border-color var(--alp-transition-fast);
 }
 
 .alp-lift-card:hover {
-  transform: translateY(-3px);
   box-shadow: var(--alp-shadow-card-hover);
-  filter: brightness(1.06);
 }
 
 .alp-lift-card:active {
-  transform: translateY(-1px);
-  filter: brightness(0.98);
+  box-shadow: var(--alp-shadow-card);
 }
 
 /* 鎸夐挳娴捣锛氱櫧楂樺厜 + 浜害鎻愬崌 */
 .alp-lift-btn {
   box-shadow: var(--alp-shadow-btn);
   transition:
-    transform var(--alp-transition-fast),
     box-shadow var(--alp-transition-fast),
     background-color var(--alp-transition-fast),
-    border-color var(--alp-transition-fast),
-    filter var(--alp-transition-fast);
-  will-change: transform;
+    border-color var(--alp-transition-fast);
 }
 
 .alp-lift-btn:hover {
-  transform: translateY(-2px);
   box-shadow: var(--alp-shadow-btn-hover);
-  filter: brightness(1.08);
 }
 
 .alp-lift-btn:active {
-  transform: translateY(0);
   box-shadow: var(--alp-shadow-btn);
-  filter: brightness(0.98);
 }
 
 /* 閾炬帴娴捣锛氬井浜害鎻愬崌 */
 .alp-lift-link {
   transition:
-    transform var(--alp-transition-fast),
     background-color var(--alp-transition-fast),
-    color var(--alp-transition-fast),
-    box-shadow var(--alp-transition-fast),
-    filter var(--alp-transition-fast);
+    color var(--alp-transition-fast);
 }
 
 .alp-lift-link:hover {
-  transform: translateY(-1px);
   box-shadow: var(--alp-shadow-btn);
-  filter: brightness(1.06);
 }
 
 /* ════════════════════════════════════════════
@@ -212,10 +174,6 @@ html::before {
 }
 
 /* ── Enhanced button micro-motion ── */
-.el-button:active:not(.is-disabled) {
-  transform: scale(0.97);
-}
-
 .el-button.is-loading {
   pointer-events: none;
   opacity: 0.75;
@@ -226,12 +184,7 @@ html::before {
   --el-tag-border-color: transparent;
   transition:
     background-color var(--alp-transition-fast),
-    color var(--alp-transition-fast),
-    transform var(--alp-transition-instant);
-}
-
-.el-tag:hover {
-  transform: translateY(-1px);
+    color var(--alp-transition-fast);
 }
 
 /* ── Smooth scrollbar enhancement ── */
@@ -242,23 +195,6 @@ html::before {
 }
 .el-scrollbar__bar.is-vertical > .el-scrollbar__thumb:hover {
   background: rgba(255, 255, 255, 0.18);
-}
-
-/* ── Menu item subtle glow ── */
-.el-menu-item:hover,
-.el-menu-item.is-active {
-  position: relative;
-}
-
-.el-menu-item:hover::after,
-.el-menu-item.is-active::after {
-  content: '';
-  position: absolute;
-  inset: 4px 8px;
-  border-radius: 6px;
-  background: rgba(61, 138, 126, 0.06);
-  pointer-events: none;
-  z-index: -1;
 }
 
 /* ── Progress bar glow ── */

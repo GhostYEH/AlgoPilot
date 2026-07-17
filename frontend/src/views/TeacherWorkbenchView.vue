@@ -457,7 +457,6 @@ onMounted(loadResources)
 .type-card:hover {
   transform: translateY(-1px);
   border-color: var(--alp-color-primary);
-  filter: brightness(1.04);
 }
 
 .type-icon {
@@ -524,14 +523,13 @@ onMounted(loadResources)
   border-radius: var(--alp-radius-card);
   background: var(--alp-bg-surface);
   cursor: pointer;
-  transition: transform 0.2s ease, border-color 0.2s ease, filter var(--alp-transition-fast);
+  transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
 .resource-card:hover {
   transform: translateY(-2px);
   border-color: var(--alp-color-primary);
   box-shadow: var(--alp-shadow-card-hover);
-  filter: brightness(1.06);
 }
 
 .resource-header {

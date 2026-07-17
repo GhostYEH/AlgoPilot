@@ -338,14 +338,13 @@ function goTo(route: string) {
   border: 1px solid var(--alp-color-border);
   border-radius: var(--alp-radius-card);
   background: var(--alp-bg-surface);
-  transition: transform var(--alp-transition-fast), border-color var(--alp-transition-fast), filter var(--alp-transition-fast);
+  transition: transform var(--alp-transition-fast), border-color var(--alp-transition-fast);
 }
 
 .step-card:hover {
   transform: translateY(-2px);
   border-color: color-mix(in srgb, var(--alp-color-primary) 40%, var(--alp-color-border));
   box-shadow: var(--alp-shadow-card-hover);
-  filter: brightness(1.04);
 }
 
 .step-number {
@@ -421,12 +420,11 @@ function goTo(route: string) {
   border-radius: var(--alp-radius-card);
   background: var(--alp-bg-surface);
   cursor: pointer;
-  transition: border-color var(--alp-transition-fast), filter var(--alp-transition-fast);
+  transition: border-color var(--alp-transition-fast);
 }
 
 .faq-card:hover {
   border-color: color-mix(in srgb, var(--alp-color-primary) 30%, var(--alp-color-border));
-  filter: brightness(1.03);
 }
 
 .faq-card.is-open {

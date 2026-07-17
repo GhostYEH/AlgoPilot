@@ -206,7 +206,6 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
   padding: 0 max(18px, var(--alp-layout-padding-x));
   border-bottom: 1px solid var(--alp-color-border);
   background: var(--alp-bg-header);
-  backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
   z-index: 20;
@@ -413,8 +412,9 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
   width: 196px;
   flex-direction: column;
   box-sizing: border-box;
-  background: #06264a;
-  color: #fff;
+  background: var(--alp-bg-surface-solid);
+  color: var(--alp-color-text);
+  border-right: 1px solid var(--alp-color-border);
 }
 
 .teacher-brand {
@@ -424,9 +424,10 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
   height: var(--alp-header-height, 60px);
   padding: 0 22px;
   border: 0;
-  background: #fff;
-  color: #102442;
+  background: transparent;
+  color: var(--alp-color-text);
   cursor: pointer;
+  border-bottom: 1px solid var(--alp-color-border);
 }
 
 .teacher-brand span {
@@ -435,23 +436,24 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
   height: 30px;
   place-items: center;
   border-radius: 7px;
-  background: #1677ff;
+  background: var(--alp-color-primary);
   color: #fff;
   font-size: 11px;
   font-weight: 700;
 }
 
-.teacher-brand strong { font-size: 17px; }
-.teacher-menu { flex: 1; padding: 16px 7px; border: 0; background: transparent; }
-.teacher-menu :deep(.el-menu-item) { height: 46px; margin-bottom: 5px; border-radius: 5px; color: #d7e5f5; }
-.teacher-menu :deep(.el-menu-item:hover) { background: #0b396a; color: #fff; }
-.teacher-menu :deep(.el-menu-item.is-active) { background: #1268da; color: #fff; }
+.teacher-brand strong { font-size: 17px; color: var(--alp-color-text); }
+.teacher-menu { flex: 1; padding: 16px 7px; border: 0; background: transparent; overflow-y: auto; }
+.teacher-menu :deep(.el-menu-item) { height: 46px; margin-bottom: 4px; border-radius: 6px; color: var(--alp-color-text-secondary) !important; transition: color var(--alp-transition-fast), background var(--alp-transition-fast); }
+.teacher-menu :deep(.el-menu-item:hover) { background: var(--alp-bg-nav-hover); color: var(--alp-color-primary) !important; }
+.teacher-menu :deep(.el-menu-item.is-active) { background: var(--alp-bg-nav-active); color: var(--alp-color-primary) !important; font-weight: 600; position: relative; }
+.teacher-menu :deep(.el-menu-item.is-active)::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 3px; height: 60%; border-radius: 0 3px 3px 0; background: var(--alp-color-primary); }
 .teacher-menu :deep(.el-icon) { font-size: 17px; }
-.teacher-profile { display: grid; grid-template-columns: 36px minmax(0,1fr) 18px; align-items: center; gap: 9px; padding: 18px 14px; border-top: 1px solid rgba(255,255,255,.12); }
+.teacher-profile { display: grid; grid-template-columns: 36px minmax(0,1fr) 18px; align-items: center; gap: 9px; padding: 18px 14px; border-top: 1px solid var(--alp-color-border); }
 .teacher-profile div { display: flex; min-width: 0; flex-direction: column; }
-.teacher-profile strong { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
-.teacher-profile span { margin-top: 3px; color: #9fb5cd; font-size: 10px; }
-.teacher-header { margin-left: 196px; background: var(--alp-bg-surface); }
+.teacher-profile strong { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; color: var(--alp-color-text); }
+.teacher-profile span { margin-top: 3px; color: var(--alp-color-muted); font-size: 10px; }
+.teacher-header { margin-left: 196px; background: var(--alp-bg-header); }
 .teacher-header .header-menu { display: none; }
 .teacher-context { display: flex; align-items: center; gap: 18px; flex: 1; }
 .teacher-context button { display: flex; align-items: center; gap: 7px; padding: 8px 2px; border: 0; background: transparent; color: var(--alp-color-text); font-size: 13px; font-weight: 600; cursor: pointer; }
