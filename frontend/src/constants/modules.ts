@@ -56,3 +56,28 @@ export const MODULE_ROUTE_NAMES: Partial<Record<string, string>> = {
   'monotonic-stack': 'learn-monotonic-stack',
   graph: 'learn-graph',
 }
+
+export const MODULE_GENERATION_FOCUS: Record<string, string> = {
+  array: '主攻下标边界、遍历与原地修改',
+  'linked-list': '主攻指针更新顺序、虚拟头结点与边界',
+  'hash-table': '主攻键值映射、冲突处理与复杂度',
+  string: '主攻字符遍历、匹配与边界处理',
+  'two-pointers': '主攻指针移动条件与循环不变量',
+  'stack-queue': '主攻先进后出、先进先出与典型应用',
+  sorting: '主攻排序过程、稳定性与复杂度比较',
+  'binary-tree': '主攻递归定义、遍历顺序与终止条件',
+  backtracking: '主攻选择、撤销与剪枝条件',
+  greedy: '主攻局部最优选择与正确性依据',
+  dp: '主攻状态定义、状态转移与初始化边界',
+  'monotonic-stack': '主攻单调性维护、出栈条件与边界',
+  graph: '主攻图的表示、遍历与访问标记',
+}
+
+export function generationPresetForModule(moduleKey: string): { topic: string; focusHint: string } | null {
+  const module = ALGORITHM_MODULES.find((item) => item.key === moduleKey)
+  if (!module) return null
+  return {
+    topic: `${module.label}入门`,
+    focusHint: MODULE_GENERATION_FOCUS[moduleKey] ?? `主攻${module.label}的核心概念与边界条件`,
+  }
+}

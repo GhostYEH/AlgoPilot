@@ -92,7 +92,7 @@ def test_build_evidence_draft():
     }
     ev = build_evidence_from_meta(
         resource_id=100,
-        agent_name="QuizAgent",
+        agent_name="ConceptAgent",
         meta=meta,
         created_at="2026-06-01T10:00:00",
     )

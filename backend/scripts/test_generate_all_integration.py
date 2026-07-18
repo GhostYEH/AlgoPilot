@@ -10,7 +10,7 @@ import json
 import sys
 from pathlib import Path
 from typing import Any
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -160,19 +160,24 @@ async def _mock_generate_with_context(
     module_key: str = "",
     focus_hint: str = "",
     chunks: list,
+    on_delta=None,
 ) -> tuple[str, str, dict]:
     _generate_calls.append((resource_type, focus_hint or ""))
     content = _MOCK_BY_TYPE[resource_type]
+    if on_delta:
+        await on_delta(content[:24])
     fmt = "trace_json" if resource_type == "trace_animation" else "mock"
     meta = {
         "format": fmt,
         "verified": True,
-        "trace_verdict": "SKIPPED" if resource_type == "trace_animation" else None,
+        "trace_verdict": "AC" if resource_type == "trace_animation" else None,
+        "trace_steps": 4 if resource_type == "trace_animation" else 0,
+        "trace_quality_passed": resource_type == "trace_animation",
     }
     return f"Mock · {resource_type}", content, meta
 
 
-async def _mock_verify(content: str, chunks: list, *, topic: str = "") -> tuple:
+async def _mock_verify(content: str, chunks: list, *, topic: str = "", resource_type: str = "") -> tuple:
     from services.agents.verifier import VerifierStructuredResult
 
     return True, content, ["mock-chunk-1"], "", VerifierStructuredResult(status="passed", passed=True)
@@ -260,22 +265,14 @@ async def _run_test() -> None:
     assert done_events[-1].get("partial_failure") is not True
 
     assert progress_parallel, "并行阶段应标记 parallel=true"
-    phase2_progress = [
-        e for e in progress_parallel if e.get("resource_type") in ("mindmap", "exercises")
-    ]
-    assert len(phase2_progress) == 2
 
-    # 协作摘要：Phase 2 的 mindmap / exercises 应收到 ConceptAgent 摘要
-    phase2_calls = [c for c in _generate_calls if c[0] in ("mindmap", "exercises")]
-    assert len(phase2_calls) == 2
-    for rtype, hint in phase2_calls:
+    # 协作摘要：mindmap / code_case 应直接收到 ConceptAgent 摘要
+    dependent_calls = [c for c in _generate_calls if c[0] in ("mindmap", "code_case")]
+    assert len(dependent_calls) == 2
+    for rtype, hint in dependent_calls:
         assert "ConceptAgent" in hint or "讲解摘要" in hint, (
             f"{rtype} 未携带 document 协作上下文: {hint[:120]!r}"
         )
-
-    # code_case 应携带 QuizAgent 考查侧重（在 exercises 之后）
-    code_call = next(c for c in _generate_calls if c[0] == "code_case")
-    assert "QuizAgent" in code_call[1] or "考查侧重" in code_call[1]
 
     # SSE 增量：各 collaboration 批次的日志条数之和应等于 done 全量条数
     batched_logs: list[dict] = []

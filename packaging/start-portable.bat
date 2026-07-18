@@ -1,26 +1,24 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
-chcp 65001 >nul
 cd /d "%~dp0"
+title AlgoPilot Server
 
-title AlgoPilot Launcher
 set "APP_EXE=%CD%\AlgoPilot.exe"
 if not exist "%APP_EXE%" (
-  echo [错误] 找不到 AlgoPilot.exe
-  echo 请完整解压发行包后再运行此文件。
-  pause
-  exit /b 1
+  echo [ERROR] AlgoPilot.exe was not found.
+  echo Please keep this BAT file beside AlgoPilot.exe and the data, mingw,
+  echo and _internal folders.
+  goto failed
 )
 
-rem Reuse an already-running AlgoPilot instance. This is especially useful
-rem when the first launch finishes shortly after the launcher timeout.
+rem If an instance is already running, open it and keep this window visible.
 for %%P in (8000 8001 8010 8080) do (
   call :health_check %%P
   if not errorlevel 1 (
-    set "APP_URL=http://127.0.0.1:%%P/"
-    echo AlgoPilot 已经在端口 %%P 运行，正在打开浏览器...
-    start "" "!APP_URL!"
-    endlocal
+    echo AlgoPilot is already running at http://127.0.0.1:%%P/
+    if not defined ALGOPILOT_NO_BROWSER start "" "http://127.0.0.1:%%P/"
+    echo You may close this window.
+    pause
     exit /b 0
   )
 )
@@ -33,36 +31,33 @@ for %%P in (8000 8001 8010 8080) do (
   )
 )
 if not defined ALGOPILOT_PORT (
-  echo [错误] 端口 8000、8001、8010、8080 均被占用。
-  pause
-  exit /b 1
+  echo [ERROR] Ports 8000, 8001, 8010 and 8080 are all in use.
+  goto failed
 )
 
 set "APP_URL=http://127.0.0.1:!ALGOPILOT_PORT!/"
-echo 正在启动 AlgoPilot（端口 !ALGOPILOT_PORT!）...
-start "AlgoPilot Server - 关闭此窗口即可停止" /D "%CD%" cmd.exe /k ""%APP_EXE%""
+echo.
+echo Starting AlgoPilot at !APP_URL!
+echo Keep this window open while using the application.
+echo Press Ctrl+C or close this window to stop AlgoPilot.
+echo.
 
-set /a RETRY=0
-:wait_server
-set /a RETRY+=1
-call :health_check !ALGOPILOT_PORT!
-if not errorlevel 1 goto open_browser
-if !RETRY! GEQ 180 goto start_failed
-if !RETRY! EQU 30 echo 首次启动可能触发 Windows 安全扫描，请继续等待...
-if !RETRY! EQU 90 echo 服务仍在初始化数据库，请继续等待...
-ping -n 2 127.0.0.1 >nul
-goto wait_server
+rem Wait in the background and open the browser after the server is healthy.
+if not defined ALGOPILOT_NO_BROWSER start "" /b powershell.exe -NoLogo -NoProfile -WindowStyle Hidden -Command "$u='!APP_URL!api/health'; for($i=0;$i -lt 180;$i++){ try { $r=Invoke-WebRequest -UseBasicParsing -Uri $u -TimeoutSec 2; if($r.StatusCode -eq 200){ Start-Process '!APP_URL!'; exit 0 } } catch {}; Start-Sleep -Seconds 1 }; exit 1" >nul 2>&1
 
-:open_browser
-echo 启动成功，正在打开默认浏览器：!APP_URL!
-start "" "!APP_URL!"
-endlocal
-exit /b 0
-
-:start_failed
-echo [错误] 服务未能在 180 秒内启动，请查看 AlgoPilot Server 窗口中的错误信息。
+rem Run in this window. If the application exits, the error remains visible.
+"%APP_EXE%"
+set "APP_EXIT=!ERRORLEVEL!"
+echo.
+echo AlgoPilot stopped with exit code !APP_EXIT!.
+echo If this was unexpected, take a screenshot of the messages above.
 pause
-endlocal
+exit /b !APP_EXIT!
+
+:failed
+echo.
+echo Startup failed. This window will remain open so you can read the error.
+pause
 exit /b 1
 
 :health_check

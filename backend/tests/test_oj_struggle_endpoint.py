@@ -225,7 +225,7 @@ def test_oj_struggle_ac_clears_intervention(auth_headers: dict[str, str]):
 
 def test_oj_struggle_fallback_without_llm(auth_headers: dict[str, str]):
     """LLM 不可用时仍返回可解释的启发式 fallback。"""
-    with patch("services.agents.learning_path.chat_completion", new_callable=AsyncMock) as mock_llm:
+    with patch("services.llm.client.chat_completion", new_callable=AsyncMock) as mock_llm:
         mock_llm.side_effect = RuntimeError("no api key")
         body = _post_oj_struggle(
             auth_headers,

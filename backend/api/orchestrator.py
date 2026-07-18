@@ -390,7 +390,7 @@ async def generate_all_resources_stream(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """流式批量生成多类型学习资源（含 PPT、短视频脚本、拓展阅读）。"""
+    """流式批量生成五类学习资源（四类核心资源 + 分层拓展阅读）。"""
 
     async def event_gen():
         try:

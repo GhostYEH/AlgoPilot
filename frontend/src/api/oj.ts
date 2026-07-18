@@ -11,7 +11,10 @@ const baseURL = getApiBaseUrl()
 
 const judgeClient = axios.create({
   baseURL,
-  timeout: 60000,
+  // A bundled MinGW compiler can take longer on its first launch while
+  // Windows Defender scans the portable toolchain. Keep the browser request
+  // alive long enough for the backend's guarded cold-start timeout.
+  timeout: 180000,
 })
 
 const ojReadClient = axios.create({

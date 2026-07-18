@@ -18,6 +18,8 @@ class QuizQuestion(StrictModel):
     hint: str = Field(default="", max_length=400)
     focus: str = Field(default="", max_length=120)
     difficulty: Literal["easy", "medium", "hard"] = "medium"
+    answer: str = Field(default="", max_length=800)
+    explanation: str = Field(default="", max_length=1200)
 
     @model_validator(mode="after")
     def ensure_choice_options(self) -> QuizQuestion:

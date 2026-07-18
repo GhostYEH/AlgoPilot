@@ -265,7 +265,6 @@ export const RESOURCE_TYPE_META: Record<
 > = {
   document: { label: '概念讲解', agentName: 'ConceptAgent', color: '#4a6e94' },
   mindmap: { label: '知识思维导图', agentName: 'GraphAgent', color: '#8b5cf6' },
-  exercises: { label: '个性化题单', agentName: 'QuizAgent', color: '#9c7a3d' },
   code_case: { label: '剧本沙盒', agentName: 'ScenarioAgent', color: '#9e5a5a' },
   trace_animation: { label: '轨迹动画', agentName: 'TraceAgent', color: '#ec4899' },
   reading: { label: '分层阅读', agentName: 'ReadingAgent', color: '#3d8a6e' },
@@ -596,6 +595,12 @@ export async function streamGenerateResource(
       delta: string
       attempt: number
     }) => void
+    onRegenerateClear?: (info: {
+      resource_type: string
+      agent_name: string
+      attempt: number
+      reason: string
+    }) => void
     onDone?: (info?: {
       partial_failure?: boolean
       errors?: Array<{ resource_type?: string; agent_name?: string; error: string }>
@@ -622,6 +627,17 @@ export async function streamGenerateResource(
           agent_name: String(ev.agent_name ?? ''),
           delta: ev.delta,
           attempt: typeof ev.attempt === 'number' ? ev.attempt : 1,
+        })
+      }
+      if (
+        ev.type === 'regenerate_clear' &&
+        typeof ev.resource_type === 'string'
+      ) {
+        handlers.onRegenerateClear?.({
+          resource_type: ev.resource_type,
+          agent_name: String(ev.agent_name ?? ''),
+          attempt: typeof ev.attempt === 'number' ? ev.attempt : 1,
+          reason: String(ev.reason ?? '上一轮输出未通过校验，重新生成'),
         })
       }
       if (ev.type === 'done') handlers.onDone?.()
@@ -738,6 +754,12 @@ export async function streamGenerateAllResources(
       delta: string
       attempt: number
     }) => void
+    onRegenerateClear?: (info: {
+      resource_type: string
+      agent_name: string
+      attempt: number
+      reason: string
+    }) => void
     onDone?: (info?: {
       partial_failure?: boolean
       reused_count?: number
@@ -806,6 +828,17 @@ export async function streamGenerateAllResources(
           agent_name: String(ev.agent_name ?? ''),
           delta: ev.delta,
           attempt: typeof ev.attempt === 'number' ? ev.attempt : 1,
+        })
+      }
+      if (
+        ev.type === 'regenerate_clear' &&
+        typeof ev.resource_type === 'string'
+      ) {
+        handlers.onRegenerateClear?.({
+          resource_type: ev.resource_type,
+          agent_name: String(ev.agent_name ?? ''),
+          attempt: typeof ev.attempt === 'number' ? ev.attempt : 1,
+          reason: String(ev.reason ?? '上一轮输出未通过校验，重新生成'),
         })
       }
       if (ev.type === 'done') {

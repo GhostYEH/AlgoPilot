@@ -8,7 +8,11 @@ from datetime import datetime, timezone
 
 from schemas.evaluation import EvaluationDimensionScore, LearningEvaluationResponse
 from schemas.learning_path import LearningPathReplanRequest, ModuleProgressInput
-from services.llm import chat_completion
+from services.llm.validator import (
+    DEFAULT_MAX_RETRIES,
+    chat_completion_validated,
+    json_object_validator,
+)
 
 _EVAL_SYSTEM = """你是「学习效果评估 Agent」。根据学生学习进度与画像，输出简短诊断。
 输出唯一 JSON（不要 markdown 代码块）：
@@ -126,10 +130,14 @@ class EvaluationAgent:
             ensure_ascii=False,
         )
         try:
-            raw = await chat_completion(
+            raw, _ = await chat_completion_validated(
                 [{"role": "system", "content": _EVAL_SYSTEM}, {"role": "user", "content": user}],
+                validator=json_object_validator(),
+                max_retries=DEFAULT_MAX_RETRIES,
                 temperature=0.35,
                 max_tokens=600,
+                retry_temperature=0.5,
+                context_label="evaluation",
             )
             data = _parse_json(raw)
             narrative = str(data.get("narrative", "")).strip() or _fallback_narrative(

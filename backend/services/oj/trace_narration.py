@@ -7,7 +7,11 @@ import re
 from typing import Any
 
 from core.config import settings
-from services.llm import chat_completion
+from services.llm.validator import (
+    DEFAULT_MAX_RETRIES,
+    chat_completion_validated,
+    non_empty_validator,
+)
 from services.oj.trace_demo_narration import generate_demo_narration
 
 MAX_STEPS_IN_PROMPT = 80
@@ -259,10 +263,14 @@ async def generate_trace_narration(
         )
 
     try:
-        raw = await chat_completion(
+        raw, _ = await chat_completion_validated(
             [{"role": "system", "content": system}, {"role": "user", "content": user_body}],
+            validator=non_empty_validator(20),
+            max_retries=DEFAULT_MAX_RETRIES,
             temperature=0.35,
             max_tokens=2048,
+            retry_temperature=0.5,
+            context_label="trace_narration",
         )
         parsed = _parse_narration_json(raw, len(steps))
         if parsed:

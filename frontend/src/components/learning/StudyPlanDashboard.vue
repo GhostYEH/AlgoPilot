@@ -104,7 +104,6 @@ const resourceCards = computed(() =>
 /** 资源生成类型选项（精简到 4 类核心，避免卡片过密） */
 const GENERATE_OPTIONS: Array<{ type: string; label: string; icon: typeof Document; tone: string }> = [
   { type: 'document', label: '概念讲解', icon: Document, tone: 'blue' },
-  { type: 'exercises', label: '个性化题单', icon: EditPen, tone: 'green' },
   { type: 'code_case', label: '剧本沙盒', icon: VideoPlay, tone: 'orange' },
   { type: 'mindmap', label: '思维导图', icon: Files, tone: 'blue' },
 ]

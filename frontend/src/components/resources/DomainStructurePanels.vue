@@ -37,10 +37,22 @@ const structureHtml = computed(() =>
   structure.value ? renderStructureOutlineHtml(structure.value) : '',
 )
 
-const codeModel = computed({
-  get: () => structure.value?.code_framework ?? '',
-  set: (v: string) => emit('update:code', v),
-})
+const originalCode = computed(() => structure.value?.code_framework ?? '')
+const codeModel = ref('')
+
+watch(
+  originalCode,
+  (value) => {
+    codeModel.value = value
+  },
+  { immediate: true },
+)
+
+watch(codeModel, (value) => emit('update:code', value))
+
+function resetCode() {
+  codeModel.value = originalCode.value
+}
 
 const dataStructures = computed(() => structure.value?.data_structures ?? [])
 const objectives = computed(() => structure.value?.learning_objectives ?? [])
@@ -111,7 +123,10 @@ const stepHints = computed(() => structure.value?.step_hints ?? [])
       </ul>
 
       <div v-if="mode === 'scenario' && (codeModel || stepHints.length)" class="ds-sandbox">
-        <h5 class="ds-sandbox-title">代码框架 · 补全 TODO</h5>
+        <div class="ds-sandbox-head">
+          <h5 class="ds-sandbox-title">代码框架 · 补全 TODO</h5>
+          <el-button v-if="editableCode" size="small" plain @click="resetCode">恢复初始代码</el-button>
+        </div>
         <CodeEditor
           v-if="editableCode"
           v-model="codeModel"
@@ -313,9 +328,17 @@ const stepHints = computed(() => structure.value?.step_hints ?? [])
 }
 
 .ds-sandbox-title {
-  margin: 0 0 10px;
+  margin: 0;
   font-size: 13px;
   color: var(--alp-color-primary);
+}
+
+.ds-sandbox-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
 }
 
 .ds-code-readonly {

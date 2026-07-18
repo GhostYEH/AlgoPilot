@@ -514,13 +514,11 @@ class Orchestrator:
             "  ORCH --> RAG[KnowledgeRetriever]\n"
             "  RAG --> CONCEPT[ConceptAgent<br/>讲解文档]\n"
             "  CONCEPT -.摘要.-> GRAPH[GraphAgent<br/>Mermaid图谱]\n"
-            "  CONCEPT -.摘要.-> QUIZ[QuizAgent<br/>5道练习题]\n"
-            "  QUIZ -.易错点.-> SCENARIO[ScenarioAgent<br/>剧本沙盒]\n"
+            "  CONCEPT -.摘要.-> SCENARIO[ScenarioAgent<br/>剧本沙盒]\n"
             "  SCENARIO -.TODO框架.-> TRACE[TraceAgent<br/>轨迹动画JSON]\n"
             "  CONCEPT -.拓展方向.-> READ[ReadingAgent<br/>三层拓展阅读]\n"
             "  CONCEPT --> VERIFY{ContentVerifier}\n"
             "  GRAPH --> VERIFY\n"
-            "  QUIZ --> VERIFY\n"
             "  SCENARIO --> VERIFY\n"
             "  PPT --> VERIFY\n"
             "  VIDEO --> VERIFY\n"
@@ -1234,8 +1232,8 @@ class Orchestrator:
 
         阶段拓扑（来自 README DAG）：
           Phase 1: document            ← 无依赖
-          Phase 2: mindmap + exercises ← 并行，均只依赖 document
-          Phase 3: code_case           ← 依赖 exercises
+          Phase 2: mindmap             ← 依赖 document
+          Phase 3: code_case           ← 依赖 document
           Phase 4: trace_animation + reading ← 展示型资源并行
 
         asyncio 协作式调度保证：

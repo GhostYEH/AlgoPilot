@@ -14,14 +14,12 @@ const props = defineProps<{
 const diff = computed(() => diffSequenceItems(props.prevItems ?? [], props.items))
 
 const isStack = computed(() => props.viewHint === 'stack')
+const isPriorityQueue = computed(() => props.viewHint === 'priority_queue')
 const isQueueLike = computed(
   () =>
     props.viewHint === 'queue' ||
-    props.viewHint === 'priority_queue' ||
-    props.viewHint === 'deque' ||
     props.viewHint === 'tree_build_queue',
 )
-const isHorizontalGrid = computed(() => props.viewHint === 'vector' || props.viewHint === 'deque')
 const isLinearSequence = computed(() =>
   ['vector', 'array', 'list', 'forward_list', 'deque'].includes(props.viewHint),
 )
@@ -64,14 +62,19 @@ function itemKey(items: string[], index: number): string {
     class="seq-trace"
     :class="{
       'seq-trace--stack': isStack,
-      'seq-trace--queue': isQueueLike && !isHorizontalGrid,
+      'seq-trace--queue': isQueueLike || isPriorityQueue,
       'seq-trace--grid': isLinearSequence,
+      'seq-trace--linked': viewHint === 'list' || viewHint === 'forward_list',
+      'seq-trace--doubly-linked': viewHint === 'list',
     }"
   >
     <header class="seq-head">
       <span class="seq-tag">{{ label }} · {{ name }}</span>
       <span v-if="viewHint === 'stack'" class="seq-badge">LIFO</span>
       <span v-else-if="isQueueLike" class="seq-badge">FIFO</span>
+      <span v-else-if="isPriorityQueue" class="seq-badge">PRIORITY</span>
+      <span v-else-if="viewHint === 'deque'" class="seq-badge">双端</span>
+      <span v-else-if="viewHint === 'array'" class="seq-badge">固定长度</span>
     </header>
 
     <!-- vector / deque：水平格子 -->
@@ -115,7 +118,7 @@ function itemKey(items: string[], index: number): string {
 
     <!-- queue / priority_queue：水平管道 -->
     <div v-else class="seq-pipe-wrap">
-      <span class="seq-pipe-label seq-pipe-label--in">入队 →</span>
+      <span class="seq-pipe-label seq-pipe-label--in">{{ isPriorityQueue ? '最高优先级 →' : '入队 →' }}</span>
       <div class="seq-pipe" :class="{ 'seq-wrap--hot': varChanged }">
         <TransitionGroup v-if="items.length" name="seq-item" tag="div" class="seq-pipe-items">
           <span
@@ -131,7 +134,7 @@ function itemKey(items: string[], index: number): string {
         </TransitionGroup>
         <span v-else class="seq-empty">（空队列）</span>
       </div>
-      <span class="seq-pipe-label seq-pipe-label--out">→ 出队</span>
+      <span class="seq-pipe-label seq-pipe-label--out">{{ isPriorityQueue ? '→ 其余元素' : '→ 出队' }}</span>
     </div>
   </div>
 </template>
@@ -203,6 +206,7 @@ function itemKey(items: string[], index: number): string {
 }
 
 .seq-grid-cell {
+  position: relative;
   flex: 0 0 auto;
   max-width: 180px;
   overflow: hidden;
@@ -217,6 +221,24 @@ function itemKey(items: string[], index: number): string {
   background: var(--alp-bg-surface);
   border: 1px solid var(--alp-color-border);
   transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.seq-trace--linked .seq-grid-wrap {
+  gap: 20px;
+}
+
+.seq-trace--linked .seq-grid-cell:not(:last-child)::after {
+  content: '→';
+  position: absolute;
+  left: calc(100% + 5px);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--alp-color-muted);
+  font-weight: 400;
+}
+
+.seq-trace--doubly-linked .seq-grid-cell:not(:last-child)::after {
+  content: '↔';
 }
 
 .seq-stack-wrap {
@@ -236,6 +258,8 @@ function itemKey(items: string[], index: number): string {
   border-radius: 8px 8px 4px 4px;
   border: 2px solid color-mix(in srgb, #9c7a3d 50%, var(--alp-color-border));
   background: color-mix(in srgb, #9c7a3d 6%, var(--alp-bg-surface));
+  max-height: min(420px, 48vh);
+  overflow-y: auto;
 }
 
 .seq-stack-items {

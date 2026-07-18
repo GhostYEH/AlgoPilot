@@ -59,6 +59,20 @@ def test_router_tree_recursion_error():
     assert res.primary.id == "tree-traversal"
 
 
+def test_router_hard_module_boundary_prevents_cross_module_skill():
+    router = SkillRouter()
+    req = SkillRouteRequest(
+        topic="链表反转",
+        module_key="linked-list",
+        user_query="重点解释操作顺序和边界条件",
+    )
+    res = router.route(req)
+
+    assert res.primary is not None
+    assert "linked-list" in res.skill_card.triggers.module_keys
+    assert res.primary.id != "stack-queue-simulation"
+
+
 def test_api_list_and_get_stable():
     client = TestClient(app)
     r = client.get("/api/skills")

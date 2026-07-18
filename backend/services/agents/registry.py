@@ -33,12 +33,6 @@ AGENT_REGISTRY: list[AgentMeta] = [
         "layer": "resource",
     },
     {
-        "id": "QuizAgent",
-        "display_name": "QuizAgent",
-        "role": "考题官 · 个性化题单",
-        "layer": "resource",
-    },
-    {
         "id": "ScenarioAgent",
         "display_name": "ScenarioAgent",
         "role": "互动编剧 · 剧本沙盒",
@@ -106,7 +100,6 @@ AGENT_REGISTRY: list[AgentMeta] = [
 RESOURCE_TYPE_TO_AGENT: dict[str, str] = {
     "document": "ConceptAgent",
     "mindmap": "GraphAgent",
-    "exercises": "QuizAgent",
     "code_case": "ScenarioAgent",
     "trace_animation": "TraceAgent",
     "reading": "ReadingAgent",

@@ -232,7 +232,7 @@ async def test_remediation_insertion_for_dp_struggle(db: Session, test_user: Use
 def test_replan_api_without_llm_key(auth_headers: dict[str, str]):
     """无 LLM Key 时 replan 仍返回启发式路径。"""
     with patch(
-        "services.agents.learning_path.chat_completion",
+        "services.llm.client.chat_completion",
         new_callable=AsyncMock,
         side_effect=RuntimeError("no api key"),
     ):
@@ -259,7 +259,7 @@ async def test_learning_path_agent_plan_heuristic_without_llm(db: Session, test_
     body = _replan_request()
 
     with patch(
-        "services.agents.learning_path.chat_completion",
+        "services.llm.client.chat_completion",
         new_callable=AsyncMock,
         side_effect=RuntimeError("no api key"),
     ):

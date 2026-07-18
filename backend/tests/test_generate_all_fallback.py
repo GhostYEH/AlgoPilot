@@ -13,7 +13,7 @@ from main import app
 
 client = TestClient(app)
 
-REQUIRED_FALLBACK_TYPES = {"document", "mindmap", "exercises", "code_case", "reading"}
+REQUIRED_FALLBACK_TYPES = {"document", "mindmap", "code_case", "trace_animation", "reading"}
 
 
 def _register_user() -> dict[str, str]:
@@ -153,6 +153,51 @@ def test_template_fallback_mindmap_outputs_mindmap_syntax():
     assert "flowchart" not in content
     assert "-->" not in content
     assert meta["format"] == "mermaid"
+
+
+def test_template_fallback_quiz_has_five_topic_aligned_questions():
+    from services.agents.template_fallback import generate_fallback_resource
+
+    chunks = [
+        {"id": "k1", "title": "链表反转", "content": "先保存后继节点，再更新 next 指针。"},
+        {"id": "k2", "title": "边界", "content": "空链表与单节点链表需要单独验证。"},
+        {"id": "k3", "title": "复杂度", "content": "迭代反转时间复杂度 O(n)，额外空间 O(1)。"},
+    ]
+    _, content, _ = generate_fallback_resource(
+        "exercises",
+        topic="链表反转",
+        profile_block="易错点偏好：指针更新顺序",
+        module_key="linked-list",
+        chunks=chunks,
+        fallback_reason="单元测试",
+    )
+
+    questions = json.loads(content)["questions"]
+    assert len(questions) == 5
+    assert [q["type"] for q in questions] == ["choice", "choice", "choice", "fill", "fill"]
+    assert all("链表反转" in q["stem"] for q in questions)
+    assert all(q.get("answer") for q in questions)
+    assert all(q.get("explanation") for q in questions)
+    assert all(q["answer"] in q["options"] for q in questions[:3])
+
+
+def test_template_fallback_reading_items_are_renderable_cards():
+    from services.agents.template_fallback import generate_fallback_resource
+
+    chunks = [{"id": "k1", "title": "队列与 BFS", "content": "BFS 使用队列按层访问顶点。"}]
+    _, content, _ = generate_fallback_resource(
+        "reading",
+        topic="图的广度优先搜索",
+        profile_block="",
+        module_key="graph",
+        chunks=chunks,
+        fallback_reason="单元测试",
+    )
+
+    levels = json.loads(content)["levels"]
+    assert levels
+    assert all(isinstance(item, dict) for level in levels for item in level["items"])
+    assert all(item.get("title") and item.get("why") and item.get("task") for level in levels for item in level["items"])
 
 
 def test_generate_resource_stream_fallback_without_llm_key(monkeypatch: pytest.MonkeyPatch):

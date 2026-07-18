@@ -26,8 +26,16 @@ const label = computed(() => {
 
 const isHash = computed(() => props.viewHint.startsWith('unordered_'))
 
-const prevKeySet = computed(() => new Set((props.prevEntries ?? []).map((e) => e.key)))
 const isSetLike = computed(() => props.viewHint.includes('set'))
+
+const prevSignatureCounts = computed(() => {
+  const counts = new Map<string, number>()
+  for (const entry of props.prevEntries ?? []) {
+    const signature = `${entry.key}\u0000${entry.value ?? ''}`
+    counts.set(signature, (counts.get(signature) ?? 0) + 1)
+  }
+  return counts
+})
 
 function entryKey(entry: AssociativeEntry, index: number): string {
   let occurrence = 0
@@ -38,15 +46,15 @@ function entryKey(entry: AssociativeEntry, index: number): string {
   return `${entry.key}\u0000${entry.value ?? ''}\u0000${occurrence}`
 }
 
-function rowHot(entry: AssociativeEntry): boolean {
+function entryHot(entry: AssociativeEntry, index: number): boolean {
   if (!props.varChanged) return false
-  return !prevKeySet.value.has(entry.key)
-}
-
-function entryChanged(entry: AssociativeEntry): boolean {
-  const prev = (props.prevEntries ?? []).find((e) => e.key === entry.key)
-  if (!prev) return true
-  return prev.value !== entry.value
+  const signature = `${entry.key}\u0000${entry.value ?? ''}`
+  let occurrence = 0
+  for (let i = 0; i <= index; i++) {
+    const candidate = props.entries[i]
+    if (`${candidate?.key ?? ''}\u0000${candidate?.value ?? ''}` === signature) occurrence++
+  }
+  return occurrence > (prevSignatureCounts.value.get(signature) ?? 0)
 }
 </script>
 
@@ -58,21 +66,22 @@ function entryChanged(entry: AssociativeEntry): boolean {
       <span class="assoc-count">{{ entries.length }} 项</span>
     </header>
 
-    <TransitionGroup v-if="isHash" name="assoc-item" tag="div" class="assoc-slots">
+    <TransitionGroup v-if="isHash && entries.length" name="assoc-item" tag="div" class="assoc-slots">
       <div
         v-for="(entry, i) in entries"
         :key="entryKey(entry, i)"
         class="assoc-slot"
         :class="{
-          'assoc-slot--hot': rowHot(entry) || (varChanged && entryChanged(entry)),
+          'assoc-slot--hot': entryHot(entry, i),
         }"
       >
         <span class="assoc-slot-idx">#{{ i }}</span>
         <span class="assoc-slot-key">{{ entry.key }}</span>
         <span v-if="entry.value != null" class="assoc-slot-val">→ {{ entry.value }}</span>
       </div>
-      <p v-if="!entries.length" class="assoc-empty">（空哈希表）</p>
     </TransitionGroup>
+
+    <p v-else-if="isHash" class="assoc-empty">（空哈希表）</p>
 
     <table v-else class="assoc-table" :class="{ 'assoc-table--hot': varChanged }">
       <thead>
@@ -86,7 +95,7 @@ function entryChanged(entry: AssociativeEntry): boolean {
           v-for="(entry, i) in entries"
           :key="entryKey(entry, i)"
           :class="{
-            'assoc-row--hot': rowHot(entry) || (varChanged && entryChanged(entry)),
+            'assoc-row--hot': entryHot(entry, i),
           }"
         >
           <td>{{ entry.key }}</td>
@@ -175,6 +184,7 @@ function entryChanged(entry: AssociativeEntry): boolean {
   border-radius: 8px;
   border: 1px solid var(--alp-color-border);
   background: var(--alp-bg-surface);
+  max-width: min(240px, 100%);
 }
 
 .assoc-item-move,
@@ -211,11 +221,28 @@ function entryChanged(entry: AssociativeEntry): boolean {
 .assoc-slot-key {
   font-weight: 700;
   font-family: ui-monospace, Consolas, monospace;
+  overflow-wrap: anywhere;
 }
 
 .assoc-slot-val {
   font-size: 12px;
   color: var(--el-color-primary);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 520px) {
+  .assoc-trace {
+    padding: 12px;
+  }
+
+  .assoc-slots {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .assoc-slot {
+    min-width: 0;
+  }
 }
 
 .assoc-row--hot,

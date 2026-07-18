@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -360,6 +361,7 @@ def _trace_to_response(
     slug: str = "",
     user_code: str = "",
     attach_demo_narration: bool = True,
+    code_style_warning: str | None = None,
 ) -> TraceResponse:
     static_rejection = getattr(summary, "static_rejection", None)
     steps_out = [
@@ -401,7 +403,44 @@ def _trace_to_response(
         steps=steps_out,
         narrations=narrations,
         static_audit=static_rejection,
+        code_style_warning=code_style_warning,
     )
+
+
+_LEETCODE_CLASS_PATTERN = re.compile(r"^\s*class\s+Solution\b", re.MULTILINE)
+_LEETCODE_CPP_PATTERN = re.compile(
+    r"\bclass\s+Solution\b|\bpublic\s*:\s*\n\s*(?:vector|optional|string|int|bool|void|ListNode\*|TreeNode\*|auto)",
+    re.MULTILINE,
+)
+
+
+def _detect_code_style_mismatch(code: str, judge_mode: str, lang: str) -> str | None:
+    """检测用户代码风格与判题模式是否匹配，不匹配时返回友好提示。
+
+    - stdio 题目收到 LeetCode 风格（class Solution）代码时，运行几乎无输出且 trace 几乎为空，
+      用户难以诊断原因。此处返回提示，引导用户改用题目提供的 starter_code。
+    - function 题目收到纯 stdio 风格（无 class Solution）代码时，同样提示。
+    """
+    if not code or not code.strip():
+        return None
+    is_leetcode_style: bool
+    if lang == "cpp":
+        is_leetcode_style = bool(_LEETCODE_CPP_PATTERN.search(code))
+    else:
+        is_leetcode_style = bool(_LEETCODE_CLASS_PATTERN.search(code))
+
+    if judge_mode == "stdio" and is_leetcode_style:
+        return (
+            "检测到代码采用 LeetCode 风格（class Solution），但本题判题模式为 stdio（标准输入输出）。"
+            "这会导致程序没有读取输入、没有输出，trace 也只能记录到类定义本身。"
+            "请使用题目右侧「代码模板」提供的 starter_code，从标准输入读取数据后再处理。"
+        )
+    if judge_mode != "stdio" and not is_leetcode_style:
+        return (
+            "检测到代码采用 stdio 风格，但本题判题模式为方法调用（LeetCode 风格）。"
+            "请使用题目右侧「代码模板」提供的 starter_code，实现指定类与方法。"
+        )
+    return None
 
 
 @router.post("/problems/{slug}/trace", response_model=TraceResponse)
@@ -426,6 +465,8 @@ def api_trace_execution(slug: str, body: TraceRequest):
 
     tl = min(problem.get("time_limit_ms", 3000), 5000)
     judge_mode = problem.get("judge_mode", "stdio")
+
+    code_style_warning = _detect_code_style_mismatch(body.code, judge_mode, lang)
 
     if judge_mode == "stdio":
         if lang == "cpp":
@@ -460,7 +501,12 @@ def api_trace_execution(slug: str, body: TraceRequest):
         else:
             raise HTTPException(400, f"可视化调试暂不支持: {lang}")
 
-    return _trace_to_response(summary, slug=slug, user_code=body.code)
+    return _trace_to_response(
+        summary,
+        slug=slug,
+        user_code=body.code,
+        code_style_warning=code_style_warning,
+    )
 
 
 def _run_trace_for_case(

@@ -8,7 +8,6 @@ from services.agents.resources import ResourceAgents
 from services.agents.resource_roles import (
     ConceptAgent,
     GraphAgent,
-    QuizAgent,
     ScenarioAgent,
     TraceAgent,
 )
@@ -21,7 +20,6 @@ __all__ = [
     "LearningPathAgent",
     "ConceptAgent",
     "GraphAgent",
-    "QuizAgent",
     "ScenarioAgent",
     "TraceAgent",
 ]

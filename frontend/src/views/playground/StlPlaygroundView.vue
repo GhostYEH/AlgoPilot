@@ -16,7 +16,16 @@ import {
 
 const VAR_NAME = 'mock_container'
 
-type ContainerId = 'stack' | 'queue' | 'vector' | 'unordered_map'
+type ContainerId =
+  | 'array'
+  | 'vector'
+  | 'deque'
+  | 'list'
+  | 'forward_list'
+  | 'stack'
+  | 'queue'
+  | 'priority_queue'
+  | AssociativeViewHint
 
 interface ContainerDef {
   id: ContainerId
@@ -24,56 +33,113 @@ interface ContainerDef {
   cppName: string
   kind: 'sequence' | 'associative'
   viewHint: SequenceViewHint | AssociativeViewHint
+  setLike?: boolean
+  multi?: boolean
 }
 
 const CONTAINERS: ContainerDef[] = [
+  { id: 'array', label: 'Array', cppName: 'std::array', kind: 'sequence', viewHint: 'array' },
+  { id: 'vector', label: 'Vector', cppName: 'std::vector', kind: 'sequence', viewHint: 'vector' },
+  { id: 'deque', label: 'Deque', cppName: 'std::deque', kind: 'sequence', viewHint: 'deque' },
+  { id: 'list', label: 'List', cppName: 'std::list', kind: 'sequence', viewHint: 'list' },
+  { id: 'forward_list', label: 'Forward List', cppName: 'std::forward_list', kind: 'sequence', viewHint: 'forward_list' },
   { id: 'stack', label: 'Stack', cppName: 'std::stack', kind: 'sequence', viewHint: 'stack' },
   { id: 'queue', label: 'Queue', cppName: 'std::queue', kind: 'sequence', viewHint: 'queue' },
-  { id: 'vector', label: 'Vector', cppName: 'std::vector', kind: 'sequence', viewHint: 'vector' },
-  {
-    id: 'unordered_map',
-    label: 'Unordered Map',
-    cppName: 'std::unordered_map',
-    kind: 'associative',
-    viewHint: 'unordered_map',
-  },
+  { id: 'priority_queue', label: 'Priority Queue', cppName: 'std::priority_queue', kind: 'sequence', viewHint: 'priority_queue' },
+  { id: 'map', label: 'Map', cppName: 'std::map', kind: 'associative', viewHint: 'map' },
+  { id: 'multimap', label: 'Multimap', cppName: 'std::multimap', kind: 'associative', viewHint: 'multimap', multi: true },
+  { id: 'set', label: 'Set', cppName: 'std::set', kind: 'associative', viewHint: 'set', setLike: true },
+  { id: 'multiset', label: 'Multiset', cppName: 'std::multiset', kind: 'associative', viewHint: 'multiset', setLike: true, multi: true },
+  { id: 'unordered_map', label: 'Unordered Map', cppName: 'std::unordered_map', kind: 'associative', viewHint: 'unordered_map' },
+  { id: 'unordered_multimap', label: 'Unordered Multimap', cppName: 'std::unordered_multimap', kind: 'associative', viewHint: 'unordered_multimap', multi: true },
+  { id: 'unordered_set', label: 'Unordered Set', cppName: 'std::unordered_set', kind: 'associative', viewHint: 'unordered_set', setLike: true },
+  { id: 'unordered_multiset', label: 'Unordered Multiset', cppName: 'std::unordered_multiset', kind: 'associative', viewHint: 'unordered_multiset', setLike: true, multi: true },
 ]
+
+const CONTAINER_GROUPS = [
+  { label: '序列容器', ids: ['array', 'vector', 'deque', 'list', 'forward_list'] as ContainerId[] },
+  { label: '容器适配器', ids: ['stack', 'queue', 'priority_queue'] as ContainerId[] },
+  { label: '有序关联容器', ids: ['map', 'multimap', 'set', 'multiset'] as ContainerId[] },
+  { label: '无序关联容器', ids: ['unordered_map', 'unordered_multimap', 'unordered_set', 'unordered_multiset'] as ContainerId[] },
+].map((group) => ({
+  ...group,
+  options: group.ids.map((id) => CONTAINERS.find((container) => container.id === id)!),
+}))
 
 interface OpDef {
   id: string
   label: string
-  needsValue?: boolean
-  needsKey?: boolean
 }
 
 const OPS_BY_CONTAINER: Record<ContainerId, OpDef[]> = {
+  array: [
+    { id: 'set_at', label: 'Set At' },
+    { id: 'fill', label: 'Fill' },
+    { id: 'reset', label: 'Reset' },
+  ],
+  vector: [
+    { id: 'push_back', label: 'Push Back' },
+    { id: 'pop_back', label: 'Pop Back' },
+    { id: 'clear', label: 'Clear' },
+  ],
+  deque: [
+    { id: 'push_front', label: 'Push Front' },
+    { id: 'push_back', label: 'Push Back' },
+    { id: 'pop_front', label: 'Pop Front' },
+    { id: 'pop_back', label: 'Pop Back' },
+    { id: 'clear', label: 'Clear' },
+  ],
+  list: [
+    { id: 'push_front', label: 'Push Front' },
+    { id: 'push_back', label: 'Push Back' },
+    { id: 'pop_front', label: 'Pop Front' },
+    { id: 'pop_back', label: 'Pop Back' },
+    { id: 'clear', label: 'Clear' },
+  ],
+  forward_list: [
+    { id: 'push_front', label: 'Push Front' },
+    { id: 'pop_front', label: 'Pop Front' },
+    { id: 'clear', label: 'Clear' },
+  ],
   stack: [
-    { id: 'push', label: 'Push', needsValue: true },
+    { id: 'push', label: 'Push' },
     { id: 'pop', label: 'Pop' },
     { id: 'clear', label: 'Clear' },
   ],
   queue: [
-    { id: 'enqueue', label: 'Enqueue', needsValue: true },
+    { id: 'enqueue', label: 'Enqueue' },
     { id: 'dequeue', label: 'Dequeue' },
     { id: 'clear', label: 'Clear' },
   ],
-  vector: [
-    { id: 'push_back', label: 'Push Back', needsValue: true },
-    { id: 'pop_back', label: 'Pop Back' },
+  priority_queue: [
+    { id: 'push', label: 'Push' },
+    { id: 'pop', label: 'Pop Top' },
     { id: 'clear', label: 'Clear' },
   ],
-  unordered_map: [
-    { id: 'insert', label: 'Insert', needsKey: true, needsValue: true },
-    { id: 'erase', label: 'Erase', needsKey: true },
-    { id: 'find', label: 'Find', needsKey: true },
-  ],
+  map: associativeOps(),
+  multimap: associativeOps(),
+  set: associativeOps(),
+  multiset: associativeOps(),
+  unordered_map: associativeOps(),
+  unordered_multimap: associativeOps(),
+  unordered_set: associativeOps(),
+  unordered_multiset: associativeOps(),
+}
+
+function associativeOps(): OpDef[] {
+  return [
+    { id: 'insert', label: 'Insert' },
+    { id: 'erase', label: 'Erase' },
+    { id: 'find', label: 'Find' },
+    { id: 'clear', label: 'Clear' },
+  ]
 }
 
 const activeContainer = ref<ContainerId>('stack')
 const inputValue = ref('42')
 const inputKey = ref('foo')
 const stepIndex = ref(0)
-const lastPseudo = ref('// 选择容器并点击操作按钮开始体验')
+const lastPseudo = ref('// 选择容器后，可直接载入演示或执行操作')
 const operationLog = ref<string[]>([])
 
 const mockState = ref<TraceVarSnapshot>(emptySequenceSnapshot('stack'))
@@ -81,34 +147,24 @@ const prevSnapshot = ref<TraceVarSnapshot | null>(null)
 const changedKeys = ref<Set<string>>(new Set())
 const lastTraceStep = ref<TraceStep | null>(null)
 
-const activeDef = computed(() => CONTAINERS.find((c) => c.id === activeContainer.value)!)
+const activeDef = computed(() => CONTAINERS.find((container) => container.id === activeContainer.value)!)
 const currentOps = computed(() => OPS_BY_CONTAINER[activeContainer.value])
 const isAssociative = computed(() => activeDef.value.kind === 'associative')
+const keyLabel = computed(() => activeContainer.value === 'array' ? 'Index' : 'Key')
+const showKeyInput = computed(() => isAssociative.value || activeContainer.value === 'array')
+const showValueInput = computed(() => !activeDef.value.setLike)
 
-const sequenceItemsCurr = computed(() =>
-  !isAssociative.value ? sequenceItems(mockState.value) : [],
-)
-const sequenceItemsPrev = computed(() =>
-  prevSnapshot.value && !isAssociative.value ? sequenceItems(prevSnapshot.value) : [],
-)
-const sequenceHint = computed(() =>
-  !isAssociative.value ? sequenceViewHint(mockState.value) : 'vector',
-)
-
-const assocEntriesCurr = computed(() =>
-  isAssociative.value ? associativeEntries(mockState.value) : [],
-)
-const assocEntriesPrev = computed(() =>
-  prevSnapshot.value && isAssociative.value ? associativeEntries(prevSnapshot.value) : [],
-)
-const assocHint = computed(() =>
-  isAssociative.value ? associativeViewHint(mockState.value) : 'unordered_map',
-)
-
+const sequenceItemsCurr = computed(() => !isAssociative.value ? sequenceItems(mockState.value) : [])
+const sequenceItemsPrev = computed(() => prevSnapshot.value && !isAssociative.value ? sequenceItems(prevSnapshot.value) : [])
+const sequenceHint = computed(() => !isAssociative.value ? sequenceViewHint(mockState.value) : 'vector')
+const assocEntriesCurr = computed(() => isAssociative.value ? associativeEntries(mockState.value) : [])
+const assocEntriesPrev = computed(() => prevSnapshot.value && isAssociative.value ? associativeEntries(prevSnapshot.value) : [])
+const assocHint = computed(() => isAssociative.value ? associativeViewHint(mockState.value) : 'unordered_map')
 const varChanged = computed(() => changedKeys.value.has(VAR_NAME))
 
 function emptySequenceSnapshot(hint: SequenceViewHint): TraceVarSnapshot {
-  return { type: 'sequence', view_hint: hint, value: [] }
+  const value = hint === 'array' ? ['0', '0', '0', '0', '0'] : []
+  return { type: 'sequence', view_hint: hint, value: value as unknown as TraceVarValue }
 }
 
 function emptyAssociativeSnapshot(hint: AssociativeViewHint): TraceVarSnapshot {
@@ -123,8 +179,8 @@ function asAssociativeValue(entries: AssociativeEntry[]): TraceVarValue {
   return entries as unknown as TraceVarValue
 }
 
-function cloneSnapshot(snap: TraceVarSnapshot): TraceVarSnapshot {
-  return JSON.parse(JSON.stringify(snap)) as TraceVarSnapshot
+function cloneSnapshot(snapshot: TraceVarSnapshot): TraceVarSnapshot {
+  return JSON.parse(JSON.stringify(snapshot)) as TraceVarSnapshot
 }
 
 function commitSnapshot(next: TraceVarSnapshot, pseudo: string) {
@@ -133,246 +189,215 @@ function commitSnapshot(next: TraceVarSnapshot, pseudo: string) {
   changedKeys.value = new Set([VAR_NAME])
   stepIndex.value += 1
   lastPseudo.value = pseudo
-  lastTraceStep.value = {
-    line: stepIndex.value,
-    vars: { [VAR_NAME]: next },
-    changed: [VAR_NAME],
-  }
-  operationLog.value = [`#${stepIndex.value}  ${pseudo}`, ...operationLog.value].slice(0, 12)
+  lastTraceStep.value = { line: stepIndex.value, vars: { [VAR_NAME]: next }, changed: [VAR_NAME] }
+  operationLog.value = [`#${stepIndex.value}  ${pseudo.replace(/\n/g, ' ')}`, ...operationLog.value].slice(0, 8)
 }
 
 function resetChangedPulse() {
   window.setTimeout(() => {
-    if (changedKeys.value.has(VAR_NAME)) {
-      changedKeys.value = new Set()
-    }
+    if (changedKeys.value.has(VAR_NAME)) changedKeys.value = new Set()
   }, 700)
 }
 
-function parseScalar(raw: string): string {
-  const t = raw.trim()
-  if (!t) throw new Error('请输入有效数值')
-  return t
+function parseScalar(raw: string, label = '值'): string {
+  const value = raw.trim()
+  if (!value) throw new Error(`请输入有效${label}`)
+  return value
+}
+
+function runPrimaryOperation() {
+  const first = currentOps.value[0]
+  if (first) runOperation(first)
 }
 
 function runOperation(op: OpDef) {
-  const def = activeDef.value
   try {
-    if (def.kind === 'sequence') {
-      runSequenceOp(op)
-    } else {
-      runAssociativeOp(op)
-    }
+    if (activeDef.value.kind === 'sequence') runSequenceOp(op)
+    else runAssociativeOp(op)
     resetChangedPulse()
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : '操作失败'
-    ElMessage.warning(msg)
+  } catch (error) {
+    ElMessage.warning(error instanceof Error ? error.message : '操作失败')
   }
 }
 
 function runSequenceOp(op: OpDef) {
-  const hint = defSequenceHint()
+  const hint = activeDef.value.viewHint as SequenceViewHint
   const curr = [...sequenceItems(mockState.value)]
+  const prefix = pseudoPrefix()
 
-  if (op.id === 'push' || op.id === 'enqueue' || op.id === 'push_back') {
-    const v = parseScalar(inputValue.value)
-    const next = [...curr, v]
-    commitSnapshot(
-      { type: 'sequence', view_hint: hint, value: asSequenceValue(next) },
-      `${pseudoPrefix()}.${opLabel(op)}(${formatCppLiteral(v)});`,
-    )
-    inputValue.value = ''
+  if (op.id === 'set_at') {
+    const index = Number.parseInt(parseScalar(inputKey.value, '下标'), 10)
+    if (!Number.isInteger(index) || index < 0 || index >= curr.length) {
+      throw new Error(`下标范围为 0–${Math.max(0, curr.length - 1)}`)
+    }
+    const value = parseScalar(inputValue.value)
+    const next = [...curr]
+    next[index] = value
+    commitSnapshot({ type: 'sequence', view_hint: hint, value: asSequenceValue(next) }, `${prefix}[${index}] = ${formatCppLiteral(value)};`)
     return
   }
 
-  if (op.id === 'pop' || op.id === 'dequeue' || op.id === 'pop_back') {
+  if (op.id === 'fill') {
+    const value = parseScalar(inputValue.value)
+    commitSnapshot({ type: 'sequence', view_hint: hint, value: asSequenceValue(curr.map(() => value)) }, `${prefix}.fill(${formatCppLiteral(value)});`)
+    return
+  }
+
+  if (op.id === 'reset') {
+    commitSnapshot(emptySequenceSnapshot('array'), `${prefix}.fill(0);`)
+    return
+  }
+
+  if (['push', 'enqueue', 'push_back', 'push_front'].includes(op.id)) {
+    const value = parseScalar(inputValue.value)
+    let next = op.id === 'push_front' ? [value, ...curr] : [...curr, value]
+    if (activeContainer.value === 'priority_queue') next = sortPriorityQueue(next)
+    const method = op.id === 'enqueue' ? 'push' : op.id
+    commitSnapshot({ type: 'sequence', view_hint: hint, value: asSequenceValue(next) }, `${prefix}.${method}(${formatCppLiteral(value)});`)
+    return
+  }
+
+  if (['pop', 'dequeue', 'pop_back', 'pop_front'].includes(op.id)) {
     if (!curr.length) throw new Error('容器为空，无法弹出')
-    if (op.id === 'dequeue') {
-      const removed = curr[0]
-      const next = curr.slice(1)
-      commitSnapshot(
-        { type: 'sequence', view_hint: hint, value: asSequenceValue(next) },
-        `auto val = ${pseudoPrefix()}.front();  // 拿到队头值 ${formatCppLiteral(removed)}\n${pseudoPrefix()}.pop();`,
-      )
-    } else if (op.id === 'pop') {
-      const removed = curr[curr.length - 1]
-      const next = curr.slice(0, -1)
-      commitSnapshot(
-        { type: 'sequence', view_hint: hint, value: asSequenceValue(next) },
-        `auto val = ${pseudoPrefix()}.top();  // 拿到栈顶值 ${formatCppLiteral(removed)}\n${pseudoPrefix()}.pop();`,
-      )
-    } else {
-      const removed = curr[curr.length - 1]
-      const next = curr.slice(0, -1)
-      commitSnapshot(
-        { type: 'sequence', view_hint: hint, value: asSequenceValue(next) },
-        `${pseudoPrefix()}.pop_back();  // ${formatCppLiteral(removed)}`,
-      )
-    }
+    const removesFront = op.id === 'dequeue' || op.id === 'pop_front' || activeContainer.value === 'priority_queue'
+    const removed = removesFront ? curr[0]! : curr[curr.length - 1]!
+    const next = removesFront ? curr.slice(1) : curr.slice(0, -1)
+    const access = activeContainer.value === 'stack' || activeContainer.value === 'priority_queue' ? 'top' : removesFront ? 'front' : 'back'
+    const method = op.id === 'dequeue' || activeContainer.value === 'priority_queue' ? 'pop' : op.id
+    commitSnapshot(
+      { type: 'sequence', view_hint: hint, value: asSequenceValue(next) },
+      `auto value = ${prefix}.${access}();  // ${formatCppLiteral(removed)}\n${prefix}.${method}();`,
+    )
     return
   }
 
   if (op.id === 'clear') {
-    commitSnapshot(
-      { type: 'sequence', view_hint: hint, value: asSequenceValue([]) },
-      `${pseudoPrefix()}.clear();`,
-    )
+    const pseudo = ['stack', 'queue', 'priority_queue'].includes(activeContainer.value)
+      ? `while (!${prefix}.empty()) ${prefix}.pop();`
+      : `${prefix}.clear();`
+    commitSnapshot({ type: 'sequence', view_hint: hint, value: asSequenceValue([]) }, pseudo)
   }
 }
 
 function runAssociativeOp(op: OpDef) {
-  const hint = associativeViewHint(mockState.value)
+  const hint = activeDef.value.viewHint as AssociativeViewHint
   const curr = [...associativeEntries(mockState.value)]
-  const key = parseScalar(inputKey.value)
+  const key = op.id === 'clear' ? '' : parseScalar(inputKey.value, '键')
+  const prefix = pseudoPrefix()
 
   if (op.id === 'insert') {
-    const val = parseScalar(inputValue.value)
-    const idx = curr.findIndex((e) => e.key === key)
-    const entry: AssociativeEntry = { key, value: val }
-    const next =
-      idx >= 0
-        ? curr.map((e, i) => (i === idx ? entry : e))
-        : [...curr, entry]
-    commitSnapshot(
-      { type: 'associative', view_hint: hint, value: asAssociativeValue(next) },
-      `${pseudoPrefix()}[${formatCppLiteral(key)}] = ${formatCppLiteral(val)};`,
-    )
-    inputValue.value = ''
+    const value = activeDef.value.setLike ? null : parseScalar(inputValue.value)
+    const entry: AssociativeEntry = { key, value }
+    let next: AssociativeEntry[]
+    if (activeDef.value.multi) next = [...curr, entry]
+    else if (curr.some((item) => item.key === key)) next = curr.map((item) => item.key === key ? entry : item)
+    else next = [...curr, entry]
+    if (!hint.startsWith('unordered_')) next = sortAssociative(next)
+    const pseudo = activeDef.value.setLike
+      ? `${prefix}.insert(${formatCppLiteral(key)});`
+      : `${prefix}${activeDef.value.multi ? '.insert({' : '['}${formatCppLiteral(key)}${activeDef.value.multi ? ', ' : '] = '}${formatCppLiteral(value ?? '')}${activeDef.value.multi ? '});' : ';'}`
+    commitSnapshot({ type: 'associative', view_hint: hint, value: asAssociativeValue(next) }, pseudo)
     return
   }
 
   if (op.id === 'erase') {
-    if (!curr.some((e) => e.key === key)) throw new Error(`未找到键 ${key}`)
-    const next = curr.filter((e) => e.key !== key)
-    commitSnapshot(
-      { type: 'associative', view_hint: hint, value: asAssociativeValue(next) },
-      `${pseudoPrefix()}.erase(${formatCppLiteral(key)});`,
-    )
-    inputValue.value = ''
+    if (!curr.some((item) => item.key === key)) throw new Error(`未找到键 ${key}`)
+    const next = curr.filter((item) => item.key !== key)
+    commitSnapshot({ type: 'associative', view_hint: hint, value: asAssociativeValue(next) }, `${prefix}.erase(${formatCppLiteral(key)});`)
     return
   }
 
   if (op.id === 'find') {
-    const hit = curr.find((e) => e.key === key)
-    if (hit) {
-      ElMessage.success(`find → 命中：${hit.key} → ${hit.value ?? '∅'}`)
-      lastPseudo.value = `auto r = ${pseudoPrefix()}.find(${formatCppLiteral(key)});  // 命中`
-    } else {
-      ElMessage.info(`find → 未找到键 ${key}`)
-      lastPseudo.value = `auto r = ${pseudoPrefix()}.find(${formatCppLiteral(key)});  // end()`
-    }
+    const hits = curr.filter((item) => item.key === key)
+    lastPseudo.value = `auto it = ${prefix}.find(${formatCppLiteral(key)});  // ${hits.length ? `命中 ${hits.length} 项` : 'end()'}`
+    ElMessage[hits.length ? 'success' : 'info'](hits.length ? `找到 ${hits.length} 项` : `未找到键 ${key}`)
+    return
+  }
+
+  if (op.id === 'clear') {
+    commitSnapshot({ type: 'associative', view_hint: hint, value: asAssociativeValue([]) }, `${prefix}.clear();`)
   }
 }
 
-function defSequenceHint(): SequenceViewHint {
-  const id = activeContainer.value
-  if (id === 'stack') return 'stack'
-  if (id === 'queue') return 'queue'
-  return 'vector'
+function sortPriorityQueue(items: string[]): string[] {
+  return [...items].sort((a, b) => {
+    const an = Number(a)
+    const bn = Number(b)
+    if (Number.isFinite(an) && Number.isFinite(bn)) return bn - an
+    return b.localeCompare(a, 'zh-CN')
+  })
+}
+
+function sortAssociative(entries: AssociativeEntry[]): AssociativeEntry[] {
+  return [...entries].sort((a, b) => a.key.localeCompare(b.key, 'zh-CN', { numeric: true }))
 }
 
 function pseudoPrefix(): string {
-  const id = activeContainer.value
-  if (id === 'stack') return 'st'
-  if (id === 'queue') return 'q'
-  if (id === 'vector') return 'nums'
-  return 'mp'
+  const prefixes: Record<ContainerId, string> = {
+    array: 'arr', vector: 'nums', deque: 'dq', list: 'lst', forward_list: 'flst',
+    stack: 'st', queue: 'q', priority_queue: 'pq', map: 'mp', multimap: 'mmp',
+    set: 's', multiset: 'ms', unordered_map: 'ump', unordered_multimap: 'ummp',
+    unordered_set: 'us', unordered_multiset: 'ums',
+  }
+  return prefixes[activeContainer.value]
 }
 
-function opLabel(op: OpDef): string {
-  if (activeContainer.value === 'stack' && op.id === 'push') return 'push'
-  if (activeContainer.value === 'vector' && op.id === 'push_back') return 'push_back'
-  return op.id
-}
-
-function formatCppLiteral(v: string): string {
-  if (/^-?\d+(\.\d+)?$/.test(v)) return v
-  if (v === 'true' || v === 'false') return v
-  return `"${v.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
-}
-
-function onContainerChange(id: ContainerId) {
-  activeContainer.value = id
+function formatCppLiteral(value: string): string {
+  if (/^-?\d+(\.\d+)?$/.test(value) || value === 'true' || value === 'false') return value
+  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
 }
 
 function loadDemo() {
   const def = activeDef.value
-  if (def.kind === 'sequence') {
-    const hint = def.viewHint as SequenceViewHint
-    let demo: string[] = []
-    let pseudo = ''
-    if (def.id === 'stack') {
-      demo = ['(', '[', '{']
-      pseudo = 'st.push("("); st.push("["); st.push("{");'
-    } else if (def.id === 'queue') {
-      demo = ['A', 'B', 'C']
-      pseudo = 'q.push("A"); q.push("B"); q.push("C");'
-    } else {
-      demo = ['10', '20', '30']
-      pseudo = 'nums = {10, 20, 30};'
-    }
-    prevSnapshot.value = cloneSnapshot(mockState.value)
-    mockState.value = { type: 'sequence', view_hint: hint, value: asSequenceValue(demo) }
-    changedKeys.value = new Set([VAR_NAME])
-    stepIndex.value += 1
-    lastPseudo.value = pseudo
-    lastTraceStep.value = { line: stepIndex.value, vars: { [VAR_NAME]: mockState.value }, changed: [VAR_NAME] }
-    operationLog.value = [`#${stepIndex.value}  载入演示数据`, ...operationLog.value].slice(0, 12)
-    resetChangedPulse()
-    return
-  }
-  const entries: AssociativeEntry[] = [
-    { key: 'apple', value: '3' },
-    { key: 'banana', value: '7' },
-    { key: 'cherry', value: '1' },
-  ]
   prevSnapshot.value = cloneSnapshot(mockState.value)
-  mockState.value = {
-    type: 'associative',
-    view_hint: 'unordered_map',
-    value: asAssociativeValue(entries),
+  if (def.kind === 'sequence') {
+    const demos: Record<string, string[]> = {
+      array: ['2', '4', '6', '8', '10'], vector: ['10', '20', '30'], deque: ['front', 'mid', 'back'],
+      list: ['A', 'B', 'C'], forward_list: ['head', 'next', 'tail'], stack: ['(', '[', '{'],
+      queue: ['A', 'B', 'C'], priority_queue: ['9', '5', '3'],
+    }
+    mockState.value = { type: 'sequence', view_hint: def.viewHint, value: asSequenceValue(demos[def.id] ?? []) }
+  } else {
+    const entries: AssociativeEntry[] = def.setLike
+      ? [{ key: 'apple', value: null }, { key: 'banana', value: null }, ...(def.multi ? [{ key: 'apple', value: null }] : [])]
+      : [{ key: 'apple', value: '3' }, { key: 'banana', value: '7' }, ...(def.multi ? [{ key: 'apple', value: '5' }] : [])]
+    const demoEntries = String(def.viewHint).startsWith('unordered_') ? entries : sortAssociative(entries)
+    mockState.value = { type: 'associative', view_hint: def.viewHint, value: asAssociativeValue(demoEntries) }
   }
   changedKeys.value = new Set([VAR_NAME])
   stepIndex.value += 1
-  lastPseudo.value = 'mp["apple"]=3; mp["banana"]=7; mp["cherry"]=1;'
+  lastPseudo.value = `// 已载入 ${def.cppName} 演示数据`
   lastTraceStep.value = { line: stepIndex.value, vars: { [VAR_NAME]: mockState.value }, changed: [VAR_NAME] }
-  operationLog.value = [`#${stepIndex.value}  载入演示数据`, ...operationLog.value].slice(0, 12)
+  operationLog.value = [`#${stepIndex.value}  载入 ${def.label} 演示`, ...operationLog.value].slice(0, 8)
   resetChangedPulse()
 }
 
 function resetAll() {
-  const def = activeDef.value
+  resetForContainer(activeDef.value, '// 已清空并重置')
+}
+
+function resetForContainer(def: ContainerDef, pseudo: string) {
   prevSnapshot.value = null
   changedKeys.value = new Set()
   stepIndex.value = 0
-  lastPseudo.value = '// 已重置'
+  lastPseudo.value = pseudo
   lastTraceStep.value = null
   operationLog.value = []
-  mockState.value =
-    def.kind === 'sequence'
-      ? emptySequenceSnapshot(def.viewHint as SequenceViewHint)
-      : emptyAssociativeSnapshot(def.viewHint as AssociativeViewHint)
+  mockState.value = def.kind === 'sequence'
+    ? emptySequenceSnapshot(def.viewHint as SequenceViewHint)
+    : emptyAssociativeSnapshot(def.viewHint as AssociativeViewHint)
 }
 
 watch(activeContainer, (id) => {
-  const def = CONTAINERS.find((c) => c.id === id)!
-  prevSnapshot.value = null
-  changedKeys.value = new Set()
-  stepIndex.value = 0
-  lastPseudo.value = `// 已切换至 ${def.cppName}`
-  lastTraceStep.value = null
-  operationLog.value = []
-  mockState.value =
-    def.kind === 'sequence'
-      ? emptySequenceSnapshot(def.viewHint as SequenceViewHint)
-      : emptyAssociativeSnapshot(def.viewHint as AssociativeViewHint)
+  const def = CONTAINERS.find((container) => container.id === id)!
+  inputKey.value = id === 'array' ? '0' : 'foo'
+  resetForContainer(def, `// 已切换至 ${def.cppName}`)
 })
 </script>
 
 <template>
   <div class="stl-playground">
     <div class="pg-bg" aria-hidden="true">
-      <div class="pg-grid" />
       <div class="pg-glow pg-glow--a" />
       <div class="pg-glow pg-glow--b" />
     </div>
@@ -381,118 +406,98 @@ watch(activeContainer, (id) => {
       <div class="pg-hero-text">
         <p class="pg-kicker">Algorithm Playground</p>
         <h1 class="pg-title">交互式 STL 沙盒</h1>
-        <p class="pg-subtitle">
-          无需写代码，点击即可观察栈、队列、向量与哈希表的状态变化——动画与 OJ 可视化调试同源。
-        </p>
+        <p class="pg-subtitle">覆盖 C++ 标准序列、适配器、有序与无序关联容器；选择容器后即可直接观察状态变化。</p>
       </div>
       <div class="pg-hero-meta">
-        <span class="pg-chip">纯前端 Mock</span>
-        <span class="pg-chip">trace_viz 协议</span>
-        <span class="pg-chip">OJ 沙盒：限时 / 限内存 / 禁危险调用</span>
+        <span class="pg-chip">16 类 STL 容器</span>
+        <span class="pg-chip">与 OJ Trace 同协议</span>
         <span class="pg-chip">Step {{ stepIndex }}</span>
       </div>
     </header>
 
     <div class="pg-layout">
       <aside class="pg-console">
-        <section class="pg-panel">
-          <h2 class="pg-panel-title">容器类型</h2>
-          <el-segmented
-            :model-value="activeContainer"
-            :options="CONTAINERS.map((c) => ({ label: c.label, value: c.id }))"
-            block
-            class="pg-segmented"
-            @change="onContainerChange"
-          />
-          <p class="pg-cpp-hint">
-            <code>{{ activeDef.cppName }}&lt;…&gt; c;</code>
-          </p>
-        </section>
+        <section class="pg-panel pg-panel--controls">
+          <div class="pg-control-head">
+            <h2 class="pg-panel-title">容器与操作</h2>
+            <el-button text type="primary" size="small" @click="loadDemo">载入演示</el-button>
+          </div>
 
-        <section class="pg-panel">
-          <h2 class="pg-panel-title">操作</h2>
+          <el-select v-model="activeContainer" class="pg-container-select" aria-label="选择 STL 容器">
+            <el-option-group v-for="group in CONTAINER_GROUPS" :key="group.label" :label="group.label">
+              <el-option v-for="option in group.options" :key="option.id" :label="option.label" :value="option.id">
+                <span>{{ option.label }}</span>
+                <small>{{ option.cppName }}</small>
+              </el-option>
+            </el-option-group>
+          </el-select>
+
+          <p class="pg-cpp-hint"><code>{{ activeDef.cppName }}&lt;…&gt; {{ pseudoPrefix() }};</code></p>
+
+          <div class="pg-input-row">
+            <label v-if="showKeyInput" class="pg-field">
+              <span>{{ keyLabel }}</span>
+              <el-input v-model="inputKey" :placeholder="activeContainer === 'array' ? '0–4' : '例如 apple'" clearable @keyup.enter="runPrimaryOperation" />
+            </label>
+            <label v-if="showValueInput" class="pg-field">
+              <span>Value</span>
+              <el-input v-model="inputValue" placeholder="例如 42" clearable @keyup.enter="runPrimaryOperation" />
+            </label>
+          </div>
+
           <div class="pg-op-grid">
-            <el-button
-              v-for="op in currentOps"
-              :key="op.id"
-              type="primary"
-              plain
-              class="pg-op-btn"
-              @click="runOperation(op)"
-            >
+            <el-button v-for="op in currentOps" :key="op.id" type="primary" plain class="pg-op-btn" @click="runOperation(op)">
               {{ op.label }}
             </el-button>
           </div>
-        </section>
 
-        <section class="pg-panel pg-panel--inputs">
-          <h2 class="pg-panel-title">参数</h2>
-          <template v-if="isAssociative">
-            <label class="pg-field">
-              <span>Key</span>
-              <el-input v-model="inputKey" placeholder="键，如 apple" clearable />
-            </label>
-            <label class="pg-field">
-              <span>Value</span>
-              <el-input v-model="inputValue" placeholder="值，如 42" clearable />
-            </label>
-          </template>
-          <label v-else class="pg-field">
-            <span>Value</span>
-            <el-input v-model="inputValue" placeholder="数值或字符串" clearable />
-          </label>
-        </section>
-
-        <section class="pg-panel pg-panel--actions">
-          <el-button @click="loadDemo">载入演示</el-button>
-          <el-button @click="resetAll">清空重置</el-button>
-        </section>
-
-        <section class="pg-panel pg-panel--code">
-          <h2 class="pg-panel-title">伪代码</h2>
-          <pre class="pg-pseudo">{{ lastPseudo }}</pre>
-          <div v-if="lastTraceStep" class="pg-trace-meta">
-            <span>traceStep.changed</span>
-            <code>{{ JSON.stringify(lastTraceStep.changed) }}</code>
+          <div class="pg-quick-actions">
+            <span>输入后按 Enter 可直接执行首个操作</span>
+            <el-button text size="small" @click="resetAll">重置</el-button>
           </div>
         </section>
 
-        <section class="pg-panel pg-panel--sandbox">
-          <h2 class="pg-panel-title">沙盒安全限制</h2>
-          <ul class="pg-sandbox-list">
-            <li>限时执行：样例运行与 Trace 均设置超时上限。</li>
-            <li>内存限制：生产部署按题目配置 cgroup / 容器内存。</li>
-            <li>危险调用：拦截 system / fork / exec 与危险头文件。</li>
-            <li>隔离策略：判题子进程执行，生产部署应使用 Docker 或更强隔离。</li>
-          </ul>
+        <section class="pg-panel pg-panel--code">
+          <h2 class="pg-panel-title">本步对应代码</h2>
+          <pre class="pg-pseudo">{{ lastPseudo }}</pre>
         </section>
 
-        <section v-if="operationLog.length" class="pg-panel pg-panel--log">
-          <h2 class="pg-panel-title">操作历史</h2>
-          <ul class="pg-log-list">
-            <li v-for="(line, i) in operationLog" :key="i">{{ line }}</li>
+        <details v-if="operationLog.length" class="pg-panel pg-disclosure">
+          <summary>操作记录（{{ operationLog.length }}）</summary>
+          <ul class="pg-log-list"><li v-for="(line, index) in operationLog" :key="index">{{ line }}</li></ul>
+        </details>
+
+        <details class="pg-panel pg-disclosure">
+          <summary>运行与隔离说明</summary>
+          <ul class="pg-sandbox-list">
+            <li>样例运行与 Trace 均有超时和内存上限。</li>
+            <li>判题子进程会拦截危险调用；生产环境需使用容器隔离。</li>
           </ul>
-        </section>
+        </details>
       </aside>
 
       <main class="pg-canvas">
         <div class="pg-canvas-head">
-          <h2>可视化画布</h2>
+          <div>
+            <h2>{{ activeDef.label }}</h2>
+            <p>{{ activeDef.cppName }} · {{ assocEntriesCurr.length || sequenceItemsCurr.length }} 项</p>
+          </div>
           <span class="pg-var-tag">{{ VAR_NAME }}</span>
         </div>
 
         <div class="pg-viz-stage">
           <TraceSequenceViz
             v-if="!isAssociative"
+            :key="activeContainer"
             :name="VAR_NAME"
             :view-hint="sequenceHint"
             :items="sequenceItemsCurr"
             :prev-items="sequenceItemsPrev"
             :var-changed="varChanged"
           />
-
           <TraceAssociativeViz
             v-else
+            :key="activeContainer"
             :name="VAR_NAME"
             :view-hint="assocHint"
             :entries="assocEntriesCurr"
@@ -502,7 +507,7 @@ watch(activeContainer, (id) => {
         </div>
 
         <details class="pg-protocol">
-          <summary>当前 mockState（trace_viz 协议）</summary>
+          <summary>查看当前 Trace 数据</summary>
           <pre>{{ JSON.stringify(mockState, null, 2) }}</pre>
         </details>
       </main>
@@ -513,312 +518,78 @@ watch(activeContainer, (id) => {
 <style scoped>
 .stl-playground {
   position: relative;
-  min-height: calc(100vh - 64px);
-  padding: 28px 24px 48px;
+  min-height: calc(100vh - var(--alp-header-height, 60px));
+  padding: clamp(18px, 3vw, 32px) clamp(14px, 3vw, 32px) 44px;
   overflow: hidden;
 }
 
-.pg-bg {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.pg-grid {
-  position: absolute;
-  inset: 0;
-  background-image: transparent;
-  background-size: auto;
-  mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, black 20%, transparent 75%);
-}
-
-.pg-glow {
-  position: absolute;
-  width: 420px;
-  height: 420px;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.35;
-}
-
-.pg-glow--a {
-  top: -80px;
-  right: 10%;
-  background: #3a8a9e;
-}
-
-.pg-glow--b {
-  bottom: -120px;
-  left: 5%;
-  background: #7a6e9e;
-}
-
-.pg-hero,
-.pg-layout {
-  position: relative;
-  z-index: 1;
-}
+.pg-bg { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+.pg-glow { position: absolute; width: 380px; height: 380px; border-radius: 50%; filter: blur(90px); opacity: 0.22; }
+.pg-glow--a { top: -120px; right: 8%; background: #3a8a9e; }
+.pg-glow--b { bottom: -160px; left: 2%; background: #7a6e9e; }
+.pg-hero, .pg-layout { position: relative; z-index: 1; }
 
 .pg-hero {
   display: flex;
   flex-wrap: wrap;
-  gap: 20px;
+  gap: 18px;
   align-items: flex-end;
   justify-content: space-between;
-  margin-bottom: 28px;
+  margin-bottom: 22px;
 }
 
-.pg-kicker {
-  margin: 0 0 6px;
-  font-size: 12px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--alp-color-primary);
-  font-weight: 700;
-}
+.pg-kicker { margin: 0 0 6px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--alp-color-primary); font-weight: 700; }
+.pg-title { margin: 0 0 8px; font-size: clamp(1.65rem, 3vw, 2.25rem); font-weight: 800; color: var(--alp-color-text); }
+.pg-subtitle { margin: 0; max-width: 62ch; font-size: 14px; line-height: 1.6; color: var(--alp-color-muted); }
+.pg-hero-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+.pg-chip { font-size: 11px; padding: 6px 11px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--alp-color-primary) 35%, var(--alp-color-border)); background: color-mix(in srgb, var(--alp-color-primary) 8%, var(--alp-bg-surface)); color: var(--alp-color-text); }
 
-.pg-title {
-  margin: 0 0 10px;
-  font-size: clamp(1.6rem, 3vw, 2.2rem);
-  font-weight: 800;
-  background: #e8eef7;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
+.pg-layout { display: grid; grid-template-columns: minmax(280px, 340px) minmax(0, 1fr); gap: 20px; align-items: start; }
+.pg-console { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.pg-panel { padding: 15px 16px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--alp-color-primary) 22%, var(--alp-color-border)); background: color-mix(in srgb, var(--alp-bg-surface) 94%, transparent); box-shadow: var(--alp-shadow-card); }
+.pg-panel-title { margin: 0 0 10px; font-size: 13px; font-weight: 700; color: var(--alp-color-text); }
+.pg-control-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.pg-control-head .pg-panel-title { margin-bottom: 0; }
+.pg-container-select { width: 100%; margin-top: 10px; }
+.pg-container-select :deep(.el-select-dropdown__item) small { float: right; margin-left: 18px; color: var(--alp-color-muted); }
+.pg-cpp-hint { margin: 9px 0 12px; font-size: 12px; color: var(--alp-color-muted); }
+.pg-cpp-hint code { font-family: ui-monospace, Consolas, monospace; color: var(--alp-color-primary); }
+.pg-input-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
+.pg-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; font-size: 11px; color: var(--alp-color-muted); }
+.pg-input-row .pg-field:only-child { grid-column: 1 / -1; }
+.pg-op-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.pg-op-btn { margin: 0; min-width: 0; }
+.pg-quick-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; color: var(--alp-color-muted); font-size: 11px; }
+.pg-pseudo { margin: 0; padding: 11px 12px; border-radius: 9px; font-size: 12px; line-height: 1.5; font-family: ui-monospace, Consolas, monospace; background: var(--alp-bg-code-ish); border: 1px solid var(--alp-color-border); color: #6a9eb0; white-space: pre-wrap; word-break: break-word; }
+.pg-disclosure { padding-block: 12px; }
+.pg-disclosure summary, .pg-protocol summary { cursor: pointer; user-select: none; font-size: 12px; font-weight: 600; color: var(--alp-color-primary); }
+.pg-log-list { margin: 10px 0 0; padding: 0; list-style: none; font-size: 11px; font-family: ui-monospace, Consolas, monospace; color: var(--alp-color-muted); max-height: 120px; overflow-y: auto; }
+.pg-log-list li { padding: 4px 0; border-bottom: 1px solid color-mix(in srgb, var(--alp-color-border) 60%, transparent); }
+.pg-sandbox-list { margin: 10px 0 0; padding-left: 18px; color: var(--alp-color-muted); font-size: 12px; line-height: 1.65; }
 
-.pg-subtitle {
-  margin: 0;
-  max-width: 52ch;
-  font-size: 14px;
-  line-height: 1.65;
-  color: var(--alp-color-muted);
-}
-
-.pg-hero-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.pg-chip {
-  font-size: 11px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--alp-color-primary) 35%, var(--alp-color-border));
-  background: color-mix(in srgb, var(--alp-color-primary) 10%, var(--alp-bg-surface));
-  color: var(--alp-color-text);
-  font-family: ui-monospace, Consolas, monospace;
-}
-
-.pg-layout {
-  display: grid;
-  grid-template-columns: minmax(280px, 360px) 1fr;
-  gap: 22px;
-  align-items: start;
-}
-
-.pg-console {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.pg-panel {
-  padding: 16px 18px;
-  border-radius: 14px;
-  border: 1px solid color-mix(in srgb, var(--alp-color-primary) 22%, var(--alp-color-border));
-  background: color-mix(in srgb, var(--alp-bg-surface) 88%, transparent);
-  backdrop-filter: blur(12px);
-  box-shadow: var(--alp-shadow-card);
-}
-
-.pg-panel-title {
-  margin: 0 0 12px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--alp-color-text);
-}
-
-.pg-segmented {
-  width: 100%;
-}
-
-.pg-segmented :deep(.el-segmented) {
-  width: 100%;
-}
-
-.pg-cpp-hint {
-  margin: 12px 0 0;
-  font-size: 12px;
-  color: var(--alp-color-muted);
-}
-
-.pg-cpp-hint code {
-  font-family: ui-monospace, Consolas, monospace;
-  color: var(--alp-color-primary);
-}
-
-.pg-op-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-}
-
-.pg-op-btn {
-  margin: 0;
-}
-
-.pg-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 10px;
-  font-size: 12px;
-  color: var(--alp-color-muted);
-}
-
-.pg-field:last-child {
-  margin-bottom: 0;
-}
-
-.pg-panel--actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.pg-pseudo {
-  margin: 0;
-  padding: 12px 14px;
-  border-radius: 10px;
-  font-size: 12px;
-  line-height: 1.55;
-  font-family: ui-monospace, Consolas, monospace;
-  background: var(--alp-bg-code-ish);
-  border: 1px solid var(--alp-color-border);
-  color: #6a9eb0;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.pg-trace-meta {
-  margin-top: 10px;
-  font-size: 11px;
-  color: var(--alp-color-muted);
-}
-
-.pg-trace-meta code {
-  display: block;
-  margin-top: 4px;
-  font-size: 11px;
-  color: #c4b5fd;
-}
-
-.pg-log-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: 11px;
-  font-family: ui-monospace, Consolas, monospace;
-  color: var(--alp-color-muted);
-  max-height: 140px;
-  overflow-y: auto;
-}
-
-.pg-log-list li {
-  padding: 4px 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--alp-color-border) 60%, transparent);
-}
-
-.pg-sandbox-list {
-  margin: 0;
-  padding-left: 18px;
-  color: var(--alp-color-muted);
-  font-size: 12px;
-  line-height: 1.7;
-}
-
-.pg-canvas {
-  padding: 20px 22px 24px;
-  border-radius: 16px;
-  border: 1px solid color-mix(in srgb, var(--alp-color-accent) 30%, var(--alp-color-border));
-  background: color-mix(in srgb, var(--alp-bg-surface) 92%, transparent);
-  backdrop-filter: blur(14px);
-  box-shadow:
-    var(--alp-shadow-card),
-    0 0 60px color-mix(in srgb, var(--alp-color-primary) 8%, transparent);
-  min-height: 420px;
-}
-
-.pg-canvas-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 18px;
-}
-
-.pg-canvas-head h2 {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.pg-var-tag {
-  font-size: 11px;
-  padding: 4px 10px;
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--alp-color-accent) 18%, var(--alp-bg-surface));
-  font-family: ui-monospace, Consolas, monospace;
-  color: var(--alp-color-accent);
-}
-
-.pg-viz-stage {
-  min-height: 280px;
-  padding: 8px 4px 20px;
-}
-
-.pg-protocol {
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--alp-color-muted);
-}
-
-.pg-protocol summary {
-  cursor: pointer;
-  user-select: none;
-  color: var(--alp-color-primary);
-}
-
-.pg-protocol pre {
-  margin: 10px 0 0;
-  padding: 12px;
-  border-radius: 10px;
-  font-size: 11px;
-  overflow: auto;
-  max-height: 200px;
-  background: var(--alp-bg-code-ish);
-  border: 1px solid var(--alp-color-border);
-}
+.pg-canvas { min-width: 0; min-height: clamp(360px, 58vh, 620px); padding: 18px 20px 16px; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--alp-color-accent) 30%, var(--alp-color-border)); background: color-mix(in srgb, var(--alp-bg-surface) 94%, transparent); box-shadow: var(--alp-shadow-card); display: flex; flex-direction: column; }
+.pg-canvas-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.pg-canvas-head h2 { margin: 0; font-size: 16px; font-weight: 700; }
+.pg-canvas-head p { margin: 3px 0 0; font-size: 11px; color: var(--alp-color-muted); }
+.pg-var-tag { flex-shrink: 0; font-size: 11px; padding: 4px 9px; border-radius: 6px; background: color-mix(in srgb, var(--alp-color-accent) 16%, var(--alp-bg-surface)); font-family: ui-monospace, Consolas, monospace; color: var(--alp-color-accent); }
+.pg-viz-stage { flex: 1; min-height: 240px; min-width: 0; display: grid; align-items: center; overflow: auto; padding: 4px 0; }
+.pg-viz-stage > :deep(*) { min-width: 0; margin-bottom: 0; }
+.pg-protocol { margin-top: 10px; color: var(--alp-color-muted); }
+.pg-protocol pre { margin: 10px 0 0; padding: 12px; border-radius: 10px; font-size: 11px; overflow: auto; max-height: 180px; background: var(--alp-bg-code-ish); border: 1px solid var(--alp-color-border); }
 
 @media (max-width: 960px) {
-  .pg-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .pg-op-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
+  .pg-layout { grid-template-columns: 1fr; }
+  .pg-console { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(240px, 0.7fr); align-items: start; }
+  .pg-panel--controls { grid-row: span 3; }
+  .pg-canvas { min-height: 420px; }
 }
 
-@media (max-width: 520px) {
-  .stl-playground {
-    padding: 18px 14px 32px;
-  }
-
-  .pg-op-grid {
-    grid-template-columns: 1fr 1fr;
-  }
+@media (max-width: 640px) {
+  .pg-hero { align-items: flex-start; margin-bottom: 16px; }
+  .pg-console { display: flex; }
+  .pg-input-row { grid-template-columns: 1fr; }
+  .pg-input-row .pg-field:only-child { grid-column: auto; }
+  .pg-canvas { min-height: 360px; padding: 14px; }
+  .pg-viz-stage { min-height: 210px; }
 }
 </style>

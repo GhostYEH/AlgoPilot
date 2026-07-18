@@ -11,7 +11,11 @@ from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from core.config import settings
-from services.llm import chat_completion
+from services.llm.validator import (
+    DEFAULT_MAX_RETRIES,
+    chat_completion_validated,
+    json_object_validator,
+)
 
 RiskLevel = Literal["high", "medium", "low"]
 
@@ -242,13 +246,17 @@ async def _llm_cpp_static_guard(code: str) -> AstFinding | None:
         return None
     snippet = code[:4500]
     try:
-        raw = await chat_completion(
+        raw, _ = await chat_completion_validated(
             [
                 {"role": "system", "content": _CPP_LLM_SYSTEM},
                 {"role": "user", "content": f"```cpp\n{snippet}\n```"},
             ],
+            validator=json_object_validator(),
+            max_retries=DEFAULT_MAX_RETRIES,
             temperature=0.1,
             max_tokens=280,
+            retry_temperature=0.25,
+            context_label="ast_cpp_guard",
         )
         data = _parse_llm_guard_json(raw)
         if data.get("safe") is True:

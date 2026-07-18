@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import shutil
+import subprocess
+import sys
 
 import pytest
 
@@ -123,3 +125,31 @@ def test_cpp_stdio_compile_error() -> None:
     summary = run_cases_stdio("int main( {", cases=CASES, language="cpp")
     assert summary.verdict == "CE"
     assert summary.compile_error
+
+
+def test_frozen_cpp_compile_timeout_defaults_to_120_seconds(monkeypatch: pytest.MonkeyPatch) -> None:
+    from services.oj.cpp_runner import cpp_compile_timeout_seconds
+
+    monkeypatch.delenv("ALGOPILOT_CPP_COMPILE_TIMEOUT_SECONDS", raising=False)
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    assert cpp_compile_timeout_seconds() == 120
+
+
+def test_cpp_stdio_compile_timeout_returns_actionable_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    import services.oj.stdio_runner as stdio_runner
+
+    monkeypatch.setattr(stdio_runner, "_find_gpp", lambda: r"C:\portable\mingw\bin\g++.exe")
+    monkeypatch.setattr(stdio_runner, "cpp_compile_timeout_seconds", lambda: 120)
+
+    def timeout(*args, **kwargs):
+        raise subprocess.TimeoutExpired(args[0] if args else "g++", timeout=120)
+
+    monkeypatch.setattr(stdio_runner.subprocess, "run", timeout)
+    summary = stdio_runner.run_cases_stdio(
+        CPP_A_PLUS_B,
+        cases=CASES,
+        language="cpp",
+    )
+    assert summary.verdict == "CE"
+    assert "120" in (summary.compile_error or "")
+    assert "Windows" in (summary.compile_error or "")

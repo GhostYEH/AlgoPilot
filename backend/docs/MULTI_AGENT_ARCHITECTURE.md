@@ -28,7 +28,6 @@
 | profiling | `ProfilingAgent` | 对话破冰、六维画像抽取、`patch-from-learning` | `Orchestrator.persona_*` |
 | resource | `ConceptAgent` | 讲解文档（Domain/Structure JSON） | `resource_type=document` |
 | resource | `GraphAgent` | Mermaid 知识图谱 | `mindmap` |
-| resource | `QuizAgent` | 5 道个性化题（选择+填空） | `exercises` |
 | resource | `ScenarioAgent` | 剧本沙盒 + TODO 代码框架 | `code_case` |
 | resource | `TraceAgent` | 题解 Trace JSON（对接 `trace_runner`） | `trace_animation` |
 | path | `PlannerAgent` / `LearningPathAgent` | DAG 路径规划、受挫插入巩固节点 | `replan_learning_path` |
@@ -75,9 +74,9 @@ KnowledgeRetriever (BM25)
 | Phase | 资源类型 | 并行 | 依赖 |
 |-------|----------|------|------|
 | 1 | `document` | 否 | — |
-| 2 | `mindmap`, `exercises` | **是** | Phase 1 的 `doc_summary` |
-| 3 | `code_case` | 否 | `quiz_focus` |
-| 4 | `trace_animation` | 否 | `scenario_hook` |
+| 2 | `mindmap` | 否 | Phase 1 的 `doc_summary` |
+| 3 | `code_case` | 否 | Phase 1 的 `doc_summary` |
+| 4 | `trace_animation`, `reading` | **是** | `scenario_hook` |
 
 **并发与一致性**
 

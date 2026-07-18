@@ -5,7 +5,12 @@ from collections.abc import AsyncIterator
 from schemas.ai_tutor import AiTutorChatRequest
 from services.agents.base import BaseAgent
 from services.ai_tutor_prompt import build_system_prompt
-from services.llm import chat_completion, chat_completion_stream
+from services.llm import chat_completion_stream
+from services.llm.validator import (
+    DEFAULT_MAX_RETRIES,
+    chat_completion_validated,
+    non_empty_validator,
+)
 
 
 class TutorAgent(BaseAgent):
@@ -34,7 +39,16 @@ class TutorAgent(BaseAgent):
 
     async def run(self, *, request: AiTutorChatRequest, profile_block: str = "") -> str:
         messages = self.build_messages(request=request, profile_block=profile_block)
-        return await chat_completion(messages, temperature=0.65, max_tokens=2048)
+        text, _ = await chat_completion_validated(
+            messages,
+            validator=non_empty_validator(5),
+            max_retries=DEFAULT_MAX_RETRIES,
+            temperature=0.65,
+            max_tokens=2048,
+            retry_temperature=0.8,
+            context_label="tutor_chat",
+        )
+        return text
 
     async def run_stream(
         self, *, request: AiTutorChatRequest, profile_block: str = ""

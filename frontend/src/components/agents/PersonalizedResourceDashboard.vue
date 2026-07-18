@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { GeneratedResource } from '@/api/orchestrator'
 import DomainStructurePanels from '@/components/resources/DomainStructurePanels.vue'
 import SafetyValidationPanel from '@/components/resources/SafetyValidationPanel.vue'
@@ -11,6 +11,7 @@ import {
 import { normalizeMindmapSource } from '@/utils/mermaidMindmap'
 import { renderAiReplyHtml } from '@/utils/renderAiReply'
 import { CORE_RESOURCE_TAB_META } from '@/utils/agentConsole'
+import { parseStructuredJson } from '@/utils/structuredJson'
 import type { TraceStep, TraceVarSnapshot } from '@/types/codeTrace'
 import {
   associativeEntries,
@@ -146,74 +147,9 @@ async function renderMermaid() {
 watch([tab, mermaidSrc], () => void renderMermaid(), { flush: 'post' })
 onMounted(() => void renderMermaid())
 
-// --- Quiz ---
-interface QuizQ {
-  type: string
-  stem: string
-  options?: string[]
-  hint?: string
-  focus?: string
-  difficulty?: string
-}
-
 function robustJsonParse(text: string): unknown | null {
-  let cleaned = text.trim()
-  const kbIdx = cleaned.indexOf('---**依据知识库**')
-  if (kbIdx >= 0) cleaned = cleaned.slice(0, kbIdx)
-  cleaned = cleaned.split('\n').filter(line => !line.includes('course:')).join('\n').trim()
-  const fence = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/i)
-  if (fence?.[1]) cleaned = fence[1].trim()
-  try {
-    return JSON.parse(cleaned)
-  } catch {
-    const start = cleaned.indexOf('{')
-    if (start < 0) return null
-    let depth = 0
-    let inStr = false
-    let esc = false
-    for (let i = start; i < cleaned.length; i++) {
-      const ch = cleaned[i]
-      if (esc) { esc = false; continue }
-      if (ch === '\\' && inStr) { esc = true; continue }
-      if (ch === '"') { inStr = !inStr; continue }
-      if (inStr) continue
-      if (ch === '{' || ch === '[') depth++
-      else if (ch === '}' || ch === ']') {
-        depth--
-        if (depth === 0) {
-          try { return JSON.parse(cleaned.slice(start, i + 1)) } catch { return null }
-        }
-      }
-    }
-  }
-  return null
+  return parseStructuredJson(text)
 }
-
-const quizQuestions = computed((): QuizQ[] => {
-  const r = resourceMap.value.get('exercises')
-  if (!r) return []
-  const data = robustJsonParse(r.content) as { questions?: QuizQ[] } | null
-  if (!data || !Array.isArray(data.questions)) return []
-  return data.questions
-})
-
-const quizAnswers = ref<Record<number, string>>({})
-const quizRevealed = ref<Record<number, boolean>>({})
-const quizSubmitted = ref(false)
-
-function revealHint(i: number) {
-  quizRevealed.value = { ...quizRevealed.value, [i]: true }
-}
-
-function resetQuiz() {
-  quizAnswers.value = {}
-  quizRevealed.value = {}
-  quizSubmitted.value = false
-}
-
-const quizAnsweredCount = computed(() => {
-  return quizQuestions.value.filter((_, i) => quizAnswers.value[i]?.trim()).length
-})
 
 // --- Scenario（旧版 Markdown 兼容）---
 const scenarioLegacy = computed(() => {
@@ -259,6 +195,10 @@ interface TracePayload {
   verdict?: string
   narration_hint?: string
   title?: string
+  message?: string
+  result_preview?: string | null
+  stdin?: string
+  stdout?: string
 }
 
 const tracePayload = computed((): TracePayload | null => {
@@ -269,10 +209,13 @@ const tracePayload = computed((): TracePayload | null => {
 })
 
 const traceStepIndex = ref(0)
+const tracePlaying = ref(false)
+let tracePlaybackTimer: ReturnType<typeof setInterval> | null = null
 
 const traceSteps = computed(() => tracePayload.value?.steps ?? [])
 
 watch(traceSteps, () => {
+  stopTracePlayback()
   traceStepIndex.value = 0
 })
 
@@ -281,6 +224,43 @@ const currentTraceStep = computed(() => traceSteps.value[traceStepIndex.value] ?
 const tracePrevStep = computed(() =>
   traceStepIndex.value > 0 ? traceSteps.value[traceStepIndex.value - 1] : null,
 )
+
+const traceCodeLines = computed(() => (tracePayload.value?.code ?? '').split('\n'))
+const traceCurrentLine = computed(() => currentTraceStep.value?.line ?? 0)
+
+function stopTracePlayback() {
+  tracePlaying.value = false
+  if (tracePlaybackTimer) clearInterval(tracePlaybackTimer)
+  tracePlaybackTimer = null
+}
+
+function tracePrevious() {
+  stopTracePlayback()
+  traceStepIndex.value = Math.max(0, traceStepIndex.value - 1)
+}
+
+function traceNext() {
+  stopTracePlayback()
+  traceStepIndex.value = Math.min(traceSteps.value.length - 1, traceStepIndex.value + 1)
+}
+
+function toggleTracePlayback() {
+  if (tracePlaying.value) {
+    stopTracePlayback()
+    return
+  }
+  if (traceStepIndex.value >= traceSteps.value.length - 1) traceStepIndex.value = 0
+  tracePlaying.value = true
+  tracePlaybackTimer = setInterval(() => {
+    if (traceStepIndex.value >= traceSteps.value.length - 1) {
+      stopTracePlayback()
+      return
+    }
+    traceStepIndex.value++
+  }, 900)
+}
+
+onBeforeUnmount(stopTracePlayback)
 
 function pickPrimaryVar(step: TraceStep | null): string | null {
   if (!step?.vars) return null
@@ -306,6 +286,32 @@ const tracePrevSnap = computed((): TraceVarSnapshot | null => {
 const traceIsSequence = computed(() => traceSnap.value && isSequenceSnapshot(traceSnap.value))
 const traceIsAssociative = computed(() => traceSnap.value && isAssociativeSnapshot(traceSnap.value))
 
+function formatTraceValue(snapshot: TraceVarSnapshot | undefined): string {
+  if (!snapshot) return '未定义'
+  const value = snapshot.value
+  if (value === null) return 'None'
+  if (typeof value === 'string') return value || '空字符串'
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  try {
+    return JSON.stringify(value, null, 2)
+  } catch {
+    return String(value)
+  }
+}
+
+const traceVariables = computed(() => {
+  const currentVars = currentTraceStep.value?.vars ?? {}
+  const previousVars = tracePrevStep.value?.vars ?? {}
+  const changed = new Set(currentTraceStep.value?.changed ?? [])
+  return Object.entries(currentVars).map(([name, snapshot]) => ({
+    name,
+    type: snapshot.type || typeof snapshot.value,
+    current: formatTraceValue(snapshot),
+    previous: formatTraceValue(previousVars[name]),
+    changed: changed.has(name),
+  }))
+})
+
 interface ReadingLevel {
   level: string
   fit_for?: string
@@ -315,11 +321,7 @@ interface ReadingLevel {
 const readingPayload = computed(() => {
   const r = resourceMap.value.get('reading')
   if (!r) return null
-  try {
-    return JSON.parse(r.content) as { reading_goal?: string; levels?: ReadingLevel[] }
-  } catch {
-    return null
-  }
+  return robustJsonParse(r.content) as { reading_goal?: string; levels?: ReadingLevel[] } | null
 })
 
 const evidenceVisible = ref(false)
@@ -359,7 +361,10 @@ function openEvidence() {
           <h3>正在实时生成{{ tabs.find((item) => item.key === tab)?.label ?? '学习资源' }}</h3>
           <span class="panel-meta">内容持续更新中</span>
         </header>
-        <pre class="stream-preview">{{ activeStreamingContent }}</pre>
+        <div class="stream-progress-copy">
+          <span class="stream-progress-dot" />
+          <p>正在整理结构、核对课程知识并生成可视化内容，完成后将在这里自动呈现。</p>
+        </div>
       </article>
 
       <template v-else>
@@ -395,53 +400,6 @@ function openEvidence() {
         <div ref="mermaidHost" class="mermaid-host" />
         <p v-if="mermaidError" class="mermaid-err">{{ mermaidError }}</p>
         <el-empty v-if="!mermaidSrc" description="等待 GraphAgent 输出思维导图" />
-      </article>
-
-      <!-- 个性化自测题 -->
-      <article v-if="tab === 'exercises'" class="panel-card panel-card--quiz">
-        <header class="panel-head">
-          <h3>个性化自测题</h3>
-          <span class="panel-meta">QuizAgent · 5 题精练</span>
-        </header>
-        <div v-if="quizQuestions.length" class="quiz-grid">
-          <div class="quiz-toolbar">
-            <span class="quiz-progress">已答 {{ quizAnsweredCount }} / {{ quizQuestions.length }} 题</span>
-            <div class="quiz-toolbar-actions">
-              <el-button v-if="!quizSubmitted" type="primary" size="small" :disabled="quizAnsweredCount === 0" @click="quizSubmitted = true">
-                提交答案
-              </el-button>
-              <el-button v-else size="small" @click="resetQuiz">
-                重新作答
-              </el-button>
-            </div>
-          </div>
-          <div v-for="(q, i) in quizQuestions" :key="i" class="quiz-card">
-            <div class="quiz-head">
-              <span class="quiz-badge">{{ q.type === 'choice' ? '选择题' : '填空题' }}</span>
-              <span class="quiz-diff">{{ q.difficulty ?? 'medium' }}</span>
-              <span v-if="q.focus" class="quiz-focus-tag">考查：{{ q.focus }}</span>
-            </div>
-            <p class="quiz-stem">{{ i + 1 }}. {{ q.stem }}</p>
-            <el-radio-group
-              v-if="q.type === 'choice' && q.options?.length"
-              v-model="quizAnswers[i]"
-              :disabled="quizSubmitted"
-              class="quiz-options"
-            >
-              <el-radio v-for="(opt, j) in q.options" :key="j" :value="opt">{{ opt }}</el-radio>
-            </el-radio-group>
-            <el-input
-              v-else-if="q.type === 'fill'"
-              v-model="quizAnswers[i]"
-              :disabled="quizSubmitted"
-              placeholder="输入你的答案"
-              class="quiz-fill"
-            />
-            <el-button link type="primary" size="small" @click="revealHint(i)">查看提示</el-button>
-            <p v-if="quizRevealed[i] && q.hint" class="quiz-hint">💡 {{ q.hint }}</p>
-          </div>
-        </div>
-        <el-empty v-else description="QuizAgent 将根据易错点生成 5 道练习题" />
       </article>
 
       <!-- 剧情实操沙盒 -->
@@ -487,17 +445,71 @@ function openEvidence() {
           <span class="panel-meta">TraceAgent · trace_viz</span>
         </header>
         <div v-if="traceSteps.length" class="trace-layout">
-          <p v-if="tracePayload?.narration_hint" class="trace-hint">{{ tracePayload.narration_hint }}</p>
+          <div class="trace-overview">
+            <div>
+              <strong>{{ tracePayload?.title || '算法执行过程' }}</strong>
+              <p v-if="tracePayload?.narration_hint" class="trace-hint">{{ tracePayload.narration_hint }}</p>
+            </div>
+            <div class="trace-facts">
+              <span>Step {{ traceStepIndex + 1 }} / {{ traceSteps.length }}</span>
+              <span>源码第 {{ traceCurrentLine }} 行</span>
+              <span class="trace-verdict">{{ tracePayload?.verdict ?? 'OK' }}</span>
+            </div>
+          </div>
           <div class="trace-controls">
+            <el-button size="small" :disabled="traceStepIndex === 0" @click="tracePrevious">上一步</el-button>
+            <el-button size="small" type="primary" plain @click="toggleTracePlayback">
+              {{ tracePlaying ? '暂停' : '自动播放' }}
+            </el-button>
+            <el-button size="small" :disabled="traceStepIndex >= traceSteps.length - 1" @click="traceNext">下一步</el-button>
             <el-slider
               v-model="traceStepIndex"
               :min="0"
               :max="Math.max(0, traceSteps.length - 1)"
               :format-tooltip="(v: number) => `Step ${v + 1}`"
+              @input="stopTracePlayback"
             />
-            <span class="trace-verdict">{{ tracePayload?.verdict ?? 'OK' }}</span>
           </div>
-          <div v-if="traceSnap && traceVarName" class="trace-viz-wrap">
+          <div class="trace-workspace">
+            <section class="trace-source-panel" aria-label="题解源码执行位置">
+              <header>题解源码</header>
+              <ol class="trace-source-lines">
+                <li
+                  v-for="(line, index) in traceCodeLines"
+                  :key="index"
+                  :class="{ active: index + 1 === traceCurrentLine }"
+                >
+                  <code>{{ line || ' ' }}</code>
+                </li>
+              </ol>
+            </section>
+            <section class="trace-state-panel" aria-label="当前变量状态">
+              <header>
+                <span>变量状态</span>
+                <small>{{ currentTraceStep?.changed?.length ? `本步变化：${currentTraceStep.changed.join('、')}` : '本步无变量变化' }}</small>
+              </header>
+              <div v-if="traceVariables.length" class="trace-variable-grid">
+                <article
+                  v-for="variable in traceVariables"
+                  :key="variable.name"
+                  class="trace-variable-card"
+                  :class="{ changed: variable.changed }"
+                >
+                  <div class="trace-variable-head">
+                    <strong>{{ variable.name }}</strong>
+                    <span>{{ variable.type }}</span>
+                  </div>
+                  <div class="trace-variable-change">
+                    <code v-if="traceStepIndex > 0">{{ variable.previous }}</code>
+                    <span v-if="traceStepIndex > 0">→</span>
+                    <code>{{ variable.current }}</code>
+                  </div>
+                </article>
+              </div>
+              <el-empty v-else :image-size="54" description="当前步骤没有可展示变量" />
+            </section>
+          </div>
+          <div v-if="traceSnap && traceVarName && (traceIsSequence || traceIsAssociative)" class="trace-viz-wrap">
             <TraceSequenceViz
               v-if="traceIsSequence"
               :name="traceVarName"
@@ -514,12 +526,12 @@ function openEvidence() {
               :prev-entries="tracePrevSnap ? associativeEntries(tracePrevSnap) : []"
               :var-changed="true"
             />
-            <pre v-else class="trace-raw">{{ JSON.stringify(traceSnap, null, 2) }}</pre>
           </div>
-          <details class="trace-code-fold">
-            <summary>题解源码</summary>
-            <pre>{{ tracePayload?.code }}</pre>
-          </details>
+          <div v-if="tracePayload?.stdin || tracePayload?.result_preview || tracePayload?.stdout" class="trace-io">
+            <div><span>输入</span><pre>{{ tracePayload?.stdin || '—' }}</pre></div>
+            <div><span>实际输出</span><pre>{{ tracePayload?.result_preview || '—' }}</pre></div>
+            <div><span>期望输出</span><pre>{{ tracePayload?.stdout || '—' }}</pre></div>
+          </div>
         </div>
         <el-empty v-else description="TraceAgent 将录制标准题解并逐步回放" />
       </article>
@@ -690,14 +702,35 @@ function openEvidence() {
   min-height: 360px;
 }
 
-.stream-preview {
+.stream-progress-copy {
+  min-height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--alp-color-muted);
+  text-align: center;
+}
+
+.stream-progress-copy p {
+  max-width: 520px;
   margin: 0;
-  max-height: 520px;
-  overflow: auto;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  color: var(--alp-color-text);
-  font: 13px/1.75 ui-monospace, SFMono-Regular, Consolas, monospace;
+  line-height: 1.7;
+}
+
+.stream-progress-dot {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--alp-color-primary);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--alp-color-primary) 35%, transparent);
+  animation: stream-pulse 1.4s infinite;
+}
+
+@keyframes stream-pulse {
+  70% { box-shadow: 0 0 0 10px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
 }
 
 .mermaid-host {
@@ -823,6 +856,19 @@ function openEvidence() {
   margin: 8px 0 0;
 }
 
+.quiz-answer {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--el-color-primary-light-9) 65%, transparent);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.quiz-answer p { margin: 4px 0 0; }
+.quiz-correct { color: var(--el-color-success); }
+.quiz-wrong { color: var(--el-color-danger); }
+
 .quiz-focus {
   font-size: 11px;
   color: var(--alp-color-primary);
@@ -856,20 +902,46 @@ function openEvidence() {
 }
 
 .trace-hint {
-  margin: 0 0 12px;
+  margin: 5px 0 0;
   font-size: 13px;
   color: var(--alp-color-muted);
+}
+
+.trace-overview {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.trace-facts {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.trace-facts > span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--alp-bg-soft-block);
+  border: 1px solid var(--alp-color-border);
+  color: var(--alp-color-muted);
+  font-size: 11px;
 }
 
 .trace-controls {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
   margin-bottom: 16px;
 }
 
 .trace-controls .el-slider {
   flex: 1;
+  margin-left: 10px;
 }
 
 .trace-verdict {
@@ -879,28 +951,165 @@ function openEvidence() {
 }
 
 .trace-viz-wrap {
-  min-height: 200px;
-  padding: 12px 0;
+  margin-top: 14px;
+  min-height: 150px;
+  padding: 14px;
+  border: 1px solid var(--alp-color-border);
+  border-radius: 12px;
 }
 
-.trace-raw {
-  font-size: 11px;
+.trace-workspace {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.9fr) minmax(360px, 1.1fr);
+  gap: 14px;
+}
+
+.trace-source-panel,
+.trace-state-panel {
+  min-width: 0;
+  border: 1px solid var(--alp-color-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.trace-source-panel > header,
+.trace-state-panel > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--alp-color-border);
+  background: var(--alp-bg-soft-block);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.trace-state-panel > header small {
+  color: var(--alp-color-muted);
+  font-weight: 400;
+}
+
+.trace-source-lines {
+  margin: 0;
+  padding: 8px 0 8px 44px;
+  max-height: 350px;
   overflow: auto;
-  max-height: 200px;
+  background: var(--alp-bg-code-ish);
+  color: var(--alp-color-muted);
+  font: 12px/1.75 ui-monospace, 'Cascadia Code', Consolas, monospace;
 }
 
-.trace-code-fold {
-  margin-top: 16px;
+.trace-source-lines li {
+  padding: 0 12px 0 8px;
+  border-left: 3px solid transparent;
+  white-space: pre;
+}
+
+.trace-source-lines li.active {
+  border-left-color: var(--alp-color-primary);
+  background: color-mix(in srgb, var(--alp-color-primary) 16%, transparent);
+  color: var(--alp-color-primary);
+}
+
+.trace-source-lines code {
+  color: inherit;
+}
+
+.trace-variable-grid {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  max-height: 350px;
+  overflow: auto;
+}
+
+.trace-variable-card {
+  padding: 10px 11px;
+  border: 1px solid var(--alp-color-border);
+  border-radius: 9px;
+  background: var(--alp-bg-surface);
+}
+
+.trace-variable-card.changed {
+  border-color: color-mix(in srgb, var(--alp-color-primary) 55%, var(--alp-color-border));
+  background: color-mix(in srgb, var(--alp-color-primary) 7%, var(--alp-bg-surface));
+}
+
+.trace-variable-head,
+.trace-variable-change {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.trace-variable-head {
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.trace-variable-head span {
+  color: var(--alp-color-muted);
+  font-size: 10px;
+  font-family: ui-monospace, monospace;
+}
+
+.trace-variable-change code {
+  min-width: 0;
+  padding: 4px 7px;
+  border-radius: 6px;
+  background: var(--alp-bg-code-ish);
+  white-space: pre-wrap;
+  margin: 0;
+  overflow-wrap: anywhere;
   font-size: 12px;
 }
 
-.trace-code-fold pre {
-  margin-top: 8px;
-  padding: 12px;
-  border-radius: 8px;
-  background: var(--alp-bg-code-ish);
-  overflow: auto;
-  max-height: 180px;
+.trace-variable-change > span {
+  color: var(--alp-color-primary);
+  font-weight: 700;
+}
+
+.trace-io {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.trace-io > div {
+  padding: 10px 12px;
+  border: 1px solid var(--alp-color-border);
+  border-radius: 10px;
+  background: var(--alp-bg-soft-block);
+}
+
+.trace-io span {
+  color: var(--alp-color-muted);
+  font-size: 10px;
+}
+
+.trace-io pre {
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+  font-size: 12px;
+}
+
+@media (max-width: 960px) {
+  .trace-workspace,
+  .trace-io {
+    grid-template-columns: 1fr;
+  }
+
+  .trace-overview,
+  .trace-controls {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .trace-controls .el-slider {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
 }
 
 .reading-goal {

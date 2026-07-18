@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 # Prevent unbounded log growth in multi-agent pipeline
 _PIPELINE_LOG_LIMIT: int = 200
+
+_logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -27,7 +30,6 @@ class PipelineContext:
 
     doc_summary: str = ""
     graph_outline: str = ""
-    quiz_focus: str = ""
     scenario_hook: str = ""
     trace_hint: str = ""
     collaboration_log: list[dict] = field(default_factory=list)
@@ -78,8 +80,6 @@ class PipelineContext:
             parts.append(f"【ConceptAgent 讲解摘要】\n{self.doc_summary[:800]}")
         if self.graph_outline:
             parts.append(f"【GraphAgent 知识拓扑】\n{self.graph_outline[:600]}")
-        if self.quiz_focus:
-            parts.append(f"【QuizAgent 考查侧重】\n{self.quiz_focus[:400]}")
         if self.scenario_hook:
             parts.append(f"【ScenarioAgent 剧本钩子】\n{self.scenario_hook[:400]}")
         if self.trace_hint:
@@ -105,15 +105,6 @@ class PipelineContext:
                 role="拓扑专家",
                 resource_type=resource_type,
             )
-        elif resource_type == "exercises":
-            self.quiz_focus = _extract_quiz_focus(content)
-            self.log(
-                "QuizAgent",
-                "output_focus",
-                self.quiz_focus[:120],
-                role="考题官",
-                resource_type=resource_type,
-            )
         elif resource_type == "code_case":
             self.scenario_hook = _extract_scenario_hook(content)
             self.log(
@@ -131,6 +122,11 @@ class PipelineContext:
                 self.trace_hint[:120],
                 role="动画总导演",
                 resource_type=resource_type,
+            )
+        else:
+            _logger.warning(
+                "PipelineContext.update_from_resource 收到未知 resource_type=%r，已忽略",
+                resource_type,
             )
 
 
@@ -169,19 +165,6 @@ def _extract_graph_outline(raw: str) -> str:
     if labels:
         return " → ".join(labels[:15])
     return raw[:400]
-
-
-def _extract_quiz_focus(raw: str) -> str:
-    try:
-        data = json.loads(raw)
-        focuses = [
-            str(q.get("focus", ""))
-            for q in data.get("questions", [])
-            if q.get("focus")
-        ]
-        return "；".join(focuses[:5])
-    except Exception:
-        return raw[:300]
 
 
 def _extract_scenario_hook(raw: str) -> str:

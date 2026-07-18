@@ -199,6 +199,20 @@ class ResourceGenerationWorkflow:
             if revised_hint:
                 hint = (hint + f"\n\n校验修订：{revised_hint}").strip()
 
+            # 重试前向前端发送 regenerate_clear 信号，让前端清空上一轮已显示的流式内容
+            if attempt > 1 and emit:
+                await emit(
+                    {
+                        "type": "regenerate_clear",
+                        "resource_type": resource_type,
+                        "agent_id": role_agent_id,
+                        "agent_name": role_agent_id,
+                        "attempt": attempt,
+                        "reason": revised_hint or "上一轮输出未通过校验，重新生成",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    }
+                )
+
             await _emit(
                 "agent_generate",
                 role_agent_id,
@@ -247,26 +261,55 @@ class ResourceGenerationWorkflow:
             )
 
             if resource_type in _SKIP_VERIFY_TYPES:
-                passed = True
                 verify_skipped = True
-                gen_meta["verified"] = True
+                trace_verdict = str(gen_meta.get("trace_verdict") or "").upper()
+                trace_steps = int(gen_meta.get("trace_steps") or 0)
+                trace_quality_passed = bool(gen_meta.get("trace_quality_passed"))
+                trace_quality_reasons = list(gen_meta.get("trace_quality_reasons") or [])
+                trace_ok = (
+                    trace_verdict in {"AC", "OK"}
+                    and trace_steps >= 4
+                    and trace_quality_passed
+                )
+                passed = trace_ok
+                gen_meta["verified"] = trace_ok
                 gen_meta["verify_attempts"] = 0
                 gen_meta["knowledge_refs"] = [c["id"] for c in chunks]
                 gen_meta["content_verification"] = {
-                    "passed": True,
-                    "warnings": ["该资源由专用执行管线校验，跳过文本事实对照"],
+                    "passed": trace_ok,
+                    "warnings": [] if trace_ok else [
+                        f"执行轨迹未通过：verdict={trace_verdict or 'missing'}, steps={trace_steps}"
+                        + (f"，{'；'.join(trace_quality_reasons)}" if trace_quality_reasons else "")
+                    ],
                     "grounded_terms": [],
-                    "unsupported_claims": [],
+                    "unsupported_claims": [] if trace_ok else ["代码未产生可用且成功的执行轨迹"],
                 }
                 verifier_structured = None
-                ctx.log("TraceAgent", "trace_record", gen_meta.get("trace_verdict", "done"), resource_type=resource_type)
+                ctx.log("TraceAgent", "trace_record", trace_verdict or "missing", resource_type=resource_type, status="done" if trace_ok else "warn")
                 await _emit(
                     "content_verify",
                     "ContentVerifierAgent",
-                    "skipped",
-                    "轨迹资源跳过文本校验",
-                    validation_result={"status": "skipped", "reason": "trace resource"},
+                    "skipped" if trace_ok else ("retry" if attempt <= MAX_VERIFY_RETRIES else "failed"),
+                    "执行轨迹校验通过" if trace_ok else (
+                        f"执行轨迹无效：verdict={trace_verdict or 'missing'}, steps={trace_steps}"
+                        + (f"，{'；'.join(trace_quality_reasons)}" if trace_quality_reasons else "")
+                    ),
+                    retry_count=attempt - 1,
+                    severity="info" if trace_ok else "warn",
+                    validation_result={"status": "passed" if trace_ok else "failed", "trace_verdict": trace_verdict, "trace_steps": trace_steps},
                 )
+                if trace_ok:
+                    break
+                revised_hint = (
+                    "生成可运行且紧扣课程主题的 Python3 完整程序，确保 stdin 与代码匹配；"
+                    "轨迹至少包含 4 个有效步骤、2 个源码位置、2 个可观察且发生变化的变量"
+                )
+                retry_count = attempt - 1
+                if attempt <= MAX_VERIFY_RETRIES:
+                    ctx.log(role_agent_id, "retry", revised_hint, role=role_agent.role, resource_type=resource_type, status="retry")
+                    continue
+                gen_meta["status"] = "draft"
+                gen_meta["draft_reason"] = revised_hint
                 break
 
             await _emit(
@@ -276,7 +319,7 @@ class ResourceGenerationWorkflow:
                 input_summary=f"{title} | {len(chunks)} evidence chunks",
             )
             passed, content, citation_ids, revised_hint, verifier_structured = await verifier_agent.verify(
-                content, chunks, topic=topic
+                content, chunks, topic=topic, resource_type=resource_type
             )
             retry_count = attempt - 1
             gen_meta["knowledge_refs"] = citation_ids
@@ -325,7 +368,8 @@ class ResourceGenerationWorkflow:
         else:
             gen_meta["status"] = "draft"
 
-        ctx.update_from_resource(resource_type, content)
+        if passed:
+            ctx.update_from_resource(resource_type, content)
         gen_meta["collaboration_log"] = list(ctx.collaboration_log)
 
         await _emit(

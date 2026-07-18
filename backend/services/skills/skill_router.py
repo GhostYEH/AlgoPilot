@@ -91,6 +91,12 @@ class SkillRouter:
         pool = self._registry.list_cards(course_id=req.course_id or "")
         if not pool:
             pool = self._registry.list_cards()
+        if req.module_key:
+            compatible = [
+                card for card in pool if req.module_key in card.triggers.module_keys
+            ]
+            if compatible:
+                pool = compatible
 
         scored: list[tuple[float, SkillCard, list[str]]] = []
         for card in pool:

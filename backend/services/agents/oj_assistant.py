@@ -4,7 +4,12 @@ from collections.abc import AsyncIterator
 
 from schemas.oj_assistant import OjAssistantRequest
 from services.agents.base import BaseAgent
-from services.llm import chat_completion, chat_completion_stream
+from services.llm import chat_completion_stream
+from services.llm.validator import (
+    DEFAULT_MAX_RETRIES,
+    chat_completion_validated,
+    non_empty_validator,
+)
 from services.oj_assistant_prompt import build_oj_assistant_messages
 
 
@@ -24,7 +29,16 @@ class OjAssistantAgent(BaseAgent):
         messages = self.build_messages(request=body)
         temp = 0.55 if body.mode == "ds_hint" else 0.6
         max_t = 1200 if body.mode == "ds_hint" else 900
-        return await chat_completion(messages, temperature=temp, max_tokens=max_t)
+        text, _ = await chat_completion_validated(
+            messages,
+            validator=non_empty_validator(5),
+            max_retries=DEFAULT_MAX_RETRIES,
+            temperature=temp,
+            max_tokens=max_t,
+            retry_temperature=0.8,
+            context_label=f"oj_assistant mode={body.mode}",
+        )
+        return text
 
     async def run_stream_for_request(self, body: OjAssistantRequest) -> AsyncIterator[str]:
         """流式输出：逐段产出文本 delta，供前端实时渲染。"""

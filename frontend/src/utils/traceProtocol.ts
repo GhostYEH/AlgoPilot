@@ -138,11 +138,5 @@ export function diffSequenceItems(prev: string[], curr: string[]): { added: numb
       }
     }
   }
-  if (curr.length > prev.length) {
-    for (let i = prev.length; i < curr.length; i++) added.push(i)
-  }
-  if (prev.length > curr.length) {
-    for (let i = curr.length; i < prev.length; i++) removed.push(i)
-  }
   return { added, removed }
 }

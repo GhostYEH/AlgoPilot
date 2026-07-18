@@ -1,4 +1,5 @@
 import { renderAiReplyHtml } from '@/utils/renderAiReply'
+import { parseStructuredJson } from '@/utils/structuredJson'
 
 export interface DomainNarrative {
   headline?: string
@@ -93,6 +94,10 @@ function extractJsonObjectText(raw: string): string | null {
 }
 
 export function isLikelyDomainStructureJson(raw: string): boolean {
+  const parsed = parseStructuredJson(raw)
+  if (typeof parsed === 'object' && parsed !== null) {
+    return 'domain_narrative' in parsed || 'structure_logic' in parsed
+  }
   const blob = extractJsonObjectText(raw)
   if (!blob) return false
   try {
@@ -110,6 +115,24 @@ export function isLikelyDomainStructureJson(raw: string): boolean {
 }
 
 export function parseDomainStructureContent(raw: string): DomainStructurePayload | null {
+  const parsed = parseStructuredJson(raw)
+  if (
+    typeof parsed === 'object' &&
+    parsed !== null &&
+    'domain_narrative' in parsed &&
+    'structure_logic' in parsed
+  ) {
+    const data = parsed as Record<string, unknown>
+    if (
+      typeof data.domain_narrative === 'object' && data.domain_narrative !== null &&
+      typeof data.structure_logic === 'object' && data.structure_logic !== null
+    ) {
+      return {
+        domain_narrative: data.domain_narrative as DomainNarrative,
+        structure_logic: data.structure_logic as StructureLogic,
+      }
+    }
+  }
   const blob = extractJsonObjectText(raw)
   if (!blob) return null
   try {

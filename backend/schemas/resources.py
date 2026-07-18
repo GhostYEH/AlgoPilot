@@ -5,7 +5,6 @@ from pydantic import BaseModel, Field
 ResourceType = Literal[
     "document",
     "mindmap",
-    "exercises",
     "code_case",
     "trace_animation",
     "reading",
@@ -22,11 +21,6 @@ RESOURCE_AGENT_META: dict[str, dict[str, str]] = {
         "agent_name": "GraphAgent",
         "label": "知识思维导图",
         "role": "拓扑专家",
-    },
-    "exercises": {
-        "agent_name": "QuizAgent",
-        "label": "个性化题单",
-        "role": "考题官",
     },
     "code_case": {
         "agent_name": "ScenarioAgent",
@@ -49,7 +43,6 @@ RESOURCE_AGENT_META: dict[str, dict[str, str]] = {
 CORE_RESOURCE_PIPELINE: list[ResourceType] = [
     "document",
     "mindmap",
-    "exercises",
     "code_case",
     "trace_animation",
     "reading",
@@ -57,7 +50,7 @@ CORE_RESOURCE_PIPELINE: list[ResourceType] = [
 
 PARALLEL_PHASES: list[list[ResourceType]] = [
     ["document"],
-    ["mindmap", "exercises"],
+    ["mindmap"],
     ["code_case"],
     ["trace_animation", "reading"],
 ]

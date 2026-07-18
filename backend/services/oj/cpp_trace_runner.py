@@ -10,7 +10,14 @@ import tempfile
 from pathlib import Path
 from typing import Any, Literal
 
-from services.oj.cpp_runner import _build_cpp_source, _find_gpp, _toolchain_roots, ensure_toolchain_on_path
+from services.oj.cpp_runner import (
+    _build_cpp_source,
+    _compile_timeout_message,
+    _find_gpp,
+    _toolchain_roots,
+    cpp_compile_timeout_seconds,
+    ensure_toolchain_on_path,
+)
 from services.oj.trace_runner import TraceStepOut, TraceSummary
 from utils.security import CPP_SECURITY_MESSAGE, CppSecurityViolation, check_cpp_security
 from services.oj.trace_steps_filter import (
@@ -820,12 +827,29 @@ def run_trace_cpp(
         exe_file = tmp_path / "main.exe"
         cpp_file.write_text(src, encoding="utf-8")
 
-        compile = subprocess.run(
-            [gpp, "-std=c++17", "-g", "-O0", str(cpp_file), "-o", str(exe_file)],
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
+        compile_timeout = cpp_compile_timeout_seconds()
+        try:
+            compile = subprocess.run(
+                [gpp, "-std=c++17", "-g", "-O0", str(cpp_file), "-o", str(exe_file)],
+                capture_output=True,
+                text=True,
+                errors="replace",
+                timeout=compile_timeout,
+            )
+        except subprocess.TimeoutExpired:
+            return TraceSummary(
+                verdict="CE",
+                message=_compile_timeout_message(compile_timeout),
+                user_line_count=user_lines,
+                steps=[],
+            )
+        except OSError as exc:
+            return TraceSummary(
+                verdict="CE",
+                message=f"无法启动 C++ 编译器 {gpp}: {exc}"[:800],
+                user_line_count=user_lines,
+                steps=[],
+            )
         if compile.returncode != 0:
             err = (compile.stderr or compile.stdout or "编译失败").strip()
             return TraceSummary(verdict="CE", message=err[:800], user_line_count=user_lines, steps=[])
@@ -920,12 +944,29 @@ def run_trace_cpp_stdio(
         cpp_file.write_text(user_code.strip(), encoding="utf-8")
         input_file.write_text(stdin, encoding="utf-8")
 
-        compile = subprocess.run(
-            [gpp, "-std=c++17", "-g", "-O0", str(cpp_file), "-o", str(exe_file)],
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
+        compile_timeout = cpp_compile_timeout_seconds()
+        try:
+            compile = subprocess.run(
+                [gpp, "-std=c++17", "-g", "-O0", str(cpp_file), "-o", str(exe_file)],
+                capture_output=True,
+                text=True,
+                errors="replace",
+                timeout=compile_timeout,
+            )
+        except subprocess.TimeoutExpired:
+            return TraceSummary(
+                verdict="CE",
+                message=_compile_timeout_message(compile_timeout),
+                user_line_count=user_lines,
+                steps=[],
+            )
+        except OSError as exc:
+            return TraceSummary(
+                verdict="CE",
+                message=f"无法启动 C++ 编译器 {gpp}: {exc}"[:800],
+                user_line_count=user_lines,
+                steps=[],
+            )
         if compile.returncode != 0:
             err = (compile.stderr or compile.stdout or "编译失败").strip()
             return TraceSummary(verdict="CE", message=err[:800], user_line_count=user_lines, steps=[])

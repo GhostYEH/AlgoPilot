@@ -9,6 +9,7 @@ import {
   type StudentRosterItem,
   type StudentDetailResponse,
 } from '@/api/teacherDashboard'
+import StudentDetailDrawer from './StudentDetailDrawer.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -331,107 +332,11 @@ onMounted(loadRoster)
     </template>
 
     <!-- 学生详情抽屉 -->
-    <el-drawer
+    <StudentDetailDrawer
       v-model="detailVisible"
-      size="560px"
-      :title="detailData ? `${detailData.username} 的学情详情` : '学情详情'"
-      direction="rtl"
-    >
-      <div v-if="detailLoading" class="drawer-loading">
-        <el-skeleton :rows="8" animated />
-      </div>
-      <div v-else-if="detailData" class="detail-content">
-        <div class="detail-metric-row">
-          <div class="detail-metric">
-            <strong :style="{ color: masteryColor(detailData.mastery_score) }">{{ detailData.mastery_score.toFixed(1) }}%</strong>
-            <span>掌握度</span>
-          </div>
-          <div class="detail-metric">
-            <strong>{{ detailData.progress_percent.toFixed(1) }}%</strong>
-            <span>学习进度</span>
-          </div>
-          <div class="detail-metric">
-            <strong>{{ detailData.oj_submissions }}</strong>
-            <span>OJ 提交</span>
-          </div>
-          <div class="detail-metric">
-            <strong>{{ detailData.oj_accepted }}</strong>
-            <span>OJ AC</span>
-          </div>
-          <div class="detail-metric">
-            <strong>{{ detailData.resource_count }}</strong>
-            <span>资源数</span>
-          </div>
-        </div>
-
-        <div v-if="detailData.profile_summary" class="detail-block">
-          <h4>学习画像摘要</h4>
-          <p>{{ detailData.profile_summary }}</p>
-        </div>
-
-        <div v-if="detailData.weak_modules.length" class="detail-block">
-          <h4>薄弱模块</h4>
-          <div class="tag-row">
-            <el-tag
-              v-for="mod in detailData.weak_modules"
-              :key="mod"
-              type="danger"
-              effect="plain"
-            >
-              {{ MODULE_LABELS[mod] || mod }}
-            </el-tag>
-          </div>
-        </div>
-
-        <div v-if="detailData.module_progress.length" class="detail-block">
-          <h4>分模块掌握度</h4>
-          <div class="module-progress-list">
-            <div
-              v-for="mod in detailData.module_progress"
-              :key="mod.module_key"
-              class="module-progress-item"
-            >
-              <span class="module-label">{{ mod.module_label }}</span>
-              <div class="bar-track">
-                <div
-                  class="bar-fill"
-                  :style="{ width: `${mod.mastery_score}%`, background: masteryColor(mod.mastery_score) }"
-                />
-              </div>
-              <span class="module-score">{{ mod.mastery_score.toFixed(1) }}%</span>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="detailData.recent_memories.length" class="detail-block">
-          <h4>最近学习记录</h4>
-          <div class="memory-list">
-            <div
-              v-for="(mem, index) in detailData.recent_memories"
-              :key="index"
-              class="memory-item"
-            >
-              <div class="memory-header">
-                <el-tag size="small" effect="plain">{{ String(mem.event_type || '事件') }}</el-tag>
-                <span class="text-muted">{{ formatDate(String(mem.created_at || '')) }}</span>
-              </div>
-              <p v-if="mem.observed_error_pattern" class="memory-text">
-                错误模式：{{ mem.observed_error_pattern }}
-              </p>
-              <p v-if="mem.trace_summary" class="memory-text text-muted">
-                {{ mem.trace_summary }}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <el-empty
-          v-if="!detailData.profile_summary && !detailData.recent_memories.length && !detailData.module_progress.length"
-          description="该学生暂无详细学习记录"
-          :image-size="80"
-        />
-      </div>
-    </el-drawer>
+      :detail="detailData"
+      :loading="detailLoading"
+    />
   </main>
 </template>
 
@@ -704,109 +609,6 @@ onMounted(loadRoster)
   background: var(--alp-bg-nav-hover);
 }
 
-/* 抽屉详情 */
-.drawer-loading {
-  padding: 16px;
-}
-
-.detail-content {
-  padding: 0 4px;
-}
-
-.detail-metric-row {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-  margin-bottom: 24px;
-  padding: 16px;
-  border: 1px solid var(--alp-color-border);
-  border-radius: var(--alp-radius-card);
-  background: var(--alp-bg-surface);
-}
-
-.detail-metric {
-  text-align: center;
-}
-
-.detail-metric strong {
-  display: block;
-  font-size: 20px;
-  font-variant-numeric: tabular-nums;
-}
-
-.detail-metric span {
-  display: block;
-  margin-top: 4px;
-  color: var(--alp-color-muted);
-  font-size: 11px;
-}
-
-.detail-block {
-  margin-bottom: 22px;
-}
-
-.detail-block h4 {
-  margin: 0 0 10px;
-  font-size: 15px;
-}
-
-.detail-block p {
-  margin: 0;
-  color: var(--alp-color-muted);
-  font-size: 13px;
-  line-height: 1.7;
-}
-
-.module-progress-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.module-progress-item {
-  display: grid;
-  grid-template-columns: 80px 1fr 50px;
-  align-items: center;
-  gap: 10px;
-}
-
-.module-label {
-  font-size: 13px;
-}
-
-.module-score {
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-
-.memory-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.memory-item {
-  padding: 12px;
-  border: 1px solid var(--alp-color-border);
-  border-radius: var(--alp-radius-sm);
-  background: var(--alp-bg-surface);
-}
-
-.memory-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-
-.memory-text {
-  margin: 4px 0 0;
-  font-size: 12px;
-  line-height: 1.6;
-}
-
 @media (max-width: 1100px) {
   .metric-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -822,10 +624,6 @@ onMounted(loadRoster)
 
   .metric-grid {
     grid-template-columns: 1fr;
-  }
-
-  .detail-metric-row {
-    grid-template-columns: repeat(3, 1fr);
   }
 }
 </style>

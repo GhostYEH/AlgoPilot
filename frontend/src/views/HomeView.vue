@@ -8,6 +8,7 @@ import HomeDashboardCharts from '@/components/home/HomeDashboardCharts.vue'
 import HomeHitokotoBar from '@/components/home/HomeHitokotoBar.vue'
 import HomeStageLearningMap from '@/components/home/HomeStageLearningMap.vue'
 import HomeTrainingSection from '@/components/home/HomeTrainingSection.vue'
+import AgentWorkbenchView from '@/views/AgentWorkbenchView.vue'
 import { fetchCommunity, type CommunityResponse } from '@/api/analytics'
 import { fetchProblems, type ProblemListItem } from '@/api/oj'
 import { ALGORITHM_MODULES, MODULE_PHASE_LABELS, MODULE_ROUTE_NAMES } from '@/constants/modules'
@@ -305,6 +306,16 @@ onMounted(async () => {
         <span>近 7 天</span>
       </header>
       <HomeDashboardCharts :radar="skillRadar" :series="activitySeries" :heatmap="heatmapCells" />
+    </section>
+
+    <section class="home-section intelligent-learning" aria-labelledby="intelligent-learning-title">
+      <header class="home-section__head">
+        <div>
+          <h2 id="intelligent-learning-title">智能化学习</h2>
+          <p>围绕当前课程模块生成讲解、练习与拓展资源，生成结果会经过内容校验。</p>
+        </div>
+      </header>
+      <AgentWorkbenchView embedded />
     </section>
 
     <div class="home-lower">

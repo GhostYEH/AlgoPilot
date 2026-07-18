@@ -10,7 +10,13 @@ from typing import Any, Literal
 
 from core.config import settings
 from services.agents.ast_analyzer import ASTAnalyzerAgent, AstAuditResult
-from services.llm import chat_completion
+from services.llm.validator import (
+    DEFAULT_MAX_RETRIES,
+    ValidationResult,
+    chat_completion_validated,
+    json_object_validator,
+    non_empty_validator,
+)
 from services.oj.stdio_io import ensure_stdio_fields
 
 MAX_STEPS_IN_PROMPT = 80
@@ -48,6 +54,13 @@ TRACE_BUG_DIAGNOSIS_SYSTEM = """你是面向大一学生的算法调试教练。
 - detailed_analysis 必须包含：①该步变量应有值 vs 实际值 ②违反的不变量 ③对应代码行
 - confidence 只有在失败测例确实复现且轨迹提供直接证据时才可为 high
 
+【严禁幻觉 · 强约束】
+- 所有提到「实际值」的变量，必须**逐字引用**输入轨迹中该步 vars 字段下的真实值，禁止凭空编造
+- 严禁虚构不存在于轨迹的变量名、变量值、数组长度、对象字段
+- 若该步 vars 中没有该变量，明确写「该步未捕获变量 X 的快照」，不要编造值
+- 严禁把 WA（输出错误）误诊为「数组越界」「空指针」等运行时异常——若判题结果为 WA，说明代码执行完毕但输出不符，不得出现「越界」「崩溃」类描述
+- 严禁在 fix_suggestion 中给出「将 i 改为 3」「将 x 改为 7」这种无意义的赋值建议，必须指向**代码中的语句**（如「将 `target + x` 改为 `target - x`」）
+
 严格只输出一个 JSON 对象，不要 markdown，不要额外字段：
 {
   "bug_step_index": <int>,
@@ -62,7 +75,7 @@ TRACE_BUG_DIAGNOSIS_SYSTEM = """你是面向大一学生的算法调试教练。
     {"level": 2, "title": "再推理", "content": "<指出不变量和实际/应有差异>"},
     {"level": 3, "title": "修改方向", "content": "<指出应调整的语句或顺序，不给完整代码>"}
   ],
-  "fix_suggestion": "<具体修改方向，不输出完整代码>",
+  "fix_suggestion": "<具体修改方向，指向代码中的具体语句，不输出完整代码>",
   "verification": "<修改后用哪个最小输入、观察什么结果>",
   "confidence": "high|medium|low"
 }"""
@@ -351,6 +364,143 @@ def _parse_trace_bug_diagnosis(
     }
 
 
+# ---------- 幻觉检测 ----------
+
+# 用正则在中文文本里抓「变量名=值」「变量名: 值」「变量名 值」这类表述
+_VAR_VALUE_PATTERN = re.compile(
+    r"([A-Za-z_][A-Za-z0-9_]*)\s*[:=是]\s*([^，,。.；;（(）)\s]{1,40})"
+)
+# 把 WA 误诊为运行时异常的关键词
+_RUNTIME_ERROR_KEYWORDS = (
+    "数组越界",
+    "越界",
+    "空指针",
+    "NoneType",
+    "AttributeError",
+    "IndexError",
+    "KeyError",
+    "TypeError",
+    "崩溃",
+    "段错误",
+    "Segmentation",
+    "NullPointerException",
+)
+
+
+def _extract_trace_var_values(step: dict[str, Any]) -> dict[str, str]:
+    """从单步 vars 字段提取 {变量名: 字符串值} 用于幻觉比对。"""
+    out: dict[str, str] = {}
+    for k, v in (step.get("vars") or {}).items():
+        if not isinstance(v, dict):
+            continue
+        val = v.get("value")
+        if val is None:
+            out[k] = ""
+        elif isinstance(val, list):
+            out[k] = f"list[{len(val)}]"
+        elif isinstance(val, dict):
+            out[k] = str(val.get("node") or val)[:40]
+        else:
+            out[k] = str(val)[:40]
+    return out
+
+
+def _check_hallucination(
+    parsed_diag: dict[str, Any],
+    *,
+    steps: list[dict[str, Any]],
+    judge_verdict: str = "",
+) -> list[str]:
+    """检查 LLM 诊断是否含幻觉。返回问题清单（空列表表示通过）。"""
+    issues: list[str] = []
+    idx = int(parsed_diag.get("bug_step_index") or 0)
+    if not (0 <= idx < len(steps)):
+        issues.append(f"bug_step_index={idx} 超出轨迹范围（0..{len(steps) - 1}）")
+        return issues
+
+    step = steps[idx]
+    real_vars = _extract_trace_var_values(step)
+
+    # 检查 detailed_analysis + actual_state 中提到的变量值是否在轨迹中存在
+    analysis_text = " ".join(
+        [
+            str(parsed_diag.get("detailed_analysis") or ""),
+            str(parsed_diag.get("actual_state") or ""),
+            str(parsed_diag.get("expected_state") or ""),
+            str(parsed_diag.get("fix_suggestion") or ""),
+        ]
+    )
+    mentioned = _VAR_VALUE_PATTERN.findall(analysis_text)
+    fabricated: list[str] = []
+    for var_name, claimed_value in mentioned:
+        if var_name in {"i", "j", "n", "m", "k", "x", "y"}:
+            # 单字母通用变量名容易在文本里误匹配，仅当真实轨迹里也存在时才比对
+            if var_name not in real_vars:
+                continue
+        if var_name in real_vars:
+            real_value = real_vars[var_name]
+            # 比对前去掉引号
+            claimed_clean = claimed_value.strip("'\"")
+            if real_value and claimed_clean and claimed_clean != real_value:
+                # 允许 LLM 用 list[3] 表示长度为 3 的数组
+                if not (
+                    claimed_clean.startswith("list[")
+                    or real_value.startswith("list[")
+                    or claimed_clean in real_value
+                    or real_value in claimed_clean
+                ):
+                    fabricated.append(
+                        f"变量 {var_name} 提到值「{claimed_clean}」但轨迹中实际为「{real_value}」"
+                    )
+        # 若 var_name 不在 real_vars，不直接判为幻觉（可能是 LLM 提到代码中的变量名而非快照）
+
+    if fabricated:
+        issues.extend(fabricated[:3])  # 最多报告 3 个，避免太长
+
+    # 检查是否把 WA 误诊为运行时异常
+    verdict_upper = (judge_verdict or "").upper()
+    if verdict_upper == "WA":
+        title = str(parsed_diag.get("diagnosis_title") or "")
+        analysis = str(parsed_diag.get("detailed_analysis") or "")
+        full_text = f"{title} {analysis}"
+        for kw in _RUNTIME_ERROR_KEYWORDS:
+            if kw in full_text:
+                issues.append(
+                    f"判题结果为 WA（输出错误）但诊断提到「{kw}」，属误诊：WA 表示代码执行完毕但输出不符，不会发生运行时异常"
+                )
+                break
+
+    # 检查 fix_suggestion 是否含无意义的「将变量名 改为 数值」建议
+    fix_suggestion = str(parsed_diag.get("fix_suggestion") or "")
+    meaningless_fix = re.findall(r"将\s*[A-Za-z_]\w*\s*改为\s*\d+", fix_suggestion)
+    if meaningless_fix:
+        issues.append(
+            f"fix_suggestion 含无意义赋值建议：{meaningless_fix[:2]}，应指向代码语句而非变量值"
+        )
+
+    return issues
+
+
+def _make_trace_bug_validator(
+    *, max_step: int, steps: list[dict[str, Any]], judge_verdict: str
+):
+    """构造 LLM 诊断输出验证器：解析 + 幻觉检测。"""
+
+    def _validate(raw: str) -> ValidationResult:
+        try:
+            parsed = _parse_trace_bug_diagnosis(raw, max_step=max_step, steps=steps)
+        except ValueError as exc:
+            return ValidationResult.fail(f"诊断 JSON 解析失败：{exc}")
+        except Exception as exc:
+            return ValidationResult.fail(f"诊断输出异常：{exc}")
+        issues = _check_hallucination(parsed, steps=steps, judge_verdict=judge_verdict)
+        if issues:
+            return ValidationResult.fail(*issues)
+        return ValidationResult.ok()
+
+    return _validate
+
+
 def _fallback_trace_bug_diagnosis(
     steps: list[dict[str, Any]],
     compressed_lines: list[str],
@@ -498,22 +648,46 @@ async def diagnose_trace_bug(
         if len(compressed_lines) > MAX_STEPS_IN_PROMPT:
             user_body += f"\n...（已截断，仅展示前 {MAX_STEPS_IN_PROMPT} 行）"
 
+        validator = _make_trace_bug_validator(
+            max_step=max_idx, steps=trace_steps, judge_verdict=judge_verdict
+        )
+        messages = [
+            {"role": "system", "content": TRACE_BUG_DIAGNOSIS_SYSTEM},
+            {"role": "user", "content": user_body},
+        ]
         try:
-            raw = await asyncio.wait_for(
-                chat_completion(
-                    [
-                        {"role": "system", "content": TRACE_BUG_DIAGNOSIS_SYSTEM},
-                        {"role": "user", "content": user_body},
-                    ],
+            # 使用带验证+重试的 chat_completion_validated
+            # 每次调用受 TRACE_DIAGNOSIS_LLM_TIMEOUT_SECONDS 限制，重试最多 DEFAULT_MAX_RETRIES 次
+            raw, final_result = await asyncio.wait_for(
+                chat_completion_validated(
+                    messages,
+                    validator=validator,
+                    max_retries=DEFAULT_MAX_RETRIES,
                     temperature=0.2,
                     max_tokens=1200,
                     json_mode=True,
+                    retry_temperature=0.4,  # 重试时略提高温度增加多样性
+                    context_label=f"trace_bug_diagnosis slug={slug}",
                 ),
-                timeout=TRACE_DIAGNOSIS_LLM_TIMEOUT_SECONDS,
+                timeout=TRACE_DIAGNOSIS_LLM_TIMEOUT_SECONDS * (DEFAULT_MAX_RETRIES + 1),
             )
             out = _parse_trace_bug_diagnosis(raw, max_step=max_idx, steps=trace_steps)
             out["source"] = "llm"
+            if not final_result.passed:
+                # 重试耗尽仍有幻觉：保留 LLM 输出但加 warning 字段
+                out["hallucination_warning"] = (
+                    "本次诊断可能含未经核实的描述（"
+                    + "；".join(final_result.issues[:2])
+                    + "）。建议结合轨迹自行复核，或重新运行诊断。"
+                )
+                out["confidence"] = "low"
+                _logger.warning(
+                    "trace_bug_diagnosis 最终仍含幻觉，已加 warning：%s",
+                    final_result.issues,
+                )
             return out
+        except asyncio.TimeoutError:
+            _logger.warning("Spark trace diagnosis timeout; using fallback")
         except Exception as exc:
             _logger.warning("Spark trace diagnosis failed; using fallback: %s", exc, exc_info=True)
 
@@ -657,11 +831,15 @@ async def generate_edge_case(
             ensure_ascii=False,
         )
         try:
-            raw = await chat_completion(
+            raw, _ = await chat_completion_validated(
                 [{"role": "system", "content": EDGE_CASE_SYSTEM}, {"role": "user", "content": user_body}],
+                validator=json_object_validator(),
+                max_retries=DEFAULT_MAX_RETRIES,
                 temperature=0.4,
                 max_tokens=800,
                 json_mode=True,
+                retry_temperature=0.55,
+                context_label="ai_diagnosis_edge_case",
             )
             parsed = _parse_json_object(raw)
             case = _normalize_edge_case(parsed, judge_mode, sample)
@@ -713,14 +891,18 @@ async def generate_trace_diagnosis(
             ensure_ascii=False,
         )
         try:
-            raw = await chat_completion(
+            raw, _ = await chat_completion_validated(
                 [
                     {"role": "system", "content": TRACE_DIAGNOSIS_SYSTEM},
                     {"role": "user", "content": user_body},
                 ],
+                validator=non_empty_validator(20),
+                max_retries=DEFAULT_MAX_RETRIES,
                 temperature=0.3,
                 max_tokens=1500,
                 json_mode=True,
+                retry_temperature=0.45,
+                context_label="ai_diagnosis_trace_narration",
             )
             items = _parse_json_array(raw)
             out: list[dict[str, Any]] = []
@@ -812,14 +994,18 @@ async def analyze_complexity(
             ensure_ascii=False,
         )
         try:
-            raw = await chat_completion(
+            raw, _ = await chat_completion_validated(
                 [
                     {"role": "system", "content": COMPLEXITY_SYSTEM},
                     {"role": "user", "content": user_body},
                 ],
+                validator=json_object_validator(),
+                max_retries=DEFAULT_MAX_RETRIES,
                 temperature=0.3,
                 max_tokens=600,
                 json_mode=True,
+                retry_temperature=0.45,
+                context_label="ai_diagnosis_complexity",
             )
             parsed = _parse_json_object(raw)
             return {

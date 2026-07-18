@@ -9,7 +9,11 @@ from schemas.oj import (
     TraceStepBrief,
     VarChangeItem,
 )
-from services.llm import chat_completion
+from services.llm.validator import (
+    DEFAULT_MAX_RETRIES,
+    chat_completion_validated,
+    json_object_validator,
+)
 from services.oj.ai_diagnosis import (
     _format_snap_brief,
     compress_trace_steps_to_text,
@@ -391,13 +395,17 @@ async def generate_llm_cause_and_fix(
         + failed_hint
     )
     try:
-        raw = await chat_completion(
+        raw, _ = await chat_completion_validated(
             [
                 {"role": "system", "content": TRACE_REPORT_SYSTEM},
                 {"role": "user", "content": user_body},
             ],
+            validator=json_object_validator(),
+            max_retries=DEFAULT_MAX_RETRIES,
             temperature=0.3,
             max_tokens=500,
+            retry_temperature=0.45,
+            context_label="trace_report",
         )
         text = raw.strip()
         fence = __import__("re").search(r"```(?:json)?\s*([\s\S]*?)```", text)

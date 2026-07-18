@@ -393,6 +393,35 @@ def _find_gpp() -> str | None:
 ensure_toolchain_on_path()
 
 
+def cpp_compile_timeout_seconds() -> int:
+    """Return a compiler timeout suitable for development and frozen builds.
+
+    A portable MinGW tree is commonly scanned by Windows Defender the first
+    time its compiler subprocesses are launched.  Thirty seconds is too short
+    for that cold start and used to surface as a misleading compile failure.
+    The environment override is intentionally bounded so a bad configuration
+    cannot leave a judge request running forever.
+    """
+    import os
+    import sys
+
+    default = 120 if getattr(sys, "frozen", False) else 30
+    raw = os.environ.get("ALGOPILOT_CPP_COMPILE_TIMEOUT_SECONDS", "").strip()
+    if not raw:
+        return default
+    try:
+        return max(10, min(300, int(raw)))
+    except ValueError:
+        return default
+
+
+def _compile_timeout_message(timeout_s: int) -> str:
+    return (
+        f"C++ 编译超过 {timeout_s} 秒。便携版首次运行可能正在接受 Windows "
+        "安全扫描，请稍后重试；若持续出现，请检查杀毒软件是否拦截 mingw 目录。"
+    )
+
+
 def run_cases_cpp(
     user_code: str,
     *,
@@ -463,12 +492,43 @@ def run_cases_cpp(
             exe_file = tmp_path / "main.exe" if Path(gpp).name.lower().startswith("g++") else tmp_path / "main"
             cpp_file.write_text(src, encoding="utf-8")
 
-            compile = subprocess.run(
-                [gpp, "-std=c++17", "-O2", str(cpp_file), "-o", str(exe_file)],
-                capture_output=True,
-                text=True,
-                timeout=30,
-            )
+            compile_timeout = cpp_compile_timeout_seconds()
+            try:
+                compile = subprocess.run(
+                    [gpp, "-std=c++17", "-O2", str(cpp_file), "-o", str(exe_file)],
+                    capture_output=True,
+                    text=True,
+                    errors="replace",
+                    timeout=compile_timeout,
+                )
+            except subprocess.TimeoutExpired:
+                err = _compile_timeout_message(compile_timeout)
+                results.append(
+                    CaseResult(
+                        index=idx,
+                        verdict="CE",
+                        message=err,
+                        input_preview=_preview_args(args),
+                        expected_preview=_preview_value(expected),
+                        actual_preview=None,
+                    )
+                )
+                return RunSummary(
+                    verdict="CE",
+                    passed=passed,
+                    total=len(cases),
+                    cases=results,
+                    compile_error=err,
+                )
+            except OSError as exc:
+                err = f"无法启动 C++ 编译器 {gpp}: {exc}"
+                return RunSummary(
+                    verdict="CE",
+                    passed=passed,
+                    total=len(cases),
+                    cases=results,
+                    compile_error=err[:800],
+                )
             if compile.returncode != 0:
                 err = (compile.stderr or compile.stdout or "编译失败").strip()
                 results.append(

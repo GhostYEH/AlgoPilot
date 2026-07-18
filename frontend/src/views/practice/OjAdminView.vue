@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Plus, Delete } from '@element-plus/icons-vue'
+import { Plus, Delete, RefreshRight, Search } from '@element-plus/icons-vue'
 import {
   fetchProblems,
   fetchAdminCases,
@@ -36,6 +36,29 @@ const filteredProblems = computed(() => {
   }
   return items
 })
+
+const readyCount = computed(() => allProblems.value.filter((problem) => problem.ready).length)
+const moduleCount = computed(() => new Set(allProblems.value.map((problem) => problem.module_key)).size)
+const moduleLabelMap = new Map(ALGORITHM_MODULES.map((module) => [module.key, module.label]))
+
+function moduleLabel(moduleKey: string): string {
+  return moduleLabelMap.get(moduleKey) ?? moduleKey
+}
+
+function difficultyMeta(difficulty: string): {
+  label: string
+  type: 'success' | 'warning' | 'danger' | 'info'
+} {
+  if (difficulty === 'easy') return { label: '简单', type: 'success' }
+  if (difficulty === 'hard') return { label: '困难', type: 'danger' }
+  if (difficulty === 'medium') return { label: '中等', type: 'warning' }
+  return { label: difficulty || '未知', type: 'info' }
+}
+
+function clearFilters() {
+  searchQuery.value = ''
+  moduleFilter.value = ''
+}
 
 async function loadProblems() {
   listLoading.value = true
@@ -249,65 +272,106 @@ onMounted(loadProblems)
         <h1>OJ 题目管理</h1>
         <p>查看与修改测试用例、新增题目、挂载题目到章节课后习题。</p>
       </div>
-      <el-button type="primary" @click="openCreateDialog">
-        <el-icon><Plus /></el-icon>
-        新增题目
-      </el-button>
+      <div class="hero-actions">
+        <el-button :loading="listLoading" :icon="RefreshRight" @click="loadProblems">刷新</el-button>
+        <el-button type="primary" :icon="Plus" @click="openCreateDialog">新增题目</el-button>
+      </div>
     </section>
 
-    <!-- 题目列表 -->
-    <section class="filter-bar">
-      <el-input
-        v-model="searchQuery"
-        placeholder="按 slug 或标题搜索"
-        clearable
-        class="search-input"
-      />
-      <el-select
-        v-model="moduleFilter"
-        placeholder="按模块筛选"
-        clearable
-        class="module-select"
-      >
-        <el-option
-          v-for="m in moduleOptions"
-          :key="m.value"
-          :label="m.label"
-          :value="m.value"
-        />
-      </el-select>
+    <section class="summary-grid" aria-label="题库概览">
+      <article class="summary-card">
+        <span>题目总数</span>
+        <strong>{{ allProblems.length }}</strong>
+        <small>当前题库收录</small>
+      </article>
+      <article class="summary-card">
+        <span>可判题</span>
+        <strong>{{ readyCount }}</strong>
+        <small>{{ allProblems.length ? Math.round((readyCount / allProblems.length) * 100) : 0 }}% 已配置测例</small>
+      </article>
+      <article class="summary-card">
+        <span>覆盖模块</span>
+        <strong>{{ moduleCount }}</strong>
+        <small>知识模块</small>
+      </article>
+      <article class="summary-card summary-card--result">
+        <span>当前结果</span>
+        <strong>{{ filteredProblems.length }}</strong>
+        <small>{{ searchQuery || moduleFilter ? '筛选后的题目' : '显示全部题目' }}</small>
+      </article>
     </section>
 
-    <el-table
-      v-loading="listLoading"
-      :data="filteredProblems"
-      stripe
-      class="problem-table"
-      max-height="560"
-    >
-      <el-table-column prop="slug" label="Slug" width="220" />
-      <el-table-column prop="title" label="题目" min-width="200" />
-      <el-table-column prop="module_key" label="模块" width="130" />
-      <el-table-column prop="difficulty" label="难度" width="90" />
-      <el-table-column label="可判题" width="80">
-        <template #default="{ row }">
-          <el-tag :type="row.ready ? 'success' : 'info'" size="small">
-            {{ row.ready ? '是' : '待完善' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="260" fixed="right">
-        <template #default="{ row }">
-          <el-button size="small" @click="openCasesDialog(row.slug)">测试用例</el-button>
-          <el-button size="small" type="primary" plain @click="openAttachDialog(row.slug)">
-            挂载到章节
-          </el-button>
-          <router-link :to="`/practice/${row.slug}`" class="view-link">
-            <el-button size="small" text>预览</el-button>
-          </router-link>
-        </template>
-      </el-table-column>
-    </el-table>
+    <section class="problem-workspace">
+      <div class="filter-bar">
+        <div class="filter-fields">
+          <el-input
+            v-model="searchQuery"
+            placeholder="搜索 Slug 或题目名称"
+            clearable
+            :prefix-icon="Search"
+            class="search-input"
+          />
+          <el-select
+            v-model="moduleFilter"
+            placeholder="全部知识模块"
+            clearable
+            class="module-select"
+          >
+            <el-option
+              v-for="m in moduleOptions"
+              :key="m.value"
+              :label="m.label"
+              :value="m.value"
+            />
+          </el-select>
+          <el-button v-if="searchQuery || moduleFilter" text @click="clearFilters">清除筛选</el-button>
+        </div>
+        <span class="result-count">共 {{ filteredProblems.length }} 道题</span>
+      </div>
+
+      <div class="table-frame">
+        <el-table
+          v-loading="listLoading"
+          :data="filteredProblems"
+          row-key="slug"
+          stripe
+          height="100%"
+          class="problem-table"
+          empty-text="没有符合条件的题目"
+        >
+          <el-table-column prop="slug" label="Slug" min-width="210" show-overflow-tooltip />
+          <el-table-column prop="title" label="题目" min-width="220" show-overflow-tooltip />
+          <el-table-column label="知识模块" min-width="160" show-overflow-tooltip>
+            <template #default="{ row }">{{ moduleLabel(row.module_key) }}</template>
+          </el-table-column>
+          <el-table-column label="难度" width="104" align="center">
+            <template #default="{ row }">
+              <el-tag :type="difficultyMeta(row.difficulty).type" size="small" effect="plain">
+                {{ difficultyMeta(row.difficulty).label }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="判题状态" width="112" align="center">
+            <template #default="{ row }">
+              <el-tag :type="row.ready ? 'success' : 'info'" size="small">
+                {{ row.ready ? '可判题' : '待完善' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="300" align="right">
+            <template #default="{ row }">
+              <el-button size="small" @click="openCasesDialog(row.slug)">测试用例</el-button>
+              <el-button size="small" type="primary" plain @click="openAttachDialog(row.slug)">
+                挂载章节
+              </el-button>
+              <router-link :to="`/practice/${row.slug}`" class="view-link">
+                <el-button size="small" text>预览</el-button>
+              </router-link>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </section>
 
     <!-- 测试用例编辑弹窗 -->
     <el-dialog
@@ -629,8 +693,12 @@ onMounted(loadProblems)
 
 <style scoped>
 .oj-admin {
-  width: min(1280px, 100%);
-  margin: 0 auto;
+  display: flex;
+  width: 100%;
+  height: calc(100dvh - var(--alp-header-height, 60px) - 46px);
+  min-height: 680px;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .page-hero {
@@ -638,8 +706,7 @@ onMounted(loadProblems)
   align-items: flex-start;
   justify-content: space-between;
   gap: 20px;
-  padding: 24px 28px;
-  margin-bottom: 22px;
+  padding: 20px 24px;
   border: 1px solid var(--alp-color-border);
   border-radius: 16px;
   background:
@@ -665,27 +732,141 @@ onMounted(loadProblems)
   font-size: 14px;
 }
 
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.summary-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 2px 12px;
+  min-height: 76px;
+  padding: 14px 16px;
+  border: 1px solid var(--alp-color-border);
+  border-radius: 12px;
+  background: var(--alp-bg-surface);
+}
+
+.summary-card span,
+.summary-card small {
+  color: var(--alp-color-muted);
+  font-size: 12px;
+}
+
+.summary-card strong {
+  grid-row: 1 / 3;
+  grid-column: 2;
+  color: var(--alp-color-text);
+  font-size: 26px;
+  line-height: 1;
+}
+
+.summary-card--result {
+  border-color: color-mix(in srgb, var(--alp-color-primary) 40%, var(--alp-color-border));
+  background: color-mix(in srgb, var(--alp-color-primary) 7%, var(--alp-bg-surface));
+}
+
+.problem-workspace {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--alp-color-border);
+  border-radius: 14px;
+  background: var(--alp-bg-surface);
+}
+
 .filter-bar {
   display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--alp-color-border);
+}
+
+.filter-fields {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
 }
 
 .search-input {
-  width: 300px;
+  width: min(360px, 32vw);
 }
 
 .module-select {
-  width: 200px;
+  width: min(240px, 24vw);
+}
+
+.result-count {
+  flex-shrink: 0;
+  color: var(--alp-color-muted);
+  font-size: 12px;
+}
+
+.table-frame {
+  min-height: 0;
+  flex: 1;
 }
 
 .problem-table {
-  border-radius: 12px;
-  overflow: hidden;
+  width: 100%;
+}
+
+.problem-table :deep(.el-table__header th) {
+  height: 46px;
+  background: var(--alp-bg-soft-block);
+  color: var(--alp-color-text-secondary);
+  font-size: 12px;
+}
+
+.problem-table :deep(.el-table__row td) {
+  height: 48px;
+}
+
+@media (min-width: 1101px) {
+  .problem-table :deep(.el-scrollbar__wrap) {
+    overflow-x: hidden;
+  }
+
+  .problem-table :deep(.el-scrollbar__bar.is-horizontal) {
+    display: none;
+  }
 }
 
 .view-link {
   margin-left: 4px;
+}
+
+@media (max-width: 1100px) {
+  .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .oj-admin { height: auto; min-height: calc(100dvh - var(--alp-header-height, 60px) - 46px); }
+  .table-frame { height: 620px; flex: none; }
+}
+
+@media (max-width: 720px) {
+  .page-hero,
+  .filter-bar,
+  .filter-fields { align-items: stretch; flex-direction: column; }
+  .hero-actions { width: 100%; }
+  .hero-actions :deep(.el-button) { flex: 1; }
+  .summary-grid { grid-template-columns: 1fr 1fr; }
+  .search-input,
+  .module-select { width: 100%; }
+  .result-count { align-self: flex-end; }
 }
 
 .cases-header {

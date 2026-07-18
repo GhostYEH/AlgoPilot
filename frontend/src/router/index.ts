@@ -62,7 +62,7 @@ const router = createRouter({
           path: 'agent-workbench',
           name: 'agent-workbench',
           component: () => import('@/views/AgentWorkbenchView.vue'),
-          meta: { title: '多智能体工作台' },
+          meta: { title: '智能化学习' },
         },
         {
           path: 'teacher-dashboard',

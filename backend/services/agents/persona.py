@@ -12,7 +12,11 @@ from schemas.persona import (
     migrate_dimension_payload,
 )
 from services.agents.base import BaseAgent
-from services.llm import chat_completion
+from services.llm.validator import (
+    DEFAULT_MAX_RETRIES,
+    chat_completion_validated,
+    json_object_validator,
+)
 
 PERSONA_SYSTEM = """你是「算法智能学习平台」的**学习画像 Agent（ProfilingAgent）**，通过自然语言对话了解大一计科学生的学习情况。
 
@@ -113,7 +117,15 @@ class PersonaAgent(BaseAgent):
             {"role": "system", "content": EXTRACT_SYSTEM},
             {"role": "user", "content": f"对话记录：\n{convo}\n\n请输出 JSON。"},
         ]
-        raw = await chat_completion(messages, temperature=0.2, max_tokens=1400)
+        raw, _ = await chat_completion_validated(
+            messages,
+            validator=json_object_validator(),
+            max_retries=DEFAULT_MAX_RETRIES,
+            temperature=0.2,
+            max_tokens=1400,
+            retry_temperature=0.4,
+            context_label="persona_extract_dimensions",
+        )
         summary, dims, confidence, scores = _parse_profile_json(raw)
         dims, confidence = _merge_incremental(dims, confidence, existing, existing_confidence)
         missing = _missing_dimension_keys(dims)
@@ -136,10 +148,14 @@ async def _followup_extract(history: list[ChatHistoryItem], missing: list[str]) 
     labels = "、".join(_DIMENSION_LABELS[k] for k in missing)
     convo = "\n".join(f"{h.role}: {h.content}" for h in history[-30:])
     user = f"对话：\n{convo}\n\n请仅补全维度：{labels}。输出 JSON：{{\"dimensions\":{{...}},\"confidence\":{{...}}}}"
-    raw = await chat_completion(
+    raw, _ = await chat_completion_validated(
         [{"role": "system", "content": EXTRACT_SYSTEM}, {"role": "user", "content": user}],
+        validator=json_object_validator(),
+        max_retries=DEFAULT_MAX_RETRIES,
         temperature=0.15,
         max_tokens=800,
+        retry_temperature=0.35,
+        context_label="persona_followup_extract",
     )
     try:
         summary, dims, conf, scores = _parse_profile_json(raw)

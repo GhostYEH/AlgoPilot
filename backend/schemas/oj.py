@@ -114,6 +114,7 @@ class TraceResponse(BaseModel):
     result_preview: str | None = None
     narrations: list[TraceNarrationLine] = Field(default_factory=list)
     static_audit: StaticAuditRejection | dict[str, Any] | None = None
+    code_style_warning: str | None = None
 
 
 class AiDiagnoseRequest(BaseModel):
@@ -240,6 +241,7 @@ class TraceBugDiagnoseResponse(BaseModel):
     intervention_suggestion: str = ""
     variable_evidence: list[str] = Field(default_factory=list)
     tutoring: OjTutoringPayload | None = None
+    hallucination_warning: str | None = None
 
 
 class VarChangeItem(BaseModel):

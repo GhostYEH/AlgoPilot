@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import shutil
 import subprocess
 import tempfile
 import time
@@ -11,7 +10,11 @@ from typing import Any, Literal
 
 from services.oj.runner import CaseResult, RunSummary
 from services.oj.stdio_io import case_input_text, case_output_text, stdout_equal
-from services.oj.cpp_runner import ensure_toolchain_on_path
+from services.oj.cpp_runner import (
+    _compile_timeout_message,
+    _find_gpp,
+    cpp_compile_timeout_seconds,
+)
 from utils import python_exec_args
 
 Verdict = Literal["AC", "WA", "TLE", "RE", "CE"]
@@ -169,13 +172,9 @@ def _run_cpp_stdio(
     time_limit_ms: int,
     order_insensitive: bool,
 ) -> RunSummary:
-    ensure_toolchain_on_path()
-    gpp = None
-    for name in ("g++", "g++.exe", "clang++", "clang++.exe"):
-        p = shutil.which(name)
-        if p:
-            gpp = p
-            break
+    # Use the same discovery path as health checks and C++ Trace.  In a frozen
+    # build this deliberately prefers the MinGW tree next to AlgoPilot.exe.
+    gpp = _find_gpp()
     if not gpp:
         return RunSummary(
             verdict="CE",
@@ -195,12 +194,14 @@ def _run_cpp_stdio(
         cpp_file.write_text(user_code, encoding="utf-8")
         exe = tmp_path / "main.exe" if "g++" in Path(gpp).name.lower() else tmp_path / "main"
 
+        compile_timeout = cpp_compile_timeout_seconds()
         try:
             compile = subprocess.run(
                 [gpp, "-std=c++17", "-O2", str(cpp_file), "-o", str(exe)],
                 capture_output=True,
                 text=True,
-                timeout=30,
+                errors="replace",
+                timeout=compile_timeout,
             )
         except subprocess.TimeoutExpired:
             return RunSummary(
@@ -208,7 +209,15 @@ def _run_cpp_stdio(
                 passed=0,
                 total=len(cases),
                 cases=[],
-                compile_error="Compilation timed out after 30 seconds",
+                compile_error=_compile_timeout_message(compile_timeout),
+            )
+        except OSError as exc:
+            return RunSummary(
+                verdict="CE",
+                passed=0,
+                total=len(cases),
+                cases=[],
+                compile_error=f"无法启动 C++ 编译器 {gpp}: {exc}"[:2000],
             )
         if compile.returncode != 0:
             err = (compile.stderr or compile.stdout or "编译失败").strip()

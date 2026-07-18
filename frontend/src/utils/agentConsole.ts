@@ -30,7 +30,6 @@ export const AGENT_ICONS: Record<string, string> = {
   ProfilingAgent: '⏳',
   ConceptAgent: '⚙️',
   GraphAgent: '🎨',
-  QuizAgent: '📝',
   ScenarioAgent: '🎭',
   TraceAgent: '🎬',
   ReadingAgent: '📚',
@@ -61,7 +60,6 @@ const FRIENDLY_AGENT_MSG: Record<string, string> = {
   ProfilingAgent: '正在解析您的 6 维动态学情画像…',
   ConceptAgent: '正在分离业务域叙事与结构域学术剖析（Domain/Structure JSON）…',
   GraphAgent: '正在拓扑化核心知识点并绘制 Mermaid 思维导图…',
-  QuizAgent: '正在根据易错点偏好动态组卷（3 道精练题）…',
   ScenarioAgent: '正在编写业务域剧本 + 结构域 TODO 沙盒（双域分离）…',
   TraceAgent: '正在编译标准题解并注入 trace_runner 录制轨迹动画…',
   ReadingAgent: '正在策展基础、进阶、挑战三层拓展阅读材料…',
@@ -299,7 +297,6 @@ export function resourceBootstrapLines(topic: string): AgentConsoleLine[] {
 export const CORE_RESOURCE_TAB_META = [
   { key: 'document', label: '自适应学案', icon: '📘', agent: 'ConceptAgent' },
   { key: 'mindmap', label: '知识思维导图', icon: '🗺️', agent: 'GraphAgent' },
-  { key: 'exercises', label: '个性化自测题', icon: '📝', agent: 'QuizAgent' },
   { key: 'code_case', label: '剧情实操沙盒', icon: '🎭', agent: 'ScenarioAgent' },
   { key: 'trace_animation', label: '执行轨迹回放', icon: '🎬', agent: 'TraceAgent' },
   { key: 'reading', label: '分层拓展阅读', icon: '📚', agent: 'ReadingAgent' },

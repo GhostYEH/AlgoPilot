@@ -34,7 +34,7 @@ import { normalizeResourceSources, relevanceLabel } from '@/utils/resourceSource
 import ResourceContentPreview from '@/components/resources/ResourceContentPreview.vue'
 import SafetyValidationPanel from '@/components/resources/SafetyValidationPanel.vue'
 import TrustEvidenceDrawer from '@/components/resources/TrustEvidenceDrawer.vue'
-import { ALGORITHM_MODULES } from '@/constants/modules'
+import { ALGORITHM_MODULES, generationPresetForModule } from '@/constants/modules'
 
 const personaUi = usePersonaUi()
 const showWorkflowDetail = computed(() => personaUi.value.graphDetail !== 'minimal')
@@ -179,12 +179,32 @@ function handleStreamError(msg: string) {
   ElMessage.error(msg || '资源生成失败，请检查 LLM 是否已配置')
 }
 
+function applyModulePreset(moduleKey: string) {
+  const preset = generationPresetForModule(moduleKey)
+  if (!preset) return
+  topic.value = preset.topic
+  focusHint.value = preset.focusHint
+}
+
+function generationInputReady(): boolean {
+  if (!selectedModule.value) {
+    ElMessage.warning('请先选择课程模块，再生成学习资源')
+    return false
+  }
+  if (!topic.value.trim()) {
+    ElMessage.warning('请填写与课程模块一致的课程主题')
+    return false
+  }
+  return true
+}
+
 async function onGenerateOne(type: string) {
   if (!isLoggedIn.value) {
     ElMessage.warning('请先登录后生成资源')
     void router.push({ name: 'login', query: { redirect: '/resources' } })
     return
   }
+  if (!generationInputReady()) return
   loading.value = true
   generatingType.value = type
   workflowLogs.value = []
@@ -234,6 +254,7 @@ async function onGenerateAll() {
     ElMessage.warning('请先登录')
     return
   }
+  if (!generationInputReady()) return
   batchLoading.value = true
   workflowLogs.value = []
   progressPercent.value = 0
@@ -341,7 +362,7 @@ function verifyTag(meta: Record<string, unknown>) {
         :closable="true"
         class="fallback-alert"
         :title="batchFallbackNotice"
-        description="资源标题以 [模板] 前缀标识；meta.fallback=true，由课程知识库片段拼装，请勿当作大模型原创输出。"
+        description="当前内容由课程知识库模板整理，并非大模型原创；展示前仍会经过格式与内容校验。"
         @close="batchFallbackNotice = ''"
       />
 
@@ -357,6 +378,7 @@ function verifyTag(meta: Record<string, unknown>) {
                 filterable
                 placeholder="选择模块（含排序算法）"
                 style="width: 100%"
+                @change="applyModulePreset"
               >
                 <el-option
                   v-for="item in ALGORITHM_MODULES"

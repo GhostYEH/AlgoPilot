@@ -24,8 +24,12 @@ import {
   Search,
   Guide,
   Warning,
+  Timer,
+  TrendCharts,
+  Reading,
+  ChatDotRound,
 } from '@element-plus/icons-vue'
-import { ALGORITHM_MODULES } from '@/constants/modules'
+import { ALGORITHM_MODULES, MODULE_PHASE_LABELS } from '@/constants/modules'
 import { MODULE_PATH_HINTS } from '@/constants/modulePathHints'
 import {
   fetchPersonaProfile,
@@ -42,10 +46,12 @@ import { useModuleNavigation } from '@/composables/useModuleNavigation'
 import { isLoggedIn } from '@/stores/auth'
 import { useUniverseGraphEnhancements } from '@/composables/useUniverseGraphEnhancements'
 import { getModuleLearnConfig } from '@/modules/shared/moduleRegistry'
+import AiTutorPanel from '@/components/learning/AiTutorPanel.vue'
 import { ARRAY_CURRICULUM_INTRO } from '@/modules/array/arrayCurriculum'
 import { HASH_TABLE_CURRICULUM_INTRO } from '@/modules/hashTable/hashTableCurriculum'
 import { STRING_CURRICULUM_INTRO } from '@/modules/string/stringCurriculum'
 import { TWO_POINTERS_CURRICULUM_INTRO } from '@/modules/twoPointers/twoPointersCurriculum'
+import type { LearnSection } from '@/modules/shared/learningTypes'
 
 /** 模块 key → 画像维度 */
 const MODULE_DIMENSION: Record<string, keyof PersonaProfile['dimensions']> = {
@@ -67,7 +73,6 @@ const PERSONALIZED_SLOTS = [
   { type: 'document', label: '自适应学案', icon: '📘' },
   { type: 'mindmap', label: '思维导图', icon: '🧠' },
   { type: 'code_case', label: '互动沙盒', icon: '🎮' },
-  { type: 'exercises', label: '个性化题单', icon: '📝' },
   { type: 'trace_animation', label: '轨迹动画', icon: '✨' },
 ] as const
 
@@ -303,12 +308,20 @@ const drawerModulePreview = computed(() => {
       intro: cfg.intro,
       animLoader: cfg.animationComponent,
       firstSectionId: cfg.sections[0]?.id ?? 'theory',
+      firstSection: cfg.sections[0] ?? null,
+      chapterTag: cfg.chapterTag,
     }
   }
   const intro = INDEPENDENT_MODULE_INTROS[key]
   const animLoader = INDEPENDENT_MODULE_ANIMATIONS[key]
   if (intro && animLoader) {
-    return { intro, animLoader, firstSectionId: 'theory' }
+    return {
+      intro,
+      animLoader,
+      firstSectionId: 'theory',
+      firstSection: null,
+      chapterTag: `${selectedNode.value?.label ?? key}篇`,
+    }
   }
   return null
 })
@@ -334,6 +347,44 @@ const drawerSlots = computed(() => {
     resource: byType.get(slot.type),
     meta: RESOURCE_TYPE_META[slot.type],
   }))
+})
+
+/** 抽屉中算法详细信息：阶段 / 学习目标 / 推荐时长 / 模块元信息 */
+const drawerModuleInfo = computed(() => {
+  const key = selectedNode.value?.id
+  if (!key) return null
+  const mod = ALGORITHM_MODULES.find((m) => m.key === key)
+  const hint = MODULE_PATH_HINTS[key]
+  if (!mod || !hint) return null
+  return {
+    key,
+    label: mod.label,
+    phaseLabel: MODULE_PHASE_LABELS[mod.phase] ?? mod.phase,
+    accent: mod.accent,
+    summary: hint.summary,
+    goals: hint.goals,
+    estHours: hint.estHours,
+    available: mod.available,
+  }
+})
+
+/** 复用学习页 AI 助教；独立模块没有统一章节类型时，用节点目标构造等价上下文。 */
+const drawerAiSection = computed<LearnSection | null>(() => {
+  if (drawerModulePreview.value?.firstSection) return drawerModulePreview.value.firstSection
+  const info = drawerModuleInfo.value
+  if (!info) return null
+  return {
+    id: 'universe-overview',
+    title: `${info.label}核心概念`,
+    subtitle: '知识宇宙节点概览',
+    difficulty: '入门',
+    estMinutes: Math.max(15, Math.round(info.estHours * 60)),
+    keywords: info.goals,
+    overview: info.summary,
+    points: info.goals,
+    pitfalls: [],
+    checklist: info.goals,
+  }
 })
 
 watch(
@@ -1069,13 +1120,21 @@ onUnmounted(() => {
 
     <el-drawer
       v-model="drawerVisible"
-      :title="selectedNode?.label ?? '知识点详情'"
       direction="rtl"
-      size="min(420px, 92vw)"
+      size="min(520px, 94vw)"
       class="universe-drawer"
+      modal-class="universe-drawer-overlay"
+      append-to-body
       destroy-on-close
     >
-      <template v-if="selectedNode">
+      <template #header>
+        <div class="drawer-titlebar">
+          <span class="drawer-title-kicker">算法知识宇宙</span>
+          <strong>{{ selectedNode?.label ?? '知识点详情' }}</strong>
+        </div>
+      </template>
+
+      <div v-if="selectedNode" class="drawer-content">
         <div class="drawer-head">
           <div
             class="drawer-node-preview"
@@ -1088,9 +1147,52 @@ onUnmounted(() => {
           <p v-if="selectedNode.reason" class="drawer-reason">
             {{ selectedNode.reason }}
           </p>
-          <p v-if="MODULE_PATH_HINTS[selectedNode.id]" class="drawer-summary">
-            {{ MODULE_PATH_HINTS[selectedNode.id].summary }}
-          </p>
+
+          <!-- 直达学习页按钮：置顶突出 -->
+          <div class="drawer-cta">
+            <el-button
+              v-if="selectedNode.available"
+              type="primary"
+              size="large"
+              class="cta-learn-btn"
+              @click="goModule(selectedNode.id)"
+            >
+              <el-icon><Reading /></el-icon>
+              深入学习「{{ selectedNode.label }}」
+              <el-icon class="el-icon--right"><ArrowRight /></el-icon>
+            </el-button>
+            <el-button v-else disabled size="large" class="cta-learn-btn">
+              内容规划中
+            </el-button>
+          </div>
+        </div>
+
+        <!-- 算法详细信息卡片 -->
+        <section v-if="drawerModuleInfo" class="drawer-info-card">
+          <h4 class="drawer-section-title">
+            <el-icon><TrendCharts /></el-icon>
+            算法详细信息
+          </h4>
+          <div class="info-meta-row">
+            <el-tag size="small" effect="plain" :style="{ borderColor: drawerModuleInfo.accent, color: drawerModuleInfo.accent }">
+              {{ drawerModuleInfo.phaseLabel }}
+            </el-tag>
+            <span class="info-meta-item">
+              <el-icon><Timer /></el-icon>
+              推荐 {{ drawerModuleInfo.estHours }} 小时
+            </span>
+            <span class="info-meta-item">
+              <el-icon><Aim /></el-icon>
+              熟练度 {{ selectedNode.percent }}%
+            </span>
+          </div>
+          <p class="info-summary">{{ drawerModuleInfo.summary }}</p>
+          <div class="info-goals">
+            <span class="info-goals-label">学习目标</span>
+            <ul class="info-goals-list">
+              <li v-for="(g, i) in drawerModuleInfo.goals" :key="i">{{ g }}</li>
+            </ul>
+          </div>
           <div v-if="selectedModuleConcepts.length" class="drawer-concepts">
             <span class="drawer-concepts-label">概念子图</span>
             <el-tag
@@ -1116,7 +1218,7 @@ onUnmounted(() => {
               {{ p.label }}
             </el-button>
           </div>
-        </div>
+        </section>
 
         <template v-if="drawerModulePreview">
           <h4 class="drawer-section-title">
@@ -1137,6 +1239,20 @@ onUnmounted(() => {
               :section-id="drawerModulePreview.firstSectionId"
             />
           </div>
+
+          <h4 class="drawer-section-title drawer-section-title--ai">
+            <el-icon><ChatDotRound /></el-icon>
+            向 AI 助教提问
+          </h4>
+          <AiTutorPanel
+            v-if="drawerAiSection"
+            :key="`universe-tutor-${selectedNode.id}`"
+            :module-key="selectedNode.id"
+            :module-title="selectedNode.label"
+            :chapter-tag="drawerModulePreview.chapterTag"
+            :module-intro="drawerModulePreview.intro"
+            :section="drawerAiSection"
+          />
         </template>
 
         <h4 class="drawer-section-title">
@@ -1176,13 +1292,13 @@ onUnmounted(() => {
             type="primary"
             @click="goModule(selectedNode.id)"
           >
-            立即学习
+            深入学习
             <el-icon class="el-icon--right"><ArrowRight /></el-icon>
           </el-button>
           <el-button v-else disabled>内容规划中</el-button>
           <el-button @click="router.push({ name: 'resources' })">资源库</el-button>
         </div>
-      </template>
+      </div>
 
       <el-empty v-else description="未找到该知识节点的详情，请重新选择图谱节点" />
 
@@ -1767,12 +1883,371 @@ onUnmounted(() => {
   margin: 0 6px 6px 0;
   cursor: pointer;
 }
+
+/* ===== 直达学习页 CTA 按钮 ===== */
+.drawer-cta {
+  margin-top: 12px;
+}
+
+.cta-learn-btn {
+  width: 100%;
+  font-weight: 600;
+}
+
+/* ===== 算法详细信息卡片 ===== */
+.drawer-info-card {
+  margin: 16px 0;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--alp-bg-soft-block);
+  border: 1px solid var(--alp-color-border);
+}
+
+.info-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0 12px;
+  font-size: 12px;
+  color: var(--alp-color-text-secondary);
+}
+
+.info-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.info-meta-item :deep(.el-icon) {
+  font-size: 14px;
+  color: var(--alp-color-primary);
+}
+
+.info-summary {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--alp-color-text);
+}
+
+.info-goals {
+  margin-bottom: 4px;
+}
+
+.info-goals-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--alp-color-text);
+  margin-bottom: 6px;
+}
+
+.info-goals-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--alp-color-text-secondary);
+}
+
+.info-goals-list li {
+  list-style: disc;
+}
+
+/* ===== AI 智能解释卡片（对齐 OJ 助教双卡风格） ===== */
+.drawer-ai-card {
+  margin: 16px 0;
+  padding: 14px;
+  border-radius: var(--alp-radius-card);
+  background: var(--alp-bg-aside-gradient);
+  border: 1px solid var(--alp-color-border);
+  box-shadow: var(--alp-shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ai-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ai-card-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--alp-color-text);
+}
+
+.ai-card-title :deep(.el-icon) {
+  font-size: 18px;
+  color: var(--alp-color-accent);
+}
+
+.ai-stream-badge {
+  font-size: 12px;
+  color: var(--el-color-primary);
+  background: color-mix(in srgb, var(--el-color-primary) 14%, transparent);
+  padding: 2px 8px;
+  border-radius: 10px;
+  animation: ai-stream-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes ai-stream-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.ai-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ai-card-desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--alp-color-muted);
+}
+
+.ai-card-body {
+  flex: 1;
+  min-height: 120px;
+  overflow-y: auto;
+  border-radius: 8px;
+  border: 1px solid var(--alp-color-border);
+  background: var(--alp-bg-soft-block);
+  padding: 10px 12px;
+  scrollbar-width: thin;
+}
+
+.ai-card-reply {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--alp-color-text);
+}
+
+.ai-card-reply :deep(.ai-md-h) {
+  font-size: 0.92em;
+  margin: 0.75em 0 0.35em;
+  color: var(--alp-color-primary);
+}
+
+.ai-card-reply :deep(.ai-md-p) {
+  margin: 0 0 0.5em;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.ai-card-reply :deep(.ai-md-ul),
+.ai-card-reply :deep(.ai-md-ol) {
+  margin: 0.35em 0 0.5em;
+  padding-left: 1.15em;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.ai-card-reply :deep(.ai-md-code) {
+  font-size: 0.88em;
+  padding: 0.1em 0.35em;
+  font-family: ui-monospace, Consolas, monospace;
+  background: var(--alp-bg-code-ish);
+  border-radius: 4px;
+  color: #6a9eb0;
+}
+
+/* 模糊遮罩 + 占位预览 */
+.ai-card-body.is-blurred {
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+}
+
+.ai-blur-preview {
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--alp-color-text);
+  filter: blur(5px);
+  user-select: none;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.ai-blur-preview .ai-md-h {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--alp-color-primary);
+}
+
+.ai-blur-preview .ai-md-p {
+  margin: 0 0 8px;
+}
+
+.ai-blur-preview .ai-md-ul {
+  margin: 4px 0 8px;
+  padding-left: 1.25em;
+}
+
+.ai-blur-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 18px;
+  text-align: center;
+  background: color-mix(in srgb, var(--alp-bg-surface) 78%, transparent);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  cursor: pointer;
+  transition: background 0.2s ease;
+  z-index: 2;
+}
+
+.ai-blur-overlay:hover {
+  background: color-mix(in srgb, var(--alp-color-primary) 12%, transparent);
+}
+
+.ai-blur-icon {
+  font-size: 26px;
+  color: var(--alp-color-primary);
+}
+
+.ai-blur-tip {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--alp-color-text);
+}
+
+.ai-blur-sub {
+  font-size: 12px;
+  color: var(--alp-color-muted);
+  line-height: 1.5;
+  max-width: 26em;
+}
+
+/* 流式输出区域 */
+.ai-stream-area {
+  flex: 1;
+  min-height: 120px;
+  overflow-y: auto;
+  border-radius: 8px;
+  border: 1px solid var(--alp-color-border);
+  background: var(--alp-bg-soft-block);
+  padding: 10px 12px;
+  scrollbar-width: thin;
+}
+
+.ai-stream-text {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--alp-color-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+}
+
+.ai-stream-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 14px;
+  margin-left: 1px;
+  vertical-align: text-bottom;
+  background: var(--alp-color-primary);
+  animation: ai-cursor-blink 1s steps(2) infinite;
+}
+
+@keyframes ai-cursor-blink {
+  0%, 50% { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+
+.drawer-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  color: var(--alp-color-text);
+}
+
+.drawer-titlebar {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  color: var(--alp-color-text);
+}
+
+.drawer-titlebar strong {
+  overflow: hidden;
+  font-size: 17px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drawer-title-kicker {
+  color: var(--alp-color-primary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.drawer-section-title--ai {
+  margin-top: 20px;
+}
+
+.drawer-content :deep(.ai-tutor-card) {
+  max-height: none;
+}
+
+.drawer-content :deep(.ai-tutor-messages) {
+  min-height: 160px;
+  max-height: 320px;
+}
 </style>
 
 <style>
+.universe-drawer.el-drawer {
+  height: 100%;
+  max-height: 100vh;
+  box-sizing: border-box;
+  background: var(--alp-bg-surface);
+}
+
 .universe-drawer .el-drawer__header {
   margin-bottom: 0;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--alp-color-border);
+}
+
+.universe-drawer .el-drawer__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 20px 24px;
+  background: var(--alp-bg-surface);
+  color: var(--alp-color-text);
+}
+
+.universe-drawer .el-drawer__footer {
+  border-top: 1px solid var(--alp-color-border);
+}
+
+.universe-drawer-overlay.el-overlay {
+  position: fixed;
+  inset: 0;
+  height: 100vh;
 }
 </style>

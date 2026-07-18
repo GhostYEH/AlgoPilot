@@ -38,7 +38,6 @@ const phases: Array<{ label: string; agents: FlowAgent[] }> = [
     agents: [
       { id: 'ConceptAgent', label: 'ConceptAgent', role: '概念讲解' },
       { id: 'GraphAgent', label: 'GraphAgent', role: '知识图谱' },
-      { id: 'QuizAgent', label: 'QuizAgent', role: '个性化练习' },
       { id: 'ScenarioAgent', label: 'ScenarioAgent', role: '场景沙箱' },
       { id: 'TraceAgent', label: 'TraceAgent', role: '执行轨迹' },
       { id: 'ReadingAgent', label: 'ReadingAgent', role: '分层阅读' },
@@ -107,7 +106,7 @@ const statusLabels: Record<AgentWorkflowStatus, string> = {
   running: '运行中',
   success: '成功',
   retry: '重试',
-  failed: '失败',
+  failed: '待复核',
   skipped: '跳过',
 }
 
@@ -139,9 +138,12 @@ function phaseStatus(phase: { agents: FlowAgent[] }): AgentWorkflowStatus {
 
 function validationText(event?: AgentWorkflowEvent): string {
   if (!event?.validation_result) return '暂无校验结果'
-  return Object.entries(event.validation_result)
-    .map(([key, value]) => `${key}: ${String(value)}`)
-    .join('；')
+  const status = String(event.validation_result.status ?? '')
+  const evidenceCount = event.validation_result.evidence_count
+  if (status === 'passed') return `内容校验通过${typeof evidenceCount === 'number' ? `，引用 ${evidenceCount} 条课程依据` : ''}`
+  if (status === 'failed') return '内容与课程依据未完全对齐，已转入复核'
+  if (status === 'skipped') return '本步骤由专用执行流程校验'
+  return '校验信息已记录'
 }
 
 function durationText(duration?: number | null): string {

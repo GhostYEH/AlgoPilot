@@ -123,6 +123,7 @@ def verification_for_skipped_type(
         f"{resource_type} 由专用执行管线生成（如 trace_runner），跳过 ContentVerifier 文本对照校验；"
         f"仍执行 SafetyAgent 审查。trace_verdict={trace_verdict or 'n/a'}"
     )
+    trace_ok = resource_type != "trace_animation" or trace_verdict.upper() in {"AC", "OK"}
     return build_verification_result(
         resource_type=resource_type,
         course_id=course_id,
@@ -132,5 +133,5 @@ def verification_for_skipped_type(
         grounded_chunks=chunks_to_grounded(chunks or []),
         skip_reason=reason,
         retry_count=0,
-        final_decision="publish",
+        final_decision="publish" if trace_ok else "draft",
     )

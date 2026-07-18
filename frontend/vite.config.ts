@@ -16,11 +16,11 @@ export default defineConfig(({ mode }) => {
     vue(),
     AutoImport({
       imports: ['vue', 'vue-router'],
-      resolvers: [ElementPlusResolver()],
+      resolvers: [ElementPlusResolver({ importStyle: false })],
       dts: 'src/types/auto-imports.d.ts',
     }),
     Components({
-      resolvers: [ElementPlusResolver({ importStyle: 'css' })],
+      resolvers: [ElementPlusResolver({ importStyle: false })],
       dts: 'src/types/components.d.ts',
     }),
   ],
@@ -30,7 +30,7 @@ export default defineConfig(({ mode }) => {
     },
   },
   optimizeDeps: {
-    include: ['@element-plus/icons-vue', 'element-plus'],
+    include: ['@element-plus/icons-vue', 'element-plus', 'element-plus/es'],
   },
   server: {
     host: '127.0.0.1',

@@ -17,7 +17,11 @@ from services.agents.learning_path_catalog import (
     VALID_MODULE_KEYS,
     lookup_remediation,
 )
-from services.llm import chat_completion
+from services.llm.validator import (
+    DEFAULT_MAX_RETRIES,
+    chat_completion_validated,
+    json_object_validator,
+)
 
 PATH_SYSTEM = """你是「学习路径 Agent（PlannerAgent）」，为大一计科「数据结构与算法」课程**润色**个性化学习路径说明。
 
@@ -97,8 +101,14 @@ class LearningPathAgent(BaseAgent):
             messages = self.build_messages(
                 profile_block=profile_block, request=request, ordered_keys=base["ordered_keys"]
             )
-            raw = await chat_completion(
-                messages, temperature=self.temperature(), max_tokens=self.max_tokens()
+            raw, _ = await chat_completion_validated(
+                messages,
+                validator=json_object_validator(),
+                max_retries=DEFAULT_MAX_RETRIES,
+                temperature=self.temperature(),
+                max_tokens=self.max_tokens(),
+                retry_temperature=0.4,
+                context_label="learning_path_replan",
             )
             llm = _parse_plan_json(raw)
             base["summary"] = str(llm.get("summary") or base["summary"]).strip()

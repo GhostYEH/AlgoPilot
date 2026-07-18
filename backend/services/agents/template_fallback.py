@@ -162,33 +162,47 @@ def generate_exercises(
     fallback_reason: str,
 ) -> tuple[str, str, dict]:
     focus = hints.error_preference or "边界与复杂度"
-    bullets = _bullet_lines(chunks, 3)
+    bullets = _bullet_lines(chunks, 5)
+    while len(bullets) < 3:
+        bullets.append(f"{topic}：结合课程讲义分析核心操作与边界条件")
+    topic_name = topic[:40] or module_key or "当前模块"
+    distractors = [
+        f"{topic_name}在任何输入下都不需要处理边界条件",
+        f"{topic_name}的所有操作时间复杂度都固定为 O(1)",
+        f"学习{topic_name}时可以忽略数据组织方式与操作顺序",
+    ]
     questions: list[dict[str, Any]] = []
-    for i, stem_base in enumerate(bullets[:2]):
-        questions.append(
-            {
-                "type": "choice",
-                "stem": f"关于「{stem_base[:60]}」，下列说法更合适的是？",
-                "options": [
-                    "与知识库描述一致",
-                    "忽略边界条件仍成立",
-                    "任意输入规模都 O(1)",
-                    "无需定义数据结构",
-                ],
-                "hint": "对照课程讲义与知识库片段",
-                "focus": focus,
-                "difficulty": "easy" if i == 0 else "medium",
-            }
-        )
-    questions.append(
+    for i, stem_base in enumerate(bullets[:3]):
+        questions.append({
+            "type": "choice",
+            "stem": f"根据课程讲义，关于「{topic_name}」的第 {i + 1} 个要点，哪一项有明确依据？",
+            "options": [stem_base[:120], *distractors],
+            "hint": f"回看讲义中的要点：{stem_base[:70]}",
+            "focus": focus,
+            "difficulty": "easy" if i == 0 else "medium",
+            "answer": stem_base[:120],
+            "explanation": f"课程知识库明确给出的要点是：{stem_base[:160]}。其余选项是缺少前提的绝对化表述。",
+        })
+    questions.extend([
         {
             "type": "fill",
-            "stem": f"用一句话总结「{_topic_label(topic, module_key)}」的核心思想",
-            "hint": bullets[0][:80] if bullets else "参考讲解文档",
+            "stem": f"请结合讲义说明「{topic_name}」中最需要注意的操作或边界条件。",
+            "hint": bullets[0][:100],
             "focus": focus,
             "difficulty": "medium",
-        }
-    )
+            "answer": bullets[0][:160],
+            "explanation": "评分时应检查是否写出了具体操作、边界条件及遗漏它可能造成的后果。",
+        },
+        {
+            "type": "fill",
+            "stem": f"请用自己的话解释「{topic_name}」的核心思路，并说明它适用于什么问题。",
+            "hint": bullets[1][:100],
+            "focus": focus,
+            "difficulty": "hard",
+            "answer": bullets[1][:160],
+            "explanation": "答案需同时说明核心思路与适用条件，不能只写一个术语或复杂度。",
+        },
+    ])
     payload = _strip_internal_fields({"questions": questions})
     content = json.dumps(payload, ensure_ascii=False, indent=2)
     meta = {"format": "quiz_json", "template": "quiz_from_chunks", "fallback_reason": fallback_reason}
@@ -249,7 +263,12 @@ def generate_reading(
         if isinstance(items, list) and chunks:
             extra = str(chunks[0].get("title") or topic)
             if extra not in str(items[0]):
-                items.insert(0, f"知识库：{extra}（模板摘要）")
+                items.insert(0, {
+                    "title": extra,
+                    "type": "课程知识库",
+                    "why": f"用于对照「{topic}」的课程定义、核心操作与边界条件。",
+                    "task": f"阅读后用自己的话总结「{topic}」的一个核心要点。",
+                })
     payload = _strip_internal_fields({
         "topic": _topic_label(topic, module_key),
         "levels": levels,

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Grid, Reading, FolderOpened, User, QuestionFilled, Cpu, Moon, Sunny, ArrowDown, DataLine, Bell, Document, Setting, Tickets, TrendCharts } from '@element-plus/icons-vue'
+import { Grid, Reading, FolderOpened, User, QuestionFilled, Cpu, Moon, Sunny, ArrowDown, DataLine, Document, Setting, Tickets, TrendCharts, Box } from '@element-plus/icons-vue'
 import { useTheme } from '@/composables/useTheme'
 import { providePersonaUi } from '@/composables/usePersonaUiProvider'
 import { ALGORITHM_MODULES, MODULE_ROUTE_NAMES } from '@/constants/modules'
@@ -73,6 +73,7 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
         <el-menu-item index="/oj-analytics"><el-icon><TrendCharts /></el-icon><span>学情分析</span></el-menu-item>
         <el-menu-item index="/teacher-workbench"><el-icon><Document /></el-icon><span>资源工作台</span></el-menu-item>
         <el-menu-item index="/oj-admin"><el-icon><Tickets /></el-icon><span>OJ 管理</span></el-menu-item>
+        <el-menu-item index="/playground"><el-icon><Box /></el-icon><span>STL 沙盒</span></el-menu-item>
         <el-menu-item index="/teacher-guide"><el-icon><QuestionFilled /></el-icon><span>教师指南</span></el-menu-item>
       </el-menu>
       <div class="teacher-profile"><el-avatar :size="36">{{ displayName }}</el-avatar><div><strong>{{ getUser()?.username || '教师' }}</strong><span>授课教师</span></div><el-icon><Setting /></el-icon></div>
@@ -110,14 +111,10 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
             <el-icon><Cpu /></el-icon>
             <span>在线 OJ</span>
           </el-menu-item>
-          <el-menu-item
-            index="/agent-workbench"
-            @mouseenter="prefetchRoute('/agent-workbench')"
-          >
-            <el-icon><Cpu /></el-icon>
-            <span>多智能体</span>
+          <el-menu-item index="/playground" @mouseenter="prefetchRoute('/playground')">
+            <el-icon><Box /></el-icon>
+            <span>STL 沙盒</span>
           </el-menu-item>
-
           <el-dropdown
             trigger="hover"
             placement="bottom-start"
@@ -149,8 +146,6 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
       </el-menu>
 
       <div v-if="isTeacher" class="teacher-context">
-        <el-dropdown trigger="click"><button type="button">高二（3）班 <el-icon><ArrowDown /></el-icon></button><template #dropdown><el-dropdown-menu><el-dropdown-item>高二（3）班</el-dropdown-item><el-dropdown-item>高二（5）班</el-dropdown-item></el-dropdown-menu></template></el-dropdown>
-        <span class="context-divider" />
         <el-dropdown trigger="click"><button type="button">数据结构与算法 <el-icon><ArrowDown /></el-icon></button><template #dropdown><el-dropdown-menu><el-dropdown-item>数据结构与算法</el-dropdown-item><el-dropdown-item>算法设计基础</el-dropdown-item></el-dropdown-menu></template></el-dropdown>
       </div>
 
@@ -167,7 +162,6 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
         </template>
         <template v-else>
           <span v-if="!isTeacher" class="user-name">{{ getUser()?.username }}</span>
-          <el-badge v-if="isTeacher" :value="3"><el-button circle size="small" aria-label="消息通知"><el-icon><Bell /></el-icon></el-button></el-badge>
           <el-dropdown trigger="click">
             <el-avatar :size="32" class="user-avatar">{{ displayName }}</el-avatar>
             <template #dropdown>
@@ -415,6 +409,9 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
   background: var(--alp-bg-surface-solid);
   color: var(--alp-color-text);
   border-right: 1px solid var(--alp-color-border);
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: contain;
 }
 
 .teacher-brand {
@@ -459,7 +456,22 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
 .teacher-context button { display: flex; align-items: center; gap: 7px; padding: 8px 2px; border: 0; background: transparent; color: var(--alp-color-text); font-size: 13px; font-weight: 600; cursor: pointer; }
 .context-divider { width: 1px; height: 23px; background: var(--alp-color-border); }
 .term-range { color: var(--alp-color-text-secondary); font-size: 12px; }
-.teacher-shell .app-main { margin-left: 196px; width: calc(100% - 196px); background: var(--alp-bg-shell); }
+.teacher-shell {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.teacher-shell .app-main {
+  height: calc(100dvh - var(--alp-header-height, 60px));
+  min-height: 0;
+  margin-left: 196px;
+  width: calc(100% - 196px);
+  overflow-x: clip;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--alp-bg-shell);
+}
 
 .app-main:has(.practice-problem-page) {
   height: calc(100vh - var(--alp-header-height, 60px));

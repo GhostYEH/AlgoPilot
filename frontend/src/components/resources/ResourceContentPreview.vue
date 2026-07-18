@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import DomainStructurePanels from '@/components/resources/DomainStructurePanels.vue'
+import TraceAnimationPlayer from '@/components/resources/TraceAnimationPlayer.vue'
 import {
   looksLikeUnparsedDomainJson,
   parseDomainStructureContent,
@@ -75,6 +76,10 @@ const isTrace = computed(
   () => props.resourceType === 'trace_animation' || props.meta?.format === 'trace_json',
 )
 const safeContent = computed(() => props.content ?? '')
+const looksLikeRawJson = computed(() => {
+  const text = safeContent.value.trim()
+  return text.startsWith('{') || text.startsWith('[') || /^```json\b/i.test(text)
+})
 const domainStructure = computed(() => parseDomainStructureContent(safeContent.value))
 const isDocOrScenario = computed(
   () => props.resourceType === 'document' || props.resourceType === 'code_case',
@@ -85,7 +90,9 @@ const isDomainStructure = computed(
     (isDocOrScenario.value || props.meta?.format === 'domain_structure_json'),
 )
 const unparsedDomainJson = computed(
-  () => isDocOrScenario.value && looksLikeUnparsedDomainJson(safeContent.value),
+  () =>
+    isDocOrScenario.value &&
+    (looksLikeUnparsedDomainJson(safeContent.value) || looksLikeRawJson.value),
 )
 const legacyMarkdown = computed(
   () =>
@@ -97,6 +104,14 @@ const legacyMarkdown = computed(
 const domainStructureMode = computed((): 'document' | 'scenario' =>
   props.resourceType === 'code_case' ? 'scenario' : 'document',
 )
+const structuredPayloadUnavailable = computed(() => {
+  const format = String(props.meta?.format ?? '')
+  return (
+    looksLikeRawJson.value ||
+    format.includes('json') ||
+    ['exercises', 'reading', 'trace_animation'].includes(props.resourceType)
+  )
+})
 
 const mermaidSrc = computed(() => {
   if (!isMindmap.value) return ''
@@ -146,6 +161,8 @@ interface QuizQ {
   hint?: string
   focus?: string
   difficulty?: string
+  answer?: string
+  explanation?: string
 }
 
 const quizQuestions = computed((): QuizQ[] => {
@@ -174,6 +191,10 @@ function resetQuiz() {
 const answeredCount = computed(() => {
   return quizQuestions.value.filter((_, i) => quizAnswers[i]?.trim()).length
 })
+
+function difficultyLabel(value?: string): string {
+  return { easy: '基础', medium: '进阶', hard: '挑战' }[value ?? 'medium'] ?? '进阶'
+}
 </script>
 
 <template>
@@ -197,7 +218,7 @@ const answeredCount = computed(() => {
     >
       <div class="quiz-head">
         <span class="quiz-badge">{{ q.type === 'choice' ? '选择题' : '填空题' }}</span>
-        <span class="quiz-diff">{{ q.difficulty ?? 'medium' }}</span>
+        <span class="quiz-diff">{{ difficultyLabel(q.difficulty) }}</span>
         <span v-if="q.focus" class="quiz-focus-tag">考查：{{ q.focus }}</span>
       </div>
       <p class="quiz-stem">{{ i + 1 }}. {{ q.stem }}</p>
@@ -225,6 +246,13 @@ const answeredCount = computed(() => {
         <el-button link type="primary" size="small" @click="revealHint(i)">查看提示</el-button>
       </div>
       <p v-if="quizRevealed[i] && q.hint" class="quiz-hint">💡 {{ q.hint }}</p>
+      <div v-if="quizSubmitted && q.answer" class="quiz-answer">
+        <strong v-if="q.type === 'choice'" :class="quizAnswers[i] === q.answer ? 'quiz-correct' : 'quiz-wrong'">
+          {{ quizAnswers[i] === q.answer ? '回答正确' : '回答有误' }}
+        </strong>
+        <p><b>参考答案：</b>{{ q.answer }}</p>
+        <p v-if="q.explanation"><b>解析：</b>{{ q.explanation }}</p>
+      </div>
     </div>
   </div>
 
@@ -240,36 +268,13 @@ const answeredCount = computed(() => {
         {{ n.label }} <span class="muted">({{ n.parent }})</span>
       </li>
     </ul>
-    <pre class="raw-json">{{ safeContent }}</pre>
   </div>
 
-  <div v-else-if="isTrace && parsed" class="trace-preview">
-    <h3 v-if="parsed.title">{{ parsed.title }}</h3>
-    <p v-if="parsed.narration_hint" class="trace-narration">{{ parsed.narration_hint }}</p>
-    <div v-if="parsed.code" class="trace-code-block">
-      <div class="trace-code-header">源代码</div>
-      <pre class="trace-code"><code>{{ parsed.code }}</code></pre>
-    </div>
-    <div class="trace-io-row">
-      <div v-if="parsed.stdin" class="trace-io-item">
-        <span class="trace-io-label">输入</span>
-        <code>{{ parsed.stdin }}</code>
-      </div>
-      <div v-if="parsed.stdout" class="trace-io-item">
-        <span class="trace-io-label">期望输出</span>
-        <code>{{ parsed.stdout }}</code>
-      </div>
-    </div>
-    <el-alert
-      v-if="meta?.placeholder"
-      type="info"
-      :closable="false"
-      show-icon
-      title="占位示例"
-      description="此为模板占位动画，配置 LLM 后可生成真实题解轨迹。"
-      class="trace-placeholder-notice"
-    />
-  </div>
+  <TraceAnimationPlayer
+    v-else-if="isTrace && parsed"
+    :payload="parsed"
+    :meta="meta"
+  />
 
   <DomainStructurePanels
     v-else-if="isDomainStructure"
@@ -313,6 +318,15 @@ const answeredCount = computed(() => {
     v-else-if="legacyMarkdown"
     class="preview-body ai-md-body"
     v-html="renderAiReplyHtml(content)"
+  />
+
+  <el-alert
+    v-else-if="parsed || structuredPayloadUnavailable"
+    type="info"
+    :closable="false"
+    show-icon
+    title="内容暂时无法展示"
+    description="系统已拦截未完成整理的结构化数据，请重新生成这份资源。"
   />
 
   <div v-else class="preview-body ai-md-body" v-html="renderAiReplyHtml(content)" />
@@ -440,6 +454,19 @@ const answeredCount = computed(() => {
   background: color-mix(in srgb, var(--el-color-warning-light-9) 40%, transparent);
 }
 
+.quiz-answer {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--el-color-primary-light-9) 65%, transparent);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.quiz-answer p { margin: 4px 0 0; }
+.quiz-correct { color: var(--el-color-success); }
+.quiz-wrong { color: var(--el-color-danger); }
+
 .mindmap-preview {
   min-height: 280px;
 }
@@ -475,16 +502,6 @@ const answeredCount = computed(() => {
 .mindmap-json .muted {
   color: var(--alp-color-muted);
   font-size: 11px;
-}
-
-.raw-json {
-  margin-top: 10px;
-  font-size: 11px;
-  max-height: 200px;
-  overflow: auto;
-  background: var(--alp-bg-soft-block);
-  padding: 8px;
-  border-radius: 6px;
 }
 
 .preview-body {
@@ -528,75 +545,4 @@ const answeredCount = computed(() => {
   border-top: 1px solid var(--alp-color-border);
 }
 
-.trace-preview h3 {
-  margin: 0 0 8px;
-  font-size: 16px;
-}
-
-.trace-narration {
-  color: var(--alp-color-primary);
-  font-size: 13px;
-  margin: 0 0 12px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: var(--alp-color-primary-soft);
-}
-
-.trace-code-block {
-  margin-bottom: 12px;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid var(--alp-color-border);
-}
-
-.trace-code-header {
-  padding: 6px 12px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--alp-color-muted);
-  background: var(--alp-bg-soft-block);
-  border-bottom: 1px solid var(--alp-color-border);
-}
-
-.trace-code {
-  margin: 0;
-  padding: 12px;
-  font-size: 13px;
-  line-height: 1.55;
-  background: var(--alp-bg-code-ish);
-  overflow-x: auto;
-}
-
-.trace-io-row {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.trace-io-item {
-  flex: 1;
-  min-width: 160px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--alp-color-border);
-  background: var(--alp-bg-soft-block);
-}
-
-.trace-io-label {
-  display: block;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--alp-color-muted);
-  margin-bottom: 4px;
-}
-
-.trace-io-item code {
-  font-size: 13px;
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-
-.trace-placeholder-notice {
-  margin-top: 12px;
-}
 </style>

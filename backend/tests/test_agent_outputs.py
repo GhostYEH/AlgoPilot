@@ -126,3 +126,4 @@ async def test_role_agent_forwards_streaming_deltas(monkeypatch: pytest.MonkeyPa
     )
 
     assert received == chunks
+

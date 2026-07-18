@@ -83,6 +83,59 @@ export interface StudentDetailModuleProgress {
   mastery_score: number
 }
 
+export interface StudentProfileDimensionStat {
+  key: string
+  label: string
+  text: string
+  score: number
+  confidence: string
+}
+
+export interface StudentOjVerdictStat {
+  verdict: string
+  label: string
+  count: number
+  color: string
+}
+
+export interface StudentOjRecentSubmission {
+  problem_slug: string
+  problem_title: string
+  verdict: string
+  passed: number
+  total: number
+  runtime_ms: number
+  language: string
+  created_at: string
+}
+
+export interface StudentErrorTypeStat {
+  error_type: string
+  label: string
+  count: number
+}
+
+export interface StudentResourceTypeStat {
+  resource_type: string
+  label: string
+  count: number
+}
+
+export interface StudentActivityItem {
+  event_type: string
+  label: string
+  description: string
+  created_at: string
+  icon: string
+}
+
+export interface StudentSkillMastery {
+  skill_id: string
+  skill_label: string
+  mastery_score: number
+  sample_count: number
+}
+
 export interface StudentDetailResponse {
   user_id: number
   username: string
@@ -98,6 +151,17 @@ export interface StudentDetailResponse {
   last_active: string
   module_progress: StudentDetailModuleProgress[]
   recent_memories: Array<Record<string, unknown>>
+  // 可视化扩展字段
+  dimension_stats: StudentProfileDimensionStat[]
+  oj_verdict_breakdown: StudentOjVerdictStat[]
+  oj_recent_submissions: StudentOjRecentSubmission[]
+  error_type_breakdown: StudentErrorTypeStat[]
+  resource_type_breakdown: StudentResourceTypeStat[]
+  activity_timeline: StudentActivityItem[]
+  skill_mastery: StudentSkillMastery[]
+  learning_streak_days: number
+  profile_completeness: number
+  data_completeness_note: string
 }
 
 export function fetchStudentRoster() {

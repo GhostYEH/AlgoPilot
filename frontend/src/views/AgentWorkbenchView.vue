@@ -27,9 +27,10 @@ import {
   resourceBootstrapLines,
   systemLine,
 } from '@/utils/agentConsole'
-import { ALGORITHM_MODULES } from '@/constants/modules'
+import { ALGORITHM_MODULES, generationPresetForModule } from '@/constants/modules'
 
 const router = useRouter()
+const props = withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false })
 
 const FALLBACK_AGENTS: AgentInfo[] = [
   {
@@ -90,6 +91,13 @@ const streamingAttempts = new Map<string, number>()
 const workflowEvents = ref<AgentWorkflowEvent[]>([])
 const activeResourceTab = ref('document')
 const agentStatuses = ref<Map<string, AgentTaskStatus>>(new Map())
+
+function applyModulePreset(moduleKey: string) {
+  const preset = generationPresetForModule(moduleKey)
+  if (!preset) return
+  topic.value = preset.topic
+  focusHint.value = preset.focusHint
+}
 
 function resourceNeedsReview(resource: GeneratedResource): boolean {
   const verification = resource.verification ?? resource.meta?.verification
@@ -179,6 +187,10 @@ async function runResourceGeneration() {
     return
   }
   if (generating.value) return
+  if (!topic.value.trim()) {
+    ElMessage.warning('请填写与课程模块一致的课程主题')
+    return
+  }
 
   generating.value = true
   progress.value = 0
@@ -240,7 +252,6 @@ async function runResourceGeneration() {
           for (const entry of logs) pushLine(lineFromAgentLog(entry))
         },
         onContentDelta(chunk) {
-          const hasActiveStream = Boolean(streamingContent.value[activeResourceTab.value])
           const previousAttempt = streamingAttempts.get(chunk.resource_type)
           const previous = previousAttempt === chunk.attempt
             ? (streamingContent.value[chunk.resource_type] ?? '')
@@ -250,7 +261,25 @@ async function runResourceGeneration() {
             ...streamingContent.value,
             [chunk.resource_type]: `${previous}${chunk.delta}`,
           }
-          if (!hasActiveStream) activeResourceTab.value = chunk.resource_type
+          // 仅在当前 tab 无对应流式内容时切换，避免并行生成时 tab 反复跳
+          const activeTabHasStream = Boolean(streamingContent.value[activeResourceTab.value])
+          if (!activeTabHasStream) activeResourceTab.value = chunk.resource_type
+        },
+        onRegenerateClear(info) {
+          // 后端检测到上一轮输出未通过校验，清空已显示的流式内容，让新一轮 delta 从空开始追加
+          const nextStreaming = { ...streamingContent.value }
+          delete nextStreaming[info.resource_type]
+          streamingContent.value = nextStreaming
+          streamingAttempts.set(info.resource_type, info.attempt)
+          statusMap.set(info.resource_type, 'retrying')
+          agentStatuses.value = new Map(statusMap)
+          activeResourceTab.value = info.resource_type
+          pushLine(
+            systemLine(
+              `${info.agent_name} 上一轮输出未通过校验，正在重新生成（第 ${info.attempt} 次）：${info.reason}`,
+              'warn',
+            ),
+          )
         },
         onResource(r) {
           generatedResources.value = [
@@ -360,10 +389,10 @@ function agentStatus(id: string): 'running' | 'idle' {
 </script>
 
 <template>
-  <div class="workbench-page">
+  <div class="workbench-page" :class="{ 'workbench-page--embedded': props.embedded }">
     <div class="wb-hero">
-      <el-page-header title="多智能体协同工作台" @back="router.push({ name: 'home' })" />
-      <p class="wb-desc">{{ note || 'ProfilingAgent 结合学习画像，驱动资源 Agent 协同生成并完成校验落库' }}</p>
+      <el-page-header v-if="!props.embedded" title="智能化学习" @back="router.push({ name: 'home' })" />
+      <p class="wb-desc">{{ note || '结合学习画像与课程知识，协同生成并校验个性化学习资源' }}</p>
       <el-alert
         v-if="catalogError"
         type="warning"
@@ -384,6 +413,7 @@ function agentStatus(id: string): 'running' | 'idle' {
             filterable
             placeholder="选择课程模块"
             style="width: 100%"
+            @change="applyModulePreset"
           >
             <el-option
               v-for="item in ALGORITHM_MODULES"
@@ -458,7 +488,7 @@ function agentStatus(id: string): 'running' | 'idle' {
           <span class="dag-arrow">→</span>
           <div class="dag-node">Safety → 落库</div>
         </div>
-        <pre v-if="dagMermaid" class="mermaid-src">{{ dagMermaid }}</pre>
+        <p v-if="dagMermaid" class="dag-note">系统编排结构已加载，生成时可在上方协作流程中查看实时状态。</p>
 
         <h3 class="section-title">Pipeline 阶段</h3>
         <el-steps :active="activeStage" finish-status="success" align-center class="pipeline-steps">
@@ -538,6 +568,15 @@ function agentStatus(id: string): 'running' | 'idle' {
   margin-bottom: 24px;
 }
 
+.workbench-page--embedded {
+  max-width: none;
+  padding: 0;
+}
+
+.workbench-page--embedded .wb-hero {
+  margin-bottom: 14px;
+}
+
 .wb-flow {
   margin-bottom: 24px;
 }
@@ -589,13 +628,11 @@ function agentStatus(id: string): 'running' | 'idle' {
   font-size: 12px;
 }
 
-.mermaid-src {
-  font-size: 11px;
-  background: var(--alp-bg-soft-block);
-  padding: 10px;
-  border-radius: 8px;
-  overflow: auto;
-  max-height: 200px;
+.dag-note {
+  margin: 12px 0;
+  color: var(--alp-color-muted);
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .io-card p {

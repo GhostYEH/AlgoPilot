@@ -77,3 +77,12 @@ ai-test-result.txt
 # Misc
 .DS_Store
 Thumbs.db
+
+# Release builds (portable packaging output, ~2GB)
+release/
+
+# Local audit artifacts
+.codex-audit/
+
+# Local documents and presentations
+文档和ppt/

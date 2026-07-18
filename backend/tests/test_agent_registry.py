@@ -24,7 +24,7 @@ def test_registry_layers_cover_core_domains() -> None:
 
 
 def test_resource_type_maps_to_known_agent() -> None:
-    for rtype in ("document", "mindmap", "exercises", "code_case", "trace_animation"):
+    for rtype in ("document", "mindmap", "code_case", "trace_animation", "reading"):
         agent_id = agent_for_resource(rtype)
         assert agent_id in {a["id"] for a in AGENT_REGISTRY}
         assert RESOURCE_TYPE_TO_AGENT[rtype] == agent_id

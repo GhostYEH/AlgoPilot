@@ -84,7 +84,7 @@ async def test_reverse_linked_list_rule_diagnosis_does_not_call_llm(monkeypatch)
     async def _llm_must_not_run(*_args, **_kwargs):
         raise AssertionError("known demo diagnosis must not call the LLM")
 
-    monkeypatch.setattr("services.oj.ai_diagnosis.chat_completion", _llm_must_not_run)
+    monkeypatch.setattr("services.llm.client.chat_completion", _llm_must_not_run)
 
     diagnosis = await diagnose_trace_bug(
         problem.get("description", ""),
