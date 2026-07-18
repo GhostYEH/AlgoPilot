@@ -17,6 +17,7 @@ const queue = ref<{ key: number; label: string }[]>([])
 const current = ref<{ key: number; label: string } | null>(null)
 const msg = ref('')
 const won = ref(false)
+const fail = ref(false)
 const rehashPhase = ref(0)
 
 const stepIndex = computed(() => {
@@ -36,6 +37,7 @@ watch(() => props.levelId, reset, { immediate: true })
 function reset() {
   rehashPhase.value = 0
   won.value = false
+  fail.value = false
   buckets.value = Array.from({ length: BUCKET_SIZE }, () => [])
   if (props.levelId === 'basic') {
     // 不同 key 散列到不同桶，演示无冲突入桶（10%7=3, 20%7=6, 15%7=1, 25%7=4）
@@ -84,6 +86,7 @@ function pickBucket(i: number) {
   const mod = buckets.value.length
   const expect = current.value.key % mod
   if (i !== expect) {
+    fail.value = true
     msg.value = `错误：${current.value.key} % ${mod} = ${expect}，不是 ${i}`
     pushLog(`入桶错误：选了桶 ${i}`)
     return
@@ -94,12 +97,14 @@ function pickBucket(i: number) {
     msg.value = '冲突：拉链到桶尾'
     pushLog(`${current.value.label} 拉链到桶 ${i}`)
   } else if (chain.length > 0 && props.levelId === 'basic') {
+    fail.value = true
     msg.value = '该桶已有元素，请用「拉链法」关练习冲突'
     return
   } else {
     chain.push(current.value.label)
     pushLog(`${current.value.label} → 桶 ${i}`)
   }
+  fail.value = false
   queue.value.shift()
   current.value = queue.value[0] ?? null
 
@@ -125,6 +130,7 @@ const pendingQueue = computed(() => queue.value.map((q) => q.label))
     v-if="shellMeta"
     :meta="shellMeta"
     :hint="msg"
+    :fail="fail"
     :won="won"
     :step-index="stepIndex"
     :state-values="stateValues"

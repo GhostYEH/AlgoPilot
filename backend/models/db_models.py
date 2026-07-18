@@ -129,9 +129,7 @@ class StudentLearningMemory(Base):
     __tablename__ = "student_learning_memories"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     course_id: Mapped[str] = mapped_column(String(64), default="data_structures_algorithms", index=True)
     chapter_id: Mapped[str] = mapped_column(String(80), default="", index=True)
     skill_id: Mapped[str] = mapped_column(String(64), default="", index=True)
@@ -159,13 +157,9 @@ class LearningEventLog(Base):
     __tablename__ = "learning_event_logs"
 
     event_id: Mapped[str] = mapped_column(String(32), primary_key=True)
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     event_type: Mapped[str] = mapped_column(String(64), index=True)
-    course_id: Mapped[str] = mapped_column(
-        String(64), default="data_structures_algorithms", index=True
-    )
+    course_id: Mapped[str] = mapped_column(String(64), default="data_structures_algorithms", index=True)
     chapter_id: Mapped[str] = mapped_column(String(80), default="", index=True)
     skill_id: Mapped[str] = mapped_column(String(64), default="", index=True)
     payload: Mapped[dict] = mapped_column(JSON, nullable=False, insert_default=dict)
@@ -173,9 +167,7 @@ class LearningEventLog(Base):
     status: Mapped[str] = mapped_column(String(16), default="pending", index=True)
     agent_logs: Mapped[list] = mapped_column(JSON, nullable=False, insert_default=list)
     handler_errors: Mapped[list] = mapped_column(JSON, nullable=False, insert_default=list)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now(), index=True
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), index=True)
 
     user: Mapped[User] = relationship(back_populates="learning_events")
 
@@ -186,9 +178,7 @@ class OjSubmission(Base):
     __tablename__ = "oj_submissions"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     problem_slug: Mapped[str] = mapped_column(String(128), index=True)
     language: Mapped[str] = mapped_column(String(16), default="python")
     code: Mapped[str] = mapped_column(Text, default="")
@@ -198,9 +188,13 @@ class OjSubmission(Base):
     compile_error: Mapped[str] = mapped_column(Text, default="")
     cases: Mapped[list] = mapped_column(JSON, nullable=False, insert_default=list)
     runtime_ms_avg: Mapped[int] = mapped_column(Integer, default=0)
-    event_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now(), index=True
+    event_id: Mapped[str | None] = mapped_column(
+        String(32),
+        ForeignKey("learning_event_logs.event_id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), index=True)
 
     user: Mapped[User] = relationship(back_populates="oj_submissions")
+    learning_event: Mapped[LearningEventLog | None] = relationship(foreign_keys=[event_id])

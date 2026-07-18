@@ -182,6 +182,13 @@ export const GAME_SHELL_META: Record<string, Record<string, GameLevelShellMeta>>
       lc: 'LeetCode 26',
       concept: 'right 扫描，write 指向下一个写入位置；不等则写入并 write++。',
       invariant: '[0,write] 为去重后的有序前缀。',
+      rules: [
+        '每一轮比较 nums[right] 与 nums[write]：',
+        '若两者不同，点「写入新值」：write++ 并把 nums[right] 写入 write 位置。',
+        '若两者相同，点「跳过重复」：仅 right 前进，write 不动。',
+        '选错动作会触发失败提示，且不会推进指针；选对才会自动前进。',
+        'right 扫到末尾后，结果必须与标准去重结果一致才能通关。',
+      ],
       codeLines: [
         { text: 'int write = 0, right = 1;', activeAtSteps: [0, 1, 2] },
         { text: 'while (right < n) {', activeAtSteps: [0, 1, 2] },
@@ -203,6 +210,11 @@ export const GAME_SHELL_META: Record<string, Record<string, GameLevelShellMeta>>
       lc: 'LeetCode 15',
       concept: '固定 i，L/R 向目标和收缩：和太小 L++，和太大 R--。',
       invariant: '已固定的 i 左侧组合已枚举完毕。',
+      rules: [
+        '先点「设置 L」/「设置 R」再点下标放置指针，L 必须严格在 R 左侧。',
+        '点和不为 0 时，根据正负选「L++」或「R--」，方向错会判失败。',
+        'L 与 R 交叉即本组无解，需重置重新放置指针。',
+      ],
       codeLines: [
         { text: 'sort(nums);', activeAtSteps: [0] },
         { text: 'for (i...) { L=i+1; R=n-1;', activeAtSteps: [0, 1, 2] },
@@ -224,6 +236,11 @@ export const GAME_SHELL_META: Record<string, Record<string, GameLevelShellMeta>>
       lc: 'LeetCode 141',
       concept: 'slow 走 1 步，fast 走 2 步；相遇则有环。',
       invariant: '若有环，fast 必在环内追上 slow。',
+      rules: [
+        'slow 与 fast 必须交替推进：每轮先点「slow +1」再点「fast +2」。',
+        '连续移动同一指针会被判失败，因为真实算法里两者成对前进。',
+        '当 slow 与 fast 在同一位置相遇时，判定存在环。',
+      ],
       codeLines: [
         { text: 'slow = fast = head;', activeAtSteps: [0] },
         { text: 'while (fast && fast->next) {', activeAtSteps: [0, 1, 2] },
@@ -259,12 +276,23 @@ export const GAME_SHELL_META: Record<string, Record<string, GameLevelShellMeta>>
       ],
       footer: ['能到 i 才能从 i 跳', '贪心篇 · 跳跃'],
       stepCount: 3,
+      rules: [
+        '点击想跳到的目标格子，目标必须在 (pos, pos+jumps[pos]] 范围内。',
+        '贪心原则：在跳跃范围内选择能最大化 i+jumps[i] 的格子。',
+        '不能停留在原地、不能往回跳、不能跳到范围外。',
+        '最远可达 maxReach ≥ 末下标即通关；若当前位置 jumps=0 且无法到终点则卡死失败。',
+      ],
     },
     interval: {
       badge: '区间贪心',
       lc: 'LeetCode 435',
       concept: '按结束时间排序，每次选结束最早的且不与已选重叠的区间。',
       invariant: '已选区间按 end 递增，下一个选 start ≥ 上一 end。',
+      rules: [
+        '每步点击一个未选区间，其 start 必须 ≥ 上一个已选区间的 end（不可重叠）。',
+        '贪心原则：在所有合法区间中选择结束时间 end 最早的一个。',
+        '选满 3 个不重叠区间即通关；若剩余合法区间不足以凑齐 3 个则卡死失败。',
+      ],
       codeLines: [
         { text: 'sort by end;', activeAtSteps: [0, 1, 2] },
         { text: 'pick interval with min end;', activeAtSteps: [0, 1, 2] },
@@ -399,6 +427,12 @@ export const GAME_SHELL_META: Record<string, Record<string, GameLevelShellMeta>>
       ],
       footer: ['回溯时减去结点值', '二叉树篇 · 路径和'],
       stepCount: 4,
+      rules: [
+        '必须从根结点开始点击，不能直接选中间或叶子结点。',
+        '每一步只能点击当前路径末端结点的子结点（父子关系必须连续）。',
+        '点击路径末端结点可回溯；路径和超过 22 时也需回溯重试。',
+        '只有到达叶子结点且路径和恰好等于 22 才算通关；到叶子但和不符将提示失败。',
+      ],
     },
   },
   'monotonic-barrier': {

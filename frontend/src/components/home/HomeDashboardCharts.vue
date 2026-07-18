@@ -72,6 +72,42 @@ const heatmapWeeks = computed(() => {
 })
 const activeDays = computed(() => props.heatmap.filter((cell) => cell.level > 0).length)
 
+// 热力图统计：当前连续学习天数、最长连续、本周活跃天数
+const heatmapStats = computed(() => {
+  const cells = props.heatmap
+  if (cells.length === 0) return { currentStreak: 0, maxStreak: 0, weekActive: 0, totalActive: 0 }
+
+  // 从最后一天（今天）往前数连续活跃天数
+  let currentStreak = 0
+  for (let i = cells.length - 1; i >= 0; i--) {
+    if (cells[i].level > 0) currentStreak++
+    else break
+  }
+
+  // 最长连续活跃天数
+  let maxStreak = 0
+  let run = 0
+  for (const cell of cells) {
+    if (cell.level > 0) {
+      run++
+      if (run > maxStreak) maxStreak = run
+    } else {
+      run = 0
+    }
+  }
+
+  // 本周活跃天数（最后 7 天）
+  const lastWeek = cells.slice(-7)
+  const weekActive = lastWeek.filter((cell) => cell.level > 0).length
+
+  return {
+    currentStreak,
+    maxStreak,
+    weekActive,
+    totalActive: activeDays.value,
+  }
+})
+
 function heatmapLabel(cell: HeatmapCell) {
   const date = new Intl.DateTimeFormat('zh-CN', {
     month: 'numeric',
@@ -173,6 +209,24 @@ function heatmapLabel(cell: HeatmapCell) {
               :data-level="cell.level"
               :title="heatmapLabel(cell)"
             />
+          </div>
+        </div>
+        <div class="heatmap-stats">
+          <div class="heatmap-stats__item">
+            <strong>{{ heatmapStats.currentStreak }}</strong>
+            <span>连续学习</span>
+          </div>
+          <div class="heatmap-stats__item">
+            <strong>{{ heatmapStats.maxStreak }}</strong>
+            <span>最长连续</span>
+          </div>
+          <div class="heatmap-stats__item">
+            <strong>{{ heatmapStats.weekActive }}<small>/7</small></strong>
+            <span>本周活跃</span>
+          </div>
+          <div class="heatmap-stats__item">
+            <strong>{{ heatmapStats.totalActive }}</strong>
+            <span>总活跃日</span>
           </div>
         </div>
         <div class="heatmap-legend">
@@ -332,7 +386,7 @@ function heatmapLabel(cell: HeatmapCell) {
 .heatmap-row {
   display: flex;
   align-items: flex-end;
-  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 18px;
   margin-top: 13px;
 }
@@ -340,6 +394,40 @@ function heatmapLabel(cell: HeatmapCell) {
 .heatmap {
   display: flex;
   gap: 4px;
+}
+
+.heatmap-stats {
+  display: flex;
+  gap: 20px;
+  margin-left: auto;
+  padding-bottom: 2px;
+}
+
+.heatmap-stats__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.heatmap-stats__item strong {
+  color: var(--color-text-primary);
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.heatmap-stats__item strong small {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.heatmap-stats__item span {
+  color: var(--color-text-muted);
+  font-size: 10px;
+  white-space: nowrap;
 }
 
 .heatmap > div {
@@ -422,6 +510,11 @@ function heatmapLabel(cell: HeatmapCell) {
   .heatmap-row {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .heatmap-stats {
+    margin-left: 0;
+    gap: 16px;
   }
 
   .heatmap {

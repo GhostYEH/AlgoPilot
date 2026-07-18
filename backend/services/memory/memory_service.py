@@ -146,6 +146,7 @@ def record_oj_submit_failure(
     verdict: str,
     message: str = "",
     module_key: str = "",
+    chapter_id: str = "",
     consecutive_failures: int = 1,
 ) -> MemoryEventRecord | None:
     if verdict == "AC":
@@ -156,13 +157,15 @@ def record_oj_submit_failure(
         error_pattern=pattern,
         topic=problem_slug,
     )
+    # M4 修复：优先使用上游传入的 chapter_id，避免 commit 后再回写无法生效
+    resolved_chapter = chapter_id or resolve_chapter_id(module_key)
     svc = MemoryService(db)
     return svc.record_event(
         user_id,
         MemoryEventInput(
             event_type="oj_submit_fail",
             problem_slug=problem_slug,
-            chapter_id=resolve_chapter_id(module_key),
+            chapter_id=resolved_chapter,
             skill_id=skill_id,
             observed_error_pattern=pattern,
             failed_strategy=message[:500] if message else verdict,

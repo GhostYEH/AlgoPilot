@@ -52,14 +52,13 @@ class LearningEvent(BaseModel):
         *,
         status: str = "done",
     ) -> None:
-        self.agent_logs.append(
-            AgentLogEntry(agent=agent, action=action, detail=detail, status=status)
-        )
+        self.agent_logs.append(AgentLogEntry(agent=agent, action=action, detail=detail, status=status))
 
 
 class EventPublishResult(BaseModel):
     event: LearningEvent
     ok: bool = True
+    persisted: bool = False
 
     @property
     def agent_logs(self) -> list[AgentLogEntry]:

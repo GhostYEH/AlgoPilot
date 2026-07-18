@@ -105,7 +105,7 @@ onMounted(loadDashboard)
       <div class="metric-grid">
         <article><span>平均掌握度</span><strong>{{ overview.average_mastery.toFixed(1) }}</strong><small class="up"><el-icon><ArrowUp /></el-icon> 实时汇总</small></article>
         <article><span>活跃学习率</span><strong>{{ engagement }}<i>%</i></strong><small class="up"><el-icon><ArrowUp /></el-icon> {{ overview.profile_count }} 人有画像</small></article>
-        <article><span>OJ 学习记录数</span><strong>{{ overview.oj_submission_count }}</strong><small>成功与失败事件合计</small></article>
+        <article><span>OJ 提交数</span><strong>{{ overview.oj_submission_count }}</strong><small>真实提交记录合计</small></article>
         <article><span>平均学习进度</span><strong>{{ students.length ? Math.round(students.reduce((sum, s) => sum + s.progress_percent, 0) / students.length) : 0 }}<i>%</i></strong><small class="up"><el-icon><ArrowUp /></el-icon> 持续更新</small></article>
         <article><span>资源生成数</span><strong>{{ overview.resource_count }}</strong><small>本课程累计</small></article>
         <article><span>预警学生数</span><strong>{{ alerts.length }}</strong><small class="down"><el-icon><ArrowDown /></el-icon> 需重点关注</small></article>
@@ -155,8 +155,8 @@ onMounted(loadDashboard)
             <el-table-column label="学习进度" min-width="150"><template #default="{ row }"><el-progress :percentage="Math.round(row.progress_percent)" :stroke-width="6" :show-text="false" /> <span class="progress-value">{{ Math.round(row.progress_percent) }}%</span></template></el-table-column>
             <el-table-column prop="oj_submissions" label="OJ 提交" min-width="90" />
             <el-table-column label="薄弱知识点" min-width="180"><template #default="{ row }">{{ row.weak_modules.slice(0, 2).join('、') || '—' }}</template></el-table-column>
-            <el-table-column label="预警状态" min-width="100"><template #default="{ row }"><span class="risk-tag" :class="`risk-${studentRisk(row)}`">{{ riskLabel[studentRisk(row)] }}</span></template></el-table-column>
-            <el-table-column label="操作" width="76"><template #default="{ row }"><el-button link type="primary" @click.stop="goStudent(row)"><el-icon><TrendCharts /></el-icon>详情</el-button></template></el-table-column>
+            <el-table-column label="预警状态" min-width="100"><template #default="{ row }"><span class="risk-tag" :class="`risk-${studentRisk(row as StudentRosterItem)}`">{{ riskLabel[studentRisk(row as StudentRosterItem)] }}</span></template></el-table-column>
+            <el-table-column label="操作" width="76"><template #default="{ row }"><el-button link type="primary" @click.stop="goStudent(row as StudentRosterItem)"><el-icon><TrendCharts /></el-icon>详情</el-button></template></el-table-column>
           </el-table>
           <footer class="table-footer"><span>共 {{ filteredStudents.length }} 名学生</span><el-pagination v-model:current-page="page" :page-size="pageSize" :total="filteredStudents.length" layout="prev, pager, next" /></footer>
         </article>

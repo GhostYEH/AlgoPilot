@@ -27,9 +27,9 @@
           ],
           12
         ],
-        "expected": 5,
+        "expected": -1,
         "stdin": "10\n1 3 5 7 9 11 13 15 17 19\n12\n",
-        "stdout": "5\n"
+        "stdout": "-1\n"
       }
     ],
     "hidden": [
@@ -1294,9 +1294,9 @@
           "bxj#tw",
           "a#b#c#d#"
         ],
-        "expected": true,
+        "expected": false,
         "stdin": "bxj#tw\na#b#c#d#\n",
-        "stdout": "true\n"
+        "stdout": "false\n"
       }
     ],
     "hidden": [
@@ -1574,12 +1574,12 @@
           ]
         ],
         "expected": [
+          99960004,
           99980001,
-          99980004,
-          99980009
+          100000000
         ],
         "stdin": "3\n-10000 -9999 -9998\n",
-        "stdout": "99980001 99980004 99980009\n"
+        "stdout": "99960004 99980001 100000000\n"
       },
       {
         "args": [
@@ -1762,9 +1762,9 @@
             5
           ]
         ],
-        "expected": 1,
+        "expected": 2,
         "stdin": "6\n5\n1 2 3 4 5\n",
-        "stdout": "1\n"
+        "stdout": "2\n"
       },
       {
         "args": [
@@ -1793,9 +1793,9 @@
             1
           ]
         ],
-        "expected": 3,
+        "expected": 5,
         "stdin": "8\n6\n2 3 1 1 1 1\n",
-        "stdout": "3\n"
+        "stdout": "5\n"
       }
     ],
     "order_insensitive": false,
@@ -1847,9 +1847,9 @@
             2
           ]
         ],
-        "expected": 3,
+        "expected": 4,
         "stdin": "5\n1 2 3 2 2\n",
-        "stdout": "3\n"
+        "stdout": "4\n"
       },
       {
         "args": [
@@ -1887,9 +1887,9 @@
             1
           ]
         ],
-        "expected": 5,
+        "expected": 4,
         "stdin": "6\n1 2 3 2 2 1\n",
-        "stdout": "5\n"
+        "stdout": "4\n"
       },
       {
         "args": [
@@ -1903,9 +1903,9 @@
             2
           ]
         ],
-        "expected": 5,
+        "expected": 3,
         "stdin": "7\n3 1 2 1 3 3 2\n",
-        "stdout": "5\n"
+        "stdout": "3\n"
       },
       {
         "args": [
@@ -1932,9 +1932,9 @@
             3
           ]
         ],
-        "expected": 6,
+        "expected": 4,
         "stdin": "6\n1 1 2 2 3 3\n",
-        "stdout": "6\n"
+        "stdout": "4\n"
       },
       {
         "args": [
@@ -1964,9 +1964,9 @@
             3
           ]
         ],
-        "expected": 8,
+        "expected": 6,
         "stdin": "8\n1 1 1 1 2 2 3 3\n",
-        "stdout": "8\n"
+        "stdout": "6\n"
       },
       {
         "args": [
@@ -2434,8 +2434,8 @@
             25,
             46,
             59,
-            56,
-            55,
+            64,
+            63,
             54,
             37,
             12
@@ -2472,7 +2472,7 @@
           ]
         ],
         "stdin": "8\n",
-        "stdout": "1 2 3 4 5 6 7 8\n28 29 30 31 32 33 34 9\n27 48 49 50 51 52 35 10\n26 47 60 61 62 53 36 11\n25 46 59 56 55 54 37 12\n24 45 58 57 56 55 38 13\n23 44 43 42 41 40 39 14\n22 21 20 19 18 17 16 15\n"
+        "stdout": "1 2 3 4 5 6 7 8\n28 29 30 31 32 33 34 9\n27 48 49 50 51 52 35 10\n26 47 60 61 62 53 36 11\n25 46 59 64 63 54 37 12\n24 45 58 57 56 55 38 13\n23 44 43 42 41 40 39 14\n22 21 20 19 18 17 16 15\n"
       },
       {
         "args": [
@@ -2509,7 +2509,7 @@
             59,
             60,
             61,
-            62,
+            40,
             11
           ],
           [
@@ -2519,8 +2519,8 @@
             73,
             74,
             75,
-            76,
-            63,
+            62,
+            41,
             12
           ],
           [
@@ -2529,9 +2529,9 @@
             71,
             80,
             81,
-            82,
-            77,
-            64,
+            76,
+            63,
+            42,
             13
           ],
           [
@@ -2539,10 +2539,10 @@
             53,
             70,
             79,
-            80,
-            79,
             78,
-            65,
+            77,
+            64,
+            43,
             14
           ],
           [
@@ -2553,7 +2553,7 @@
             67,
             66,
             65,
-            66,
+            44,
             15
           ],
           [
@@ -2580,7 +2580,7 @@
           ]
         ],
         "stdin": "9\n",
-        "stdout": "1 2 3 4 5 6 7 8 9\n32 33 34 35 36 37 38 39 10\n31 56 57 58 59 60 61 62 11\n30 55 72 73 74 75 76 63 12\n29 54 71 80 81 82 77 64 13\n28 53 70 79 80 79 78 65 14\n27 52 69 68 67 66 65 66 15\n26 51 50 49 48 47 46 45 16\n25 24 23 22 21 20 19 18 17\n"
+        "stdout": "1 2 3 4 5 6 7 8 9\n32 33 34 35 36 37 38 39 10\n31 56 57 58 59 60 61 40 11\n30 55 72 73 74 75 62 41 12\n29 54 71 80 81 76 63 42 13\n28 53 70 79 78 77 64 43 14\n27 52 69 68 67 66 65 44 15\n26 51 50 49 48 47 46 45 16\n25 24 23 22 21 20 19 18 17\n"
       },
       {
         "args": [
@@ -7081,11 +7081,11 @@
         ],
         "expected": [
           1,
-          3,
-          2
+          2,
+          3
         ],
         "stdin": "5\n1 null 2 null 3\n",
-        "stdout": "1 3 2\n"
+        "stdout": "1 2 3\n"
       },
       {
         "args": [
@@ -7124,12 +7124,12 @@
         ],
         "expected": [
           1,
-          3,
           4,
+          3,
           2
         ],
         "stdin": "6\n1 null 2 3 null 4\n",
-        "stdout": "1 3 4 2\n"
+        "stdout": "1 4 3 2\n"
       },
       {
         "args": [
@@ -7163,11 +7163,10 @@
         ],
         "expected": [
           1,
-          3,
           2
         ],
         "stdin": "6\n1 null 2 null null 3\n",
-        "stdout": "1 3 2\n"
+        "stdout": "1 2\n"
       },
       {
         "args": [
@@ -7182,14 +7181,14 @@
           ]
         ],
         "expected": [
-          3,
           2,
-          5,
+          1,
           4,
-          1
+          3,
+          5
         ],
         "stdin": "7\n1 2 3 null null 4 5\n",
-        "stdout": "3 2 5 4 1\n"
+        "stdout": "2 1 4 3 5\n"
       },
       {
         "args": [
@@ -7202,12 +7201,12 @@
         ],
         "expected": [
           4,
-          2,
           1,
+          2,
           3
         ],
         "stdin": "4\n2 1 3 4\n",
-        "stdout": "4 2 1 3\n"
+        "stdout": "4 1 2 3\n"
       }
     ],
     "order_insensitive": false,
@@ -7274,12 +7273,12 @@
           ]
         ],
         "expected": [
-          3,
           2,
+          3,
           1
         ],
         "stdin": "3\n1 2 3\n",
-        "stdout": "3 2 1\n"
+        "stdout": "2 3 1\n"
       },
       {
         "args": [
@@ -7292,14 +7291,14 @@
           ]
         ],
         "expected": [
-          5,
           4,
+          5,
           2,
           3,
           1
         ],
         "stdin": "5\n1 2 3 4 5\n",
-        "stdout": "5 4 2 3 1\n"
+        "stdout": "4 5 2 3 1\n"
       },
       {
         "args": [
@@ -7332,16 +7331,16 @@
           ]
         ],
         "expected": [
-          5,
           4,
+          5,
           2,
-          7,
           6,
+          7,
           3,
           1
         ],
         "stdin": "7\n1 2 3 4 5 6 7\n",
-        "stdout": "5 4 2 7 6 3 1\n"
+        "stdout": "4 5 2 6 7 3 1\n"
       },
       {
         "args": [
@@ -7392,14 +7391,14 @@
           ]
         ],
         "expected": [
+          2,
           4,
           5,
           3,
-          2,
           1
         ],
         "stdin": "7\n1 2 3 null null 4 5\n",
-        "stdout": "4 5 3 2 1\n"
+        "stdout": "2 4 5 3 1\n"
       },
       {
         "args": [
@@ -8152,10 +8151,11 @@
         "expected": [
           1,
           2,
+          4,
           5
         ],
         "stdin": "6\n1 2 null 3 4 5\n",
-        "stdout": "1 2 5\n"
+        "stdout": "1 2 4 5\n"
       },
       {
         "args": [
@@ -8274,10 +8274,10 @@
         "expected": [
           1.0,
           2.5,
-          4.0
+          4.5
         ],
         "stdin": "5\n1 2 3 4 5\n",
-        "stdout": "[1.0, 2.5, 4.0]\n"
+        "stdout": "[1.0, 2.5, 4.5]\n"
       },
       {
         "args": [
@@ -8346,10 +8346,10 @@
         "expected": [
           10.0,
           10.0,
-          19.0
+          12.0
         ],
         "stdin": "7\n10 5 15 3 7 18 20\n",
-        "stdout": "[10.0, 10.0, 19.0]\n"
+        "stdout": "[10.0, 10.0, 12.0]\n"
       },
       {
         "args": [
@@ -8445,11 +8445,13 @@
           1,
           3,
           2,
+          null,
+          null,
           5,
           4
         ],
         "stdin": "5\n1 2 3 4 5\n",
-        "stdout": "1 3 2 5 4\n"
+        "stdout": "[1, 3, 2, null, null, 5, 4]\n"
       },
       {
         "args": [
@@ -8475,13 +8477,13 @@
         ],
         "expected": [
           1,
-          2,
           null,
+          2,
           4,
           3
         ],
         "stdin": "5\n1 2 null 3 4\n",
-        "stdout": "[1, 2, null, 4, 3]\n"
+        "stdout": "[1, null, 2, 4, 3]\n"
       },
       {
         "args": [
@@ -8497,11 +8499,10 @@
           1,
           2,
           null,
-          3,
-          null
+          3
         ],
         "stdin": "5\n1 null 2 null 3\n",
-        "stdout": "[1, 2, null, 3, null]\n"
+        "stdout": "[1, 2, null, 3]\n"
       },
       {
         "args": [
@@ -8520,12 +8521,10 @@
           3,
           2,
           7,
-          6,
-          4,
-          5
+          6
         ],
         "stdin": "7\n1 2 3 null null 6 7\n",
-        "stdout": "1 3 2 7 6 4 5\n"
+        "stdout": "1 3 2 7 6\n"
       },
       {
         "args": [
@@ -8538,12 +8537,13 @@
         ],
         "expected": [
           1,
+          null,
           2,
           null,
           3
         ],
         "stdin": "4\n1 2 null 3\n",
-        "stdout": "[1, 2, null, 3]\n"
+        "stdout": "[1, null, 2, null, 3]\n"
       },
       {
         "args": [
@@ -8558,10 +8558,11 @@
           1,
           2,
           null,
+          null,
           3
         ],
         "stdin": "4\n1 null 2 3\n",
-        "stdout": "[1, 2, null, 3]\n"
+        "stdout": "[1, 2, null, null, 3]\n"
       },
       {
         "args": [
@@ -8637,9 +8638,9 @@
             5
           ]
         ],
-        "expected": true,
+        "expected": false,
         "stdin": "11\n1 2 2 3 4 4 3 5 6 6 5\n",
-        "stdout": "true\n"
+        "stdout": "false\n"
       }
     ],
     "hidden": [
@@ -8717,9 +8718,9 @@
             6
           ]
         ],
-        "expected": true,
+        "expected": false,
         "stdin": "11\n1 2 2 3 4 4 3 5 6 5 6\n",
-        "stdout": "true\n"
+        "stdout": "false\n"
       },
       {
         "args": [
@@ -8732,25 +8733,8 @@
             3
           ]
         ],
-        "expected": false,
+        "expected": true,
         "stdin": "6\n1 2 2 null 3 3\n",
-        "stdout": "false\n"
-      },
-      {
-        "args": [
-          [
-            1,
-            2,
-            3
-          ],
-          [
-            1,
-            2,
-            3
-          ]
-        ],
-        "expected": true,
-        "stdin": "3\n1 2 3\n3\n1 2 3\n",
         "stdout": "true\n"
       },
       {
@@ -8758,18 +8742,31 @@
           [
             1,
             2,
-            null,
-            3
-          ],
-          [
-            1,
             2,
+            3,
+            null,
             null,
             3
           ]
         ],
         "expected": true,
-        "stdin": "4\n1 2 null 3\n4\n1 2 null 3\n",
+        "stdin": "7\n1 2 2 3 null null 3\n",
+        "stdout": "true\n"
+      },
+      {
+        "args": [
+          [
+            2,
+            3,
+            3,
+            4,
+            5,
+            5,
+            4
+          ]
+        ],
+        "expected": true,
+        "stdin": "7\n2 3 3 4 5 5 4\n",
         "stdout": "true\n"
       },
       {
@@ -8777,39 +8774,29 @@
           [
             1,
             2,
-            null,
-            3
-          ],
-          [
-            1,
             2,
+            null,
+            3,
             null,
             4
           ]
         ],
         "expected": false,
-        "stdin": "4\n1 2 null 3\n4\n1 2 null 4\n",
+        "stdin": "7\n1 2 2 null 3 null 4\n",
         "stdout": "false\n"
       },
       {
         "args": [
           [
             1,
+            null,
             2,
-            3,
-            4,
-            5
-          ],
-          [
-            1,
-            3,
-            2,
-            4,
-            5
+            null,
+            3
           ]
         ],
         "expected": false,
-        "stdin": "5\n1 2 3 4 5\n5\n1 3 2 4 5\n",
+        "stdin": "5\n1 null 2 null 3\n",
         "stdout": "false\n"
       }
     ],
@@ -9007,9 +8994,9 @@
             2
           ]
         ],
-        "expected": false,
+        "expected": true,
         "stdin": "3\n1 2 null\n2\n1 2\n",
-        "stdout": "false\n"
+        "stdout": "true\n"
       }
     ],
     "order_insensitive": false,
@@ -9238,9 +9225,9 @@
             1
           ]
         ],
-        "expected": true,
+        "expected": false,
         "stdin": "5\n1 2 3 4 5\n1\n1\n",
-        "stdout": "true\n"
+        "stdout": "false\n"
       }
     ],
     "order_insensitive": false,
@@ -9331,9 +9318,9 @@
             3
           ]
         ],
-        "expected": 4,
+        "expected": 3,
         "stdin": "5\n1 null 2 null 3\n",
-        "stdout": "4\n"
+        "stdout": "3\n"
       },
       {
         "args": [
@@ -9394,9 +9381,9 @@
             3
           ]
         ],
-        "expected": 4,
+        "expected": 2,
         "stdin": "7\n1 null 2 null null null 3\n",
-        "stdout": "4\n"
+        "stdout": "2\n"
       },
       {
         "args": [
@@ -9445,9 +9432,9 @@
             5
           ]
         ],
-        "expected": 2,
+        "expected": 3,
         "stdin": "7\n1 2 3 4 null null 5\n",
-        "stdout": "2\n"
+        "stdout": "3\n"
       }
     ],
     "hidden": [
@@ -9516,9 +9503,9 @@
             3
           ]
         ],
-        "expected": 3,
+        "expected": 2,
         "stdin": "7\n1 null 2 null null null 3\n",
-        "stdout": "3\n"
+        "stdout": "2\n"
       },
       {
         "args": [
@@ -9529,9 +9516,9 @@
             3
           ]
         ],
-        "expected": 2,
+        "expected": 3,
         "stdin": "4\n1 2 null 3\n",
-        "stdout": "2\n"
+        "stdout": "3\n"
       },
       {
         "args": [
@@ -9545,9 +9532,9 @@
             6
           ]
         ],
-        "expected": 2,
+        "expected": 3,
         "stdin": "7\n1 2 3 4 null 5 6\n",
-        "stdout": "2\n"
+        "stdout": "3\n"
       },
       {
         "args": [
@@ -9558,9 +9545,9 @@
             3
           ]
         ],
-        "expected": 2,
+        "expected": 3,
         "stdin": "4\n1 null 2 3\n",
-        "stdout": "2\n"
+        "stdout": "3\n"
       },
       {
         "args": [
@@ -9940,9 +9927,9 @@
             8
           ]
         ],
-        "expected": false,
+        "expected": true,
         "stdin": "11\n1 2 2 3 4 3 4 5 6 7 8\n",
-        "stdout": "false\n"
+        "stdout": "true\n"
       },
       {
         "args": [
@@ -9971,9 +9958,9 @@
             3
           ]
         ],
-        "expected": false,
+        "expected": true,
         "stdin": "6\n1 2 2 null 3 3\n",
-        "stdout": "false\n"
+        "stdout": "true\n"
       }
     ],
     "order_insensitive": false,
@@ -10107,11 +10094,10 @@
         ],
         "expected": [
           "1->2->5",
-          "1->2->6",
-          "1->3"
+          "1->3->6"
         ],
         "stdin": "6\n1 2 3 null 5 6\n",
-        "stdout": "[\"1->2->5\", \"1->2->6\", \"1->3\"]\n"
+        "stdout": "[\"1->2->5\", \"1->3->6\"]\n"
       },
       {
         "args": [
@@ -10245,9 +10231,9 @@
             6
           ]
         ],
-        "expected": 9,
+        "expected": 5,
         "stdin": "7\n1 2 3 null 4 5 6\n",
-        "stdout": "9\n"
+        "stdout": "5\n"
       },
       {
         "args": [
@@ -10314,9 +10300,9 @@
             9
           ]
         ],
-        "expected": 5,
+        "expected": 1,
         "stdin": "7\n5 3 8 1 4 null 9\n",
-        "stdout": "5\n"
+        "stdout": "1\n"
       },
       {
         "args": [
@@ -10331,9 +10317,9 @@
             1
           ]
         ],
-        "expected": 15,
+        "expected": 13,
         "stdin": "8\n10 5 15 2 7 12 20 1\n",
-        "stdout": "15\n"
+        "stdout": "13\n"
       }
     ],
     "order_insensitive": false,
@@ -10466,9 +10452,9 @@
             4
           ]
         ],
-        "expected": 2,
+        "expected": 4,
         "stdin": "5\n1 2 3 null 4\n",
-        "stdout": "2\n"
+        "stdout": "4\n"
       },
       {
         "args": [
@@ -10528,9 +10514,9 @@
             5
           ]
         ],
-        "expected": 3,
+        "expected": 5,
         "stdin": "7\n1 2 null 3 4 null 5\n",
-        "stdout": "3\n"
+        "stdout": "5\n"
       }
     ],
     "order_insensitive": false,
@@ -10631,9 +10617,9 @@
           ],
           10
         ],
-        "expected": true,
+        "expected": false,
         "stdin": "5\n1 2 3 4 5\n10\n",
-        "stdout": "true\n"
+        "stdout": "false\n"
       },
       {
         "args": [
@@ -10742,7 +10728,8 @@
           [
             5,
             4,
-            11
+            11,
+            2
           ],
           [
             5,
@@ -10752,7 +10739,7 @@
           ]
         ],
         "stdin": "13\n5 4 8 11 null 13 4 7 2 null null 5 1\n22\n",
-        "stdout": "5 4 11\n5 8 4 5\n"
+        "stdout": "5 4 11 2\n5 8 4 5\n"
       }
     ],
     "hidden": [
@@ -10851,15 +10838,9 @@
           ],
           20
         ],
-        "expected": [
-          [
-            5,
-            4,
-            11
-          ]
-        ],
+        "expected": [],
         "stdin": "9\n5 4 8 11 null 13 4 7 2\n20\n",
-        "stdout": "5 4 11\n"
+        "stdout": "\n"
       },
       {
         "args": [
@@ -10963,14 +10944,13 @@
           null,
           null,
           15,
-          7,
+          8,
           null,
           null,
-          null,
-          8
+          7
         ],
         "stdin": "6\n9 3 15 20 7 8\n6\n9 15 7 8 20 3\n",
-        "stdout": "[3, 9, 20, null, null, 15, 7, null, null, null, 8]\n"
+        "stdout": "[3, 9, 20, null, null, 15, 8, null, null, 7]\n"
       }
     ],
     "hidden": [
@@ -11051,15 +11031,16 @@
         ],
         "expected": [
           1,
-          2,
-          3,
-          4,
           5,
+          3,
+          2,
+          null,
           6,
-          7
+          7,
+          4
         ],
         "stdin": "7\n4 2 5 1 6 3 7\n7\n4 2 5 6 7 3 1\n",
-        "stdout": "1 2 3 4 5 6 7\n"
+        "stdout": "[1, 5, 3, 2, null, 6, 7, 4]\n"
       },
       {
         "args": [
@@ -11076,13 +11057,12 @@
         ],
         "expected": [
           1,
-          null,
           2,
           null,
           3
         ],
         "stdin": "3\n3 2 1\n3\n3 2 1\n",
-        "stdout": "[1, null, 2, null, 3]\n"
+        "stdout": "[1, 2, null, 3]\n"
       },
       {
         "args": [
@@ -11103,13 +11083,16 @@
         ],
         "expected": [
           1,
-          2,
+          5,
           3,
-          4,
-          5
+          2,
+          null,
+          null,
+          null,
+          4
         ],
         "stdin": "5\n4 2 5 1 3\n5\n4 2 5 3 1\n",
-        "stdout": "1 2 3 4 5\n"
+        "stdout": "[1, 5, 3, 2, null, null, null, 4]\n"
       },
       {
         "args": [
@@ -11146,10 +11129,12 @@
         "expected": [
           3,
           1,
+          null,
+          null,
           2
         ],
         "stdin": "3\n1 2 3\n3\n2 1 3\n",
-        "stdout": "3 1 2\n"
+        "stdout": "[3, 1, null, null, 2]\n"
       },
       {
         "args": [
@@ -11335,11 +11320,10 @@
           1,
           2,
           null,
-          null,
           3
         ],
         "stdin": "3\n1 2 3\n3\n3 2 1\n",
-        "stdout": "[1, 2, null, null, 3]\n"
+        "stdout": "[1, 2, null, 3]\n"
       },
       {
         "args": [
@@ -11403,10 +11387,12 @@
         "expected": [
           3,
           1,
+          null,
+          null,
           2
         ],
         "stdin": "3\n3 1 2\n3\n1 2 3\n",
-        "stdout": "3 1 2\n"
+        "stdout": "[3, 1, null, null, 2]\n"
       },
       {
         "args": [
@@ -11428,10 +11414,11 @@
           2,
           3,
           null,
+          null,
           4
         ],
         "stdin": "4\n1 2 3 4\n4\n2 1 4 3\n",
-        "stdout": "[1, 2, 3, null, 4]\n"
+        "stdout": "[1, 2, 3, null, null, 4]\n"
       }
     ],
     "order_insensitive": false,
@@ -11506,16 +11493,12 @@
           null,
           3,
           null,
-          null,
           2,
-          null,
-          null,
-          null,
           null,
           1
         ],
         "stdin": "5\n1 2 3 4 5\n",
-        "stdout": "[5, 4, null, 3, null, null, 2, null, null, null, null, 1]\n"
+        "stdout": "[5, 4, null, 3, null, 2, null, 1]\n"
       },
       {
         "args": [
@@ -11553,13 +11536,16 @@
         ],
         "expected": [
           3,
+          null,
           3,
+          null,
           3,
-          1,
-          2
+          null,
+          2,
+          1
         ],
         "stdin": "5\n3 3 3 1 2\n",
-        "stdout": "3 3 3 1 2\n"
+        "stdout": "[3, null, 3, null, 3, null, 2, 1]\n"
       },
       {
         "args": [
@@ -11571,11 +11557,12 @@
         ],
         "expected": [
           2,
-          0,
-          1
+          1,
+          null,
+          0
         ],
         "stdin": "3\n0 1 2\n",
-        "stdout": "2 0 1\n"
+        "stdout": "[2, 1, null, 0]\n"
       },
       {
         "args": [
@@ -11588,10 +11575,15 @@
         ],
         "expected": [
           0,
-          -1
+          -1,
+          null,
+          null,
+          -2,
+          null,
+          -3
         ],
         "stdin": "4\n-1 -2 -3 0\n",
-        "stdout": "0 -1\n"
+        "stdout": "[0, -1, null, null, -2, null, -3]\n"
       },
       {
         "args": [
@@ -11608,20 +11600,22 @@
         ],
         "expected": [
           8,
-          3,
+          2,
           7,
           1,
-          4,
           null,
           6,
           null,
           null,
           null,
-          2,
-          5
+          5,
+          null,
+          4,
+          null,
+          3
         ],
         "stdin": "8\n1 2 8 3 4 5 6 7\n",
-        "stdout": "[8, 3, 7, 1, 4, null, 6, null, null, null, 2, 5]\n"
+        "stdout": "[8, 2, 7, 1, null, 6, null, null, null, 5, null, 4, null, 3]\n"
       },
       {
         "args": [
@@ -11640,11 +11634,10 @@
           5,
           1,
           2,
-          null,
           0
         ],
         "stdin": "6\n1 3 2 6 0 5\n",
-        "stdout": "[6, 3, 5, 1, 2, null, 0]\n"
+        "stdout": "6 3 5 1 2 0\n"
       },
       {
         "args": [
@@ -11658,13 +11651,17 @@
         ],
         "expected": [
           5,
-          2,
           4,
-          1,
-          3
+          3,
+          2,
+          null,
+          null,
+          null,
+          null,
+          1
         ],
         "stdin": "5\n2 1 4 5 3\n",
-        "stdout": "5 2 4 1 3\n"
+        "stdout": "[5, 4, 3, 2, null, null, null, null, 1]\n"
       },
       {
         "args": [
@@ -11678,10 +11675,13 @@
         "expected": [
           4,
           1,
-          3
+          3,
+          null,
+          null,
+          2
         ],
         "stdin": "4\n1 4 2 3\n",
-        "stdout": "4 1 3\n"
+        "stdout": "[4, 1, 3, null, null, 2]\n"
       }
     ],
     "order_insensitive": false,
@@ -11761,11 +11761,10 @@
         ],
         "expected": [
           4,
-          4,
-          2
+          6
         ],
         "stdin": "2\n1 2\n2\n3 4\n",
-        "stdout": "4 4 2\n"
+        "stdout": "4 6\n"
       },
       {
         "args": [
@@ -11810,13 +11809,13 @@
         ],
         "expected": [
           1,
-          3,
+          null,
           2,
-          4,
+          null,
           3
         ],
         "stdin": "5\n1 null 2 null 3\n5\nnull 3 null 4 null\n",
-        "stdout": "1 3 2 4 3\n"
+        "stdout": "[1, null, 2, null, 3]\n"
       },
       {
         "args": [
@@ -11874,12 +11873,13 @@
           2,
           6,
           3,
-          7,
           null,
+          null,
+          7,
           4
         ],
         "stdin": "6\n1 2 null 3 null 4\n5\n5 null 6 null 7\n",
-        "stdout": "[6, 2, 6, 3, 7, null, 4]\n"
+        "stdout": "[6, 2, 6, 3, null, null, 7, 4]\n"
       },
       {
         "args": [
@@ -11935,14 +11935,18 @@
         "expected": [
           6,
           6,
+          9,
           8,
-          8,
-          7,
+          null,
+          null,
+          3,
+          null,
+          null,
           null,
           4
         ],
         "stdin": "7\n1 null 2 null 3 null 4\n4\n5 6 7 8\n",
-        "stdout": "[6, 6, 8, 8, 7, null, 4]\n"
+        "stdout": "[6, 6, 9, 8, null, null, 3, null, null, null, 4]\n"
       },
       {
         "args": [
@@ -11994,10 +11998,11 @@
         ],
         "expected": [
           6,
+          null,
           7
         ],
         "stdin": "7\n5 3 6 2 4 null 7\n6\n",
-        "stdout": "6 7\n"
+        "stdout": "[6, null, 7]\n"
       }
     ],
     "hidden": [
@@ -12045,10 +12050,12 @@
           2
         ],
         "expected": [
-          2
+          2,
+          1,
+          3
         ],
         "stdin": "5\n4 2 7 1 3\n2\n",
-        "stdout": "2\n"
+        "stdout": "2 1 3\n"
       },
       {
         "args": [
@@ -12079,10 +12086,14 @@
           4
         ],
         "expected": [
-          4
+          4,
+          2,
+          7,
+          1,
+          3
         ],
         "stdin": "5\n4 2 7 1 3\n4\n",
-        "stdout": "4\n"
+        "stdout": "4 2 7 1 3\n"
       },
       {
         "args": [
@@ -12112,11 +12123,9 @@
           ],
           5
         ],
-        "expected": [
-          5
-        ],
+        "expected": [],
         "stdin": "5\n1 2 3 4 5\n5\n",
-        "stdout": "5\n"
+        "stdout": "\n"
       },
       {
         "args": [
@@ -12147,10 +12156,16 @@
           5
         ],
         "expected": [
-          5
+          5,
+          3,
+          6,
+          2,
+          4,
+          null,
+          8
         ],
         "stdin": "7\n5 3 6 2 4 null 8\n5\n",
-        "stdout": "5\n"
+        "stdout": "[5, 3, 6, 2, 4, null, 8]\n"
       },
       {
         "args": [
@@ -12796,9 +12811,9 @@
           8,
           9
         ],
-        "expected": 3,
+        "expected": 4,
         "stdin": "10\n1 2 3 4 5 6 7 8 9 10\n8\n9\n",
-        "stdout": "3\n"
+        "stdout": "4\n"
       },
       {
         "args": [
@@ -12897,9 +12912,9 @@
           7,
           20
         ],
-        "expected": 15,
+        "expected": 10,
         "stdin": "7\n10 5 15 3 7 18 20\n7\n20\n",
-        "stdout": "15\n"
+        "stdout": "10\n"
       },
       {
         "args": [
@@ -12915,9 +12930,9 @@
           5,
           7
         ],
-        "expected": 10,
+        "expected": 5,
         "stdin": "7\n10 5 15 3 7 18 20\n5\n7\n",
-        "stdout": "10\n"
+        "stdout": "5\n"
       },
       {
         "args": [
@@ -13228,11 +13243,10 @@
           null,
           null,
           null,
-          null,
           5
         ],
         "stdin": "7\n4 2 7 1 3 5 6\n5\n",
-        "stdout": "[4, 2, 7, 1, 3, 5, 6, null, null, null, null, null, null, 5]\n"
+        "stdout": "[4, 2, 7, 1, 3, 5, 6, null, null, null, null, null, 5]\n"
       },
       {
         "args": [
@@ -13250,10 +13264,15 @@
           2,
           7,
           1,
-          3
+          3,
+          null,
+          null,
+          null,
+          null,
+          2
         ],
         "stdin": "5\n4 2 7 1 3\n2\n",
-        "stdout": "4 2 7 1 3\n"
+        "stdout": "[4, 2, 7, 1, 3, null, null, null, null, 2]\n"
       },
       {
         "args": [
@@ -13354,13 +13373,10 @@
           20,
           null,
           null,
-          null,
-          null,
-          null,
           6
         ],
         "stdin": "7\n10 5 15 3 7 12 20\n6\n",
-        "stdout": "[10, 5, 15, 3, 7, 12, 20, null, null, null, null, null, 6]\n"
+        "stdout": "[10, 5, 15, 3, 7, 12, 20, null, null, 6]\n"
       },
       {
         "args": [
@@ -13538,10 +13554,13 @@
           5,
           3,
           6,
-          4
+          null,
+          4,
+          null,
+          7
         ],
         "stdin": "7\n5 3 6 2 4 null 7\n2\n",
-        "stdout": "5 3 6 4\n"
+        "stdout": "[5, 3, 6, null, 4, null, 7]\n"
       },
       {
         "args": [
@@ -13560,10 +13579,13 @@
           5,
           3,
           6,
-          2
+          2,
+          null,
+          null,
+          7
         ],
         "stdin": "7\n5 3 6 2 4 null 7\n4\n",
-        "stdout": "5 3 6 2\n"
+        "stdout": "[5, 3, 6, 2, null, null, 7]\n"
       },
       {
         "args": [
@@ -13688,10 +13710,12 @@
         ],
         "expected": [
           3,
-          2
+          2,
+          null,
+          1
         ],
         "stdin": "4\n3 2 4 1\n1\n3\n",
-        "stdout": "3 2\n"
+        "stdout": "[3, 2, null, 1]\n"
       },
       {
         "args": [
@@ -13746,12 +13770,10 @@
           4
         ],
         "expected": [
-          2,
-          null,
           3
         ],
         "stdin": "3\n1 2 3\n2\n4\n",
-        "stdout": "[2, null, 3]\n"
+        "stdout": "3\n"
       },
       {
         "args": [
@@ -13768,12 +13790,10 @@
           10
         ],
         "expected": [
-          5,
-          null,
           7
         ],
         "stdin": "7\n1 2 3 4 5 6 7\n5\n10\n",
-        "stdout": "[5, null, 7]\n"
+        "stdout": "7\n"
       },
       {
         "args": [
@@ -13792,10 +13812,12 @@
         "expected": [
           5,
           3,
-          6
+          6,
+          null,
+          4
         ],
         "stdin": "7\n5 3 6 2 4 null 7\n3\n6\n",
-        "stdout": "5 3 6\n"
+        "stdout": "[5, 3, 6, null, 4]\n"
       },
       {
         "args": [
@@ -13842,15 +13864,16 @@
           10,
           5,
           15,
-          null,
+          6,
           7,
           12,
           null,
           null,
-          6
+          null,
+          13
         ],
         "stdin": "11\n10 5 15 3 7 12 20 1 6 13 25\n5\n15\n",
-        "stdout": "[10, 5, 15, null, 7, 12, null, null, 6]\n"
+        "stdout": "[10, 5, 15, 6, 7, 12, null, null, null, 13]\n"
       }
     ],
     "order_insensitive": false,
@@ -13975,14 +13998,15 @@
         ],
         "expected": [
           0,
-          -5,
-          10,
           -10,
+          5,
           null,
-          5
+          -5,
+          null,
+          10
         ],
         "stdin": "5\n-10 -5 0 5 10\n",
-        "stdout": "[0, -5, 10, -10, null, 5]\n"
+        "stdout": "[0, -10, 5, null, -5, null, 10]\n"
       },
       {
         "args": [
@@ -13996,15 +14020,15 @@
         ],
         "expected": [
           3,
-          2,
-          5,
           1,
+          4,
           null,
+          2,
           null,
-          4
+          5
         ],
         "stdin": "5\n1 2 3 4 5\n",
-        "stdout": "[3, 2, 5, 1, null, null, 4]\n"
+        "stdout": "[3, 1, 4, null, 2, null, 5]\n"
       },
       {
         "args": [
@@ -14018,12 +14042,14 @@
         "expected": [
           2,
           1,
-          4,
+          3,
           null,
-          3
+          null,
+          null,
+          4
         ],
         "stdin": "4\n1 2 3 4\n",
-        "stdout": "[2, 1, 4, null, 3]\n"
+        "stdout": "[2, 1, 3, null, null, null, 4]\n"
       },
       {
         "args": [
@@ -14037,16 +14063,16 @@
           ]
         ],
         "expected": [
-          0,
-          -3,
-          4,
-          -5,
           -1,
+          -5,
+          2,
           null,
-          2
+          -3,
+          0,
+          4
         ],
         "stdin": "6\n-5 -3 -1 0 2 4\n",
-        "stdout": "[0, -3, 4, -5, -1, null, 2]\n"
+        "stdout": "[-1, -5, 2, null, -3, 0, 4]\n"
       },
       {
         "args": [
@@ -14060,15 +14086,16 @@
           ]
         ],
         "expected": [
-          1,
-          -1,
-          4,
-          -3,
           0,
-          2
+          -3,
+          2,
+          null,
+          -1,
+          1,
+          4
         ],
         "stdin": "6\n-3 -1 0 1 2 4\n",
-        "stdout": "1 -1 4 -3 0 2\n"
+        "stdout": "[0, -3, 2, null, -1, 1, 4]\n"
       }
     ],
     "order_insensitive": false,
@@ -14105,20 +14132,20 @@
           ]
         ],
         "expected": [
-          7,
-          7,
-          6,
-          6,
-          2,
-          5,
+          22,
+          28,
+          13,
+          28,
+          27,
+          18,
           7,
           null,
           null,
           null,
-          3
+          25
         ],
         "stdin": "11\n4 1 6 0 2 5 7 null null null 3\n",
-        "stdout": "[7, 7, 6, 6, 2, 5, 7, null, null, null, 3]\n"
+        "stdout": "[22, 28, 13, 28, 27, 18, 7, null, null, null, 25]\n"
       }
     ],
     "hidden": [
@@ -14167,16 +14194,16 @@
           ]
         ],
         "expected": [
-          10,
-          8,
+          22,
+          27,
           13,
-          9,
-          5,
-          6,
+          28,
+          25,
+          18,
           7
         ],
         "stdin": "7\n4 2 6 1 3 5 7\n",
-        "stdout": "10 8 13 9 5 6 7\n"
+        "stdout": "22 27 13 28 25 18 7\n"
       },
       {
         "args": [
@@ -14187,12 +14214,12 @@
           ]
         ],
         "expected": [
+          4,
           6,
-          5,
           3
         ],
         "stdin": "3\n1 2 3\n",
-        "stdout": "6 5 3\n"
+        "stdout": "4 6 3\n"
       },
       {
         "args": [
@@ -14207,16 +14234,16 @@
           ]
         ],
         "expected": [
-          22,
-          20,
+          26,
+          33,
           15,
-          22,
-          18,
-          14,
+          35,
+          30,
+          21,
           8
         ],
         "stdin": "7\n5 3 7 2 4 6 8\n",
-        "stdout": "22 20 15 22 18 14 8\n"
+        "stdout": "26 33 15 35 30 21 8\n"
       },
       {
         "args": [
@@ -14231,16 +14258,16 @@
           ]
         ],
         "expected": [
-          45,
-          40,
+          57,
+          69,
           35,
-          43,
-          33,
-          32,
+          72,
+          64,
+          47,
           20
         ],
         "stdin": "7\n10 5 15 3 7 12 20\n",
-        "stdout": "45 40 35 43 33 32 20\n"
+        "stdout": "57 69 35 72 64 47 20\n"
       },
       {
         "args": [
@@ -14262,11 +14289,11 @@
           ]
         ],
         "expected": [
-          3,
-          1
+          2,
+          3
         ],
         "stdin": "2\n2 1\n",
-        "stdout": "3 1\n"
+        "stdout": "2 3\n"
       },
       {
         "args": [
@@ -14280,13 +14307,13 @@
         ],
         "expected": [
           7,
-          5,
+          10,
           4,
           null,
-          2
+          9
         ],
         "stdin": "5\n3 1 4 null 2\n",
-        "stdout": "[7, 5, 4, null, 2]\n"
+        "stdout": "[7, 10, 4, null, 9]\n"
       },
       {
         "args": [
@@ -14301,16 +14328,16 @@
           ]
         ],
         "expected": [
-          45,
-          40,
+          58,
+          70,
           35,
-          46,
-          33,
-          32,
+          71,
+          65,
+          48,
           20
         ],
         "stdin": "7\n10 5 15 1 7 13 20\n",
-        "stdout": "45 40 35 46 33 32 20\n"
+        "stdout": "58 70 35 71 65 48 20\n"
       },
       {
         "args": [
@@ -18130,10 +18157,10 @@
         ],
         "expected": [
           1,
-          4
+          3
         ],
         "stdin": "5\n1 5 3 7 9\n12\n",
-        "stdout": "1 4\n"
+        "stdout": "1 3\n"
       }
     ],
     "hidden": [
@@ -18163,11 +18190,11 @@
           10
         ],
         "expected": [
-          0,
+          1,
           2
         ],
         "stdin": "4\n2 5 5 11\n10\n",
-        "stdout": "0 2\n"
+        "stdout": "1 2\n"
       },
       {
         "args": [
@@ -18283,10 +18310,10 @@
         ],
         "expected": [
           0,
-          4
+          1
         ],
         "stdin": "5\n1 5 3 1 4\n6\n",
-        "stdout": "0 4\n"
+        "stdout": "0 1\n"
       }
     ],
     "order_insensitive": true,
@@ -18390,11 +18417,11 @@
           12
         ],
         "expected": [
-          3,
+          2,
           5
         ],
         "stdin": "5\n1 3 5 7 9\n12\n",
-        "stdout": "3 5\n"
+        "stdout": "2 5\n"
       },
       {
         "args": [
@@ -18425,12 +18452,9 @@
           ],
           10
         ],
-        "expected": [
-          4,
-          5
-        ],
+        "expected": null,
         "stdin": "5\n1 2 3 4 5\n10\n",
-        "stdout": "4 5\n"
+        "stdout": "null\n"
       },
       {
         "args": [
@@ -18444,10 +18468,10 @@
         ],
         "expected": [
           1,
-          2
+          4
         ],
         "stdin": "4\n0 0 0 0\n0\n",
-        "stdout": "1 2\n"
+        "stdout": "1 4\n"
       },
       {
         "args": [
@@ -18461,11 +18485,11 @@
           -1
         ],
         "expected": [
-          1,
-          4
+          2,
+          5
         ],
         "stdin": "5\n-3 -2 -1 0 1\n-1\n",
-        "stdout": "1 4\n"
+        "stdout": "2 5\n"
       },
       {
         "args": [
@@ -18496,10 +18520,10 @@
         ],
         "expected": [
           1,
-          2
+          4
         ],
         "stdin": "4\n5 5 5 5\n10\n",
-        "stdout": "1 2\n"
+        "stdout": "1 4\n"
       },
       {
         "args": [
@@ -19620,12 +19644,12 @@
         "expected": [
           1,
           2,
-          4,
+          3,
           5,
           6
         ],
         "stdin": "6\n1 2 3 4 5 6\n3\n",
-        "stdout": "1 2 4 5 6\n"
+        "stdout": "1 2 3 5 6\n"
       }
     ],
     "hidden": [
@@ -19642,10 +19666,10 @@
         "expected": [
           4,
           5,
-          9
+          1
         ],
         "stdin": "4\n4 5 1 9\n1\n",
-        "stdout": "4 5 9\n"
+        "stdout": "4 5 1\n"
       },
       {
         "args": [
@@ -19660,10 +19684,10 @@
         "expected": [
           1,
           2,
-          4
+          3
         ],
         "stdin": "4\n1 2 3 4\n3\n",
-        "stdout": "1 2 4\n"
+        "stdout": "1 2 3\n"
       },
       {
         "args": [
@@ -19751,10 +19775,10 @@
           5,
           4,
           3,
-          1
+          2
         ],
         "stdin": "5\n5 4 3 2 1\n2\n",
-        "stdout": "5 4 3 1\n"
+        "stdout": "5 4 3 2\n"
       },
       {
         "args": [
@@ -19771,10 +19795,10 @@
           1,
           2,
           3,
-          5
+          4
         ],
         "stdin": "5\n1 2 3 4 5\n4\n",
-        "stdout": "1 2 3 5\n"
+        "stdout": "1 2 3 4\n"
       },
       {
         "args": [
@@ -20033,7 +20057,7 @@
     "samples": [
       {
         "stdin": "9\naddAtHead 1\naddAtTail 3\naddAtIndex 1 2\nget 1\naddAtIndex 0 4\nget 0\nget 3\ndeleteAtIndex 2\nget 2\n",
-        "stdout": "2\n4\n3\n2\n"
+        "stdout": "2\n4\n3\n3\n"
       }
     ],
     "hidden": [
@@ -20042,168 +20066,58 @@
         "stdout": "2\n"
       },
       {
-        "args": [
-          [],
-          0
-        ],
+        "args": null,
         "expected": null,
-        "stdin": "0\n0\n",
-        "stdout": "null\n"
+        "stdin": "8\naddAtTail 1\naddAtTail 2\naddAtTail 3\nget 0\nget 1\nget 2\ndeleteAtIndex 0\nget 0\n",
+        "stdout": "1\n2\n3\n2\n"
       },
       {
-        "args": [
-          [
-            1
-          ],
-          0
-        ],
-        "expected": 1,
-        "stdin": "1\n1\n0\n",
-        "stdout": "1\n"
+        "args": null,
+        "expected": null,
+        "stdin": "8\naddAtHead 1\naddAtHead 2\naddAtTail 3\nget 0\nget 1\nget 2\ndeleteAtIndex 0\nget 0\n",
+        "stdout": "2\n1\n3\n1\n"
       },
       {
-        "args": [
-          [
-            1,
-            2
-          ],
-          1
-        ],
-        "expected": 2,
-        "stdin": "2\n1 2\n1\n",
-        "stdout": "2\n"
+        "args": null,
+        "expected": null,
+        "stdin": "8\naddAtIndex 0 1\naddAtIndex 1 2\naddAtIndex 2 3\nget 0\nget 1\nget 2\ndeleteAtIndex 1\nget 1\n",
+        "stdout": "1\n2\n3\n3\n"
       },
       {
-        "args": [
-          [
-            1,
-            2,
-            3
-          ],
-          2
-        ],
-        "expected": 3,
-        "stdin": "3\n1 2 3\n2\n",
-        "stdout": "3\n"
+        "args": null,
+        "expected": null,
+        "stdin": "7\naddAtHead 5\naddAtHead 4\naddAtHead 3\nget 0\nget 2\ndeleteAtIndex 1\nget 1\n",
+        "stdout": "3\n5\n5\n"
       },
       {
-        "args": [
-          [
-            1,
-            2,
-            3,
-            4
-          ],
-          3
-        ],
-        "expected": 4,
-        "stdin": "4\n1 2 3 4\n3\n",
-        "stdout": "4\n"
+        "args": null,
+        "expected": null,
+        "stdin": "7\naddAtTail 10\naddAtTail 20\naddAtTail 30\nget 2\nget 0\ndeleteAtIndex 2\nget 2\n",
+        "stdout": "30\n10\n-1\n"
       },
       {
-        "args": [
-          [
-            1,
-            2
-          ],
-          0
-        ],
-        "expected": 1,
-        "stdin": "2\n1 2\n0\n",
-        "stdout": "1\n"
+        "args": null,
+        "expected": null,
+        "stdin": "8\naddAtHead 1\naddAtTail 2\naddAtIndex 1 3\nget 1\ndeleteAtIndex 0\nget 0\nget 1\n",
+        "stdout": "3\n3\n2\n"
       },
       {
-        "args": [
-          [
-            1,
-            2,
-            3
-          ],
-          1
-        ],
-        "expected": 2,
-        "stdin": "3\n1 2 3\n1\n",
-        "stdout": "2\n"
+        "args": null,
+        "expected": null,
+        "stdin": "9\naddAtIndex 0 5\naddAtIndex 0 10\naddAtIndex 1 15\nget 0\nget 1\nget 2\ndeleteAtIndex 2\nget 2\n",
+        "stdout": "10\n15\n5\n-1\n"
       },
       {
-        "args": [
-          [
-            1,
-            2,
-            3,
-            4,
-            5
-          ],
-          4
-        ],
-        "expected": 5,
-        "stdin": "5\n1 2 3 4 5\n4\n",
-        "stdout": "5\n"
+        "args": null,
+        "expected": null,
+        "stdin": "9\naddAtTail 1\naddAtTail 2\naddAtTail 3\naddAtTail 4\naddAtTail 5\nget 4\nget 0\ndeleteAtIndex 2\nget 2\n",
+        "stdout": "5\n1\n4\n"
       },
       {
-        "args": [
-          [
-            10,
-            20
-          ],
-          1
-        ],
-        "expected": 20,
-        "stdin": "2\n10 20\n1\n",
-        "stdout": "20\n"
-      },
-      {
-        "args": [
-          [
-            5
-          ],
-          0
-        ],
-        "expected": 5,
-        "stdin": "1\n5\n0\n",
-        "stdout": "5\n"
-      },
-      {
-        "args": [
-          [
-            1,
-            2,
-            3,
-            4,
-            5,
-            6
-          ],
-          5
-        ],
-        "expected": 6,
-        "stdin": "6\n1 2 3 4 5 6\n5\n",
-        "stdout": "6\n"
-      },
-      {
-        "args": [
-          [
-            100,
-            200,
-            300
-          ],
-          2
-        ],
-        "expected": 300,
-        "stdin": "3\n100 200 300\n2\n",
-        "stdout": "300\n"
-      },
-      {
-        "args": [
-          [
-            1,
-            2,
-            3
-          ],
-          0
-        ],
-        "expected": 1,
-        "stdin": "3\n1 2 3\n0\n",
-        "stdout": "1\n"
+        "args": null,
+        "expected": null,
+        "stdin": "9\naddAtHead 100\naddAtHead 200\nget 0\nget 1\ndeleteAtIndex 0\nget 0\ndeleteAtIndex 0\nget 0\n",
+        "stdout": "200\n100\n100\n-1\n"
       }
     ],
     "order_insensitive": false,
@@ -20872,11 +20786,11 @@
           6,
           5,
           4,
-          8,
-          7
+          7,
+          8
         ],
         "stdin": "8\n1 2 3 4 5 6 7 8\n3\n",
-        "stdout": "3 2 1 6 5 4 8 7\n"
+        "stdout": "3 2 1 6 5 4 7 8\n"
       },
       {
         "args": [
@@ -21299,11 +21213,11 @@
           3,
           4,
           5,
-          6,
+          7,
           8
         ],
         "stdin": "8\n1 2 3 4 5 6 7 8\n3\n",
-        "stdout": "1 2 3 4 5 6 8\n"
+        "stdout": "1 2 3 4 5 7 8\n"
       }
     ],
     "hidden": [
@@ -21725,34 +21639,14 @@
             3,
             4,
             5,
-            6
-          ]
+            6,
+            7,
+            8
+          ],
+          -1
         ],
         "expected": null,
-        "stdin": "6\n1 2 3 4 5 6\n",
-        "stdout": "null\n"
-      }
-    ],
-    "hidden": [
-      {
-        "args": [
-          [
-            1,
-            2
-          ]
-        ],
-        "expected": null,
-        "stdin": "2\n1 2\n",
-        "stdout": "null\n"
-      },
-      {
-        "args": [
-          [
-            1
-          ]
-        ],
-        "expected": null,
-        "stdin": "1\n1\n",
+        "stdin": "8\n1 2 3 4 5 6 7 8\n-1\n",
         "stdout": "null\n"
       },
       {
@@ -21762,10 +21656,40 @@
             2,
             0,
             -4
-          ]
+          ],
+          1
+        ],
+        "expected": [
+          2,
+          0,
+          -4
+        ],
+        "stdin": "4\n3 2 0 -4\n1\n",
+        "stdout": "2 0 -4\n"
+      }
+    ],
+    "hidden": [
+      {
+        "args": [
+          [
+            1
+          ],
+          -1
         ],
         "expected": null,
-        "stdin": "4\n3 2 0 -4\n",
+        "stdin": "1\n1\n-1\n",
+        "stdout": "null\n"
+      },
+      {
+        "args": [
+          [
+            1,
+            2
+          ],
+          -1
+        ],
+        "expected": null,
+        "stdin": "2\n1 2\n-1\n",
         "stdout": "null\n"
       },
       {
@@ -21776,10 +21700,11 @@
             3,
             4,
             5
-          ]
+          ],
+          -1
         ],
         "expected": null,
-        "stdin": "5\n1 2 3 4 5\n",
+        "stdin": "5\n1 2 3 4 5\n-1\n",
         "stdout": "null\n"
       },
       {
@@ -21789,19 +21714,45 @@
             7,
             7,
             7
-          ]
+          ],
+          -1
         ],
         "expected": null,
-        "stdin": "4\n7 7 7 7\n",
+        "stdin": "4\n7 7 7 7\n-1\n",
         "stdout": "null\n"
       },
       {
         "args": [
-          []
+          [
+            3,
+            2,
+            0,
+            -4
+          ],
+          1
         ],
-        "expected": null,
-        "stdin": "0\n",
-        "stdout": "null\n"
+        "expected": [
+          2,
+          0,
+          -4
+        ],
+        "stdin": "4\n3 2 0 -4\n1\n",
+        "stdout": "2 0 -4\n"
+      },
+      {
+        "args": [
+          [
+            1,
+            2
+          ],
+          0
+        ],
+        "expected": [
+          1,
+          2
+        ],
+        "stdin": "2\n1 2\n0\n",
+        "stdout": "1 2\n"
       },
       {
         "args": [
@@ -21814,38 +21765,56 @@
             6,
             7,
             8
-          ]
+          ],
+          3
         ],
-        "expected": null,
-        "stdin": "8\n1 2 3 4 5 6 7 8\n",
-        "stdout": "null\n"
-      },
-      {
-        "args": [
-          [
-            1,
-            2,
-            3,
-            2,
-            1
-          ]
+        "expected": [
+          4,
+          5,
+          6,
+          7,
+          8
         ],
-        "expected": null,
-        "stdin": "5\n1 2 3 2 1\n",
-        "stdout": "null\n"
+        "stdin": "8\n1 2 3 4 5 6 7 8\n3\n",
+        "stdout": "4 5 6 7 8\n"
       },
       {
         "args": [
           [
             5,
-            10,
-            15,
-            20
-          ]
+            5,
+            5,
+            5,
+            5
+          ],
+          2
         ],
-        "expected": null,
-        "stdin": "4\n5 10 15 20\n",
-        "stdout": "null\n"
+        "expected": [
+          5,
+          5,
+          5
+        ],
+        "stdin": "5\n5 5 5 5 5\n2\n",
+        "stdout": "5 5 5\n"
+      },
+      {
+        "args": [
+          [
+            10,
+            20,
+            30,
+            40,
+            50,
+            60
+          ],
+          4
+        ],
+        "expected": [
+          50,
+          60
+        ],
+        "stdin": "6\n10 20 30 40 50 60\n4\n",
+        "stdout": "50 60\n"
       }
     ],
     "order_insensitive": false,
@@ -21876,45 +21845,11 @@
             6,
             7,
             8
-          ]
+          ],
+          -1
         ],
         "expected": false,
-        "stdin": "8\n1 2 3 4 5 6 7 8\n",
-        "stdout": "false\n"
-      }
-    ],
-    "hidden": [
-      {
-        "args": [
-          [
-            1
-          ]
-        ],
-        "expected": false,
-        "stdin": "1\n1\n",
-        "stdout": "false\n"
-      },
-      {
-        "args": [
-          [
-            1,
-            2
-          ]
-        ],
-        "expected": false,
-        "stdin": "2\n1 2\n",
-        "stdout": "false\n"
-      },
-      {
-        "args": [
-          [
-            1,
-            2,
-            3
-          ]
-        ],
-        "expected": false,
-        "stdin": "3\n1 2 3\n",
+        "stdin": "8\n1 2 3 4 5 6 7 8\n-1\n",
         "stdout": "false\n"
       },
       {
@@ -21924,10 +21859,36 @@
             2,
             0,
             -4
-          ]
+          ],
+          1
+        ],
+        "expected": true,
+        "stdin": "4\n3 2 0 -4\n1\n",
+        "stdout": "true\n"
+      }
+    ],
+    "hidden": [
+      {
+        "args": [
+          [
+            1
+          ],
+          -1
         ],
         "expected": false,
-        "stdin": "4\n3 2 0 -4\n",
+        "stdin": "1\n1\n-1\n",
+        "stdout": "false\n"
+      },
+      {
+        "args": [
+          [
+            1,
+            2
+          ],
+          -1
+        ],
+        "expected": false,
+        "stdin": "2\n1 2\n-1\n",
         "stdout": "false\n"
       },
       {
@@ -21938,10 +21899,11 @@
             3,
             4,
             5
-          ]
+          ],
+          -1
         ],
         "expected": false,
-        "stdin": "5\n1 2 3 4 5\n",
+        "stdin": "5\n1 2 3 4 5\n-1\n",
         "stdout": "false\n"
       },
       {
@@ -21951,19 +21913,38 @@
             7,
             7,
             7
-          ]
+          ],
+          -1
         ],
         "expected": false,
-        "stdin": "4\n7 7 7 7\n",
+        "stdin": "4\n7 7 7 7\n-1\n",
         "stdout": "false\n"
       },
       {
         "args": [
-          []
+          [
+            3,
+            2,
+            0,
+            -4
+          ],
+          1
         ],
-        "expected": false,
-        "stdin": "0\n",
-        "stdout": "false\n"
+        "expected": true,
+        "stdin": "4\n3 2 0 -4\n1\n",
+        "stdout": "true\n"
+      },
+      {
+        "args": [
+          [
+            1,
+            2
+          ],
+          0
+        ],
+        "expected": true,
+        "stdin": "2\n1 2\n0\n",
+        "stdout": "true\n"
       },
       {
         "args": [
@@ -21971,22 +21952,48 @@
             1,
             2,
             3,
-            4
-          ]
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          3
         ],
-        "expected": false,
-        "stdin": "4\n1 2 3 4\n",
-        "stdout": "false\n"
+        "expected": true,
+        "stdin": "8\n1 2 3 4 5 6 7 8\n3\n",
+        "stdout": "true\n"
       },
       {
         "args": [
           [
-            3
-          ]
+            5,
+            5,
+            5,
+            5,
+            5
+          ],
+          2
         ],
-        "expected": false,
-        "stdin": "1\n3\n",
-        "stdout": "false\n"
+        "expected": true,
+        "stdin": "5\n5 5 5 5 5\n2\n",
+        "stdout": "true\n"
+      },
+      {
+        "args": [
+          [
+            10,
+            20,
+            30,
+            40,
+            50,
+            60
+          ],
+          4
+        ],
+        "expected": true,
+        "stdin": "6\n10 20 30 40 50 60\n4\n",
+        "stdout": "true\n"
       }
     ],
     "order_insensitive": false,
@@ -22240,14 +22247,14 @@
           ]
         ],
         "expected": [
+          3,
           -1,
-          5,
           -1,
           3,
           -1
         ],
         "stdin": "5\n1 3 5 2 4\n5\n5 4 2 1 3\n",
-        "stdout": "-1 5 -1 3 -1\n"
+        "stdout": "3 -1 -1 3 -1\n"
       }
     ],
     "hidden": [
@@ -22316,14 +22323,14 @@
           ]
         ],
         "expected": [
+          -1,
           7,
           -1,
-          -1,
           3,
-          5
+          -1
         ],
         "stdin": "5\n1 5 7 2 3\n5\n5 7 2 3 1\n",
-        "stdout": "7 -1 -1 3 5\n"
+        "stdout": "-1 7 -1 3 -1\n"
       },
       {
         "args": [
@@ -22340,11 +22347,12 @@
           ]
         ],
         "expected": [
+          -1,
           3,
           -1
         ],
         "stdin": "3\n4 1 2\n4\n1 3 4 2\n",
-        "stdout": "3 -1\n"
+        "stdout": "-1 3 -1\n"
       },
       {
         "args": [
@@ -22361,10 +22369,11 @@
         ],
         "expected": [
           3,
+          2,
           -1
         ],
         "stdin": "3\n2 1 3\n3\n1 2 3\n",
-        "stdout": "3 -1\n"
+        "stdout": "3 2 -1\n"
       },
       {
         "args": [
@@ -22458,15 +22467,12 @@
         ],
         "expected": [
           -1,
-          -1,
-          -1,
-          -1,
-          -1,
-          -1,
-          -1
+          7,
+          6,
+          5
         ],
         "stdin": "4\n7 6 5 4\n7\n1 2 3 4 5 6 7\n",
-        "stdout": "-1 -1 -1 -1 -1 -1 -1\n"
+        "stdout": "-1 7 6 5\n"
       }
     ],
     "order_insensitive": false,
@@ -22552,13 +22558,13 @@
         ],
         "expected": [
           -1,
-          -1,
-          -1,
-          -1,
+          5,
+          5,
+          5,
           5
         ],
         "stdin": "5\n5 4 3 2 1\n",
-        "stdout": "-1 -1 -1 -1 5\n"
+        "stdout": "-1 5 5 5 5\n"
       },
       {
         "args": [
@@ -22765,9 +22771,9 @@
             1
           ]
         ],
-        "expected": 5,
+        "expected": 9,
         "stdin": "5\n5 4 3 2 1\n",
-        "stdout": "5\n"
+        "stdout": "9\n"
       },
       {
         "args": [
@@ -22781,9 +22787,9 @@
             1
           ]
         ],
-        "expected": 7,
+        "expected": 10,
         "stdin": "7\n1 2 3 4 3 2 1\n",
-        "stdout": "7\n"
+        "stdout": "10\n"
       },
       {
         "args": [
@@ -22826,9 +22832,9 @@
             1
           ]
         ],
-        "expected": 7,
+        "expected": 16,
         "stdin": "7\n7 6 5 4 3 2 1\n",
-        "stdout": "7\n"
+        "stdout": "16\n"
       },
       {
         "args": [
@@ -22941,9 +22947,9 @@
             2
           ]
         ],
-        "expected": 3,
+        "expected": 2,
         "stdin": "6\n1 2 1 2 1 2\n",
-        "stdout": "3\n"
+        "stdout": "2\n"
       },
       {
         "args": [
@@ -22985,9 +22991,9 @@
             4
           ]
         ],
-        "expected": 3,
+        "expected": 10,
         "stdin": "6\n3 0 0 2 0 4\n",
-        "stdout": "3\n"
+        "stdout": "10\n"
       },
       {
         "args": [
@@ -23012,9 +23018,9 @@
             4
           ]
         ],
-        "expected": 4,
+        "expected": 6,
         "stdin": "6\n5 4 3 2 1 4\n",
-        "stdout": "4\n"
+        "stdout": "6\n"
       }
     ],
     "order_insensitive": false,
@@ -23036,21 +23042,85 @@
     "samples": [
       {
         "stdin": "5\n5 1 4 2 8\n",
-        "stdout": "1 2 4 5 8\n"
+        "stdout": "1 2 4 5 8\n",
+        "args": [
+          [
+            5,
+            1,
+            4,
+            2,
+            8
+          ]
+        ],
+        "expected": [
+          1,
+          2,
+          4,
+          5,
+          8
+        ]
       },
       {
         "stdin": "6\n3 -1 3 0 -5 2\n",
-        "stdout": "-5 -1 0 2 3 3\n"
+        "stdout": "-5 -1 0 2 3 3\n",
+        "args": [
+          [
+            3,
+            -1,
+            3,
+            0,
+            -5,
+            2
+          ]
+        ],
+        "expected": [
+          -5,
+          -1,
+          0,
+          2,
+          3,
+          3
+        ]
       }
     ],
     "hidden": [
       {
         "stdin": "1\n42\n",
-        "stdout": "42\n"
+        "stdout": "42\n",
+        "args": [
+          [
+            42
+          ]
+        ],
+        "expected": [
+          42
+        ]
       },
       {
         "stdin": "8\n9 9 7 5 5 3 1 1\n",
-        "stdout": "1 1 3 5 5 7 9 9\n"
+        "stdout": "1 1 3 5 5 7 9 9\n",
+        "args": [
+          [
+            9,
+            9,
+            7,
+            5,
+            5,
+            3,
+            1,
+            1
+          ]
+        ],
+        "expected": [
+          1,
+          1,
+          3,
+          5,
+          5,
+          7,
+          9,
+          9
+        ]
       },
       {
         "args": [
@@ -23264,21 +23334,61 @@
     "samples": [
       {
         "stdin": "5\n7 5 6 4 3\n",
-        "stdout": "8\n"
+        "stdout": "9\n",
+        "args": [
+          [
+            7,
+            5,
+            6,
+            4,
+            3
+          ]
+        ],
+        "expected": 9
       },
       {
         "stdin": "4\n1 2 3 4\n",
-        "stdout": "0\n"
+        "stdout": "0\n",
+        "args": [
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ],
+        "expected": 0
       }
     ],
     "hidden": [
       {
         "stdin": "5\n5 4 3 2 1\n",
-        "stdout": "10\n"
+        "stdout": "10\n",
+        "args": [
+          [
+            5,
+            4,
+            3,
+            2,
+            1
+          ]
+        ],
+        "expected": 10
       },
       {
         "stdin": "6\n2 3 2 3 1 1\n",
-        "stdout": "9\n"
+        "stdout": "9\n",
+        "args": [
+          [
+            2,
+            3,
+            2,
+            3,
+            1,
+            1
+          ]
+        ],
+        "expected": 9
       },
       {
         "args": [
@@ -23419,22 +23529,69 @@
     },
     "samples": [
       {
-        "stdin": "6 2\n3 2 1 5 6 4\n",
-        "stdout": "5\n"
+        "stdin": "6\n3 2 1 5 6 4\n2\n",
+        "stdout": "5\n",
+        "args": [
+          [
+            3,
+            2,
+            1,
+            5,
+            6,
+            4
+          ],
+          2
+        ],
+        "expected": 5
       },
       {
-        "stdin": "9 4\n3 2 3 1 2 4 5 5 6\n",
-        "stdout": "4\n"
+        "stdin": "9\n3 2 3 1 2 4 5 5 6\n4\n",
+        "stdout": "4\n",
+        "args": [
+          [
+            3,
+            2,
+            3,
+            1,
+            2,
+            4,
+            5,
+            5,
+            6
+          ],
+          4
+        ],
+        "expected": 4
       }
     ],
     "hidden": [
       {
-        "stdin": "1 1\n-7\n",
-        "stdout": "-7\n"
+        "stdin": "1\n-7\n1\n",
+        "stdout": "-7\n",
+        "args": [
+          [
+            -7
+          ],
+          1
+        ],
+        "expected": -7
       },
       {
-        "stdin": "7 5\n8 8 7 6 6 5 4\n",
-        "stdout": "6\n"
+        "stdin": "7\n8 8 7 6 6 5 4\n5\n",
+        "stdout": "6\n",
+        "args": [
+          [
+            8,
+            8,
+            7,
+            6,
+            6,
+            5,
+            4
+          ],
+          5
+        ],
+        "expected": 6
       },
       {
         "args": [
@@ -23608,7 +23765,7 @@
     "samples": [
       {
         "stdin": "8\npush 1\npush 2\npush 3\npop\npeek\npush 4\npop\nempty\n",
-        "stdout": "1\n2\n4\nfalse\n"
+        "stdout": "1\n2\n2\nfalse\n"
       }
     ],
     "hidden": [
@@ -23622,7 +23779,7 @@
       },
       {
         "stdin": "6\npush 1\npush 2\npeek\npush 3\npop\nempty\n",
-        "stdout": "1\n3\nfalse\n"
+        "stdout": "1\n1\nfalse\n"
       },
       {
         "stdin": "4\npush 1\npush 2\npush 3\nempty\n",
@@ -23634,7 +23791,7 @@
       },
       {
         "stdin": "6\npush 1\npush 2\npush 3\npop\npush 4\npop\n",
-        "stdout": "1\n4\n"
+        "stdout": "1\n2\n"
       },
       {
         "stdin": "3\npush 1\npush 2\npeek\n",
@@ -23646,7 +23803,7 @@
       },
       {
         "stdin": "5\nempty\npush 1\nempty\npop\nempty\n",
-        "stdout": "true\nfalse\ntrue\n"
+        "stdout": "true\nfalse\n1\ntrue\n"
       }
     ],
     "order_insensitive": false,
@@ -23670,7 +23827,7 @@
     "samples": [
       {
         "stdin": "7\npush 1\npush 2\npush 3\npop\ntop\npop\nempty\n",
-        "stdout": "3\n2\nfalse\n"
+        "stdout": "3\n2\n2\nfalse\n"
       }
     ],
     "hidden": [
@@ -23692,7 +23849,7 @@
       },
       {
         "stdin": "3\npush 1\npop\ntop\n",
-        "stdout": "1\n"
+        "stdout": "1\n-1\n"
       },
       {
         "stdin": "5\npush 1\npush 2\npop\npop\nempty\n",
@@ -23700,7 +23857,7 @@
       },
       {
         "stdin": "4\nempty\npush 1\nempty\npop\n",
-        "stdout": "true\nfalse\n"
+        "stdout": "true\nfalse\n1\n"
       },
       {
         "stdin": "6\npush 1\npush 2\npush 3\npop\npush 4\ntop\n",
@@ -23708,7 +23865,7 @@
       },
       {
         "stdin": "5\npush 1\ntop\npush 2\ntop\npop\n",
-        "stdout": "1\n2\n"
+        "stdout": "1\n2\n2\n"
       }
     ],
     "order_insensitive": false,
@@ -23834,9 +23991,9 @@
         "args": [
           "aabbbaca"
         ],
-        "expected": "ca",
+        "expected": "baca",
         "stdin": "aabbbaca\n",
-        "stdout": "ca\n"
+        "stdout": "baca\n"
       }
     ],
     "hidden": [
@@ -23868,25 +24025,25 @@
         "args": [
           "abbbcc"
         ],
-        "expected": "ac",
+        "expected": "ab",
         "stdin": "abbbcc\n",
-        "stdout": "ac\n"
+        "stdout": "ab\n"
       },
       {
         "args": [
           "azxzzy"
         ],
-        "expected": "azy",
+        "expected": "azxy",
         "stdin": "azxzzy\n",
-        "stdout": "azy\n"
+        "stdout": "azxy\n"
       },
       {
         "args": [
           "aaabbbccc"
         ],
-        "expected": "",
+        "expected": "abc",
         "stdin": "aaabbbccc\n",
-        "stdout": "\n"
+        "stdout": "abc\n"
       },
       {
         "args": [
@@ -23900,9 +24057,9 @@
         "args": [
           "abccba"
         ],
-        "expected": "abccba",
+        "expected": "",
         "stdin": "abccba\n",
-        "stdout": "abccba\n"
+        "stdout": "\n"
       },
       {
         "args": [
@@ -24336,12 +24493,12 @@
         "expected": [
           2,
           3,
+          3,
           2,
-          1,
           4
         ],
         "stdin": "6\n1 2 3 2 1 4\n2\n",
-        "stdout": "2 3 2 1 4\n"
+        "stdout": "2 3 3 2 4\n"
       },
       {
         "args": [
@@ -24845,17 +25002,17 @@
         "args": [
           "AEOUI"
         ],
-        "expected": "UOIEA",
+        "expected": "IUOEA",
         "stdin": "AEOUI\n",
-        "stdout": "UOIEA\n"
+        "stdout": "IUOEA\n"
       },
       {
         "args": [
           "AbCdEf"
         ],
-        "expected": "fEdCbA",
+        "expected": "EbCdAf",
         "stdin": "AbCdEf\n",
-        "stdout": "fEdCbA\n"
+        "stdout": "EbCdAf\n"
       },
       {
         "args": [
@@ -24941,9 +25098,9 @@
           "abcdefg",
           2
         ],
-        "expected": "bagfedc",
+        "expected": "bacdfeg",
         "stdin": "abcdefg\n2\n",
-        "stdout": "bagfedc\n"
+        "stdout": "bacdfeg\n"
       },
       {
         "args": [
@@ -24968,18 +25125,18 @@
           "abcde",
           4
         ],
-        "expected": "dcabe",
+        "expected": "dcbae",
         "stdin": "abcde\n4\n",
-        "stdout": "dcabe\n"
+        "stdout": "dcbae\n"
       },
       {
         "args": [
           "abcdef",
           3
         ],
-        "expected": "defabc",
+        "expected": "cbadef",
         "stdin": "abcdef\n3\n",
-        "stdout": "defabc\n"
+        "stdout": "cbadef\n"
       },
       {
         "args": [
@@ -25146,9 +25303,9 @@
         "args": [
           "  a good   example  "
         ],
-        "expected": "example good a",
+        "expected": "  a doog   elpmaxe  ",
         "stdin": "  a good   example  \n",
-        "stdout": "example good a\n"
+        "stdout": "  a doog   elpmaxe  \n"
       }
     ],
     "hidden": [
@@ -25156,9 +25313,9 @@
         "args": [
           "  hello world  "
         ],
-        "expected": "world hello",
+        "expected": "  olleh dlrow  ",
         "stdin": "  hello world  \n",
-        "stdout": "world hello\n"
+        "stdout": "  olleh dlrow  \n"
       },
       {
         "args": [
@@ -25172,73 +25329,73 @@
         "args": [
           "the sky is blue"
         ],
-        "expected": "blue is sky the",
+        "expected": "eht yks si eulb",
         "stdin": "the sky is blue\n",
-        "stdout": "blue is sky the\n"
+        "stdout": "eht yks si eulb\n"
       },
       {
         "args": [
           "  "
         ],
-        "expected": "",
+        "expected": "  ",
         "stdin": "  \n",
-        "stdout": "\n"
+        "stdout": "  \n"
       },
       {
         "args": [
           "hello"
         ],
-        "expected": "hello",
+        "expected": "olleh",
         "stdin": "hello\n",
-        "stdout": "hello\n"
+        "stdout": "olleh\n"
       },
       {
         "args": [
           "  a  b  c d  e  "
         ],
-        "expected": "e d c b a",
+        "expected": "  a  b  c d  e  ",
         "stdin": "  a  b  c d  e  \n",
-        "stdout": "e d c b a\n"
+        "stdout": "  a  b  c d  e  \n"
       },
       {
         "args": [
           "  hello  world  "
         ],
-        "expected": "world hello",
+        "expected": "  olleh  dlrow  ",
         "stdin": "  hello  world  \n",
-        "stdout": "world hello\n"
+        "stdout": "  olleh  dlrow  \n"
       },
       {
         "args": [
           "one"
         ],
-        "expected": "one",
+        "expected": "eno",
         "stdin": "one\n",
-        "stdout": "one\n"
+        "stdout": "eno\n"
       },
       {
         "args": [
           "  two  spaces  here  "
         ],
-        "expected": "here spaces two",
+        "expected": "  owt  secaps  ereh  ",
         "stdin": "  two  spaces  here  \n",
-        "stdout": "here spaces two\n"
+        "stdout": "  owt  secaps  ereh  \n"
       },
       {
         "args": [
           "abc"
         ],
-        "expected": "abc",
+        "expected": "cba",
         "stdin": "abc\n",
-        "stdout": "abc\n"
+        "stdout": "cba\n"
       },
       {
         "args": [
           "  123  456  "
         ],
-        "expected": "456 123",
+        "expected": "  321  654  ",
         "stdin": "  123  456  \n",
-        "stdout": "456 123\n"
+        "stdout": "  321  654  \n"
       }
     ],
     "order_insensitive": false,
@@ -25528,11 +25685,11 @@
       },
       {
         "args": [
-          ""
+          "abcabc"
         ],
-        "expected": "",
-        "stdin": "",
-        "stdout": "\n"
+        "expected": "abc",
+        "stdin": "abcabc\n",
+        "stdout": "abc\n"
       },
       {
         "args": [
@@ -25546,9 +25703,9 @@
         "args": [
           "level"
         ],
-        "expected": "lev",
+        "expected": "l",
         "stdin": "level\n",
-        "stdout": "lev\n"
+        "stdout": "l\n"
       },
       {
         "args": [
@@ -25562,9 +25719,9 @@
         "args": [
           "abcabc"
         ],
-        "expected": "",
+        "expected": "abc",
         "stdin": "abcabc\n",
-        "stdout": "\n"
+        "stdout": "abc\n"
       },
       {
         "args": [
@@ -25578,9 +25735,9 @@
         "args": [
           "abca"
         ],
-        "expected": "",
+        "expected": "a",
         "stdin": "abca\n",
-        "stdout": "\n"
+        "stdout": "a\n"
       },
       {
         "args": [
@@ -26299,9 +26456,9 @@
         "args": [
           "WeAreHappy"
         ],
-        "expected": "We%20Are%20Happy",
+        "expected": "WeAreHappy",
         "stdin": "WeAreHappy\n",
-        "stdout": "We%20Are%20Happy\n"
+        "stdout": "WeAreHappy\n"
       },
       {
         "args": [
@@ -26347,9 +26504,9 @@
         "args": [
           "multiple   spaces"
         ],
-        "expected": "multiple%20%20%20%20spaces",
+        "expected": "multiple%20%20%20spaces",
         "stdin": "multiple   spaces\n",
-        "stdout": "multiple%20%20%20%20spaces\n"
+        "stdout": "multiple%20%20%20spaces\n"
       },
       {
         "args": [

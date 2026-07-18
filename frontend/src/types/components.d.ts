@@ -81,6 +81,7 @@ declare module 'vue' {
     HomeAnnounceBar: typeof import('./../components/home/HomeAnnounceBar.vue')['default']
     HomeCommunityPanel: typeof import('./../components/home/HomeCommunityPanel.vue')['default']
     HomeDashboardCharts: typeof import('./../components/home/HomeDashboardCharts.vue')['default']
+    HomeHitokotoBar: typeof import('./../components/home/HomeHitokotoBar.vue')['default']
     HomeSortDemo: typeof import('./../components/home/HomeSortDemo.vue')['default']
     HomeStageLearningMap: typeof import('./../components/home/HomeStageLearningMap.vue')['default']
     HomeTrainingSection: typeof import('./../components/home/HomeTrainingSection.vue')['default']

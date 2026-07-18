@@ -61,9 +61,18 @@ frontend/.vite/
 
 # Claude
 .claude/
+.agents/
+
+# Browser and audit artifacts
+.playwright-mcp/
+audit/
 
 # Test output
 ai-test-result.txt
+
+# Local development logs and Office lock files
+*.log
+~$*
 
 # Misc
 .DS_Store

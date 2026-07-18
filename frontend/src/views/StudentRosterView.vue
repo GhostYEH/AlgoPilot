@@ -309,7 +309,7 @@ onMounted(loadRoster)
             </el-table-column>
             <el-table-column label="操作" width="80" align="center" fixed="right">
               <template #default="{ row }">
-                <el-button size="small" text :icon="View" @click.stop="openDetail(row)">
+                <el-button size="small" text :icon="View" @click.stop="openDetail(row as StudentRosterItem)">
                   详情
                 </el-button>
               </template>

@@ -11,7 +11,13 @@ from sqlalchemy.pool import StaticPool
 from api.deps import get_current_user
 from core.database import Base, get_db
 from main import app
-from models.db_models import GeneratedResource, StudentLearningMemory, StudentProfile, User
+from models.db_models import (
+    GeneratedResource,
+    OjSubmission,
+    StudentLearningMemory,
+    StudentProfile,
+    User,
+)
 
 
 @pytest.fixture
@@ -150,6 +156,43 @@ def test_dashboard_summary_aggregates_existing_learning_records(
                 observed_error_pattern="",
                 failed_strategy="",
                 evidence_json={"module_key": "dp", "verdict": "AC"},
+            ),
+            # H1 修复后：OJ 提交数从 OjSubmission 表查询，需创建对应真实提交记录
+            OjSubmission(
+                user_id=student_a.id,
+                problem_slug="reverse-linked-list",
+                language="python",
+                code="",
+                verdict="WA",
+                passed=0,
+                total=2,
+                compile_error="",
+                cases=[],
+                runtime_ms_avg=0,
+            ),
+            OjSubmission(
+                user_id=student_b.id,
+                problem_slug="climbing-stairs",
+                language="python",
+                code="",
+                verdict="WA",
+                passed=0,
+                total=3,
+                compile_error="",
+                cases=[],
+                runtime_ms_avg=0,
+            ),
+            OjSubmission(
+                user_id=student_b.id,
+                problem_slug="climbing-stairs",
+                language="python",
+                code="",
+                verdict="AC",
+                passed=3,
+                total=3,
+                compile_error="",
+                cases=[],
+                runtime_ms_avg=0,
             ),
         ]
     )

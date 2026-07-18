@@ -133,6 +133,15 @@ function findNode(root: TreeNodeData, id: string): TreeNodeData | null {
   return null
 }
 
+function findNodeByVal(root: TreeNodeData, val: number): TreeNodeData | null {
+  if (root.val === val) return root
+  for (const c of root.children ?? []) {
+    const f = findNodeByVal(c, val)
+    if (f) return f
+  }
+  return null
+}
+
 function isLeaf(node: TreeNodeData) {
   return !node.children?.length
 }
@@ -184,31 +193,66 @@ function onNode(node: TreeNodeData) {
     return
   }
 
+  // path 关：从根到叶，必须沿父子关系推进
   const v = node.val!
-  const idx = path.value.lastIndexOf(v)
-  if (idx === path.value.length - 1 && path.value.length > 0) {
+
+  // 回溯：点击路径末端的结点
+  if (path.value.length > 0 && v === path.value[path.value.length - 1]) {
     path.value.pop()
     pathSum.value -= v
-    msg.value = `回溯，当前和 ${pathSum.value}`
+    fail.value = false
+    msg.value = `回溯 ${v}，当前和 ${pathSum.value}`
     pushLog(`回溯 ${v}`)
     return
   }
+
+  // 路径为空：必须从根开始
+  if (path.value.length === 0) {
+    if (node.id !== tree.value.id) {
+      fail.value = true
+      shakeId.value = node.id
+      msg.value = `必须从根结点 ${tree.value.label}（值 ${tree.value.val}）开始，不能直接点 ${node.label}`
+      pushLog(`错误：未从根开始，点了 ${node.label}`)
+      return
+    }
+  } else {
+    // 路径非空：必须点击当前路径末端结点的子结点
+    const lastVal = path.value[path.value.length - 1]
+    const lastNode = findNodeByVal(tree.value, lastVal)
+    const isChild = lastNode?.children?.some((c) => c.id === node.id) ?? false
+    if (!isChild) {
+      fail.value = true
+      shakeId.value = node.id
+      const childHint = lastNode?.children?.map((c) => `${c.label}(值${c.val})`).join(' 或 ') ?? '无'
+      msg.value = `${node.label} 不是路径末端 ${lastNode?.label ?? '?'} 的子结点，下一步只能选：${childHint}`
+      pushLog(`错误：${node.label} 不是末端子结点`)
+      return
+    }
+  }
+
   path.value.push(v)
   pathSum.value += v
   pushLog(`路径 +${v}，和=${pathSum.value}`)
+
   if (pathSum.value > 22) {
-    path.value = []
-    pathSum.value = 0
     fail.value = true
-    msg.value = '和超过 22'
-    pushLog('和超过 22，清空')
+    msg.value = `路径和 ${pathSum.value} 已超过 22，请点击末端结点回溯`
+    pushLog('和超过 22')
     return
   }
+
   fail.value = false
   if (pathSum.value === 22 && isLeaf(node)) {
     won.value = true
+    msg.value = '路径和=22 且到叶子，通关！'
     pushLog('路径和=22，通关')
     emit('cleared')
+  } else if (isLeaf(node) && pathSum.value !== 22) {
+    fail.value = true
+    msg.value = `已到叶子 ${node.label}，但路径和=${pathSum.value} ≠ 22，请点击该叶子回溯重试`
+    pushLog(`叶子但和=${pathSum.value}≠22`)
+  } else {
+    msg.value = `当前路径和 ${pathSum.value}，继续向下选子结点`
   }
 }
 

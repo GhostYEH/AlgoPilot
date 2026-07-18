@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from models.db_models import (
     GeneratedResource,
     LearningProgress,
+    OjSubmission,
     StudentLearningMemory,
     StudentProfile,
     User,
@@ -346,11 +347,11 @@ def get_dashboard_summary(
         .count()
     )
 
-    oj_submission_count = sum(
-        1
-        for memory in memories
-        if (memory.event_type or "").lower()
-        in {"oj_submit_fail", "oj_submit_success", "oj_failure", "oj_accept"}
+    # H1 修复：OJ 提交数从 OjSubmission 表查询（真实提交记录），而非依赖记忆表
+    oj_submission_count = (
+        db.query(OjSubmission)
+        .filter(OjSubmission.user_id.in_(student_ids))
+        .count()
     )
 
     failure_memories = [memory for memory in memories if _is_failure_memory(memory)]
@@ -415,19 +416,6 @@ def get_dashboard_summary(
 
 # ==================== 学情管理：学生花名册 ====================
 
-def _oj_counts_for_user(memories: list[StudentLearningMemory]) -> tuple[int, int]:
-    """返回 (提交次数, AC 次数)。"""
-    submissions = 0
-    accepted = 0
-    for memory in memories:
-        event_type = (memory.event_type or "").lower()
-        if event_type in {"oj_submit_fail", "oj_submit_success", "oj_failure", "oj_accept"}:
-            submissions += 1
-            verdict = str((memory.evidence_json or {}).get("verdict") or "").upper()
-            if event_type == "oj_accept" or verdict == "AC":
-                accepted += 1
-    return submissions, accepted
-
 
 def _weak_modules_for_user(memories: list[StudentLearningMemory]) -> list[str]:
     """返回该学生薄弱模块 key 列表（去重，最多 3 个）。"""
@@ -479,32 +467,26 @@ def get_student_roster(
     ):
         resource_counts[row[0]] = row[1]
 
-    # 用 SQL 聚合替代把全部记忆拉到 Python 里循环：
-    # 1) OJ 提交数与 AC 数：按 user_id 分组 count
-    oj_event_types = ("oj_submit_fail", "oj_submit_success", "oj_failure", "oj_accept")
+    # H1 修复：OJ 提交数与 AC 数从 OjSubmission 表查询（真实提交记录）
+    # 按 user_id 分组，verdict='AC' 计入 accepted
     oj_sub_rows = (
         db.query(
-            StudentLearningMemory.user_id,
-            StudentLearningMemory.event_type,
-            func.count(StudentLearningMemory.id).label("cnt"),
+            OjSubmission.user_id,
+            OjSubmission.verdict,
+            func.count(OjSubmission.id).label("cnt"),
         )
-        .filter(
-            StudentLearningMemory.user_id.in_(student_ids),
-            StudentLearningMemory.course_id == course_id,
-            StudentLearningMemory.event_type.in_(oj_event_types),
-        )
-        .group_by(StudentLearningMemory.user_id, StudentLearningMemory.event_type)
+        .filter(OjSubmission.user_id.in_(student_ids))
+        .group_by(OjSubmission.user_id, OjSubmission.verdict)
         .all()
     )
     oj_subs_by_user: dict[int, int] = defaultdict(int)
     oj_ac_by_user: dict[int, int] = defaultdict(int)
-    for user_id, event_type, cnt in oj_sub_rows:
-        et = (event_type or "").lower()
+    for user_id, verdict, cnt in oj_sub_rows:
         oj_subs_by_user[user_id] += cnt
-        if et == "oj_accept":
+        if (verdict or "").upper() == "AC":
             oj_ac_by_user[user_id] += cnt
 
-    # 2) 最近活跃时间：按 user_id 取 max(created_at)
+    # 2) 最近活跃时间：取 StudentLearningMemory 和 OjSubmission 的最新时间
     last_active_rows = (
         db.query(
             StudentLearningMemory.user_id,
@@ -521,6 +503,21 @@ def get_student_roster(
         user_id: (last.isoformat() if last else "")
         for user_id, last in last_active_rows
     }
+    # 合并 OjSubmission 的最近活跃时间
+    oj_last_rows = (
+        db.query(
+            OjSubmission.user_id,
+            func.max(OjSubmission.created_at).label("last"),
+        )
+        .filter(OjSubmission.user_id.in_(student_ids))
+        .group_by(OjSubmission.user_id)
+        .all()
+    )
+    for user_id, last in oj_last_rows:
+        oj_last = last.isoformat() if last else ""
+        existing = last_active_by_user.get(user_id, "")
+        if oj_last and oj_last > existing:
+            last_active_by_user[user_id] = oj_last
 
     # 3) 薄弱模块：只拉失败记忆（过滤后行数远小于全量），用于推导薄弱模块
     failure_event_types = ("oj_submit_fail", "oj_failure", "oj_diagnosis", "trace_diagnosis", "evaluation_struggle")
@@ -625,7 +622,13 @@ def get_student_detail(
         score = _extract_progress_score(dict(progress.payload or {}))
         progress_percent = score or 0.0
 
-    oj_subs, oj_ac = _oj_counts_for_user(memories)
+    # H1 修复：OJ 提交数与 AC 数从 OjSubmission 表查询（真实提交记录）
+    oj_subs = db.query(OjSubmission).filter(OjSubmission.user_id == user_id).count()
+    oj_ac = (
+        db.query(OjSubmission)
+        .filter(OjSubmission.user_id == user_id, OjSubmission.verdict == "AC")
+        .count()
+    )
 
     # 提取分模块进度
     module_progress: list[StudentDetailModuleProgress] = []
@@ -659,6 +662,16 @@ def get_student_detail(
             "created_at": memory.created_at.isoformat() if memory.created_at else "",
         })
 
+    # H1 修复：last_active 同时考虑 StudentLearningMemory 和 OjSubmission
+    memory_last = _last_active(memories)
+    oj_last_row = (
+        db.query(func.max(OjSubmission.created_at))
+        .filter(OjSubmission.user_id == user_id)
+        .scalar()
+    )
+    oj_last = oj_last_row.isoformat() if oj_last_row else ""
+    last_active = max(memory_last, oj_last) if (memory_last or oj_last) else ""
+
     return StudentDetailResponse(
         user_id=student.id,
         username=student.username,
@@ -671,7 +684,7 @@ def get_student_detail(
         oj_accepted=oj_ac,
         resource_count=resource_count,
         weak_modules=_weak_modules_for_user(memories),
-        last_active=_last_active(memories),
+        last_active=last_active,
         module_progress=module_progress,
         recent_memories=recent_memories,
     )
@@ -689,44 +702,63 @@ def get_oj_analytics(
     if not student_ids:
         return OjAnalyticsResponse(generated_at=_now_iso())
 
+    # H1 修复：从 OjSubmission 表查询真实提交记录
+    submissions = (
+        db.query(OjSubmission)
+        .filter(OjSubmission.user_id.in_(student_ids))
+        .order_by(OjSubmission.created_at.desc())
+        .all()
+    )
+
+    # 错因信息仍从 StudentLearningMemory 获取（OjSubmission 不存 error_pattern）
     memories = (
         db.query(StudentLearningMemory)
         .filter(
             StudentLearningMemory.user_id.in_(student_ids),
             StudentLearningMemory.course_id == course_id,
+            StudentLearningMemory.event_type.in_(
+                ("oj_submit_fail", "oj_failure", "oj_diagnosis", "trace_diagnosis")
+            ),
         )
         .all()
     )
+    # 按 problem_slug 聚合错因
+    error_patterns_by_slug: dict[str, list[str]] = defaultdict(list)
+    module_by_slug: dict[str, str] = {}
+    for memory in memories:
+        slug = memory.problem_slug or ""
+        if not slug:
+            continue
+        pattern = (memory.observed_error_pattern or "").strip()
+        if pattern and pattern not in error_patterns_by_slug[slug]:
+            error_patterns_by_slug[slug].append(pattern)
+        # 从记忆中提取 module_key 作为补充
+        if slug not in module_by_slug:
+            mod = str((memory.evidence_json or {}).get("module_key") or "")
+            if not mod:
+                mod = CHAPTER_TO_MODULE.get(memory.chapter_id or "", "")
+            if mod:
+                module_by_slug[slug] = mod
 
-    # 按题目聚合统计
-    problem_stats: dict[str, dict] = defaultdict(lambda: {"submissions": 0, "accepted": 0, "errors": [], "module": ""})
+    # 按题目聚合统计（基于真实提交记录）
+    problem_stats: dict[str, dict] = defaultdict(lambda: {"submissions": 0, "accepted": 0, "module": ""})
     active_users: set[int] = set()
     total_submissions = 0
     total_accepted = 0
 
-    for memory in memories:
-        event_type = (memory.event_type or "").lower()
-        if event_type not in {"oj_submit_fail", "oj_submit_success", "oj_failure", "oj_accept"}:
-            continue
-
-        slug = memory.problem_slug or "unknown"
-        evidence = memory.evidence_json or {}
-        verdict = str(evidence.get("verdict") or "").upper()
-        active_users.add(memory.user_id)
+    for submission in submissions:
+        slug = submission.problem_slug or "unknown"
+        active_users.add(submission.user_id)
         total_submissions += 1
 
         stat = problem_stats[slug]
         stat["submissions"] += 1
         if not stat["module"]:
-            stat["module"] = _module_key(memory) or str(evidence.get("module_key") or "")
+            stat["module"] = module_by_slug.get(slug, "")
 
-        if event_type == "oj_accept" or verdict == "AC":
+        if (submission.verdict or "").upper() == "AC":
             stat["accepted"] += 1
             total_accepted += 1
-        else:
-            error_pattern = memory.observed_error_pattern or ""
-            if error_pattern and error_pattern not in stat["errors"]:
-                stat["errors"].append(error_pattern)
 
     # 构建题目统计列表
     per_problem: list[OjProblemStat] = []
@@ -741,7 +773,7 @@ def get_oj_analytics(
             total_submissions=subs,
             accepted=accepted,
             acceptance_rate=round(accepted / subs * 100, 1) if subs else 0.0,
-            common_errors=stat["errors"][:3],
+            common_errors=error_patterns_by_slug.get(slug, [])[:3],
         ))
 
     # 按模块聚合

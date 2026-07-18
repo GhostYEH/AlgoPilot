@@ -10,7 +10,8 @@ from sqlalchemy.orm import Session
 
 from core.database import SessionLocal
 from main import app
-from models.db_models import User
+from models.db_models import LearningEventLog, OjSubmission, User
+from api.oj import _count_consecutive_failures
 from services.events.event_bus import EventBus, event_bus
 from services.events.handlers import register_handlers
 from utils.security import hash_password
@@ -72,6 +73,41 @@ def test_handler_error_does_not_break_publish(db: Session, test_user: User):
     assert pub.event.status in ("partial", "failed")
     assert any("BoomHandler" in err for err in pub.event.handler_errors)
     assert pub.event.event_id
+    assert pub.persisted is True
+    assert db.get(LearningEventLog, pub.event.event_id) is not None
+
+
+def test_publish_reports_event_store_failure(db: Session, test_user: User, monkeypatch: pytest.MonkeyPatch):
+    bus = EventBus()
+
+    def fail_persist(_db, _event):
+        raise RuntimeError("event store unavailable")
+
+    monkeypatch.setattr(bus, "_persist", fail_persist)
+    pub = bus.publish(
+        db,
+        event_type="on_quiz_completed",
+        user_id=test_user.id,
+    )
+    assert pub.ok is False
+    assert pub.persisted is False
+
+
+def test_consecutive_failures_are_not_truncated(db: Session, test_user: User):
+    slug = f"long-streak-{uuid.uuid4().hex}"
+    db.add_all(
+        [
+            OjSubmission(
+                user_id=test_user.id,
+                problem_slug=slug,
+                verdict="WA",
+                cases=[],
+            )
+            for _ in range(25)
+        ]
+    )
+    db.commit()
+    assert _count_consecutive_failures(db, test_user.id, slug) == 26
 
 
 def test_event_log_queryable_via_api(db: Session, test_user: User):

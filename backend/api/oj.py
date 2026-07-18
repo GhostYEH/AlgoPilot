@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -9,6 +10,7 @@ from api.deps import get_current_user, get_optional_user
 from core.config import settings
 from core.database import get_db
 from models.db_models import OjSubmission, User
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from schemas.oj import (
     AiComplexityReport,
@@ -56,6 +58,43 @@ from services.oj.trace_runner import run_trace, run_trace_stdio
 from services.oj.stdio_io import case_input_text, case_output_text
 
 router = APIRouter(prefix="/oj", tags=["oj"])
+
+_logger = logging.getLogger(__name__)
+
+
+def _count_consecutive_failures(db: Session, user_id: int, slug: str) -> int:
+    """统计当前用户在指定题目上最近的连续失败次数（含本次）。
+
+    查询最近 N 条提交，从最新往前数，遇到第一个 AC 即停止。
+    返回值含本次失败（即历史失败数 + 1）。
+    """
+    last_accepted_id = (
+        db.query(func.max(OjSubmission.id))
+        .filter(
+            OjSubmission.user_id == user_id,
+            OjSubmission.problem_slug == slug,
+            OjSubmission.verdict == "AC",
+        )
+        .scalar()
+    )
+    query = db.query(func.count(OjSubmission.id)).filter(
+        OjSubmission.user_id == user_id,
+        OjSubmission.problem_slug == slug,
+        OjSubmission.verdict != "AC",
+    )
+    if last_accepted_id is not None:
+        query = query.filter(OjSubmission.id > last_accepted_id)
+    return int(query.scalar() or 0) + 1
+
+
+def _first_failure_message(cases) -> str:
+    """取第一个失败用例的 message；全 AC 或无 cases 时返回空串。"""
+    if not cases:
+        return ""
+    for c in cases:
+        if getattr(c, "verdict", "") != "AC":
+            return getattr(c, "message", "") or ""
+    return ""
 
 
 @router.get("/capabilities")
@@ -135,50 +174,14 @@ def api_submit(
     resp = _judge(slug, body, mode="submit")
     event_logs: list[dict[str, str]] = []
     event_id: str | None = None
-    try:
-        from services.events.event_bus import event_bus
+    problem = get_public_problem(slug)
+    message = _first_failure_message(resp.cases)
+    consecutive_failures = _count_consecutive_failures(db, user.id, slug) if resp.verdict != "AC" else 0
+    runtime_ms_values = [c.runtime_ms for c in resp.cases if c.runtime_ms is not None]
+    runtime_ms_avg = round(sum(runtime_ms_values) / len(runtime_ms_values)) if runtime_ms_values else 0
 
-        problem = get_public_problem(slug)
-        message = resp.cases[0].message if resp.cases else ""
-        payload = {
-            "problem_slug": slug,
-            "verdict": resp.verdict,
-            "message": message,
-            "error_pattern": message[:200] if message else resp.verdict,
-            "module_key": str(problem.get("module_key") or ""),
-            "chapter_id": str(problem.get("chapter_id") or ""),
-            "skill_id": str(problem.get("skill_id") or ""),
-        }
-        if resp.verdict == "AC":
-            pub = event_bus.publish(
-                db,
-                event_type="on_oj_submission_accepted",
-                user_id=user.id,
-                chapter_id=payload["chapter_id"],
-                skill_id=payload["skill_id"],
-                payload=payload,
-            )
-        else:
-            pub = event_bus.publish(
-                db,
-                event_type="on_oj_submission_failed",
-                user_id=user.id,
-                chapter_id=payload["chapter_id"],
-                skill_id=payload["skill_id"],
-                payload=payload,
-            )
-        event_id = pub.event.event_id
-        event_logs = [log.model_dump() for log in pub.event.agent_logs]
-    except Exception:
-        pass
-
-    # 持久化真实提交记录：代码、判题结果、用例详情均入库
-    runtime_ms_values = [
-        (c.runtime_ms or 0) for c in resp.cases if c.runtime_ms is not None
-    ]
-    runtime_ms_avg = (
-        sum(runtime_ms_values) // len(runtime_ms_values) if runtime_ms_values else 0
-    )
+    # 先保存真实提交，再触发会产生其它写入的事件处理。这样事件处理或关联失败时，
+    # 判题记录仍然存在，不会出现“学情已更新但提交记录丢失”的状态。
     try:
         submission = OjSubmission(
             user_id=user.id,
@@ -191,13 +194,66 @@ def api_submit(
             compile_error=resp.compile_error or "",
             cases=[c.model_dump() for c in resp.cases],
             runtime_ms_avg=runtime_ms_avg,
-            event_id=event_id,
+            event_id=None,
         )
         db.add(submission)
         db.commit()
         db.refresh(submission)
     except Exception:
         db.rollback()
+        _logger.exception(
+            "OJ 提交记录落库失败 user=%s slug=%s verdict=%s",
+            user.id,
+            slug,
+            resp.verdict,
+        )
+        raise HTTPException(500, "提交结果保存失败，请重试") from None
+
+    payload = {
+        "problem_slug": slug,
+        "verdict": resp.verdict,
+        "message": message,
+        "error_pattern": message[:200] if message else resp.verdict,
+        "module_key": str(problem.get("module_key") or ""),
+        "chapter_id": str(problem.get("chapter_id") or ""),
+        "skill_id": str(problem.get("skill_id") or ""),
+        "consecutive_failures": consecutive_failures,
+    }
+    try:
+        from services.events.event_bus import event_bus
+
+        pub = event_bus.publish(
+            db,
+            event_type=("on_oj_submission_accepted" if resp.verdict == "AC" else "on_oj_submission_failed"),
+            user_id=user.id,
+            chapter_id=payload["chapter_id"],
+            skill_id=payload["skill_id"],
+            payload=payload,
+        )
+        event_logs = [log.model_dump() for log in pub.event.agent_logs]
+        if pub.persisted:
+            try:
+                submission.event_id = pub.event.event_id
+                db.commit()
+                event_id = pub.event.event_id
+            except Exception:
+                db.rollback()
+                _logger.exception(
+                    "OJ 提交与事件关联失败 submission_id=%s event_id=%s",
+                    submission.id,
+                    pub.event.event_id,
+                )
+        if not pub.ok:
+            _logger.warning(
+                "OJ 提交事件处理不完整 user=%s slug=%s status=%s errors=%s",
+                user.id,
+                slug,
+                pub.event.status,
+                pub.event.handler_errors,
+            )
+    except Exception:
+        db.rollback()
+        _logger.exception("OJ 提交事件发布异常 user=%s slug=%s", user.id, slug)
 
     return JudgeResponse(
         verdict=resp.verdict,
@@ -324,21 +380,14 @@ def _trace_to_response(
     narrations: list[TraceNarrationLine] = []
     step_lines: list[dict[str, int | str]] = []
     if summary.verdict == "OK" and steps_out:
-        steps_raw = [
-            {"line": s.line, "changed": s.changed, "vars": s.vars}
-            for s in summary.steps
-        ]
+        steps_raw = [{"line": s.line, "changed": s.changed, "vars": s.vars} for s in summary.steps]
         step_lines = generate_step_narration(steps_raw)
         if step_lines:
-            narrations = [
-                TraceNarrationLine(step_index=n["step_index"], text=n["text"]) for n in step_lines
-            ]
+            narrations = [TraceNarrationLine(step_index=n["step_index"], text=n["text"]) for n in step_lines]
         elif attach_demo_narration:
             demo = generate_demo_narration(slug, user_code, steps_raw)
             if demo:
-                narrations = [
-                    TraceNarrationLine(step_index=n["step_index"], text=n["text"]) for n in demo
-                ]
+                narrations = [TraceNarrationLine(step_index=n["step_index"], text=n["text"]) for n in demo]
     msg = summary.message
     if narrations and step_lines:
         msg = f"{summary.message}（旁白来自本次执行的变量变化）"
@@ -538,7 +587,13 @@ async def api_trace_bug_diagnose(
         judge_verdict=body.judge_verdict or "WA",
         code=body.code,
     )
-    if user:
+    # M6 修复：未登录用户诊断结果不入库，记录日志便于审计
+    if user is None:
+        _logger.info(
+            "未登录用户调用 trace_bug_diagnose slug=%s，诊断结果未入库",
+            slug,
+        )
+    else:
         try:
             from services.events.event_bus import event_bus
 
@@ -555,7 +610,7 @@ async def api_trace_bug_diagnose(
                 },
             )
         except Exception:
-            pass
+            _logger.exception("trace_bug_diagnose 事件发布失败 user=%s slug=%s", user.id, slug)
     return TraceBugDiagnoseResponse(**result, tutoring=tutoring)
 
 
@@ -689,7 +744,9 @@ async def api_ai_diagnose(
     ]
 
     inp_preview = case_input_text(edge_case)[:200] if judge_mode == "stdio" else str(edge_case.get("args", ""))[:200]
-    exp_preview = case_output_text(edge_case)[:200] if judge_mode == "stdio" else str(edge_case.get("expected", ""))[:200]
+    exp_preview = (
+        case_output_text(edge_case)[:200] if judge_mode == "stdio" else str(edge_case.get("expected", ""))[:200]
+    )
 
     if edge_verdict == "AC":
         summary_text = (
@@ -741,7 +798,13 @@ async def api_ai_diagnose(
         summary=summary_text,
         tutoring=tutoring,
     )
-    if user:
+    # M6 修复：未登录用户诊断结果不入库，记录日志便于审计
+    if user is None:
+        _logger.info(
+            "未登录用户调用 ai_diagnose slug=%s，诊断结果未入库",
+            slug,
+        )
+    else:
         try:
             from services.events.event_bus import event_bus
 
@@ -764,7 +827,7 @@ async def api_ai_diagnose(
                 },
             )
         except Exception:
-            pass
+            _logger.exception("ai_diagnose 事件发布失败 user=%s slug=%s", user.id, slug)
     return response
 
 
@@ -915,11 +978,7 @@ async def api_trace_report(
     if ast_gate.passed and cases:
         tl = min(problem.get("time_limit_ms", 3000), 5000)
         failed_index = next(
-            (
-                c.index
-                for c in body.failed_cases
-                if c.verdict != "AC" and 0 <= c.index < len(cases)
-            ),
+            (c.index for c in body.failed_cases if c.verdict != "AC" and 0 <= c.index < len(cases)),
             None,
         )
         trace_case = _resolve_trace_case(cases, failed_index)
@@ -945,11 +1004,20 @@ async def api_trace_report(
             )
             if summary.verdict == "OK" and summary.steps:
                 trace_steps = [
-                    {"line": s.line, "vars": {k: v.__dict__ if hasattr(v, "__dict__") else v for k, v in s.vars.items()}, "changed": s.changed}
+                    {
+                        "line": s.line,
+                        "vars": {k: v.__dict__ if hasattr(v, "__dict__") else v for k, v in s.vars.items()},
+                        "changed": s.changed,
+                    }
                     for s in summary.steps
                 ]
         except Exception:
-            pass
+            _logger.debug(
+                "trace_report 动态 Trace 生成失败，回退到 demo 步骤 slug=%s language=%s",
+                slug,
+                lang,
+                exc_info=True,
+            )
 
     if not trace_steps:
         trace_steps = _build_demo_trace_steps(body.code)
@@ -972,7 +1040,10 @@ async def api_trace_report(
         source = diag.get("source", "llm")
 
         llm_cause, llm_fix = await generate_llm_cause_and_fix(
-            body.code, trace_steps, judge_verdict, bug_step_index,
+            body.code,
+            trace_steps,
+            judge_verdict,
+            bug_step_index,
             problem_description=(problem.get("description") or "")[:2000],
             failed_cases=failed_raw,
         )
@@ -982,7 +1053,8 @@ async def api_trace_report(
             fix_suggestion = llm_fix
     else:
         fallback = _fallback_trace_bug_diagnosis(
-            trace_steps, compressed_lines,
+            trace_steps,
+            compressed_lines,
             user_code=body.code,
             judge_verdict=judge_verdict,
         )
@@ -1021,7 +1093,13 @@ async def api_trace_report(
         trace_case_message=trace_case_message,
     )
 
-    if user:
+    # M6 修复：未登录用户诊断结果不入库，记录日志便于审计
+    if user is None:
+        _logger.info(
+            "未登录用户调用 trace_report slug=%s，诊断结果未入库",
+            slug,
+        )
+    else:
         try:
             from services.events.event_bus import event_bus
 
@@ -1040,6 +1118,6 @@ async def api_trace_report(
                 },
             )
         except Exception:
-            pass
+            _logger.exception("trace_report 事件发布失败 user=%s slug=%s", user.id, slug)
 
     return report

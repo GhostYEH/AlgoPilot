@@ -292,10 +292,12 @@ function clickDequePop(idxInWindow: number) {
     msg.value = '正确！窗口右移，deque 现为 [3]'
     return
   }
-  if (dequeStep.value >= 1) {
+  if (dequeStep.value >= 2) {
     won.value = true
     msg.value = '窗口最大值 5，通关！'
     emit('cleared')
+  } else {
+    loseLife('请先点击「队头过期，加入下标 4」完成窗口右移，再确认最大值')
   }
 }
 

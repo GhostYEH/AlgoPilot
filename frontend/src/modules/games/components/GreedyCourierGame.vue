@@ -26,6 +26,42 @@ const intervals = [
   { start: 5, end: 6 },
 ]
 
+// 跳跃关：贪心最优下一步（在 (pos, pos+jumps[pos]] 内，最大化 i + jumps[i]）
+const jumpGreedyNext = computed(() => {
+  if (props.levelId !== 'jump' || won.value) return -1
+  const cur = pos.value
+  const range = cur + jumps[cur]!
+  let best = -1
+  let bestReach = -1
+  for (let i = cur + 1; i <= Math.min(range, jumps.length - 1); i++) {
+    const r = i + jumps[i]!
+    if (r > bestReach) {
+      bestReach = r
+      best = i
+    }
+  }
+  return best
+})
+
+// 区间关：贪心最优下一步（未选且 start >= lastEnd 中，end 最小）
+const intervalGreedyNext = computed(() => {
+  if (props.levelId === 'jump' || won.value) return -1
+  const last = picked.value[picked.value.length - 1]
+  const lastEnd = last !== undefined ? intervals[last]!.end : 0
+  let best = -1
+  let bestEnd = Number.POSITIVE_INFINITY
+  for (let i = 0; i < intervals.length; i++) {
+    if (picked.value.includes(i)) continue
+    const iv = intervals[i]!
+    if (iv.start < lastEnd) continue
+    if (iv.end < bestEnd) {
+      bestEnd = iv.end
+      best = i
+    }
+  }
+  return best
+})
+
 watch(
   () => props.levelId,
   () => {
@@ -34,8 +70,8 @@ watch(
     picked.value = []
     msg.value =
       props.levelId === 'jump'
-        ? '点击当前位置，再点「跳跃」更新最远可达；当 maxReach ≥ 末下标即通关'
-        : '按结束时间贪心：点击区间，已选区间不能重叠'
+        ? '点击想跳到的目标格子（须在当前跳跃范围内），贪心选择能最大化 i+jumps[i] 的格子'
+        : '按结束时间贪心：每步点击结束最早且不与已选重叠的区间'
     won.value = false
     fail.value = false
     clearLog('贪心快递员出发')
@@ -65,40 +101,75 @@ const stateValues = computed(() => {
 
 function onJumpCell(i: number) {
   if (props.levelId !== 'jump' || won.value) return
-  if (i !== pos.value) {
+  const cur = pos.value
+  if (i === cur) {
     fail.value = true
-    msg.value = `只能操作当前位置 ${pos.value}`
+    msg.value = '不能停留在原地，请选择跳跃范围内的下一格'
     return
   }
+  if (i < cur) {
+    fail.value = true
+    msg.value = '不能往回跳，贪心只往前走'
+    return
+  }
+  const range = cur + jumps[cur]!
+  if (i > range) {
+    fail.value = true
+    msg.value = `位置 ${i} 超出当前跳跃范围 [${cur + 1}, ${range}]（jumps[${cur}]=${jumps[cur]}）`
+    pushLog(`非法跳跃：${i} 超出范围`)
+    return
+  }
+  // 贪心校验：必须选能最大化 i + jumps[i] 的格子
+  const greedy = jumpGreedyNext.value
+  if (greedy !== -1 && i !== greedy) {
+    const greedyReach = greedy + jumps[greedy]!
+    const curReach = i + jumps[i]!
+    fail.value = true
+    msg.value = `贪心应选位置 ${greedy}（可达 ${greedyReach}），你选的 ${i} 只能到 ${curReach}，应最大化 i+jumps[i]`
+    pushLog(`非贪心选择：选 ${i}，应选 ${greedy}`)
+    return
+  }
+  pos.value = i
+  maxReach.value = Math.max(maxReach.value, i + jumps[i]!)
   fail.value = false
-  msg.value = `选中位置 ${i}，点击「跳跃」`
-  pushLog(`选中位置 ${i}`)
-}
-
-function doJump() {
-  if (props.levelId !== 'jump' || won.value) return
-  const reach = pos.value + jumps[pos.value]!
-  maxReach.value = Math.max(maxReach.value, reach)
-  pos.value = Math.min(pos.value + 1, jumps.length - 1)
-  msg.value = `到达 ${pos.value}，最远可达下标 ${maxReach.value}`
-  fail.value = false
-  pushLog(`跳跃：最远可达 ${maxReach.value}`)
+  msg.value = `跳到位置 ${i}，最远可达下标 ${maxReach.value}`
+  pushLog(`跳跃到 ${i}，最远可达 ${maxReach.value}`)
   if (maxReach.value >= jumps.length - 1) {
     won.value = true
     msg.value = '能到终点！'
     pushLog('到达终点')
     emit('cleared')
+    return
+  }
+  // 卡死判定：当前位置无法继续前进，且 maxReach 也无法到终点
+  if (jumps[i] === 0 && maxReach.value < jumps.length - 1) {
+    fail.value = true
+    msg.value = `位置 ${i} 的 jumps=0，无法继续前进，且最远可达 ${maxReach.value} 不足到终点 ${jumps.length - 1}，本局卡死`
+    pushLog('卡死：无法到达终点')
   }
 }
 
 function pickInterval(i: number) {
-  if (won.value) return
+  if (props.levelId === 'jump' || won.value) return
+  if (picked.value.includes(i)) {
+    fail.value = true
+    msg.value = '该区间已选过'
+    return
+  }
   const last = picked.value[picked.value.length - 1]
   const lastEnd = last !== undefined ? intervals[last]!.end : 0
   if (intervals[i]!.start < lastEnd) {
     fail.value = true
-    msg.value = '与上一区间重叠，贪心应选结束更早的'
+    msg.value = `区间 [${intervals[i]!.start},${intervals[i]!.end}] 与已选重叠（lastEnd=${lastEnd}），贪心应选 start ≥ lastEnd 的区间`
     pushLog(`区间 ${i} 与已选重叠`)
+    return
+  }
+  // 贪心校验：必须选 end 最小的合法区间
+  const greedy = intervalGreedyNext.value
+  if (greedy !== -1 && i !== greedy) {
+    fail.value = true
+    msg.value = `贪心应选结束最早的区间 [${intervals[greedy]!.start},${intervals[greedy]!.end}]（end=${intervals[greedy]!.end}），你选的 end=${intervals[i]!.end}，应按 end 升序选`
+    pushLog(`非贪心选择：选 ${i}，应选 ${greedy}`)
     return
   }
   picked.value.push(i)
@@ -109,6 +180,15 @@ function pickInterval(i: number) {
     won.value = true
     pushLog('选满 3 个不重叠区间')
     emit('cleared')
+    return
+  }
+  // 卡死判定：若剩余可选项不足凑齐 3 个，提示卡死
+  const newLastEnd = intervals[i]!.end
+  const remaining = intervals.filter((_, idx) => !picked.value.includes(idx) && intervals[idx]!.start >= newLastEnd).length
+  if (remaining < 3 - picked.value.length) {
+    fail.value = true
+    msg.value = `已选 ${picked.value.length} 个，但剩余仅 ${remaining} 个可合法选择，凑不齐 3 个，本局卡死`
+    pushLog('卡死：剩余可选不足')
   }
 }
 
@@ -120,8 +200,8 @@ function doReset() {
   fail.value = false
   msg.value =
     props.levelId === 'jump'
-      ? '点击当前位置，再点「跳跃」更新最远可达'
-      : '按结束时间贪心选择区间'
+      ? '点击想跳到的目标格子（须在当前跳跃范围内），贪心选择能最大化 i+jumps[i] 的格子'
+      : '按结束时间贪心：每步点击结束最早且不与已选重叠的区间'
   clearLog('已重置')
 }
 </script>
@@ -148,9 +228,10 @@ function doReset() {
           :values="jumps"
           :pointers="{ pos: pos, reach: maxReach }"
           :active-index="pos"
+          clickable
           @select="onJumpCell"
         />
-        <p class="meta">最远可达下标：{{ maxReach }} / 目标 {{ jumps.length - 1 }}</p>
+        <p class="meta">点击想跳到的格子（须在 (pos, pos+jumps[pos]] 范围内，贪心选最大化 i+jumps[i] 的格子）。最远可达下标：{{ maxReach }} / 目标 {{ jumps.length - 1 }}</p>
       </template>
       <template v-else>
         <div class="workbench-head">
@@ -172,9 +253,6 @@ function doReset() {
         <p class="meta">贪心策略：每次选结束时间最早且不与已选重叠的区间</p>
       </template>
     </div>
-    <template v-if="levelId === 'jump'" #actions>
-      <el-button type="primary" size="large" :disabled="won" @click="doJump">从当前格跳跃</el-button>
-    </template>
   </GamePlayShell>
 </template>
 

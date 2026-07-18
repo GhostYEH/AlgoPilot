@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections import deque
 from collections.abc import Callable
 from threading import Lock
@@ -16,6 +17,8 @@ from services.events.event_models import EventPublishResult, LearningEvent
 HandlerFn = Callable[[Session, LearningEvent], None]
 
 _MAX_STORE = 2000
+
+_logger = logging.getLogger(__name__)
 
 
 class EventBus:
@@ -68,10 +71,12 @@ class EventBus:
             self._store.append(event)
 
         if db is not None:
+            persist_ok = True
             try:
                 self._persist(db, event)
             except Exception as exc:
                 db.rollback()
+                persist_ok = False
                 event.handler_errors.append(f"EventStore: {exc}")
                 event.log(
                     "EventStore",
@@ -80,8 +85,22 @@ class EventBus:
                     status="error",
                 )
                 event.status = "partial" if event.handled_by else "failed"
+                _logger.exception(
+                    "事件日志落库失败 event_id=%s event_type=%s user_id=%s",
+                    event.event_id,
+                    event.event_type,
+                    event.user_id,
+                )
+            # H5 修复：如果落库失败，调用方不应使用 event_id 去关联其它表（悬空引用）
+            # 通过 ok=False 通知调用方；event_id 保留用于内存查询与排错
+            if not persist_ok:
+                return EventPublishResult(event=event, ok=False, persisted=False)
 
-        return EventPublishResult(event=event, ok=event.status != "failed")
+        return EventPublishResult(
+            event=event,
+            ok=event.status != "failed",
+            persisted=db is not None,
+        )
 
     def list_recent(
         self,

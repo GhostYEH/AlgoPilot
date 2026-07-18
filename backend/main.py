@@ -57,17 +57,19 @@ from api.events import router as events_router
 from api.analytics import router as analytics_router
 from api.teacher_dashboard import router as teacher_dashboard_router
 from core.config import settings
-from core.database import Base, engine
+from core.database import engine
 
 _logger = logging.getLogger(__name__)
 
-_INSECURE_JWT_SECRETS = frozenset({
-    "dev-change-me-use-long-random-string",
-    "changeme",
-    "secret",
-    "jwt-secret",
-    "test",
-})
+_INSECURE_JWT_SECRETS = frozenset(
+    {
+        "dev-change-me-use-long-random-string",
+        "changeme",
+        "secret",
+        "jwt-secret",
+        "test",
+    }
+)
 
 
 def _check_jwt_secret() -> None:
@@ -76,22 +78,19 @@ def _check_jwt_secret() -> None:
         return
     if settings.is_production:
         _logger.critical(
-            "JWT_SECRET 使用了不安全的默认值且检测到生产环境，拒绝启动。"
-            "请在 .env 中设置一个长随机字符串。"
+            "JWT_SECRET 使用了不安全的默认值且检测到生产环境，拒绝启动。请在 .env 中设置一个长随机字符串。"
         )
         sys.exit(1)
-    _logger.warning(
-        "JWT_SECRET 使用了不安全的默认值，仅限本地开发使用，请勿部署到生产环境。"
-    )
+    _logger.warning("JWT_SECRET 使用了不安全的默认值，仅限本地开发使用，请勿部署到生产环境。")
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     _check_jwt_secret()
 
-    import models.db_models  # noqa: F401 — 注册 ORM 元数据
+    from core.schema_migrations import upgrade_schema
 
-    Base.metadata.create_all(bind=engine)
+    upgrade_schema(engine)
 
     # 数据自愈：把旧格式学习路径计划 steps 升级为新格式，避免 schema 演进导致 500
     try:
@@ -151,6 +150,7 @@ if _FRONTEND_DIR and _FRONTEND_DIR.is_dir() and (_FRONTEND_DIR / "index.html").e
         以 /api 开头但不匹配任何已注册路由的路径返回 404 JSON。"""
         if full_path and full_path.startswith("api"):
             from fastapi.responses import JSONResponse
+
             return JSONResponse({"detail": "Not Found"}, status_code=404)
         if full_path:
             candidate = _FRONTEND_DIR / full_path

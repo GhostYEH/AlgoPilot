@@ -9,6 +9,14 @@ BACKEND = Path(SPECPATH)
 # ---------- 数据文件 ----------
 datas = []
 
+# Alembic 配置与版本化数据库迁移
+alembic_ini = BACKEND / "alembic.ini"
+if alembic_ini.is_file():
+    datas.append((str(alembic_ini), "."))
+migrations = BACKEND / "migrations"
+if migrations.is_dir():
+    datas.append((str(migrations), "migrations"))
+
 # 知识库 JSON — 整个 knowledge_base 目录
 kb = BACKEND / "knowledge_base"
 if kb.is_dir():

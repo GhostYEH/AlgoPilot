@@ -75,8 +75,8 @@ const recentVisits = computed(() => loadRecentVisits())
 
 const inProgressRows = computed(() =>
   overview.value.inProgressModules.length > 0
-    ? overview.value.inProgressModules
-    : overview.value.rows.filter((r) => r.available && r.percent === 0 && r.hasProgressData).slice(0, 4),
+    ? overview.value.inProgressModules.slice(0, 10)
+    : overview.value.rows.filter((r) => r.available && r.percent === 0 && r.hasProgressData).slice(0, 10),
 )
 
 const totalSectionsDone = computed(() =>
@@ -314,7 +314,7 @@ function getModuleHint(key: string) {
             <el-tag size="small" effect="plain">{{ inProgressRows.length }} 个</el-tag>
           </div>
 
-          <div v-if="inProgressRows.length" class="module-grid-compact">
+          <div v-if="inProgressRows.length" class="module-grid-5x2">
             <div
               v-for="row in inProgressRows"
               :key="row.key"
@@ -419,6 +419,7 @@ function getModuleHint(key: string) {
               <el-icon><Collection /></el-icon>
               全部模块
             </h3>
+            <el-tag size="small" effect="plain">共 {{ overview.rows.length }} 个</el-tag>
           </div>
           <div class="module-list-compact">
             <div
@@ -933,10 +934,28 @@ function getModuleHint(key: string) {
   margin-bottom: 20px;
 }
 
-.module-grid-compact {
+.module-grid-5x2 {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
+}
+
+@media (max-width: 1200px) {
+  .module-grid-5x2 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .module-grid-5x2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .module-grid-5x2 {
+    grid-template-columns: 1fr;
+  }
 }
 
 .module-card-compact {
@@ -970,6 +989,9 @@ function getModuleHint(key: string) {
 .card-name {
   font-weight: 600;
   font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .card-progress {
@@ -978,11 +1000,17 @@ function getModuleHint(key: string) {
   gap: 8px;
 }
 
+.card-progress .el-progress {
+  flex: 1;
+  min-width: 0;
+}
+
 .card-pct {
   font-size: 12px;
   font-weight: 600;
   color: var(--alp-color-text);
   font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
 
 .card-meta-row {
@@ -1012,13 +1040,9 @@ function getModuleHint(key: string) {
 
 .card-goals li {
   margin-bottom: 2px;
-}
-
-.card-desc {
-  margin: 0;
-  font-size: 12px;
-  color: var(--alp-color-muted);
-  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .card-actions {
@@ -1094,14 +1118,30 @@ function getModuleHint(key: string) {
 
 .module-list-compact {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
-  max-height: 400px;
-  overflow-y: auto;
   padding: 10px;
   border-radius: var(--alp-radius-card);
   background: var(--alp-bg-soft-block);
   border: 1px solid var(--alp-color-border);
+}
+
+@media (max-width: 1200px) {
+  .module-list-compact {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .module-list-compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .module-list-compact {
+    grid-template-columns: 1fr;
+  }
 }
 
 .module-row {
@@ -1144,12 +1184,16 @@ function getModuleHint(key: string) {
   font-size: 13px;
   font-weight: 500;
   color: var(--alp-color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .module-row-right {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .module-row-pct {

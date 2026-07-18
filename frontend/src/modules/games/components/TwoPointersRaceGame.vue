@@ -23,6 +23,8 @@ const msg = ref('')
 const won = ref(false)
 const fail = ref(false)
 const moveCount = ref(0)
+// cycle 关：记录上一次移动的是 slow 还是 fast，强制交替
+const lastCycleKind = ref<'slow' | 'fast' | null>(null)
 
 const dedupTarget = computed(() => {
   const arr = [...nums.value]
@@ -40,6 +42,7 @@ function reset() {
   fail.value = false
   won.value = false
   moveCount.value = 0
+  lastCycleKind.value = null
   if (props.levelId === 'sum') {
     nums.value = [-1, 0, 1, 2, 3, 5]
     left.value = 0
@@ -51,14 +54,14 @@ function reset() {
     slow.value = 0
     fast.value = 0
     activeTool.value = 'slow'
-    msg.value = '环形数组：slow 每次走 1 步、fast 每次 2 步，交替点击直到两者相遇（有环）'
+    msg.value = '环形数组：slow 每次走 1 步、fast 每次 2 步，必须交替点击直到两者相遇（有环）'
   } else {
     nums.value = [1, 1, 2, 2, 3, 4]
     left.value = 0
     right.value = 1
     writePos.value = 0
     activeTool.value = 'write'
-    msg.value = '有序去重：用 write 写下标。若 nums[right]≠nums[write] 则 write++ 并写入'
+    msg.value = '有序去重：比较 nums[right] 与 nums[write]，不同点「写入」，相同点「跳过」'
   }
   clearLog('双指针赛跑开始')
 }
@@ -88,9 +91,8 @@ const tools = computed(() => {
     ]
   }
   return [
-    { id: 'write', label: '移动 write' },
-    { id: 'right', label: '移动 right' },
-    { id: 'commit', label: '写入/跳过' },
+    { id: 'write', label: '写入新值' },
+    { id: 'skip', label: '跳过重复' },
   ]
 })
 
@@ -118,40 +120,57 @@ const stateValues = computed(() => {
 
 const arraySnap = computed(() => nums.value.join(', '))
 
+// dedup 关：当前比较的两个值，用于在界面上提示
+const dedupCompare = computed(() => {
+  if (props.levelId !== 'dedup' || won.value) return null
+  if (right.value >= nums.value.length) return null
+  return {
+    writeVal: nums.value[writePos.value],
+    rightVal: nums.value[right.value],
+    same: nums.value[writePos.value] === nums.value[right.value],
+  }
+})
+
 function onSelect(i: number) {
   if (won.value) return
   if (props.levelId === 'sum') {
+    if (activeTool.value !== 'L' && activeTool.value !== 'R') {
+      fail.value = true
+      msg.value = '请先选择「设置 L」或「设置 R」'
+      return
+    }
     if (activeTool.value === 'L') {
+      if (i >= right.value) {
+        fail.value = true
+        msg.value = `L 必须在 R(${right.value}) 左侧`
+        return
+      }
       left.value = i
       msg.value = `L = ${i}`
       fail.value = false
       pushLog(`L = ${i}`)
-    } else if (activeTool.value === 'R') {
+    } else {
+      if (i <= left.value) {
+        fail.value = true
+        msg.value = `R 必须在 L(${left.value}) 右侧`
+        return
+      }
       right.value = i
       msg.value = `R = ${i}`
       fail.value = false
       pushLog(`R = ${i}`)
-    } else {
-      fail.value = true
-      msg.value = '请先选择「设置 L」或「设置 R」'
     }
-    return
   }
-  if (props.levelId === 'dedup') {
-    if (activeTool.value === 'write') writePos.value = i
-    else if (activeTool.value === 'right') right.value = i
-    else {
-      fail.value = true
-      return
-    }
-    msg.value = `write=${writePos.value} right=${right.value}`
-    fail.value = false
-    pushLog(`write=${writePos.value} right=${right.value}`)
-  }
+  // dedup 关不再允许点击格子移动指针，指针由写入/跳过动作自动推进
 }
 
 function moveSum(dir: 'left' | 'right') {
   if (props.levelId !== 'sum' || won.value) return
+  if (left.value >= right.value) {
+    fail.value = true
+    msg.value = 'L 必须严格小于 R，请先正确放置指针'
+    return
+  }
   const s = nums.value[left.value]! + nums.value[right.value]!
   moveCount.value++
   if (s === 0) {
@@ -175,32 +194,69 @@ function moveSum(dir: 'left' | 'right') {
     fail.value = true
     msg.value = s < 0 ? '和太小应 L++' : '和太大应 R--'
   }
+  if (left.value >= right.value && !won.value) {
+    fail.value = true
+    msg.value = 'L 与 R 已交叉，本组无解，请重置后重新放置指针'
+  }
 }
 
-function dedupCommit() {
+// dedup 关：用户判断「不同」时点写入
+function dedupWrite() {
   if (props.levelId !== 'dedup' || won.value) return
   moveCount.value++
   if (right.value >= nums.value.length) {
-    won.value = true
-    msg.value = `去重完成，有效长度 ${writePos.value + 1}`
-    pushLog('去重完成')
-    emit('cleared')
+    fail.value = true
+    msg.value = '已扫描完，没有可比的 right 元素'
+    return
+  }
+  if (nums.value[right.value] === nums.value[writePos.value]) {
+    fail.value = true
+    msg.value = `nums[right]=${nums.value[right.value]} 与 nums[write]=${nums.value[writePos.value]} 相同，应点「跳过」而非写入`
+    pushLog('错误：相同值却点了写入')
+    return
+  }
+  writePos.value++
+  nums.value[writePos.value] = nums.value[right.value]!
+  msg.value = `写入新值 ${nums.value[writePos.value]}，write=${writePos.value}`
+  pushLog(`写入 nums[${writePos.value}]=${nums.value[writePos.value]}`)
+  right.value++
+  fail.value = false
+  checkDedupWin()
+}
+
+// dedup 关：用户判断「相同」时点跳过
+function dedupSkip() {
+  if (props.levelId !== 'dedup' || won.value) return
+  moveCount.value++
+  if (right.value >= nums.value.length) {
+    fail.value = true
+    msg.value = '已扫描完，没有可比的 right 元素'
     return
   }
   if (nums.value[right.value] !== nums.value[writePos.value]) {
-    writePos.value++
-    nums.value[writePos.value] = nums.value[right.value]!
-    msg.value = '新值写入 write 位置'
-    pushLog('写入不重复元素')
-  } else {
-    msg.value = '重复元素，仅 right 前进'
-    pushLog('跳过重复')
+    fail.value = true
+    msg.value = `nums[right]=${nums.value[right.value]} 与 nums[write]=${nums.value[writePos.value]} 不同，应点「写入」而非跳过`
+    pushLog('错误：不同值却点了跳过')
+    return
   }
   right.value++
+  msg.value = `跳过重复元素，right=${right.value}`
+  pushLog('跳过重复')
   fail.value = false
+  checkDedupWin()
+}
+
+function checkDedupWin() {
   if (right.value >= nums.value.length) {
+    const result = nums.value.slice(0, writePos.value + 1)
+    if (JSON.stringify(result) !== JSON.stringify(dedupTarget.value.arr)) {
+      fail.value = true
+      msg.value = `去重结果 [${result.join(', ')}] 不正确，应为 [${dedupTarget.value.arr.join(', ')}]`
+      pushLog('结果校验失败')
+      return
+    }
     won.value = true
-    msg.value = `完成！结果 [${dedupTarget.value.arr.join(', ')}]`
+    msg.value = `去重完成！结果 [${result.join(', ')}]`
     pushLog('通关')
     emit('cleared')
   }
@@ -208,12 +264,21 @@ function dedupCommit() {
 
 function cycleStep(kind: 'slow' | 'fast') {
   if (props.levelId !== 'cycle' || won.value) return
+  // 强制交替：slow 与 fast 必须轮流前进，模拟 while 循环里一次迭代同时推进
+  if (lastCycleKind.value === kind) {
+    fail.value = true
+    msg.value = kind === 'slow'
+      ? '上一步已经移动 slow，现在应移动 fast（两指针需成对推进）'
+      : '上一步已经移动 fast，现在应移动 slow（两指针需成对推进）'
+    return
+  }
   moveCount.value++
   const n = nums.value.length
   // 用下标取模模拟环形结构：环内 fast 每步比 slow 多走一步，必在环内追上 slow
   if (kind === 'slow') slow.value = (slow.value + 1) % n
   else fast.value = (fast.value + 2) % n
-  msg.value = `slow=${slow.value} fast=${fast.value}`
+  lastCycleKind.value = kind
+  msg.value = `${kind} 前进 → slow=${slow.value} fast=${fast.value}`
   fail.value = false
   pushLog(`${kind} 前进 → slow=${slow.value} fast=${fast.value}`)
   // 起点两者同在 0，第一次移动后必不相同；之后相遇即说明存在环
@@ -229,7 +294,8 @@ function onTool(id: string) {
   activeTool.value = id
   if (id === 'move-left') moveSum('left')
   if (id === 'move-right') moveSum('right')
-  if (id === 'commit') dedupCommit()
+  if (id === 'write') dedupWrite()
+  if (id === 'skip') dedupSkip()
   if (id === 'slow') cycleStep('slow')
   if (id === 'fast') cycleStep('fast')
 }
@@ -256,11 +322,14 @@ function onTool(id: string) {
       <GameArrayBoard
         :values="nums"
         :pointers="pointers"
-        clickable
+        :clickable="levelId === 'sum'"
         @select="onSelect"
       />
       <p v-if="levelId === 'sum'" class="sum-line">
         当前和 = {{ nums[left] }} + {{ nums[right] }} = {{ nums[left]! + nums[right]! }}
+      </p>
+      <p v-if="levelId === 'dedup' && dedupCompare" class="dedup-compare">
+        比较：nums[write]={{ dedupCompare.writeVal }} vs nums[right]={{ dedupCompare.rightVal }}
       </p>
     </div>
   </GamePlayShell>
@@ -268,6 +337,12 @@ function onTool(id: string) {
 
 <style scoped>
 .sum-line {
+  margin: 12px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--game-accent, #3a8a9e);
+}
+.dedup-compare {
   margin: 12px 0 0;
   font-size: 14px;
   font-weight: 600;

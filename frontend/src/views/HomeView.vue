@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ArrowRight, ChatDotRound, Cpu, Reading } from '@element-plus/icons-vue'
 import HomeCommunityPanel from '@/components/home/HomeCommunityPanel.vue'
 import HomeDashboardCharts from '@/components/home/HomeDashboardCharts.vue'
+import HomeHitokotoBar from '@/components/home/HomeHitokotoBar.vue'
 import HomeStageLearningMap from '@/components/home/HomeStageLearningMap.vue'
 import HomeTrainingSection from '@/components/home/HomeTrainingSection.vue'
 import { fetchCommunity, type CommunityResponse } from '@/api/analytics'
@@ -220,6 +221,7 @@ onMounted(async () => {
 
 <template>
   <div class="home-workspace">
+    <HomeHitokotoBar />
     <section class="continue-learning" aria-labelledby="continue-title">
       <div class="continue-learning__main">
         <p class="section-kicker">今天继续</p>

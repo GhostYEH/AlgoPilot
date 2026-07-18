@@ -153,3 +153,56 @@ def test_template_fallback_mindmap_outputs_mindmap_syntax():
     assert "flowchart" not in content
     assert "-->" not in content
     assert meta["format"] == "mermaid"
+
+
+def test_generate_resource_stream_fallback_without_llm_key(monkeypatch: pytest.MonkeyPatch):
+    """单类资源 SSE 真流式：事件按顺序到达、百分比单调递增、中文无乱码。"""
+    monkeypatch.setattr(settings, "spark_api_password", "")
+    headers = _register_user()
+
+    r = client.post(
+        "/api/orchestrator/resources/generate?stream=true",
+        json={
+            "resource_type": "document",
+            "topic": "栈与队列",
+            "module_key": "stack-queue",
+            "focus_hint": "BFS 队列应用",
+        },
+        headers=headers,
+    )
+    assert r.status_code == 200
+    events = _parse_sse(r.text)
+    assert events, "SSE 应返回事件"
+
+    # 首事件：progress 0%
+    assert events[0].get("type") == "progress"
+    assert events[0].get("percent") == 0
+
+    # 末尾两事件：resource(100%) 与 done(100%)
+    assert events[-1].get("type") == "done"
+    assert events[-1].get("percent") == 100
+    assert events[-2].get("type") == "resource"
+    assert events[-2].get("percent") == 100
+
+    # 中间 workflow 事件百分比应单调不减（真流式 emit 时实时打标）
+    wf = [e for e in events if e.get("type") == "workflow"]
+    if wf:
+        percents = [e.get("percent", 0) for e in wf]
+        assert percents == sorted(percents), f"百分比非单调: {percents}"
+
+    # 中文无乱码：主题与 focus_hint 必须原样保留
+    body = r.text
+    assert "栈与队列" in body
+    assert "BFS 队列应用" in body
+    # 不应出现 ensure_ascii=True 导致的 \u 转义
+    assert "\\u6808" not in body  # '栈' 的 ASCII 转义
+    assert "\\u961f" not in body  # '队' 的 ASCII 转义
+
+    # resource 事件携带完整资源对象
+    res = events[-2].get("resource") or {}
+    assert res.get("resource_type") == "document"
+    assert res.get("title")
+    assert res.get("content")
+    meta = res.get("meta") or {}
+    assert meta.get("fallback") is True
+    assert meta.get("generated_by") == "TemplateFallbackAgent"

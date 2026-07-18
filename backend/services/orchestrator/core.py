@@ -1060,22 +1060,42 @@ class Orchestrator:
         user: User,
         body: ResourceGenerateRequest,
     ) -> AsyncIterator[str]:
-        """SSE：单类资源生成，含 workflow 与进度百分比。"""
+        """SSE：单类资源生成，真流式输出 workflow 与进度百分比。
+
+        通过 asyncio.Queue 在 emit 回调中实时 push 事件，
+        主协程实时 yield，前端可逐段看到进度（而非等待全部完成后再吐出）。
+        """
         total_steps = 5
-        events: list[dict] = []
+        queue: asyncio.Queue[dict | object] = asyncio.Queue()
         wf_count = 0
+        _SENTINEL = object()
 
         async def capture(ev: dict) -> None:
             nonlocal wf_count
             if ev.get("type") == "workflow":
                 wf_count += 1
                 ev = {**ev, "percent": min(95, int(wf_count / total_steps * 100))}
-            events.append(ev)
+            await queue.put(ev)
+
+        async def _runner() -> GeneratedResourceItem:
+            try:
+                return await self.generate_resource(db, user, body, emit=capture)
+            finally:
+                await queue.put(_SENTINEL)
 
         yield _sse({"type": "progress", "step": 0, "total": total_steps, "percent": 0})
-        item = await self.generate_resource(db, user, body, emit=capture)
-        for ev in events:
-            yield _sse(ev)
+        task = asyncio.create_task(_runner())
+        try:
+            while True:
+                ev = await queue.get()
+                if ev is _SENTINEL:
+                    break
+                yield _sse(ev)
+            item = await task
+        except Exception:
+            task.cancel()
+            raise
+
         yield _sse({
             "type": "resource",
             "resource": item.model_dump(),

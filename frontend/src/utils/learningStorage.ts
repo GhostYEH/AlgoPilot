@@ -17,6 +17,9 @@ import {
   GAME_PROGRESS_PAYLOAD_KEY,
 } from '@/modules/games/gameProgress'
 
+/** 首页学习活跃度数据键（参与云端同步，值为 Record<date, {visits, solves}>） */
+export const HOME_ACTIVITY_PAYLOAD_KEY = 'alp-home-activity-v1'
+
 /** 参与云端同步的 localStorage 键（随模块扩展在此追加） */
 export const LEARNING_STORAGE_KEYS = [
   ARRAY_SECTION_STORAGE_KEY,
@@ -65,6 +68,16 @@ export function exportProgressPayload(): Record<string, unknown> {
   ) {
     out[GAME_PROGRESS_PAYLOAD_KEY] = gameProgress
   }
+  // 导出首页活动数据（原样透传，不做扁平化）
+  try {
+    const raw = localStorage.getItem(HOME_ACTIVITY_PAYLOAD_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw) as unknown
+      if (isPlainObject(parsed)) out[HOME_ACTIVITY_PAYLOAD_KEY] = parsed
+    }
+  } catch {
+    /* ignore */
+  }
   return out
 }
 
@@ -79,10 +92,52 @@ export function mergeSectionDoneMaps(
   return out
 }
 
+/** 合并首页活动数据：对每个日期取 visits/solves 的较大值，避免本地今日访问被覆盖 */
+function mergeHomeActivity(
+  local: Record<string, unknown>,
+  remote: Record<string, unknown>,
+): Record<string, { date: string; visits: number; solves: number }> {
+  const out: Record<string, { date: string; visits: number; solves: number }> = {}
+  const keys = new Set([...Object.keys(local), ...Object.keys(remote)])
+  for (const k of keys) {
+    const lv = local[k]
+    const rv = remote[k]
+    const lvObj = isPlainObject(lv) ? lv : {}
+    const rvObj = isPlainObject(rv) ? rv : {}
+    out[k] = {
+      date: k,
+      visits: Math.max(Number(lvObj.visits) || 0, Number(rvObj.visits) || 0),
+      solves: Math.max(Number(lvObj.solves) || 0, Number(rvObj.solves) || 0),
+    }
+  }
+  return out
+}
+
 /** 将服务端 payload 写回 localStorage，并与当前本地值按小节合并 */
 export function applyRemoteProgressPayload(remote: Record<string, unknown>) {
   if (remote[GAME_PROGRESS_PAYLOAD_KEY] != null) {
     applyRemoteGameProgress(remote[GAME_PROGRESS_PAYLOAD_KEY])
+  }
+
+  // 首页活动数据：合并后写回（取较大值，避免覆盖本地今日访问）
+  const remoteActivity = remote[HOME_ACTIVITY_PAYLOAD_KEY]
+  if (isPlainObject(remoteActivity)) {
+    let localActivity: Record<string, unknown> = {}
+    try {
+      const raw = localStorage.getItem(HOME_ACTIVITY_PAYLOAD_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw) as unknown
+        if (isPlainObject(parsed)) localActivity = parsed
+      }
+    } catch {
+      localActivity = {}
+    }
+    const merged = mergeHomeActivity(localActivity, remoteActivity)
+    try {
+      localStorage.setItem(HOME_ACTIVITY_PAYLOAD_KEY, JSON.stringify(merged))
+    } catch {
+      /* ignore quota */
+    }
   }
 
   for (const key of LEARNING_STORAGE_KEYS) {
@@ -118,4 +173,5 @@ export function clearLocalLearningProgress() {
     localStorage.removeItem(key)
   }
   localStorage.removeItem(GAME_PROGRESS_PAYLOAD_KEY)
+  localStorage.removeItem(HOME_ACTIVITY_PAYLOAD_KEY)
 }

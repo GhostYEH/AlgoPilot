@@ -28,6 +28,18 @@ def handle_oj_submission_failed(db: Session | None, event: LearningEvent) -> Non
     message = str(payload.get("message") or "")
     module_key = str(payload.get("module_key") or "")
 
+    # M4 修复：先解析 chapter_id，确保 record_oj_submit_failure 写入时 chapter_id 不为空
+    if db is not None and not event.chapter_id:
+        try:
+            from services.knowledge.course_loader import chapter_id_for_module, load_manifest
+
+            manifest = load_manifest(event.course_id)
+            event.chapter_id = chapter_id_for_module(manifest, module_key) or ""
+        except Exception:
+            from services.memory.memory_service import _MODULE_TO_CHAPTER
+
+            event.chapter_id = _MODULE_TO_CHAPTER.get(module_key, "")
+
     memory_id = None
     if db is not None:
         from services.memory.memory_service import record_oj_submit_failure
@@ -39,11 +51,13 @@ def handle_oj_submission_failed(db: Session | None, event: LearningEvent) -> Non
             verdict=verdict,
             message=message,
             module_key=module_key,
+            chapter_id=event.chapter_id,
+            consecutive_failures=int(payload.get("consecutive_failures") or 1),
         )
         if row:
             memory_id = row.id
             event.skill_id = event.skill_id or row.skill_id
-            event.chapter_id = event.chapter_id or row.chapter_id
+            # M4 修复：chapter_id 已经在调用前解析，row.chapter_id 应该与之一致
     event.log(
         "StudentMemory",
         "record_event",
@@ -79,12 +93,6 @@ def handle_oj_submission_failed(db: Session | None, event: LearningEvent) -> Non
 
     if db is not None:
         try:
-            from services.knowledge.course_loader import chapter_id_for_module, load_manifest
-
-            manifest = load_manifest(event.course_id)
-            cid = event.chapter_id or chapter_id_for_module(manifest, module_key) or ""
-            event.chapter_id = cid
-            event.payload.setdefault("module_key", module_key)
             handle_mastery_recalculated(db, event)
         except Exception as exc:
             event.log("MasteryAgent", "pipeline", str(exc), status="warn")
@@ -94,6 +102,17 @@ def handle_oj_submission_accepted(db: Session | None, event: LearningEvent) -> N
     payload = event.payload
     slug = str(payload.get("problem_slug") or "")
     module_key = str(payload.get("module_key") or "")
+    # M4 修复：先解析 chapter_id，确保 record_event 写入时 chapter_id 不为空
+    if db is not None and not event.chapter_id:
+        try:
+            from services.knowledge.course_loader import chapter_id_for_module, load_manifest
+
+            manifest = load_manifest(event.course_id)
+            event.chapter_id = chapter_id_for_module(manifest, module_key) or ""
+        except Exception:
+            from services.memory.memory_service import _MODULE_TO_CHAPTER
+
+            event.chapter_id = _MODULE_TO_CHAPTER.get(module_key, "")
     if db is not None:
         try:
             from services.memory.memory_service import MemoryService
@@ -114,12 +133,6 @@ def handle_oj_submission_accepted(db: Session | None, event: LearningEvent) -> N
             event.log("StudentMemory", "record_event", "AC 记忆写入跳过", status="warn")
 
         try:
-            from services.knowledge.course_loader import chapter_id_for_module, load_manifest
-
-            manifest = load_manifest(event.course_id)
-            cid = event.chapter_id or chapter_id_for_module(manifest, module_key) or ""
-            event.chapter_id = cid
-            event.payload.setdefault("module_key", module_key)
             handle_mastery_recalculated(db, event)
         except Exception as exc:
             event.log("MasteryAgent", "pipeline", str(exc), status="warn")
