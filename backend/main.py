@@ -5,6 +5,7 @@
 
 from contextlib import asynccontextmanager
 import logging
+import os
 import runpy
 import sys
 from pathlib import Path
@@ -162,4 +163,7 @@ if _FRONTEND_DIR and _FRONTEND_DIR.is_dir() and (_FRONTEND_DIR / "index.html").e
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # The portable launcher selects an unused local port and passes it through
+    # the environment.  Binding to loopback keeps the packaged app local-only.
+    port = int(os.environ.get("ALGOPILOT_PORT", "8000"))
+    uvicorn.run(app, host="127.0.0.1", port=port)

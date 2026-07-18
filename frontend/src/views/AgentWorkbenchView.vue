@@ -85,6 +85,8 @@ const generating = ref(false)
 const progress = ref(0)
 const consoleLines = ref<AgentConsoleLine[]>([])
 const generatedResources = ref<GeneratedResource[]>([])
+const streamingContent = ref<Record<string, string>>({})
+const streamingAttempts = new Map<string, number>()
 const workflowEvents = ref<AgentWorkflowEvent[]>([])
 const activeResourceTab = ref('document')
 const agentStatuses = ref<Map<string, AgentTaskStatus>>(new Map())
@@ -183,6 +185,8 @@ async function runResourceGeneration() {
   consoleLines.value = [...resourceBootstrapLines(topic.value)]
   workflowEvents.value = []
   generatedResources.value = []
+  streamingContent.value = {}
+  streamingAttempts.clear()
 
   const statusMap = new Map<string, AgentTaskStatus>()
   for (const rt of Object.keys(RESOURCE_TYPE_META)) {
@@ -235,12 +239,28 @@ async function runResourceGeneration() {
         onAgentLogs(logs) {
           for (const entry of logs) pushLine(lineFromAgentLog(entry))
         },
+        onContentDelta(chunk) {
+          const hasActiveStream = Boolean(streamingContent.value[activeResourceTab.value])
+          const previousAttempt = streamingAttempts.get(chunk.resource_type)
+          const previous = previousAttempt === chunk.attempt
+            ? (streamingContent.value[chunk.resource_type] ?? '')
+            : ''
+          streamingAttempts.set(chunk.resource_type, chunk.attempt)
+          streamingContent.value = {
+            ...streamingContent.value,
+            [chunk.resource_type]: `${previous}${chunk.delta}`,
+          }
+          if (!hasActiveStream) activeResourceTab.value = chunk.resource_type
+        },
         onResource(r) {
           generatedResources.value = [
             r,
             ...generatedResources.value.filter((x) => x.id !== r.id),
           ]
           activeResourceTab.value = r.resource_type
+          const nextStreaming = { ...streamingContent.value }
+          delete nextStreaming[r.resource_type]
+          streamingContent.value = nextStreaming
           const needsReview = resourceNeedsReview(r)
           statusMap.set(r.resource_type, needsReview ? 'needs_review' : 'done')
           agentStatuses.value = new Map(statusMap)
@@ -309,7 +329,16 @@ async function runResourceGeneration() {
             ElMessage.success('个性化学习资源已全部生成')
           }
         },
-        onError(msg) {
+        onError(msg, resourceType) {
+          if (resourceType) {
+            const nextStreaming = { ...streamingContent.value }
+            delete nextStreaming[resourceType]
+            streamingContent.value = nextStreaming
+            statusMap.set(resourceType, 'failed')
+            agentStatuses.value = new Map(statusMap)
+          } else {
+            streamingContent.value = {}
+          }
           pushLine(systemLine(msg || '生成管线异常终止', 'error'))
         },
       },
@@ -413,6 +442,7 @@ function agentStatus(id: string): 'running' | 'idle' {
     <PersonalizedResourceDashboard
       v-if="generatedResources.length || generating"
       :resources="generatedResources"
+      :streaming-content="streamingContent"
       v-model:active-tab="activeResourceTab"
       class="wb-dashboard"
     />

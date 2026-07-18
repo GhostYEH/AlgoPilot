@@ -9,6 +9,15 @@ BACKEND = Path(SPECPATH)
 # ---------- 数据文件 ----------
 datas = []
 
+# Vite production build.  FastAPI serves this directory directly in the
+# frozen application, so the target computer does not need Node.js.
+frontend_dist = BACKEND.parent / "frontend" / "dist"
+if not (frontend_dist / "index.html").is_file():
+    raise SystemExit(
+        "frontend/dist is missing; run `npm run build` in frontend before PyInstaller"
+    )
+datas.append((str(frontend_dist), "frontend"))
+
 # Alembic 配置与版本化数据库迁移
 alembic_ini = BACKEND / "alembic.ini"
 if alembic_ini.is_file():

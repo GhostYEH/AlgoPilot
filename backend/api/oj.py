@@ -17,6 +17,8 @@ from schemas.oj import (
     AiDiagnoseRequest,
     AiDiagnoseResponse,
     AiEdgeCaseInfo,
+    AiGuidedDiagnosis,
+    AiGuidedHint,
     TraceBugDiagnoseRequest,
     TraceBugDiagnoseResponse,
     CaseResultOut,
@@ -50,8 +52,6 @@ from services.oj.ai_diagnosis import (
     diagnose_trace_bug,
     gate_code_before_dynamic_analysis,
     generate_edge_case,
-    generate_trace_diagnosis,
-    merge_diagnosis_narrations,
     _fallback_trace_bug_diagnosis,
 )
 from services.oj.trace_runner import run_trace, run_trace_stdio
@@ -675,6 +675,7 @@ async def api_ai_diagnose(
 
     failed_raw = [
         {
+            "index": c.index,
             "input_preview": c.input_preview,
             "message": c.message,
         }
@@ -682,14 +683,26 @@ async def api_ai_diagnose(
         if c.verdict != "AC"
     ]
 
-    edge = await generate_edge_case(
-        problem_title=problem.get("title") or slug,
-        description=problem.get("description") or "",
-        judge_mode=judge_mode,
-        sample=sample,
-        user_code=body.code,
-        failed_cases=failed_raw or None,
+    failed_case_index = next(
+        (c.index for c in body.failed_cases if c.verdict != "AC" and 0 <= c.index < len(cases)),
+        None,
     )
+    if failed_case_index is not None:
+        edge = {
+            "case": cases[failed_case_index],
+            "reason": "复用最近一次判题中已确认失败的测例，避免用未复现输入推测根因。",
+            "category": "verified_failure",
+            "source": "judge",
+        }
+    else:
+        edge = await generate_edge_case(
+            problem_title=problem.get("title") or slug,
+            description=problem.get("description") or "",
+            judge_mode=judge_mode,
+            sample=sample,
+            user_code=body.code,
+            failed_cases=failed_raw or None,
+        )
     edge_case = edge["case"]
 
     edge_verdict, edge_message = _judge_single_case(
@@ -700,6 +713,30 @@ async def api_ai_diagnose(
         case=edge_case,
         time_limit_ms=tl,
     )
+
+    # AI 生成的边界测例若没有复现错误，回查公开样例并追踪首个真实失败输入。
+    # 诊断宁可明确“证据不足”，也不能在 AC 轨迹上强行制造根因。
+    if edge_verdict == "AC":
+        for candidate in cases:
+            candidate_verdict, candidate_message = _judge_single_case(
+                user_code=body.code,
+                lang=lang,
+                problem=problem_full,
+                slug=slug,
+                case=candidate,
+                time_limit_ms=tl,
+            )
+            if candidate_verdict != "AC":
+                edge_case = candidate
+                edge_verdict = candidate_verdict
+                edge_message = candidate_message
+                edge = {
+                    "case": candidate,
+                    "reason": "AI 边界测例未复现错误，已自动切换到判题确认失败的公开样例。",
+                    "category": "verified_sample",
+                    "source": "judge",
+                }
+                break
 
     summary = _run_trace_for_case(
         slug=slug,
@@ -722,12 +759,25 @@ async def api_ai_diagnose(
     ]
     step_lines = generate_step_narration(steps_raw) if steps_raw else []
 
-    diagnosis, complexity_raw = await asyncio.gather(
-        generate_trace_diagnosis(
-            user_code=body.code,
-            steps=steps_raw,
-            problem_title=problem.get("title") or slug,
-            edge_reason=str(edge.get("reason") or ""),
+    diagnosis_failures = [
+        {
+            "index": 0,
+            "input_preview": case_input_text(edge_case)[:200],
+            "expected_preview": case_output_text(edge_case)[:200],
+            "actual_preview": (trace_resp.result_preview or "")[:200],
+            "message": edge_message,
+        }
+    ]
+    diagnosis_failures.extend(failed_raw[:2])
+
+    diagnosis_raw, complexity_raw = await asyncio.gather(
+        diagnose_trace_bug(
+            problem.get("description") or "",
+            body.code,
+            steps_raw,
+            slug=slug,
+            judge_verdict=edge_verdict,
+            failed_cases=diagnosis_failures,
         ),
         analyze_complexity(
             steps=steps_raw,
@@ -737,11 +787,64 @@ async def api_ai_diagnose(
         ),
     )
 
-    merged = merge_diagnosis_narrations(step_lines, diagnosis)
-    trace_resp.narrations = [
-        TraceNarrationLine(step_index=n["step_index"], text=n["text"], critical=n.get("critical", False))
-        for n in merged
+    bug_step_index = max(0, min(int(diagnosis_raw.get("bug_step_index") or 0), max(0, len(steps_raw) - 1)))
+    bug_line = steps_raw[bug_step_index].get("line") if steps_raw else None
+    diagnosis_title = str(diagnosis_raw.get("diagnosis_title") or "诊断证据不足")
+    detailed_analysis = str(diagnosis_raw.get("detailed_analysis") or "")
+    confidence = str(diagnosis_raw.get("confidence") or "low")
+    if edge_verdict == "AC":
+        confidence = "low"
+
+    raw_hints = diagnosis_raw.get("hints") or []
+    hints = [
+        AiGuidedHint(
+            level=max(1, min(3, int(h.get("level") or i + 1))),
+            title=str(h.get("title") or f"提示 {i + 1}"),
+            content=str(h.get("content") or ""),
+        )
+        for i, h in enumerate(raw_hints[:3])
+        if isinstance(h, dict) and str(h.get("content") or "").strip()
     ]
+    if not hints:
+        hints = [
+            AiGuidedHint(level=1, title="先观察", content=f"从 Step {bug_step_index + 1} 开始对照关键变量。"),
+            AiGuidedHint(level=2, title="再推理", content=str(diagnosis_raw.get("invariant") or detailed_analysis)[:260]),
+            AiGuidedHint(level=3, title="修改方向", content=str(diagnosis_raw.get("fix_suggestion") or "只调整首次破坏不变量的语句。")[:260]),
+        ]
+
+    guided_diagnosis = AiGuidedDiagnosis(
+        bug_step_index=bug_step_index,
+        bug_line=bug_line,
+        title=diagnosis_title,
+        root_cause=detailed_analysis,
+        actual_state=str(diagnosis_raw.get("actual_state") or ""),
+        expected_state=str(diagnosis_raw.get("expected_state") or ""),
+        invariant=str(diagnosis_raw.get("invariant") or ""),
+        observation_question=str(
+            diagnosis_raw.get("observation_question")
+            or f"观察 Step {bug_step_index + 1}：哪个变量第一次偏离了手算结果？"
+        ),
+        hints=hints,
+        fix_direction=str(diagnosis_raw.get("fix_suggestion") or ""),
+        verification=str(diagnosis_raw.get("verification") or "用同一失败输入重新运行并对照关键步骤。"),
+        confidence=confidence if confidence in ("high", "medium", "low") else "low",
+        source=str(diagnosis_raw.get("source") or "fallback"),
+    )
+
+    narration_by_step = {
+        int(n["step_index"]): TraceNarrationLine(
+            step_index=int(n["step_index"]),
+            text=str(n["text"]),
+            critical=False,
+        )
+        for n in step_lines
+    }
+    narration_by_step[bug_step_index] = TraceNarrationLine(
+        step_index=bug_step_index,
+        text=detailed_analysis[:240] or diagnosis_title,
+        critical=True,
+    )
+    trace_resp.narrations = [narration_by_step[i] for i in sorted(narration_by_step)]
 
     inp_preview = case_input_text(edge_case)[:200] if judge_mode == "stdio" else str(edge_case.get("args", ""))[:200]
     exp_preview = (
@@ -758,16 +861,6 @@ async def api_ai_diagnose(
             f"AI 已生成边界测例（{edge.get('category', 'edge')}），判题 {edge_verdict}。"
             f"下方可视化回放展示程序在该测例上的执行过程。"
         )
-
-    bug_step_index = 0
-    diagnosis_title = summary_text[:40]
-    detailed_analysis = summary_text
-    for n in merged:
-        if n.get("critical"):
-            bug_step_index = int(n.get("step_index", 0))
-            diagnosis_title = str(n.get("text", ""))[:40]
-            detailed_analysis = " ".join(x.get("text", "") for x in merged[:5])[:500] or summary_text
-            break
 
     tutoring = apply_oj_tutoring(
         db,
@@ -796,6 +889,7 @@ async def api_ai_diagnose(
         trace=trace_resp,
         complexity=AiComplexityReport(**complexity_raw),
         summary=summary_text,
+        diagnosis=guided_diagnosis,
         tutoring=tutoring,
     )
     # M6 修复：未登录用户诊断结果不入库，记录日志便于审计
@@ -944,7 +1038,6 @@ async def api_trace_report(
 ):
     from services.oj.trace_report import (
         generate_trace_diagnosis_report,
-        generate_llm_cause_and_fix,
         _build_demo_trace_steps,
     )
 
@@ -1039,18 +1132,9 @@ async def api_trace_report(
         detailed_analysis = str(diag.get("detailed_analysis") or "")
         source = diag.get("source", "llm")
 
-        llm_cause, llm_fix = await generate_llm_cause_and_fix(
-            body.code,
-            trace_steps,
-            judge_verdict,
-            bug_step_index,
-            problem_description=(problem.get("description") or "")[:2000],
-            failed_cases=failed_raw,
-        )
-        if llm_cause:
-            detailed_analysis = llm_cause
-        if llm_fix:
-            fix_suggestion = llm_fix
+        # diagnose_trace_bug 已完成一次模型分析。报告直接复用该结果，避免为
+        # “原因/修复建议”串行发起第二次高度重复的模型请求。
+        fix_suggestion = str(diag.get("fix_suggestion") or "")
     else:
         fallback = _fallback_trace_bug_diagnosis(
             trace_steps,

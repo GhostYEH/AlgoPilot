@@ -590,11 +590,17 @@ export async function streamGenerateResource(
     onProgress?: (p: { percent?: number }) => void
     onWorkflow?: (w: AgentWorkflowEvent) => void
     onResource?: (r: GeneratedResource) => void
+    onContentDelta?: (chunk: {
+      resource_type: string
+      agent_name: string
+      delta: string
+      attempt: number
+    }) => void
     onDone?: (info?: {
       partial_failure?: boolean
       errors?: Array<{ resource_type?: string; agent_name?: string; error: string }>
     }) => void
-    onError?: (msg: string) => void
+    onError?: (msg: string, resourceType?: string) => void
   },
 ): Promise<void> {
   try {
@@ -606,11 +612,26 @@ export async function streamGenerateResource(
       if (ev.type === 'resource' && ev.resource) {
         handlers.onResource?.(ev.resource as GeneratedResource)
       }
+      if (
+        ev.type === 'content_delta' &&
+        typeof ev.resource_type === 'string' &&
+        typeof ev.delta === 'string'
+      ) {
+        handlers.onContentDelta?.({
+          resource_type: ev.resource_type,
+          agent_name: String(ev.agent_name ?? ''),
+          delta: ev.delta,
+          attempt: typeof ev.attempt === 'number' ? ev.attempt : 1,
+        })
+      }
       if (ev.type === 'done') handlers.onDone?.()
       if (ev.type === 'error') {
         const msg = String(ev.message)
         ElMessage.error(msg)
-        handlers.onError?.(msg)
+        handlers.onError?.(
+          msg,
+          typeof ev.resource_type === 'string' ? ev.resource_type : undefined,
+        )
       }
     })
   } catch (e) {
@@ -711,6 +732,12 @@ export async function streamGenerateAllResources(
       logs: Array<{ agent: string; action: string; detail?: string; role?: string; status?: string }>,
     ) => void
     onResource?: (r: GeneratedResource) => void
+    onContentDelta?: (chunk: {
+      resource_type: string
+      agent_name: string
+      delta: string
+      attempt: number
+    }) => void
     onDone?: (info?: {
       partial_failure?: boolean
       reused_count?: number
@@ -719,7 +746,7 @@ export async function streamGenerateAllResources(
       errors?: Array<{ resource_type?: string; agent_name?: string; error: string }>
     }) => void
     onHeartbeat?: (info: { message: string; percent?: number; timestamp?: string }) => void
-    onError?: (msg: string) => void
+    onError?: (msg: string, resourceType?: string) => void
   },
 ): Promise<void> {
   try {
@@ -769,6 +796,18 @@ export async function streamGenerateAllResources(
           )
         }
       }
+      if (
+        ev.type === 'content_delta' &&
+        typeof ev.resource_type === 'string' &&
+        typeof ev.delta === 'string'
+      ) {
+        handlers.onContentDelta?.({
+          resource_type: ev.resource_type,
+          agent_name: String(ev.agent_name ?? ''),
+          delta: ev.delta,
+          attempt: typeof ev.attempt === 'number' ? ev.attempt : 1,
+        })
+      }
       if (ev.type === 'done') {
         handlers.onDone?.({
           partial_failure: ev.partial_failure === true,
@@ -795,7 +834,10 @@ export async function streamGenerateAllResources(
       if (ev.type === 'error') {
         const msg = String(ev.message)
         ElMessage.error(msg)
-        handlers.onError?.(msg)
+        handlers.onError?.(
+          msg,
+          typeof ev.resource_type === 'string' ? ev.resource_type : undefined,
+        )
       }
     })
   } catch (e) {

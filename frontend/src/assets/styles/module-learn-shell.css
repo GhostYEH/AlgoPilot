@@ -390,6 +390,38 @@
   background: transparent;
 }
 
+/* 随堂练习区：向左右扩展至整行宽度，充分利用横向空间 */
+.module-learn-shell .module-layout-main > .inline-oj-zone {
+  width: auto;
+  margin-left: calc(-1 * (260px + 20px));
+  margin-right: calc(-1 * (320px + 20px));
+}
+
+/* 目录侧栏收起时：左侧重叠量随之缩小 */
+.module-learn-shell .module-layout-row:has(.section-aside-col.is-collapsed) .module-layout-main > .inline-oj-zone {
+  margin-left: calc(-1 * (52px + 20px));
+}
+
+/* 中等屏：右侧辅助面板移至下方，仅向左扩展 */
+@media (max-width: 1280px) {
+  .module-learn-shell .module-layout-main > .inline-oj-zone {
+    margin-left: calc(-1 * (240px + 20px));
+    margin-right: 0;
+  }
+
+  .module-learn-shell .module-layout-row:has(.section-aside-col.is-collapsed) .module-layout-main > .inline-oj-zone {
+    margin-left: calc(-1 * (52px + 20px));
+  }
+}
+
+/* 小屏：单列布局，不扩展 */
+@media (max-width: 992px) {
+  .module-learn-shell .module-layout-main > .inline-oj-zone {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
 .module-learn-shell .content-card .el-card__body {
   padding: 20px 22px 24px;
 }
@@ -519,8 +551,11 @@
 /* 示意动画区：宽屏居中、与正文分层 */
 .module-learn-shell .content-visual {
   margin: 4px 0 8px;
-  /* 预留动画舞台高度，避免章节切换时 Transition out-in 中间态导致容器塌陷、页面跳动 */
-  min-height: var(--lv-stage-h, 248px);
+  min-height: var(--lv-section-window-h, var(--lv-stage-h, 248px));
+}
+
+.module-learn-shell .content-visual > * {
+  min-height: var(--lv-section-window-h, auto);
 }
 
 .module-learn-shell .content-visual .anim-root,

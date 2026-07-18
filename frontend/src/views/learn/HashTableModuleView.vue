@@ -18,6 +18,7 @@ import LearnSectionBody from '@/components/learning/LearnSectionBody.vue'
 import SelectableLearnText from '@/components/learning/SelectableLearnText.vue'
 import { useProvideAiTutorFromPanel } from '@/composables/useProvideAiTutorFromPanel'
 import ModuleGameEntry from '@/components/learning/ModuleGameEntry.vue'
+import { stableAnimationWindow as vStableAnimationWindow } from '@/directives/stableAnimationWindow'
 import {
   HASH_TABLE_CURRICULUM_INTRO,
   HASH_TABLE_SECTIONS,
@@ -289,7 +290,10 @@ watch(
 
             <ModuleGameEntry module-key="hash-table" :section-id="current.id" />
 
-            <div class="content-visual">
+            <div
+              class="content-visual"
+              v-stable-animation-window="`hash-table:${current.id}`"
+            >
               <HashTableSectionAnimation :key="current.id" :section-id="current.id" />
             </div>
 

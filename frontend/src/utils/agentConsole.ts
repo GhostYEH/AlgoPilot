@@ -297,7 +297,7 @@ export function resourceBootstrapLines(topic: string): AgentConsoleLine[] {
 }
 
 export const CORE_RESOURCE_TAB_META = [
-  { key: 'document', label: '自适应教案', icon: '📘', agent: 'ConceptAgent' },
+  { key: 'document', label: '自适应学案', icon: '📘', agent: 'ConceptAgent' },
   { key: 'mindmap', label: '知识思维导图', icon: '🗺️', agent: 'GraphAgent' },
   { key: 'exercises', label: '个性化自测题', icon: '📝', agent: 'QuizAgent' },
   { key: 'code_case', label: '剧情实操沙盒', icon: '🎭', agent: 'ScenarioAgent' },

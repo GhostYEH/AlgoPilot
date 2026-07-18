@@ -50,6 +50,7 @@ const {
   traceSplitOpen,
   traceSourceCode,
   closeTraceSplit,
+  openDiagnosisTrace,
   onRun,
   onSubmit,
   onTrace,
@@ -198,6 +199,7 @@ function resetCode() {
         @trace="onTrace"
         @narrate="onNarrate"
         @diagnose="onAiDiagnose"
+        @view-diagnosis-trace="openDiagnosisTrace"
         @visual-trace-diagnose="onVisualTraceDiagnose"
         @close-trace="closeTraceSplit"
         @reset="resetCode"

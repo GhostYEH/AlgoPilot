@@ -21,6 +21,7 @@ import InlineOjPractice from '@/components/oj/InlineOjPractice.vue'
 import LearnSectionBody from '@/components/learning/LearnSectionBody.vue'
 import ModuleGameEntry from '@/components/learning/ModuleGameEntry.vue'
 import SelectableLearnText from '@/components/learning/SelectableLearnText.vue'
+import { stableAnimationWindow as vStableAnimationWindow } from '@/directives/stableAnimationWindow'
 import SectionDirectoryAside from '@/components/learning/SectionDirectoryAside.vue'
 import { useProvideAiTutorFromPanel } from '@/composables/useProvideAiTutorFromPanel'
 import { isLoggedIn } from '@/stores/auth'
@@ -234,7 +235,10 @@ watch(
 
               <ModuleGameEntry module-key="array" :section-id="current.id" />
 
-              <div class="content-visual">
+              <div
+                class="content-visual"
+                v-stable-animation-window="`array:${current.id}`"
+              >
                 <ArrayConceptAnimations :section-id="current.id" />
               </div>
 

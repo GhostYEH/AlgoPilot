@@ -6,6 +6,8 @@ ConceptAgent / ScenarioAgent 的 Prompt 与双域 JSON 规范见 resource_roles.
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
+
 from schemas.resources import ResourceType
 from services.agents.registry import agent_for_resource
 from services.agents.resource_roles import get_role_agent
@@ -30,6 +32,7 @@ class ResourceAgents:
         module_key: str = "",
         focus_hint: str = "",
         chunks: list[KnowledgeChunk],
+        on_delta: Callable[[str], Awaitable[None]] | None = None,
     ) -> tuple[str, str, dict]:
         agent = get_role_agent(resource_type)
         title, content, meta = await agent.generate(
@@ -38,6 +41,7 @@ class ResourceAgents:
             module_key=module_key,
             focus_hint=focus_hint,
             chunks=chunks,
+            on_delta=on_delta,
         )
         if not isinstance(title, str) or not title.strip():
             raise AgentOutputError(f"{agent.agent_id} returned an empty title")

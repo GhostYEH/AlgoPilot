@@ -20,14 +20,13 @@ import { schedulePushLearningProgress } from '@/utils/learningRemoteSync'
 import { schedulePersonaLearningPatch } from '@/utils/personaLearningSync'
 import AiTutorPanel from '@/components/learning/AiTutorPanel.vue'
 import InlineOjPractice from '@/components/oj/InlineOjPractice.vue'
-import OjDsHintCard from '@/components/oj/OjDsHintCard.vue'
-import OjCodeHintCard from '@/components/oj/OjCodeHintCard.vue'
 import LearnSectionBody from '@/components/learning/LearnSectionBody.vue'
 import ModuleGameEntry from '@/components/learning/ModuleGameEntry.vue'
 import SelectableLearnText from '@/components/learning/SelectableLearnText.vue'
 import SectionDirectoryAside from '@/components/learning/SectionDirectoryAside.vue'
 import RecommendedResourcesPanel from '@/components/learning/RecommendedResourcesPanel.vue'
 import { useProvideAiTutorFromPanel } from '@/composables/useProvideAiTutorFromPanel'
+import { stableAnimationWindow as vStableAnimationWindow } from '@/directives/stableAnimationWindow'
 
 const props = defineProps<{
   moduleKey: string
@@ -37,7 +36,6 @@ const router = useRouter()
 const route = useRoute()
 
 const aiTutorRef = ref<InstanceType<typeof AiTutorPanel> | null>(null)
-const inlineOjRef = ref<InstanceType<typeof InlineOjPractice> | null>(null)
 useProvideAiTutorFromPanel(aiTutorRef)
 
 const config = computed<ModuleLearnConfig | undefined>(() => getModuleLearnConfig(props.moduleKey))
@@ -314,7 +312,10 @@ watch(
             v-if="useStackQueueSideLayout"
             class="content-viz-split"
           >
-            <div class="content-visual content-visual--split">
+            <div
+              class="content-visual content-visual--split"
+              v-stable-animation-window="`${moduleKey}:${current.id}`"
+            >
               <Transition :name="config.animTransitionClass" mode="out-in">
                 <component
                   :is="AnimComponent"
@@ -335,6 +336,7 @@ watch(
             <div
               class="content-visual"
               :class="{ 'content-visual--sq-theory': moduleKey === 'stack-queue' && current?.id === 'theory' }"
+              v-stable-animation-window="`${moduleKey}:${current.id}`"
             >
               <Transition :name="config.animTransitionClass" mode="out-in">
                 <component
@@ -419,25 +421,9 @@ watch(
           </el-divider>
           <div class="inline-oj-editor">
             <InlineOjPractice
-              ref="inlineOjRef"
               :main="current.main"
               :related="current.related"
               class="inline-oj-center"
-            />
-          </div>
-          <div class="inline-oj-hints">
-            <OjDsHintCard
-              v-if="inlineOjRef?.problem"
-              class="inline-oj-hint inline-oj-hint--ds"
-              :problem="inlineOjRef.problem"
-              :language="inlineOjRef.language"
-            />
-            <OjCodeHintCard
-              v-if="inlineOjRef?.problem"
-              class="inline-oj-hint inline-oj-hint--code"
-              :problem="inlineOjRef.problem"
-              :language="inlineOjRef.language"
-              :user-code="inlineOjRef.code ?? ''"
             />
           </div>
         </section>
@@ -565,48 +551,4 @@ watch(
   width: 100%;
 }
 
-/* 两个提示卡片：在 OJ 编译器下方，左右两栏 */
-.inline-oj-hints {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-top: 16px;
-  width: 100%;
-}
-
-.inline-oj-hint {
-  max-height: 320px;
-  overflow: hidden;
-}
-
-.inline-oj-hint :deep(.oj-agent-card) {
-  height: 100%;
-  max-height: inherit;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.inline-oj-hint :deep(.el-card__body) {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.inline-oj-hint :deep(.oj-agent-body) {
-  flex: 1;
-  min-height: 80px;
-  max-height: none;
-  overflow-y: auto;
-}
-
-@media (max-width: 1100px) {
-  .inline-oj-hints {
-    grid-template-columns: 1fr;
-  }
-
-  .inline-oj-hint {
-    max-height: 280px;
-  }
-}
 </style>

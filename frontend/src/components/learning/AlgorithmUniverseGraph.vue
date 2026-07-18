@@ -64,7 +64,7 @@ const MODULE_DIMENSION: Record<string, keyof PersonaProfile['dimensions']> = {
 }
 
 const PERSONALIZED_SLOTS = [
-  { type: 'document', label: '自适应教案', icon: '📘' },
+  { type: 'document', label: '自适应学案', icon: '📘' },
   { type: 'mindmap', label: '思维导图', icon: '🧠' },
   { type: 'code_case', label: '互动沙盒', icon: '🎮' },
   { type: 'exercises', label: '个性化题单', icon: '📝' },

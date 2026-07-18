@@ -6,12 +6,15 @@ import json
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 from schemas.agent_outputs import QuizQuestion, validate_quiz_payload
 from schemas.resources import ResourceType
 from services.knowledge.retriever import KnowledgeChunk, format_context_block
-from services.llm import chat_completion
+from services.llm import chat_completion, chat_completion_stream
+
+ContentDeltaFn = Callable[[str], Awaitable[None]]
 
 
 @dataclass
@@ -637,6 +640,7 @@ class ResourceRoleAgent(ABC):
         module_key: str = "",
         focus_hint: str = "",
         chunks: list[KnowledgeChunk],
+        on_delta: ContentDeltaFn | None = None,
     ) -> tuple[str, str, dict]:
         hints = PersonaHints.from_profile_block(profile_block)
         knowledge_block = format_context_block(chunks)
@@ -653,11 +657,22 @@ class ResourceRoleAgent(ABC):
                 ),
             },
         ]
-        content = await chat_completion(
-            messages,
-            temperature=self.temperature(),
-            max_tokens=self.max_tokens(),
-        )
+        if on_delta:
+            content_parts: list[str] = []
+            async for delta in chat_completion_stream(
+                messages,
+                temperature=self.temperature(),
+                max_tokens=self.max_tokens(),
+            ):
+                content_parts.append(delta)
+                await on_delta(delta)
+            content = "".join(content_parts)
+        else:
+            content = await chat_completion(
+                messages,
+                temperature=self.temperature(),
+                max_tokens=self.max_tokens(),
+            )
         content = _strip_kb_annotations(content.strip())
         content = self.normalize_output(content, hints=hints)
         title = self.build_title(topic, module_key)
@@ -690,7 +705,7 @@ class ConceptAgent(ResourceRoleAgent):
 
     agent_id = "ConceptAgent"
     display_name = "ConceptAgent"
-    role = "概念导师 · Domain/Structure 双域教案"
+    role = "概念导师 · Domain/Structure 双域学案"
 
     def system_prompt(self, hints: PersonaHints) -> str:
         style = (hints.cognitive_style or "").lower()
@@ -752,7 +767,7 @@ class ConceptAgent(ResourceRoleAgent):
                 },
                 "structure_logic": {
                     "learning_objectives": ["理解核心算法思想", "掌握复杂度分析"],
-                    "abstract_model": "（由旧版教案迁移，建议重新生成）",
+                    "abstract_model": "（由旧版学案迁移，建议重新生成）",
                     "data_structures": [],
                     "algorithm_outline": legacy_story[1200:2400] or "请参考知识库补全形式化描述。",
                     "time_complexity": "待分析",
@@ -872,6 +887,7 @@ mindmap
         module_key: str = "",
         focus_hint: str = "",
         chunks: list[KnowledgeChunk],
+        on_delta: ContentDeltaFn | None = None,
     ) -> tuple[str, str, dict]:
         title, content, meta = await super().generate(
             topic=topic,
@@ -879,6 +895,7 @@ mindmap
             module_key=module_key,
             focus_hint=focus_hint,
             chunks=chunks,
+            on_delta=on_delta,
         )
         focus_label = _mindmap_focus_label(topic, module_key, focus_hint)
         if _mindmap_needs_rebuild(content, focus_label=focus_label):
@@ -1161,6 +1178,7 @@ class TraceAgent(ResourceRoleAgent):
         module_key: str = "",
         focus_hint: str = "",
         chunks: list[KnowledgeChunk],
+        on_delta: ContentDeltaFn | None = None,
     ) -> tuple[str, str, dict]:
         title, content, meta = await super().generate(
             topic=topic,
@@ -1168,6 +1186,7 @@ class TraceAgent(ResourceRoleAgent):
             module_key=module_key,
             focus_hint=focus_hint,
             chunks=chunks,
+            on_delta=on_delta,
         )
         payload = _parse_json_object(content)
         code = str(payload.get("code") or "").strip()

@@ -129,6 +129,28 @@ export interface AiComplexityReport {
   source: string
 }
 
+export interface AiGuidedHint {
+  level: 1 | 2 | 3 | number
+  title: string
+  content: string
+}
+
+export interface AiGuidedDiagnosis {
+  bug_step_index: number
+  bug_line?: number | null
+  title: string
+  root_cause: string
+  actual_state: string
+  expected_state: string
+  invariant: string
+  observation_question: string
+  hints: AiGuidedHint[]
+  fix_direction: string
+  verification: string
+  confidence: 'high' | 'medium' | 'low'
+  source: string
+}
+
 export interface SkillCardBrief {
   id: string
   name: string
@@ -179,6 +201,7 @@ export interface AiDiagnoseResponse {
   trace: TraceResponse
   complexity: AiComplexityReport
   summary: string
+  diagnosis?: AiGuidedDiagnosis | null
   tutoring?: OjTutoringPayload | null
 }
 

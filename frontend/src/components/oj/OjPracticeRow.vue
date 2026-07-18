@@ -40,6 +40,7 @@ const emit = defineEmits<{
   visualTraceDiagnose: []
   demo: []
   closeTrace: []
+  viewDiagnosisTrace: []
 }>()
 </script>
 
@@ -76,6 +77,7 @@ const emit = defineEmits<{
         @reset="emit('reset')"
         @trace="emit('trace')"
         @diagnose="emit('diagnose')"
+        @view-diagnosis-trace="emit('viewDiagnosisTrace')"
         @visual-trace-diagnose="emit('visualTraceDiagnose')"
         @demo="emit('demo')"
       />
@@ -116,6 +118,7 @@ const emit = defineEmits<{
         @reset="emit('reset')"
         @trace="emit('trace')"
         @diagnose="emit('diagnose')"
+        @view-diagnosis-trace="emit('viewDiagnosisTrace')"
         @visual-trace-diagnose="emit('visualTraceDiagnose')"
         @demo="emit('demo')"
       />

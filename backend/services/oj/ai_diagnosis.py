@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
+import logging
 import re
 from typing import Any, Literal
 
@@ -13,6 +15,8 @@ from services.oj.stdio_io import ensure_stdio_fields
 
 MAX_STEPS_IN_PROMPT = 80
 MAX_TRACE_BUG_STEPS = 120
+TRACE_DIAGNOSIS_LLM_TIMEOUT_SECONDS = 18
+_logger = logging.getLogger(__name__)
 
 
 def gate_code_before_dynamic_analysis(
@@ -23,8 +27,8 @@ def gate_code_before_dynamic_analysis(
     """静动结合：动态 trace_runner / GDB 执行前的 AST 熔断门闸。"""
     return ASTAnalyzerAgent.audit(user_code, language=language)
 
-TRACE_BUG_DIAGNOSIS_SYSTEM = """你是一个算法竞赛金牌教练与调试侦探。
-你将收到：题目描述、判题结果、学生代码、以及压缩后的执行轨迹（仅含 changed 非空的步，每步一行文本快照）。
+TRACE_BUG_DIAGNOSIS_SYSTEM = """你是面向大一学生的算法调试教练。你的任务不是直接交付完整答案，而是用可验证证据帮助学生自己修正代码。
+你将收到：题目描述、失败输入及期望/实际结果、学生代码、以及压缩后的执行轨迹。轨迹同时保留“变量未变化”的控制流步骤，因为遗漏更新本身可能就是根因。
 
 任务：对比题目要求与学生轨迹，找出**逻辑开始偏离预期的最早一步**（bug 起源步）。
 
@@ -34,19 +38,33 @@ TRACE_BUG_DIAGNOSIS_SYSTEM = """你是一个算法竞赛金牌教练与调试侦
 3. 对照代码行号，指出是哪一行代码导致了该变量异常
 4. 说明该步变量**应该是什么值**（根据题意推导），与**实际是什么值**（从轨迹读取）
 
-输出要求：
-- 不要只给修正后的完整代码
+教学要求：
+- 禁止输出完整可提交代码或整段替换代码
+- 先给一个观察问题，再给三层递进提示：L1 只指出观察位置；L2 解释不变量与状态差异；L3 给修改方向但仍不贴完整答案
 - 重点说明：在哪一步（Step 索引）、代码第几行、哪些变量状态不符合题意
 - 若涉及死循环，指出指针/循环变量为何未按预期推进，并说明循环不变量是什么
 - bug_step_index 必须是轨迹中的 **0-based 步序号**（与输入 "Step N" 中的 N 一一致）
 - diagnosis_title 必须是具体的错误描述（如"第5行 left 指针未收缩导致窗口过大"），不要写空泛标题
 - detailed_analysis 必须包含：①该步变量应有值 vs 实际值 ②违反的不变量 ③对应代码行
+- confidence 只有在失败测例确实复现且轨迹提供直接证据时才可为 high
 
 严格只输出一个 JSON 对象，不要 markdown，不要额外字段：
 {
   "bug_step_index": <int>,
   "diagnosis_title": "<15~40字中文标题，需包含变量名或行号>",
-  "detailed_analysis": "<120~350字中文，必须包含：应有值vs实际值、违反的不变量、对应代码行>"
+  "detailed_analysis": "<120~350字中文，必须包含：应有值vs实际值、违反的不变量、对应代码行>",
+  "actual_state": "<轨迹直接观察到的状态，必须含变量名和值>",
+  "expected_state": "<根据题意推导的应有状态>",
+  "invariant": "<被破坏的循环/数据结构不变量，一句话>",
+  "observation_question": "<让学生先观察该步的一个具体问题>",
+  "hints": [
+    {"level": 1, "title": "先观察", "content": "<不直接说答案>"},
+    {"level": 2, "title": "再推理", "content": "<指出不变量和实际/应有差异>"},
+    {"level": 3, "title": "修改方向", "content": "<指出应调整的语句或顺序，不给完整代码>"}
+  ],
+  "fix_suggestion": "<具体修改方向，不输出完整代码>",
+  "verification": "<修改后用哪个最小输入、观察什么结果>",
+  "confidence": "high|medium|low"
 }"""
 
 EDGE_CASE_SYSTEM = """你是算法竞赛助教。根据题目描述、已有样例与学生代码，生成一个**最小边界测例**（Minimal Failing Testcase），
@@ -225,7 +243,8 @@ def _format_snap_brief(snap: dict[str, Any] | None) -> str:
 
 def compress_trace_steps_to_text(steps: list[dict[str, Any]]) -> tuple[list[str], int]:
     """
-    过滤 changed 为空的步，压缩为 LLM 可读文本行。
+    压缩为 LLM 可读文本行。不能丢弃 changed 为空的步骤：遗漏更新恰恰表现为
+    “执行到这里但状态没有变化”。
     返回 (lines, meaningful_count)。
     """
     lines: list[str] = []
@@ -234,18 +253,23 @@ def compress_trace_steps_to_text(steps: list[dict[str, Any]]) -> tuple[list[str]
             lines.append(f"... (truncated, total {len(steps)} steps)")
             break
         changed = s.get("changed") or []
-        if not changed:
-            continue
         vars_dict = s.get("vars") or {}
         parts: list[str] = []
-        for k in changed[:10]:
+        keys = list(changed)
+        if not keys and isinstance(vars_dict, dict):
+            keys = list(vars_dict.keys())[:8]
+        for k in keys[:10]:
             snap = vars_dict.get(k) if isinstance(vars_dict, dict) else None
             parts.append(f"{k}={_format_snap_brief(snap)}")
         if len(changed) > 10:
             parts.append(f"+{len(changed) - 10} more")
         line_no = s.get("line", "?")
-        lines.append(f"Step {i} (code line {line_no}): {', '.join(parts)}")
-    return lines, len(lines)
+        change_note = ", ".join(str(k) for k in changed) if changed else "none"
+        lines.append(
+            f"Step {i} (code line {line_no}, changed={change_note}): "
+            f"{', '.join(parts) if parts else '(no captured vars)'}"
+        )
+    return lines, sum(1 for s in steps[:MAX_TRACE_BUG_STEPS] if s.get("changed"))
 
 
 def _normalize_bug_step_index(idx: int, steps: list[dict[str, Any]]) -> int:
@@ -277,19 +301,53 @@ def _parse_trace_bug_diagnosis(
         raise ValueError("invalid bug_step_index")
     if not title or not analysis:
         raise ValueError("missing diagnosis fields")
-    idx = _normalize_bug_step_index(idx, steps)
+    idx = max(0, min(idx, len(steps) - 1))
     step = steps[idx]
     line = step.get("line")
     changed = [str(name) for name in (step.get("changed") or []) if str(name)]
-    evidence_text = f"{title} {analysis}"
-    if line and not _mentions_code_line(evidence_text, line):
-        raise ValueError("diagnosis does not reference the selected code line")
-    if changed and not any(name in evidence_text for name in changed):
-        raise ValueError("diagnosis does not reference a changed variable")
+    evidence_text = " ".join(
+        [
+            title,
+            analysis,
+            str(parsed.get("actual_state") or ""),
+            str(parsed.get("expected_state") or ""),
+            str(parsed.get("invariant") or ""),
+        ]
+    )
+    evidence_complete = (not line or _mentions_code_line(evidence_text, line)) and (
+        not changed or any(name in evidence_text for name in changed)
+    )
+    hints: list[dict[str, Any]] = []
+    for level, item in enumerate(parsed.get("hints") or [], start=1):
+        if not isinstance(item, dict):
+            continue
+        content = str(item.get("content") or "").strip()
+        if not content:
+            continue
+        hints.append(
+            {
+                "level": max(1, min(3, int(item.get("level") or level))),
+                "title": str(item.get("title") or f"提示 {level}")[:24],
+                "content": content[:360],
+            }
+        )
+    confidence = str(parsed.get("confidence") or "medium").lower()
+    if confidence not in ("high", "medium", "low"):
+        confidence = "medium"
+    if not evidence_complete and confidence == "high":
+        confidence = "medium"
     return {
         "bug_step_index": idx,
         "diagnosis_title": title[:80],
         "detailed_analysis": analysis[:800],
+        "actual_state": str(parsed.get("actual_state") or "")[:300],
+        "expected_state": str(parsed.get("expected_state") or "")[:300],
+        "invariant": str(parsed.get("invariant") or "")[:300],
+        "observation_question": str(parsed.get("observation_question") or "")[:300],
+        "hints": hints[:3],
+        "fix_suggestion": str(parsed.get("fix_suggestion") or "")[:500],
+        "verification": str(parsed.get("verification") or "")[:300],
+        "confidence": confidence,
     }
 
 
@@ -333,6 +391,18 @@ def _fallback_trace_bug_diagnosis(
                         "但仍需结合题目不变量确认它是否为最终根因。"
                     ),
                     "source": "fallback",
+                    "actual_state": f"{k}={current}，连续至少 3 次相关快照未变化",
+                    "expected_state": f"{k} 应在每轮满足更新条件时继续推进",
+                    "invariant": f"循环继续时，关键推进变量 {k} 不能长期停滞",
+                    "observation_question": f"观察 Step {i + 1}：{k} 为什么仍是 {current}？",
+                    "hints": [
+                        {"level": 1, "title": "先观察", "content": f"对比前后三步的 {k}。"},
+                        {"level": 2, "title": "再推理", "content": f"检查哪些分支负责推进 {k}，是否存在未执行的路径。"},
+                        {"level": 3, "title": "修改方向", "content": f"确保循环继续前 {k} 在正确分支完成更新。"},
+                    ],
+                    "fix_suggestion": f"检查并补全 {k} 的推进逻辑。",
+                    "verification": "用最小失败输入重跑，确认该变量不再连续停滞。",
+                    "confidence": "medium",
                 }
 
     bug_idx = first_changed_idx if first_changed_idx >= 0 else 0
@@ -350,6 +420,18 @@ def _fallback_trace_bug_diagnosis(
             + (f" 压缩轨迹共有 {len(compressed_lines)} 个有效步。" if compressed_lines else "")
         ),
         "source": "fallback",
+        "actual_state": f"Step {bug_idx + 1} 仅确认 {('、'.join(ch[:5]) if ch else '程序状态')}发生变化",
+        "expected_state": "现有轨迹不足以从规则推导唯一应有值",
+        "invariant": "需要结合题目要求手算该步应保持的不变量",
+        "observation_question": f"从代码第 {line} 行开始，哪一个状态第一次与手算结果不同？",
+        "hints": [
+            {"level": 1, "title": "先观察", "content": f"从 Step {bug_idx + 1} 开始逐步对照变量。"},
+            {"level": 2, "title": "再推理", "content": "先写出每轮循环结束时必须成立的一句话。"},
+            {"level": 3, "title": "修改方向", "content": "找到首次破坏该不变量的分支后再调整对应语句。"},
+        ],
+        "fix_suggestion": "证据不足，暂不建议直接修改代码。",
+        "verification": "使用真实失败输入手算关键状态，再与 Trace 对照。",
+        "confidence": "low",
     }
 
 
@@ -398,7 +480,10 @@ async def diagnose_trace_bug(
         failed_hint = ""
         if failed_cases:
             failed_hint = "\n\n## 失败用例\n" + "\n".join(
-                f"- 用例 {c.get('index', '?')}: 输入 {str(c.get('input_preview', ''))[:80]} → {str(c.get('message', ''))[:60]}"
+                f"- 用例 {c.get('index', '?')}: 输入 {str(c.get('input_preview', ''))[:100]}；"
+                f"期望 {str(c.get('expected_preview', ''))[:80]}；"
+                f"实际 {str(c.get('actual_preview', ''))[:80]}；"
+                f"判题信息 {str(c.get('message', ''))[:80]}"
                 for c in failed_cases[:3]
             )
         verdict_hint = f"\n\n## 判题结果：{judge_verdict}" if judge_verdict else ""
@@ -407,26 +492,30 @@ async def diagnose_trace_bug(
             f"## 题目描述\n{(problem_description or '（无描述）')[:2000]}\n\n"
             f"## 学生代码\n```\n{user_code[:3500]}\n```"
             f"{verdict_hint}{failed_hint}\n\n"
-            f"## 压缩轨迹（共 {len(trace_steps)} 步，以下仅含 changed≠∅ 的步）\n"
+            f"## 压缩轨迹（共 {len(trace_steps)} 步；changed=none 表示该步执行但状态未变化）\n"
             + "\n".join(compressed_lines[:MAX_STEPS_IN_PROMPT])
         )
         if len(compressed_lines) > MAX_STEPS_IN_PROMPT:
             user_body += f"\n...（已截断，仅展示前 {MAX_STEPS_IN_PROMPT} 行）"
 
         try:
-            raw = await chat_completion(
-                [
-                    {"role": "system", "content": TRACE_BUG_DIAGNOSIS_SYSTEM},
-                    {"role": "user", "content": user_body},
-                ],
-                temperature=0.2,
-                max_tokens=1200,
+            raw = await asyncio.wait_for(
+                chat_completion(
+                    [
+                        {"role": "system", "content": TRACE_BUG_DIAGNOSIS_SYSTEM},
+                        {"role": "user", "content": user_body},
+                    ],
+                    temperature=0.2,
+                    max_tokens=1200,
+                    json_mode=True,
+                ),
+                timeout=TRACE_DIAGNOSIS_LLM_TIMEOUT_SECONDS,
             )
             out = _parse_trace_bug_diagnosis(raw, max_step=max_idx, steps=trace_steps)
             out["source"] = "llm"
             return out
-        except Exception:
-            pass
+        except Exception as exc:
+            _logger.warning("Spark trace diagnosis failed; using fallback: %s", exc, exc_info=True)
 
     out = _fallback_trace_bug_diagnosis(
         trace_steps, compressed_lines,
@@ -572,6 +661,7 @@ async def generate_edge_case(
                 [{"role": "system", "content": EDGE_CASE_SYSTEM}, {"role": "user", "content": user_body}],
                 temperature=0.4,
                 max_tokens=800,
+                json_mode=True,
             )
             parsed = _parse_json_object(raw)
             case = _normalize_edge_case(parsed, judge_mode, sample)
@@ -581,8 +671,8 @@ async def generate_edge_case(
                 "category": str(parsed.get("category") or "edge"),
                 "source": "llm",
             }
-        except Exception:
-            pass
+        except Exception as exc:
+            _logger.warning("Spark edge-case generation failed; using fallback: %s", exc, exc_info=True)
 
     for cand in _fallback_edge_cases(sample):
         return {
@@ -630,6 +720,7 @@ async def generate_trace_diagnosis(
                 ],
                 temperature=0.3,
                 max_tokens=1500,
+                json_mode=True,
             )
             items = _parse_json_array(raw)
             out: list[dict[str, Any]] = []
@@ -648,8 +739,8 @@ async def generate_trace_diagnosis(
                     )
             if out:
                 return out
-        except Exception:
-            pass
+        except Exception as exc:
+            _logger.warning("Spark trace narration diagnosis failed; using fallback: %s", exc, exc_info=True)
 
     return _fallback_trace_diagnosis(condensed, steps)
 
@@ -728,6 +819,7 @@ async def analyze_complexity(
                 ],
                 temperature=0.3,
                 max_tokens=600,
+                json_mode=True,
             )
             parsed = _parse_json_object(raw)
             return {
@@ -739,8 +831,8 @@ async def analyze_complexity(
                 "alternative_hint": str(parsed.get("alternative_hint") or "")[:200],
                 "source": "llm",
             }
-        except Exception:
-            pass
+        except Exception as exc:
+            _logger.warning("Spark complexity analysis failed; using fallback: %s", exc, exc_info=True)
 
     return _fallback_complexity(n, total, meaningful, user_code)
 

@@ -207,6 +207,21 @@ class ResourceGenerationWorkflow:
                 retry_count=attempt - 1,
                 input_summary=f"{topic} | profile + knowledge chunks + collaboration context",
             )
+
+            async def _stream_delta(delta: str) -> None:
+                if emit and delta:
+                    await emit(
+                        {
+                            "type": "content_delta",
+                            "resource_type": resource_type,
+                            "agent_id": role_agent_id,
+                            "agent_name": role_agent_id,
+                            "attempt": attempt,
+                            "delta": delta,
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                        }
+                    )
+
             title, content, gen_meta = await ResourceAgents.generate_with_context(
                 resource_type,
                 topic=topic,
@@ -214,6 +229,7 @@ class ResourceGenerationWorkflow:
                 module_key=module_key,
                 focus_hint=hint,
                 chunks=chunks,
+                on_delta=_stream_delta,
             )
             ctx.log(
                 role_agent_id,

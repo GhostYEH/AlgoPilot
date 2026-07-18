@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { Medal, Refresh, VideoPlay, Upload, View, MagicStick } from '@element-plus/icons-vue'
 import CodeEditor from '@/components/oj/CodeEditor.vue'
 import OjAiDiagnosisPanel from '@/components/oj/OjAiDiagnosisPanel.vue'
@@ -51,10 +51,12 @@ const emit = defineEmits<{
   trace: []
   diagnose: []
   visualTraceDiagnose: []
+  viewDiagnosisTrace: []
   demo: []
 }>()
 
 const fontSize = ref('14px')
+const diagnosisPanelRef = ref<{ $el?: HTMLElement } | null>(null)
 const traceHighlightLine = useTraceHighlightLine()
 
 const renderedDesc = computed(() => renderAiReplyHtml(props.problem.description ?? ''))
@@ -82,16 +84,9 @@ const canTrace = computed(() => {
   return true
 })
 
-const showVisualDiagnoseCta = computed(() => {
-  const v = props.result?.verdict
-  return v === 'WA' || v === 'RE' || v === 'TLE'
-})
 const judging = computed(() => props.running || props.submitting)
 
 const hasJudgeDemo = computed(() => props.problem.slug === 'reverse-linked-list')
-
-const VISUAL_DIAGNOSE_LOADING_TEXT =
-  '系统正在对齐判题结果与 Trace 关键帧，定位最早逻辑偏差...'
 
 const traceDisableReason = computed(() => {
   if (props.apiOnline === false) return '判题服务未连接'
@@ -136,6 +131,15 @@ watch(
     applyStarter()
   },
   { immediate: true },
+)
+
+watch(
+  () => props.diagnosis,
+  async (value) => {
+    if (!value || props.traceLayout) return
+    await nextTick()
+    diagnosisPanelRef.value?.$el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  },
 )
 
 function onReset() {
@@ -258,7 +262,7 @@ function onReset() {
           :icon="MagicStick"
           :loading="diagnosing"
           :disabled="!canTrace"
-          title="AI 生成边界测例 → 自动可视化回放 → 破案式旁白 → 复杂度报告"
+          title="追踪真实失败用例（无判题结果时使用首个样例）→ AI 定位首次可疑步骤"
           @click="emit('diagnose')"
         >
           AI 诊断
@@ -301,40 +305,6 @@ function onReset() {
             {{ VERDICT_LABEL[result.verdict as Verdict] }}
           </el-tag>
           <span class="verdict-score">{{ result.passed }} / {{ result.total }} 通过</span>
-        </div>
-
-        <div
-          v-if="showVisualDiagnoseCta && !traceLayout"
-          class="visual-diagnose-cta"
-          :class="{ 'visual-diagnose-cta--loading': visualTraceDiagnosing }"
-        >
-          <div
-            v-if="visualTraceDiagnosing"
-            class="visual-diagnose-loading"
-            aria-live="polite"
-            aria-busy="true"
-          >
-            <div class="visual-diagnose-loading__spinner" aria-hidden="true" />
-            <p class="visual-diagnose-loading__text">{{ VISUAL_DIAGNOSE_LOADING_TEXT }}</p>
-          </div>
-
-          <template v-else>
-            <div class="visual-diagnose-cta__copy">
-              <h4 class="visual-diagnose-cta__title">定位首次逻辑偏差</h4>
-              <p class="visual-diagnose-cta__subtitle">
-                联合判题结果与变量轨迹，自动跳转到错误发生的首个关键帧。
-              </p>
-            </div>
-            <el-button
-              type="danger"
-              class="visual-diagnose-cta__btn"
-              :disabled="!canTrace"
-              :title="traceDisableReason || undefined"
-              @click="emit('visualTraceDiagnose')"
-            >
-              ⚡ 一键进行可视化诊断 (AI Trace &amp; Diagnose)
-            </el-button>
-          </template>
         </div>
 
         <pre
@@ -412,23 +382,25 @@ function onReset() {
     <AgentThinkingConsole
       v-if="
         !traceLayout &&
-        (diagnosing ||
-          tracing ||
+        (tracing ||
           struggleView?.loading ||
           (agentConsoleLines?.length ?? 0) > 0)
       "
       class="oj-workbench-agent-console"
       :lines="agentConsoleLines ?? []"
-      :active="diagnosing || tracing || struggleView?.loading"
+      :active="tracing || struggleView?.loading"
       mode="diagnosis"
       title="Agent Synergy Terminal"
       subtitle="OJ 诊断 · 学情评估 · 路径降级"
     />
     <OjAiDiagnosisPanel
       v-if="!traceLayout"
+      ref="diagnosisPanelRef"
       class="oj-workbench-diagnosis"
       :diagnosis="diagnosis ?? null"
       :loading="diagnosing"
+      :trace-available="Boolean(diagnosis?.trace?.steps?.length)"
+      @view-trace="emit('viewDiagnosisTrace')"
     />
   </div>
 </template>
@@ -520,6 +492,8 @@ function onReset() {
   grid-column: 1 / -1;
   grid-row: 5;
   min-width: 0;
+  padding: 0 clamp(14px, 2vw, 28px) 24px;
+  background: var(--alp-bg-surface-muted);
 }
 
 .oj-diagnosis-workspace {
@@ -757,77 +731,6 @@ function onReset() {
   white-space: pre-wrap;
 }
 
-.visual-diagnose-cta {
-  margin: 10px 0 12px;
-  padding: 14px 16px;
-  border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--el-color-danger) 45%, #444);
-  background: color-mix(in srgb, var(--el-color-danger) 14%, #1a1a1a);
-  box-shadow: 0 6px 24px color-mix(in srgb, var(--el-color-danger) 15%, transparent);
-}
-
-.visual-diagnose-cta--loading {
-  border-color: color-mix(in srgb, var(--el-color-primary) 40%, #444);
-  background: color-mix(in srgb, var(--el-color-primary) 12%, #1a1a1a);
-}
-
-.visual-diagnose-cta__copy {
-  margin-bottom: 12px;
-}
-
-.visual-diagnose-cta__title {
-  margin: 0 0 6px;
-  font-size: 15px;
-  font-weight: 700;
-  color: #f3f4f6;
-  line-height: 1.4;
-}
-
-.visual-diagnose-cta__subtitle {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.55;
-  color: #b8bcc4;
-}
-
-.visual-diagnose-cta__btn {
-  width: 100%;
-  font-weight: 600;
-  border: none !important;
-  background: color-mix(in srgb, var(--el-color-danger) 85%, #7c3aed) !important;
-}
-
-.visual-diagnose-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  padding: 8px 4px 4px;
-  text-align: center;
-}
-
-.visual-diagnose-loading__spinner {
-  width: 36px;
-  height: 36px;
-  border: 3px solid color-mix(in srgb, var(--el-color-primary) 25%, transparent);
-  border-top-color: var(--el-color-primary);
-  border-radius: 50%;
-  animation: visual-diagnose-spin 0.9s linear infinite;
-}
-
-.visual-diagnose-loading__text {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.65;
-  color: #c9cdd4;
-  max-width: 36em;
-}
-
-@keyframes visual-diagnose-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 @media (min-width: 1400px) {
   .oj-workbench {
     grid-template-columns: minmax(300px, 29%) minmax(440px, 42%) minmax(300px, 29%);

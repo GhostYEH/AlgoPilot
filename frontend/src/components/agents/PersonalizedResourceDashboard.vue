@@ -36,6 +36,7 @@ let mermaidRenderSeq = 0
 const props = defineProps<{
   resources: GeneratedResource[]
   activeTab?: string
+  streamingContent?: Record<string, string>
 }>()
 
 const emit = defineEmits<{ 'update:activeTab': [key: string] }>()
@@ -75,8 +76,9 @@ const tabs = computed(() =>
 )
 
 const current = computed(() => resourceMap.value.get(tab.value) ?? null)
+const activeStreamingContent = computed(() => props.streamingContent?.[tab.value] ?? '')
 
-// --- 教案 / 沙盒：Domain · Structure 双域 ---
+// --- 学案 / 沙盒：Domain · Structure 双域 ---
 const docResource = computed(() => resourceMap.value.get('document') ?? null)
 const scenarioResource = computed(() => resourceMap.value.get('code_case') ?? null)
 
@@ -352,10 +354,19 @@ function openEvidence() {
     </nav>
 
     <div class="dash-panel">
-      <!-- 自适应教案 -->
+      <article v-if="activeStreamingContent && !current" class="panel-card stream-preview-card" aria-live="polite">
+        <header class="panel-head">
+          <h3>正在实时生成{{ tabs.find((item) => item.key === tab)?.label ?? '学习资源' }}</h3>
+          <span class="panel-meta">内容持续更新中</span>
+        </header>
+        <pre class="stream-preview">{{ activeStreamingContent }}</pre>
+      </article>
+
+      <template v-else>
+      <!-- 自适应学案 -->
       <article v-if="tab === 'document'" class="panel-card panel-card--doc">
         <header class="panel-head">
-          <h3>自适应教案</h3>
+          <h3>自适应学案</h3>
           <span v-if="current" class="panel-meta">{{ current.agent_name }}</span>
         </header>
         <DomainStructurePanels
@@ -369,10 +380,10 @@ function openEvidence() {
           :closable="false"
           show-icon
           title="双域 JSON 解析失败"
-          description="内容似为 Domain/Structure 结构但格式不完整。请重新生成教案。"
+          description="内容似为 Domain/Structure 结构但格式不完整。请重新生成学案。"
         />
         <div v-else-if="docHtml" class="doc-body ai-md-body" v-html="docHtml" />
-        <el-empty v-else description="ConceptAgent 生成后将呈现「业务故事 + 结构剖析」双域教案" />
+        <el-empty v-else description="ConceptAgent 生成后将呈现「业务故事 + 结构剖析」双域学案" />
       </article>
 
       <!-- 知识思维导图 -->
@@ -534,6 +545,7 @@ function openEvidence() {
         </div>
         <el-empty v-else description="ReadingAgent 将生成三层拓展阅读清单" />
       </article>
+      </template>
     </div>
     <SafetyValidationPanel
       v-if="current"
@@ -672,6 +684,20 @@ function openEvidence() {
 .doc-body {
   line-height: 1.7;
   font-size: 14px;
+}
+
+.stream-preview-card {
+  min-height: 360px;
+}
+
+.stream-preview {
+  margin: 0;
+  max-height: 520px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--alp-color-text);
+  font: 13px/1.75 ui-monospace, SFMono-Regular, Consolas, monospace;
 }
 
 .mermaid-host {

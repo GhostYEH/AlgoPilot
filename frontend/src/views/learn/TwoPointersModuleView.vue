@@ -22,6 +22,7 @@ import AiTutorPanel from '@/components/learning/AiTutorPanel.vue'
 import InlineOjPractice from '@/components/oj/InlineOjPractice.vue'
 import LearnSectionBody from '@/components/learning/LearnSectionBody.vue'
 import ModuleGameEntry from '@/components/learning/ModuleGameEntry.vue'
+import { stableAnimationWindow as vStableAnimationWindow } from '@/directives/stableAnimationWindow'
 import SelectableLearnText from '@/components/learning/SelectableLearnText.vue'
 import SectionDirectoryAside from '@/components/learning/SectionDirectoryAside.vue'
 import { useProvideAiTutorFromPanel } from '@/composables/useProvideAiTutorFromPanel'
@@ -242,7 +243,10 @@ watch(
 
           <ModuleGameEntry module-key="two-pointers" :section-id="current.id" />
 
-          <div class="content-visual">
+          <div
+            class="content-visual"
+            v-stable-animation-window="`two-pointers:${current.id}`"
+          >
             <Transition name="tp-anim-fade" mode="out-in">
               <TwoPointersSectionAnimation :key="current.id" :section-id="current.id" />
             </Transition>

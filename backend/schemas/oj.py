@@ -142,6 +142,28 @@ class AiComplexityReport(BaseModel):
     source: str = "llm"
 
 
+class AiGuidedHint(BaseModel):
+    level: int = Field(ge=1, le=3)
+    title: str
+    content: str
+
+
+class AiGuidedDiagnosis(BaseModel):
+    bug_step_index: int = 0
+    bug_line: int | None = None
+    title: str
+    root_cause: str
+    actual_state: str = ""
+    expected_state: str = ""
+    invariant: str = ""
+    observation_question: str = ""
+    hints: list[AiGuidedHint] = Field(default_factory=list)
+    fix_direction: str = ""
+    verification: str = ""
+    confidence: Literal["high", "medium", "low"] = "low"
+    source: str = "fallback"
+
+
 class SkillCardBrief(BaseModel):
     id: str
     name: str
@@ -192,6 +214,7 @@ class AiDiagnoseResponse(BaseModel):
     trace: TraceResponse
     complexity: AiComplexityReport
     summary: str
+    diagnosis: AiGuidedDiagnosis | None = None
     tutoring: OjTutoringPayload | None = None
 
 

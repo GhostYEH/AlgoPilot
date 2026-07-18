@@ -1150,6 +1150,7 @@ class Orchestrator:
         focus_hint: str,
         pipeline_ctx: PipelineContext,
         fallback_reason: str | None = None,
+        emit: Callable[[dict], Awaitable[None]] | None = None,
     ) -> tuple[ResourceType, list[dict], GeneratedResourceItem | None, Exception | None]:
         """单阶段资源任务。并行阶段使用独立 Session，避免共享请求级 Session 并发 commit。"""
         from core.database import SessionLocal
@@ -1157,7 +1158,10 @@ class Orchestrator:
         events: list[dict] = []
 
         async def capture(ev: dict) -> None:
-            events.append(ev)
+            if emit:
+                await emit(ev)
+            else:
+                events.append(ev)
 
         req = ResourceGenerateRequest(
             resource_type=resource_type,
@@ -1360,6 +1364,7 @@ class Orchestrator:
                 else:
                     to_generate.append(rtype)
 
+            live_events: asyncio.Queue[dict] = asyncio.Queue()
             coros = [
                 self._run_phase_task(
                     db,
@@ -1370,43 +1375,28 @@ class Orchestrator:
                     focus_hint=focus_hint,
                     pipeline_ctx=pipe_ctx,
                     fallback_reason=batch_fallback_reason,
+                    emit=live_events.put,
                 )
                 for rtype in to_generate
             ]
 
             raw_results: list = []
-            if is_parallel and len(coros) > 1:
-                gather_task = asyncio.ensure_future(asyncio.gather(*coros, return_exceptions=True))
-                while not gather_task.done():
-                    done, _ = await asyncio.wait({gather_task}, timeout=2.5)
-                    if done:
-                        break
-                    yield _sse({
-                        "type": "heartbeat",
-                        "event_type": "heartbeat",
-                        "message": "Agent 正在生成中…",
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                        "percent": int(completed / total * 100),
-                    })
-                raw_results = gather_task.result()
-            elif len(coros) == 1:
-                # 单协程阶段也需心跳，避免前端 150s 无活动超时
-                single_task = asyncio.ensure_future(coros[0])
-                while not single_task.done():
-                    done, _ = await asyncio.wait({single_task}, timeout=2.5)
-                    if done:
-                        break
-                    yield _sse({
-                        "type": "heartbeat",
-                        "event_type": "heartbeat",
-                        "message": "Agent 正在生成中…",
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                        "percent": int(completed / total * 100),
-                    })
-                try:
-                    raw_results = [single_task.result()]
-                except Exception as exc:
-                    raw_results = [exc]
+            if coros:
+                tasks = [asyncio.create_task(coro) for coro in coros]
+                while any(not task.done() for task in tasks) or not live_events.empty():
+                    try:
+                        event = await asyncio.wait_for(live_events.get(), timeout=2.5)
+                        event.setdefault("percent", int(completed / total * 100))
+                        yield _sse(event)
+                    except TimeoutError:
+                        yield _sse({
+                            "type": "heartbeat",
+                            "event_type": "heartbeat",
+                            "message": "Agent 正在生成中…",
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                            "percent": int(completed / total * 100),
+                        })
+                raw_results = await asyncio.gather(*tasks, return_exceptions=True)
             elif len(coros) == 0:
                 raw_results = []
 

@@ -97,3 +97,32 @@ async def test_graph_agent_rebuilds_generic_map_around_focus(monkeypatch: pytest
     assert "快慢指针" in content
     assert "课程定位" not in content
     assert meta["mindmap_rebuilt"] is True
+
+
+@pytest.mark.asyncio
+async def test_role_agent_forwards_streaming_deltas(monkeypatch: pytest.MonkeyPatch) -> None:
+    chunks = ["mindmap\n  root((双指针))\n", "    左右指针\n    快慢指针"]
+
+    async def fake_chat_completion_stream(*args, **kwargs):
+        for chunk in chunks:
+            yield chunk
+
+    received: list[str] = []
+
+    async def on_delta(chunk: str) -> None:
+        received.append(chunk)
+
+    monkeypatch.setattr(
+        "services.agents.resource_roles.chat_completion_stream",
+        fake_chat_completion_stream,
+    )
+    await GraphAgent().generate(
+        topic="双指针",
+        profile_block="学习目标：掌握双指针",
+        module_key="two-pointers",
+        focus_hint="左右指针与快慢指针",
+        chunks=[],
+        on_delta=on_delta,
+    )
+
+    assert received == chunks

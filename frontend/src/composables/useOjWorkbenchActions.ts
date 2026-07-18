@@ -23,7 +23,6 @@ import { showJudgeResultMessage } from '@/utils/ojErrors'
 import { recordOjPractice } from '@/utils/ojPracticeHistory'
 import {
   astAnalyzerLine,
-  diagnosisBootstrapLines,
   systemLine,
   traceBootstrapLines,
   linesFromEventLogs,
@@ -194,6 +193,14 @@ export function useOjWorkbenchActions(options: {
 
   function closeTraceSplit() {
     traceSplitOpen.value = false
+  }
+
+  function openDiagnosisTrace() {
+    if (!options.trace.value?.steps.length) {
+      ElMessage.info('当前诊断没有可回放的执行轨迹')
+      return
+    }
+    traceSplitOpen.value = true
   }
 
   watch(options.slug, () => {
@@ -435,7 +442,7 @@ export function useOjWorkbenchActions(options: {
       return
     }
     diagnosing.value = true
-    agentConsoleLines.value = diagnosisBootstrapLines()
+    agentConsoleLines.value = []
     options.diagnosis.value = null
     options.trace.value = null
     options.traceBugDiagnosis.value = null
@@ -450,11 +457,22 @@ export function useOjWorkbenchActions(options: {
       })
       options.diagnosis.value = res
       options.trace.value = res.trace
-      if (res.trace?.steps?.length) traceSplitOpen.value = true
-      const verdict = options.result.value?.verdict ?? 'WA'
-      recordVerdict(verdict)
-      onVerdictRecorded(verdict)
-      ElMessage.success('AI 诊断完成：已生成边界测例与可视化回放')
+      if (res.diagnosis) {
+        options.traceBugDiagnosis.value = {
+          bug_step_index: res.diagnosis.bug_step_index,
+          diagnosis_title: res.diagnosis.title,
+          detailed_analysis: res.diagnosis.root_cause,
+          source: res.diagnosis.source,
+          fix_suggestion: res.diagnosis.fix_direction,
+          tutoring: res.tutoring,
+        }
+      }
+      const verdict = options.result.value?.verdict
+      if (verdict) {
+        recordVerdict(verdict)
+        onVerdictRecorded(verdict)
+      }
+      ElMessage.success('AI 诊断完成：已生成失败证据与分层提示')
     } catch {
       ElMessage.warning('诊断失败，请检查判题服务；无 API Key 时系统将自动使用规则诊断')
     } finally {
@@ -472,6 +490,7 @@ export function useOjWorkbenchActions(options: {
     traceSplitOpen,
     traceSourceCode,
     closeTraceSplit,
+    openDiagnosisTrace,
     onRun,
     onSubmit,
     onTrace,

@@ -52,6 +52,7 @@ const {
   traceSplitOpen,
   traceSourceCode,
   closeTraceSplit,
+  openDiagnosisTrace,
   onRun,
   onSubmit,
   onTrace,
@@ -217,6 +218,7 @@ async function loadJudgeDemo() {
       @trace="onTrace"
       @narrate="onNarrate"
       @diagnose="onAiDiagnose"
+      @view-diagnosis-trace="openDiagnosisTrace"
       @visual-trace-diagnose="onVisualTraceDiagnose"
       @demo="loadJudgeDemo"
       @close-trace="closeTraceSplit"
