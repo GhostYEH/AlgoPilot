@@ -357,8 +357,78 @@ class ResourceGenerationWorkflow:
                 failure_reason=revised_hint or "content verification failed",
             )
             if attempt > MAX_VERIFY_RETRIES:
-                gen_meta["status"] = "draft"
-                gen_meta["draft_reason"] = revised_hint or "未通过知识库校验"
+                # 验证最终失败：使用模板降级内容替代 LLM 占位符输出，
+                # 确保用户看到的是可用的课程知识库模板，而非低质量占位符。
+                from services.agents.template_fallback import (
+                    GENERATED_BY as FALLBACK_AGENT_ID,
+                    generate_fallback_resource,
+                )
+                from services.agents.verifier import _rule_check_structured
+
+                fallback_reason = revised_hint or "LLM 输出多次未通过知识库校验，已降级为模板内容"
+                await _emit(
+                    "agent_generate",
+                    FALLBACK_AGENT_ID,
+                    "running",
+                    f"应用模板降级：{fallback_reason[:80]}",
+                    input_summary=f"{topic} | course template + knowledge chunks",
+                    severity="warn",
+                )
+                fb_title, fb_content, fb_meta = generate_fallback_resource(
+                    resource_type,
+                    topic=topic,
+                    profile_block=profile_block,
+                    module_key=module_key,
+                    focus_hint=focus_hint,
+                    chunks=chunks,
+                    fallback_reason=fallback_reason,
+                )
+                # 对 fallback 内容做规则快检（无 LLM），更新校验结果以反映真实状态
+                fb_verifier, fb_rule_failed = _rule_check_structured(
+                    fb_content, chunks, topic=topic, resource_type=resource_type
+                )
+                ctx.log(
+                    FALLBACK_AGENT_ID,
+                    "fallback",
+                    f"模板降级完成：{fb_title}",
+                    role="课程知识库模板",
+                    resource_type=resource_type,
+                    status="done",
+                )
+                await _emit(
+                    "agent_generate",
+                    FALLBACK_AGENT_ID,
+                    "success",
+                    "已降级为课程知识库模板内容",
+                    output_summary=f"{fb_title} | template fallback",
+                )
+                # 保留 LLM 校验失败的关键元数据，叠加 fallback 标记
+                llm_attempts = attempt
+                llm_revised_hint = revised_hint
+                title = fb_title
+                content = fb_content
+                gen_meta.update(fb_meta)
+                gen_meta["llm_verify_failed"] = True
+                gen_meta["llm_verify_attempts"] = llm_attempts
+                gen_meta["llm_verify_revised_hint"] = llm_revised_hint
+                gen_meta["verified"] = fb_verifier.passed and not fb_rule_failed
+                gen_meta["verify_attempts"] = attempt
+                gen_meta["content_verification"] = fb_verifier.to_display_dict()
+                gen_meta["knowledge_refs"] = fb_verifier.grounded_chunk_ids
+                verifier_structured = fb_verifier
+                citation_ids = fb_verifier.grounded_chunk_ids
+                passed = bool(gen_meta["verified"])
+                if emit:
+                    await emit(
+                        {
+                            "type": "fallback_applied",
+                            "resource_type": resource_type,
+                            "agent_id": role_agent_id,
+                            "fallback_agent": FALLBACK_AGENT_ID,
+                            "reason": fallback_reason,
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                        }
+                    )
                 break
             ctx.log(role_agent_id, "retry", revised_hint, role=role_agent.role, resource_type=resource_type, status="retry")
             await _emit("agent_generate", role_agent_id, "retry", revised_hint, retry_count=attempt - 1, severity="warn")

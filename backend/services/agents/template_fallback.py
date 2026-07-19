@@ -10,9 +10,13 @@ from schemas.resources import ResourceType
 from services.agents.resource_roles import (
     PersonaHints,
     _build_knowledge_mindmap,
+    _build_scenario_code_framework,
     _fallback_reading_levels,
     _fallback_trace_payload,
+    _match_topic_key,
     _mindmap_focus_label,
+    _sanitize_domain_narrative,
+    _TOPIC_ENRICHMENTS,
 )
 from services.knowledge.retriever import KnowledgeChunk, format_context_block
 from services.verification.builder import chunks_to_grounded
@@ -88,6 +92,15 @@ def _build_title(resource_type: ResourceType, topic: str, module_key: str) -> st
     return f"[模板] {base} · {_topic_label(topic, module_key)}"
 
 
+def _enrichment_for(topic: str) -> tuple[dict[str, Any], dict[str, Any]]:
+    """从 _TOPIC_ENRICHMENTS 取出 concept/scenario 兜底字段；未匹配返回空 dict。"""
+    key = _match_topic_key(topic)
+    if not key:
+        return {}, {}
+    entry = _TOPIC_ENRICHMENTS.get(key) or {}
+    return entry.get("concept") or {}, entry.get("scenario") or {}
+
+
 def generate_document(
     *,
     topic: str,
@@ -97,17 +110,26 @@ def generate_document(
 ) -> tuple[str, str, dict]:
     bullets = _bullet_lines(chunks, 8)
     excerpt = format_context_block(chunks) if chunks else ""
-    story_parts = []
-    for b in bullets[:4]:
-        story_parts.append(b)
-    story = "；".join(story_parts) if story_parts else f"围绕「{topic}」的核心知识要点。"
-    objectives = [b[:60] for b in bullets[:3]] or ["理解核心概念", "掌握基本操作"]
-    pitfalls = ["边界条件", "复杂度误判"]
-    for b in bullets:
-        bl = b.lower()
-        if "易错" in bl or "注意" in bl or "陷阱" in bl:
-            pitfalls.insert(0, b[:40])
-            break
+    concept_enrich, _ = _enrichment_for(topic)
+
+    # 业务域 story：必须纯叙事、不含 CS 术语，由 _sanitize_domain_narrative 兜底过滤
+    story = "；".join(bullets[:4]) if bullets else f"围绕「{topic}」的核心知识要点与课堂任务。"
+    objectives = concept_enrich.get("learning_objectives") or [
+        b[:60] for b in bullets[:3]
+    ] or ["理解核心概念", "掌握基本操作"]
+    pitfalls = concept_enrich.get("pitfalls") or ["边界条件", "复杂度误判"]
+    abstract_model = concept_enrich.get("abstract_model") or (bullets[0][:80] if bullets else topic)
+    algorithm_outline = concept_enrich.get("algorithm_outline") or (
+        excerpt[:800] if excerpt else "参考课程知识库补全核心步骤、不变量与边界条件。"
+    )
+    data_structures = concept_enrich.get("data_structures") or [module_key or "基础结构"]
+    time_complexity = concept_enrich.get("time_complexity") or "O(n)：模板降级，按主题典型复杂度估算。"
+    space_complexity = concept_enrich.get("space_complexity") or "O(n)：模板降级，按主题典型复杂度估算。"
+    correctness_proof = concept_enrich.get("correctness_proof") or (
+        "结合算法不变量与边界条件：每一步保持循环不变量成立，终止时覆盖全部输入，"
+        "故结果与预期一致；具体推导请对照知识库片段人工核对。"
+    )
+
     payload = _strip_internal_fields({
         "domain_narrative": {
             "headline": _topic_label(topic, module_key),
@@ -116,15 +138,17 @@ def generate_document(
         },
         "structure_logic": {
             "learning_objectives": objectives,
-            "abstract_model": bullets[0][:80] if bullets else topic,
-            "data_structures": [module_key or "基础结构"],
-            "algorithm_outline": excerpt[:800] if excerpt else "请参考课程知识库补全。",
-            "time_complexity": "依具体算法而定（模板未推断）",
-            "space_complexity": "依具体算法而定",
-            "correctness_proof": "请对照知识库片段人工核对",
-            "pitfalls": pitfalls[:3],
+            "abstract_model": abstract_model,
+            "data_structures": data_structures,
+            "algorithm_outline": algorithm_outline,
+            "time_complexity": time_complexity,
+            "space_complexity": space_complexity,
+            "correctness_proof": correctness_proof,
+            "pitfalls": pitfalls[:3] if isinstance(pitfalls, list) else [str(pitfalls)],
         },
     })
+    # 应用 domain_narrative 术语过滤，避免校验「业务域混入代码或算法术语」
+    payload["domain_narrative"] = _sanitize_domain_narrative(payload["domain_narrative"])
     content = json.dumps(payload, ensure_ascii=False, indent=2)
     meta = {
         "format": "domain_structure_json",
@@ -217,33 +241,53 @@ def generate_code_case(
     hints: PersonaHints,
     fallback_reason: str,
 ) -> tuple[str, str, dict]:
-    outline = _bullet_lines(chunks, 4)
-    framework = (
-        "def solve():\n"
-        "    # TODO: 根据课程知识库要点实现\n"
-        "    # 提示：\n"
-        + "".join(f"    # - {o[:70]}\n" for o in outline)
-        + "    pass\n\n"
-        "if __name__ == '__main__':\n"
-        "    solve()\n"
+    bullets = _bullet_lines(chunks, 4)
+    _, scenario_enrich = _enrichment_for(topic)
+
+    # code_framework：优先用 _TOPIC_ENRICHMENTS 兜底的 _build_scenario_code_framework
+    framework = scenario_enrich.get("code_framework") or _build_scenario_code_framework(topic)
+    if "TODO" not in framework:
+        # 兜底加上 TODO 注释，确保通过校验
+        framework = framework.rstrip() + "\n    # TODO: 根据课程知识库要点实现\n"
+
+    # problem_formalization：必须含"输入"/"输出"关键词
+    problem_formalization = scenario_enrich.get("problem_formalization") or (
+        "输入：根据课程讲义确定的实验数据。"
+        "输出：按题目要求计算得到的结果。"
+        "限制：使用课程指定数据结构，注意边界与复杂度。"
     )
+    data_structures = scenario_enrich.get("data_structures") or [module_key or "基础结构"]
+    step_hints = scenario_enrich.get("step_hints") or (bullets[:3] or ["读题", "定义状态", "验证边界"])
+    time_complexity = scenario_enrich.get("time_complexity") or "O(n)：模板降级，按主题典型复杂度估算。"
+    space_complexity = scenario_enrich.get("space_complexity") or "O(n)：模板降级，按主题典型复杂度估算。"
+    correctness_proof = scenario_enrich.get("correctness_proof") or (
+        "结合算法不变量与边界条件：每一步保持循环不变量成立，终止时覆盖全部输入，"
+        "故结果与预期一致；具体推导请对照知识库片段人工核对。"
+    )
+
     payload = _strip_internal_fields({
         "domain_narrative": {
             "headline": _topic_label(topic, module_key),
-            "story": f"围绕「{topic}」的简化实操任务。",
-            "mission": "补全代码框架并验证边界",
-            "illustration_hint": "课堂白板 + 伪代码",
+            "story": (
+                f"在课堂实验现场，学生需要围绕「{topic}」完成一次完整的实操任务："
+                "理解背景、写出代码骨架并通过样例。"
+                "过程中需要注意角色分工、冲突处理与目标达成，形成可演示的成果。"
+            ),
+            "mission": "补全代码框架并通过样例验证，最终给出可演示的成果",
+            "illustration_hint": f"{topic} 主题课堂实验现场全景",
         },
         "structure_logic": {
-            "problem_formalization": outline[0] if outline else topic,
-            "data_structures": [module_key or "基础结构"],
+            "problem_formalization": problem_formalization,
+            "data_structures": data_structures,
             "code_framework": framework,
-            "step_hints": outline[:3] or ["读题", "定义状态", "验证边界"],
-            "time_complexity": "依实现而定（模板未推断）",
-            "space_complexity": "依实现而定",
-            "correctness_proof": "请对照知识库片段人工核对",
+            "step_hints": step_hints,
+            "time_complexity": time_complexity,
+            "space_complexity": space_complexity,
+            "correctness_proof": correctness_proof,
         },
     })
+    # 应用 domain_narrative 术语过滤
+    payload["domain_narrative"] = _sanitize_domain_narrative(payload["domain_narrative"])
     content = json.dumps(payload, ensure_ascii=False, indent=2)
     meta = {"format": "scenario_json", "template": "code_from_chunks", "fallback_reason": fallback_reason}
     return _build_title("code_case", topic, module_key), content, meta

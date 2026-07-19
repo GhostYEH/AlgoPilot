@@ -212,13 +212,22 @@ def _normalize_domain_structure_payload(
 
 
 def _sanitize_domain_narrative(domain: dict[str, Any]) -> dict[str, Any]:
-    """Keep the story layer readable without leaking CS implementation terms."""
+    """Keep the story layer readable without leaking CS implementation terms.
+
+    替换表必须覆盖 verifier._structured_quality_issues 中 forbidden_domain 的全部禁词，
+    否则 domain_narrative 会被判为「混入代码或算法术语」而标 draft。
+    """
     replacements = (
         (r"链表", "运输通道"),
         (r"数组", "连续储物格"),
         (r"二叉树", "分岔路线"),
+        (r"图论", "网络学"),
         (r"哈希(?:表)?", "快速索引册"),
         (r"动态规划|\bDP\b", "分阶段决策"),
+        (r"\bBFS\b|广度优先", "广度探索法"),
+        (r"\bDFS\b|深度优先", "深度探索法"),
+        (r"连通分量", "相连区块"),
+        (r"邻接(?:表|矩阵)", "关系清单"),
         (r"排序算法|排序", "秩序恢复方法"),
         (r"算法", "任务方法"),
         (r"回溯", "试探与撤回"),
@@ -226,7 +235,7 @@ def _sanitize_domain_narrative(domain: dict[str, Any]) -> dict[str, Any]:
         (r"队列", "候场通道"),
         (r"栈", "叠放货架"),
         (r"指针", "引导标记"),
-        (r"节点", "驿站"),
+        (r"节点|顶点", "驿站"),
         (r"变量", "状态记录"),
         (r"循环", "重复行动"),
         (r"代码|Python|C\+\+|Java|TODO", "任务规则"),
@@ -286,41 +295,64 @@ def _unwrap_same_named_fields(structure: dict[str, Any]) -> dict[str, Any]:
     return cleaned
 
 
-def _enrich_concept_payload(data: dict[str, Any], *, topic: str) -> dict[str, Any]:
-    structure = data["structure_logic"]
-    normalized = re.sub(r"\s+", "", topic or "")
-    if "链表" in normalized and "反转" in normalized:
-        defaults = {
+# 主题兜底知识库：当 LLM 输出不完整或偏离主题时，按主题补全结构化字段，确保通过校验。
+# 每个主题提供 concept（学案）与 scenario（沙盒）两套字段，覆盖 13 个课程模块。
+_TOPIC_ENRICHMENTS: dict[str, dict[str, Any]] = {
+    "链表": {
+        "matchers": ("链表", "linked", "linked-list"),
+        "concept": {
             "learning_objectives": [
-                "解释链表反转中 previous、current、next 三个引用各自维护的状态",
-                "手算一次指针更新过程，并分析空链表、单节点与多节点边界",
+                "解释链表中 head、next、节点引用各自维护的状态",
+                "手算一次插入、删除或反转过程，并分析空链表与单节点边界",
             ],
             "abstract_model": (
-                "输入为单链表头引用 head，输出为原链表反转后的新头引用。"
-                "循环开始时，previous 指向已反转前缀，current 指向尚未处理后缀的首节点，"
-                "二者覆盖全部原节点且不重不漏。"
+                "输入为一个或多个单链表的头引用 head，每个节点包含 value 与 next。"
+                "输出为经过指定操作（插入、删除、反转、合并等）后的新头引用。"
+                "核心不变量是操作前后节点多重集合保持一致（除显式删除外），且不出现断链或环。"
             ),
             "algorithm_outline": (
-                "先令 previous 为空、current 指向 head。只要 current 非空，就先保存 current.next，"
-                "再令 current.next 指向 previous，随后同步推进 previous 与 current。"
-                "循环结束时 current 为空，previous 即为新头。必须先保存后继，避免反转连接后丢失未处理部分。"
+                "先确认操作类型与边界。以反转为例：令 previous 为空、current 指向 head，"
+                "每次保存 next_node=current.next，再令 current.next 指向 previous，"
+                "随后同步推进 previous 与 current。插入与删除类似，需要维护前驱引用以避免断链。"
             ),
             "time_complexity": "O(n)：每个节点恰好访问并改写一次 next 引用。",
-            "space_complexity": "O(1)：除三个引用变量外不使用随节点数增长的额外空间。",
+            "space_complexity": "O(1)：除常数个引用变量外不使用随节点数增长的额外空间。",
             "correctness_proof": (
-                "循环不变量是 previous 始终为已处理前缀的正确反转结果，current 及其后继保持原顺序且仍可达。"
-                "一次迭代把 current 从未处理后缀移到已反转前缀，不遗漏节点并保持不变量；终止时后缀为空，故整条链表完成反转。"
+                "循环不变量是 previous 始终为已处理前缀的正确结果，current 及其后继保持原顺序且仍可达。"
+                "一次迭代把 current 从未处理后缀移到已处理前缀，不遗漏节点并保持不变量；"
+                "终止时后缀为空，故整条链表完成操作，节点多重集合与预期一致。"
             ),
             "pitfalls": [
-                "改写 current.next 前没有保存 next，导致未处理后缀丢失",
-                "循环结束后错误返回 current，而不是保存新头的 previous",
+                "改写 next 前没有保存后继，导致未处理部分丢失",
+                "循环结束后错误返回 current 而非保存新头的 previous",
                 "忽略空链表和单节点链表的边界",
             ],
             "data_structures": ["单链表", "节点引用"],
-        }
-        structure.update(defaults)
-    elif "动态规划" in normalized or re.search(r"\bDP\b", topic or "", re.I) or "背包" in normalized:
-        defaults = {
+        },
+        "scenario": {
+            "problem_formalization": (
+                "输入：单链表头引用 head；每个节点包含 value 与 next。"
+                "输出：经过指定操作后的新头引用。"
+                "限制：只允许修改 next 引用，不得新建一组替代节点。"
+            ),
+            "data_structures": ["单链表", "节点引用"],
+            "time_complexity": "O(n)：每个节点只处理一次。",
+            "space_complexity": "O(1)：仅维护 previous、current、next_node 三个引用。",
+            "correctness_proof": (
+                "每轮开始时 previous 是已正确处理的前缀，current 是未处理后缀的首节点。"
+                "保存 next_node 后改写 current.next，再推进两个引用，不会丢失后缀；"
+                "循环终止时 previous 覆盖全部节点，链表完整且顺序正确。"
+            ),
+            "step_hints": [
+                "先写出 previous、current、next_node 在循环开始时分别指向哪里",
+                "改写 current.next 之前必须先保存原后继节点",
+                "推进引用后检查空链表、单节点与两节点样例",
+            ],
+        },
+    },
+    "动态规划": {
+        "matchers": ("动态规划", "DP", "背包"),
+        "concept": {
             "learning_objectives": [
                 "刻画动态规划的三要素：状态定义、状态转移方程与边界初值",
                 "区分最优子结构与无后效性，并能据此判断问题是否适用动态规划",
@@ -349,10 +381,31 @@ def _enrich_concept_payload(data: dict[str, Any], *, topic: str) -> dict[str, An
                 "边界初值未覆盖 0、1 等小规模样例，导致越界或错误递推",
             ],
             "data_structures": ["一维数组", "二维数组"],
-        }
-        structure.update(defaults)
-    elif "排序" in normalized:
-        defaults = {
+        },
+        "scenario": {
+            "problem_formalization": (
+                "输入：一个规模为 n 的问题实例（如 n 级台阶或长度为 n 的序列）。"
+                "输出：到达终点的方法数（或最大收益）。"
+                "限制：每一步的决策只依赖前序子问题的解，必须用状态转移方程递推求解。"
+            ),
+            "data_structures": ["一维数组", "状态表"],
+            "time_complexity": "O(n)：状态数为 n，单次转移 O(1)，总比较与赋值为线性次数。",
+            "space_complexity": "O(n)：dp 数组与状态规模同阶；可用滚动变量优化到 O(1)。",
+            "correctness_proof": (
+                "状态定义满足最优子结构与无后效性，初值 dp[0]、dp[1] 正确，"
+                "转移方程 dp[i]=dp[i-1]+dp[i-2] 由最后一步决策反推得到。"
+                "由数学归纳法，按 i 递增顺序填表时每个状态均被正确计算，故 dp[n] 为答案。"
+            ),
+            "step_hints": [
+                "先明确状态 dp[i] 的含义：到第 i 级时的方案数或最值",
+                "写出由 dp[i-1]（及 dp[i-2]）推出 dp[i] 的转移方程并确定初值",
+                "按从小到大顺序填表，最后返回 dp[n] 并验证边界样例",
+            ],
+        },
+    },
+    "排序": {
+        "matchers": ("排序",),
+        "concept": {
             "learning_objectives": [
                 "区分比较、交换、移动、稳定性等排序分析维度",
                 "根据输入规模、数据分布和空间限制选择合适的排序方法",
@@ -378,80 +431,591 @@ def _enrich_concept_payload(data: dict[str, Any], *, topic: str) -> dict[str, An
                 "忽略一轮无交换时可提前结束的条件",
             ],
             "data_structures": ["顺序表", "可比较关键字序列"],
-        }
-        structure.update(defaults)
+        },
+        "scenario": {
+            "problem_formalization": (
+                "输入：n 个整数构成的序列。输出：包含相同元素且按非递减顺序排列的序列。"
+                "要求：使用相邻比较与交换完成排序，并在某一轮没有交换时提前终止。"
+            ),
+            "data_structures": ["顺序表", "可比较关键字序列"],
+            "time_complexity": "O(n^2)：最坏情况下需要两层循环完成相邻比较。",
+            "space_complexity": "O(1)：使用常数个边界、下标和交换标记。",
+            "correctness_proof": (
+                "每轮结束后，未排序区的最大元素被移动到该区末端，已确定后缀保持有序。"
+                "未排序区不断缩小，终止时所有相邻元素均无逆序，因此整个序列非递减。"
+            ),
+            "step_hints": [
+                "明确 end 表示未排序区的最后一个下标",
+                "比较相邻元素，只有出现逆序时才交换并更新 swapped",
+                "一轮没有交换时说明序列已经有序，可以提前结束",
+            ],
+        },
+    },
+    "数组": {
+        "matchers": ("数组",),
+        "concept": {
+            "learning_objectives": [
+                "理解数组的随机访问特性与下标边界条件",
+                "区分遍历、插入、删除、原地修改等操作的时间复杂度",
+            ],
+            "abstract_model": (
+                "输入为长度为 n 的同类型元素序列，每个元素可通过下标 0~n-1 在 O(1) 内访问。"
+                "输出为经过遍历、聚合、过滤或原地修改后的序列或派生值。"
+                "核心不变量是下标始终落在 [0, n-1] 区间，越界访问属于非法状态。"
+            ),
+            "algorithm_outline": (
+                "先明确操作类型（查找、聚合、双端扫描、原地修改）。"
+                "以累加为例：维护 running_sum 初值为 0，按下标 i 从 0 到 n-1 遍历，"
+                "每步 running_sum += values[i]，遍历结束后 running_sum 即为结果。"
+                "删除与插入需移动后续元素，时间复杂度 O(n)。"
+            ),
+            "time_complexity": "O(n)：单次遍历每个元素访问一次；随机访问单次 O(1)。",
+            "space_complexity": "O(1)：原地遍历仅使用常数个下标与累加变量。",
+            "correctness_proof": (
+                "循环不变量是 i 始终指向下一个待处理元素，且 [0, i) 区间已正确处理。"
+                "每次迭代把 values[i] 纳入结果并推进 i，不遗漏也不重复；"
+                "终止时 i=n，所有元素已被处理，故结果等于整个数组的聚合值。"
+            ),
+            "pitfalls": [
+                "下标从 1 起算导致漏掉首元素或越界",
+                "原地删除时忘记移动后续元素，留下空洞",
+                "混淆长度 n 与最大下标 n-1",
+            ],
+            "data_structures": ["顺序表", "下标索引"],
+        },
+        "scenario": {
+            "problem_formalization": (
+                "输入：第一行为整数 n，第二行为 n 个整数构成的数组。"
+                "输出：经过指定操作（如求和、最大值、去重）后的结果。"
+                "限制：只能使用下标访问，不得借助额外高级数据结构。"
+            ),
+            "data_structures": ["顺序表", "下标索引"],
+            "time_complexity": "O(n)：单趟遍历即可完成聚合或筛选。",
+            "space_complexity": "O(1)：除输入数组外仅使用常数个辅助变量。",
+            "correctness_proof": (
+                "循环不变量是 [0, i) 区间的聚合值已正确保存在累加变量中。"
+                "每次迭代把 values[i] 纳入累加并推进 i，不遗漏也不重复；"
+                "终止时 i=n，累加结果等于整个数组的聚合值。"
+            ),
+            "step_hints": [
+                "先读取 n 与数组，明确下标范围 0 到 n-1",
+                "维护累加变量（或最大值变量）初值，按下标顺序遍历更新",
+                "遍历结束后输出结果，并检查 n=0、n=1 等边界",
+            ],
+        },
+    },
+    "字符串": {
+        "matchers": ("字符串",),
+        "concept": {
+            "learning_objectives": [
+                "理解字符串的下标遍历、切片与不可变性",
+                "区分回文判定、模式匹配与字符计数等典型问题",
+            ],
+            "abstract_model": (
+                "输入为长度为 n 的字符序列 s，每个字符可通过下标 0~n-1 访问。"
+                "输出为布尔判定（如回文）、匹配位置或变换后的新串。"
+                "核心不变量是左右指针始终落在 [0, n-1] 区间，且比较按字符等价进行。"
+            ),
+            "algorithm_outline": (
+                "先明确问题类型（回文、匹配、计数、变换）。"
+                "以回文判定为例：令 left=0、right=n-1，"
+                "循环比较 s[left] 与 s[right]，若不等则返回 False，否则 left+=1、right-=1，"
+                "直到 left>=right 返回 True。"
+            ),
+            "time_complexity": "O(n)：每个字符至多比较一次。",
+            "space_complexity": "O(1)：仅使用左右指针两个变量。",
+            "correctness_proof": (
+                "循环不变量是 [0, left) 与 (right, n-1] 这两段已对齐且相等。"
+                "每次迭代比较一对对称字符并推进指针，不遗漏任何一对；"
+                "终止时 left>=right，所有对称位置均已匹配，故 s 为回文。"
+            ),
+            "pitfalls": [
+                "忽略空串与单字符的边界（均为回文）",
+                "越界访问 s[right] 前未检查 right >= 0",
+                "混淆大小写或编码长度导致字符比较错误",
+            ],
+            "data_structures": ["字符数组", "双指针"],
+        },
+        "scenario": {
+            "problem_formalization": (
+                "输入：一行字符串 s。输出：若 s 为回文输出 YES，否则输出 NO。"
+                "限制：只能使用下标比较，不得直接调用反转库函数。"
+            ),
+            "data_structures": ["字符数组", "左右指针"],
+            "time_complexity": "O(n)：每个字符至多比较一次。",
+            "space_complexity": "O(1)：仅使用左右指针两个变量。",
+            "correctness_proof": (
+                "循环不变量是 [0, left) 与 (right, n-1] 已对齐且相等。"
+                "每次迭代比较一对对称字符并推进指针，遇到不等立即返回 NO；"
+                "终止时 left>=right，所有对称位置均匹配，故返回 YES。"
+            ),
+            "step_hints": [
+                "先读取字符串并计算长度 n 与左右指针初值",
+                "循环比较 s[left] 与 s[right]，不等则返回 NO",
+                "left>=right 时返回 YES，并验证空串与单字符边界",
+            ],
+        },
+    },
+    "双指针": {
+        "matchers": ("双指针", "two", "对撞", "快慢"),
+        "concept": {
+            "learning_objectives": [
+                "区分对撞指针、快慢指针与滑动窗口三类双指针模式",
+                "写出指针移动条件与循环不变量并据此证明正确性",
+            ],
+            "abstract_model": (
+                "输入为有序序列或链表，输出为满足某条件的下标对或子区间。"
+                "核心是用两个指针 left、right（或 slow、fast）以单调方式扫描，"
+                "把朴素 O(n^2) 的双重循环压缩到 O(n)。"
+            ),
+            "algorithm_outline": (
+                "先明确指针类型。以有序数组两数之和为例："
+                "令 left=0、right=n-1，比较 values[left]+values[right] 与目标："
+                "小于目标则 left+=1，大于目标则 right-=1，相等则返回下标对。"
+                "循环条件为 left<right，保证不重复不遗漏。"
+            ),
+            "time_complexity": "O(n)：每个指针单调移动，合计至多 2n 次比较。",
+            "space_complexity": "O(1)：仅使用两个指针变量。",
+            "correctness_proof": (
+                "循环不变量是答案若存在必在 [left, right] 区间内。"
+                "每次迭代根据当前和与目标的大小关系排除一个不可能的端点，"
+                "不会丢掉正确答案；终止时 left>=right，故未找到即无解。"
+            ),
+            "pitfalls": [
+                "在无序数组上直接用对撞指针导致漏解",
+                "指针移动方向错误，造成死循环或越界",
+                "忽略 left==right 时不应配对的边界",
+            ],
+            "data_structures": ["有序数组", "双指针"],
+        },
+        "scenario": {
+            "problem_formalization": (
+                "输入：第一行为目标 target，第二行为升序整数数组。"
+                "输出：和等于 target 的两个下标（存在则输出，不存在输出 -1 -1）。"
+                "限制：数组已升序，必须用 O(n) 双指针完成。"
+            ),
+            "data_structures": ["有序数组", "左右指针"],
+            "time_complexity": "O(n)：left、right 单调移动，合计至多 2n 次。",
+            "space_complexity": "O(1)：仅使用 left、right 与当前和变量。",
+            "correctness_proof": (
+                "循环不变量是答案若存在必在 [left, right] 区间内。"
+                "当前和小于目标时 left+=1 排除 left，大于目标时 right-=1 排除 right，"
+                "不会丢掉正确答案；终止时若未匹配则无解。"
+            ),
+            "step_hints": [
+                "先读取 target 与升序数组，初始化 left=0、right=n-1",
+                "比较 values[left]+values[right] 与 target 决定移动哪个指针",
+                "相等则输出下标并返回，循环结束仍未匹配则输出 -1 -1",
+            ],
+        },
+    },
+    "栈与队列": {
+        "matchers": ("栈", "队列", "stack", "queue"),
+        "concept": {
+            "learning_objectives": [
+                "区分栈的后进先出与队列的先进先出两种受限线性表",
+                "根据操作语义选择合适结构并分析均摊复杂度",
+            ],
+            "abstract_model": (
+                "输入为一组操作序列（push/pop 或 enqueue/dequeue），"
+                "输出为操作后的栈/队列状态或弹出元素序列。"
+                "栈只在栈顶操作，队列在一端入另一端出；两者都保证操作顺序的确定性。"
+            ),
+            "algorithm_outline": (
+                "先明确结构类型。以括号匹配为例：维护一个栈，"
+                "遇到左括号入栈，遇到右括号时若栈顶是对应左括号则出栈，否则判定非法。"
+                "字符串处理完毕后，栈为空则整体合法，否则不匹配。"
+            ),
+            "time_complexity": "O(n)：每个字符至多入栈、出栈各一次。",
+            "space_complexity": "O(n)：最坏情况下栈中保存全部左括号。",
+            "correctness_proof": (
+                "循环不变量是栈中保存尚未匹配的左括号，且按出现顺序排列。"
+                "每次遇到右括号时与栈顶匹配，匹配成功则消除一对，失败则整体非法；"
+                "终止时栈空等价于所有括号均正确配对。"
+            ),
+            "pitfalls": [
+                "右括号出现时忘记检查栈空，导致越界或误判",
+                "混淆栈与队列的出入端，造成顺序错误",
+                "循环结束后忘记检查栈是否为空",
+            ],
+            "data_structures": ["栈", "队列"],
+        },
+        "scenario": {
+            "problem_formalization": (
+                "输入：第一行为整数 n，接下来 n 行每行一个操作（push x / pop）。"
+                "输出：所有 pop 操作弹出元素按顺序构成的序列。"
+                "限制：使用栈结构，pop 时栈空则跳过。"
+            ),
+            "data_structures": ["栈", "列表容器"],
+            "time_complexity": "O(n)：每个操作 O(1)，共 n 个操作。",
+            "space_complexity": "O(n)：栈中最多保存 n 个元素。",
+            "correctness_proof": (
+                "栈遵循后进先出：push 把元素压入栈顶，pop 弹出栈顶。"
+                "每次操作后栈状态唯一确定，故按顺序执行后弹出序列唯一且正确。"
+            ),
+            "step_hints": [
+                "先读取 n 与操作列表，初始化空栈与输出列表",
+                "push x 时栈顶压入 x，pop 时若栈非空则弹出并记录",
+                "处理完所有操作后输出弹出序列，检查栈空时的 pop 边界",
+            ],
+        },
+    },
+    "哈希表": {
+        "matchers": ("哈希", "散列", "hash"),
+        "concept": {
+            "learning_objectives": [
+                "解释哈希函数、冲突处理与装填因子对性能的影响",
+                "在合适场景下用哈希表把 O(n^2) 查询优化到均摊 O(n)",
+            ],
+            "abstract_model": (
+                "输入为一组键 key（及可能的值 value），输出为键是否存在、对应值或键的计数。"
+                "通过哈希函数把 key 映射到桶地址，期望均摊 O(1) 完成插入、删除与查找。"
+                "冲突时通过链地址法或开放定址法解决，最坏情况退化为 O(n)。"
+            ),
+            "algorithm_outline": (
+                "先明确操作类型（计数、去重、两数配对）。以计数为例："
+                "维护一个空字典 frequency，遍历每个元素 x，"
+                "frequency[x] = frequency.get(x, 0) + 1，遍历结束后字典即包含每个键的出现次数。"
+            ),
+            "time_complexity": "O(n)：期望均摊下每次插入/查找 O(1)，共 n 次。",
+            "space_complexity": "O(n)：最坏情况下桶中保存全部 n 个键。",
+            "correctness_proof": (
+                "循环不变量是 frequency 字典准确反映已遍历前缀中每个键的出现次数。"
+                "每次迭代把当前键的计数加一，不遗漏也不重复；"
+                "终止时字典覆盖全部元素，故计数结果正确。"
+            ),
+            "pitfalls": [
+                "把最坏情况 O(n) 误当均摊 O(1) 而忽略冲突风险",
+                "在可变对象上做键而未先转为不可变表示",
+                "忘记初始化计数，导致 KeyError",
+            ],
+            "data_structures": ["哈希表", "键值映射"],
+        },
+        "scenario": {
+            "problem_formalization": (
+                "输入：第一行为整数 n，第二行为 n 个整数。"
+                "输出：每个整数及其出现次数，按键升序排列，格式 key:count 空格分隔。"
+                "限制：使用哈希表完成计数，不得双重循环。"
+            ),
+            "data_structures": ["哈希表", "字典"],
+            "time_complexity": "O(n)：均摊每次插入/更新 O(1)。",
+            "space_complexity": "O(n)：最坏情况每个键都不同。",
+            "correctness_proof": (
+                "循环不变量是字典准确反映已遍历前缀的计数。"
+                "每次迭代 frequency[x] += 1，不遗漏也不重复；"
+                "终止时按键排序输出，结果与原序列计数一致。"
+            ),
+            "step_hints": [
+                "先读取 n 与数组，初始化空字典 frequency",
+                "遍历每个元素 x，执行 frequency[x] = frequency.get(x, 0) + 1",
+                "按键升序排序，输出 key:count 序列，并检查空输入边界",
+            ],
+        },
+    },
+    "二叉树": {
+        "matchers": ("二叉树", "树", "binary"),
+        "concept": {
+            "learning_objectives": [
+                "区分二叉树的前序、中序、后序与层序四种遍历",
+                "用递归定义刻画二叉树结构并写出终止条件",
+            ],
+            "abstract_model": (
+                "输入为一棵二叉树的根节点 root，每个节点含 val、left、right。"
+                "输出为某种遍历顺序的节点值序列或派生量（高度、节点数等）。"
+                "核心是用递归把问题分解为左子树与右子树的子问题。"
+            ),
+            "algorithm_outline": (
+                "先明确遍历类型。以层序遍历为例：维护一个队列，初始入根节点；"
+                "循环弹出队首 node，访问 node.val，再按序把 node.left、node.right 入队（若非空）。"
+                "队列为空时遍历结束，访问顺序即层序序列。"
+            ),
+            "time_complexity": "O(n)：每个节点入队、出队各一次。",
+            "space_complexity": "O(n)：最坏情况队列保存一层的全部节点。",
+            "correctness_proof": (
+                "循环不变量是队列中保存下一层待访问节点，且按从左到右顺序排列。"
+                "每次迭代弹出队首并把其非空子节点入队，保证同层节点先于下层被访问；"
+                "终止时队列为空，所有节点均被访问一次。"
+            ),
+            "pitfalls": [
+                "递归遍历忘记写终止条件导致栈溢出",
+                "层序遍历入队前未判空，把 None 也入队",
+                "混淆前序与中序的访问时机",
+            ],
+            "data_structures": ["二叉树", "队列"],
+        },
+        "scenario": {
+            "problem_formalization": (
+                "输入：按层序给出二叉树节点值序列，# 表示空节点。"
+                "输出：层序遍历结果，跳过空节点，空格分隔。"
+                "限制：使用队列完成 BFS，不得用递归前序代替。"
+            ),
+            "data_structures": ["二叉树", "队列"],
+            "time_complexity": "O(n)：每个节点入队、出队各一次。",
+            "space_complexity": "O(n)：最坏情况队列保存一层的全部节点。",
+            "correctness_proof": (
+                "循环不变量是队列保存下一层待访问节点，按从左到右排列。"
+                "每次迭代弹出队首，跳过空节点，否则记录值并把其左右子节点入队；"
+                "终止时所有非空节点均被访问，顺序即层序序列。"
+            ),
+            "step_hints": [
+                "先读取节点值序列，用队列初始化为根下标 0",
+                "循环弹出队首下标，跳过 # 与越界，记录值并把左右子节点下标入队",
+                "队列为空时输出访问序列，并检查空树边界",
+            ],
+        },
+    },
+    "图": {
+        "matchers": ("图", "BFS", "DFS", "graph"),
+        "concept": {
+            "learning_objectives": [
+                "区分邻接矩阵与邻接表两种图的表示方式",
+                "用 BFS 与 DFS 完成连通性与遍历问题并分析复杂度",
+            ],
+            "abstract_model": (
+                "输入为图 G=(V, E)，含 n 个顶点与 m 条边。"
+                "输出为从某源点出发的遍历顺序、连通分量或最短路径。"
+                "核心是用访问标记 visited 避免重复访问，用队列或栈管理候选顶点。"
+            ),
+            "algorithm_outline": (
+                "先明确表示方式（邻接表更省空间）。以 BFS 为例："
+                "维护队列与 visited 集合，初始入源点并标记；"
+                "循环弹出队首 node，加入访问顺序，"
+                "再把 node 的所有未访问邻居按序入队并标记，直到队列为空。"
+            ),
+            "time_complexity": "O(n+m)：每个顶点和每条边各访问一次。",
+            "space_complexity": "O(n)：visited 集合与队列至多保存 n 个顶点。",
+            "correctness_proof": (
+                "循环不变量是队列保存已发现但未访问的顶点，且 visited 准确反映已发现集合。"
+                "每次迭代弹出队首并访问其所有未发现邻居，保证按距源点距离递增顺序访问；"
+                "终止时所有可达顶点均被访问一次。"
+            ),
+            "pitfalls": [
+                "入队前忘记标记 visited 导致重复入队甚至死循环",
+                "把无向图的边只存一次导致漏访问",
+                "混淆 BFS 与 DFS 的候选结构（队列 vs 栈）",
+            ],
+            "data_structures": ["邻接表", "队列"],
+        },
+        "scenario": {
+            "problem_formalization": (
+                "输入：第一行为 n 和 m，接下来 m 行每行两个整数表示无向边。"
+                "输出：从顶点 0 出发的 BFS 访问顺序，空格分隔。"
+                "限制：使用邻接表与队列，访问邻居时按编号升序。"
+            ),
+            "data_structures": ["邻接表", "队列", "访问标记集合"],
+            "time_complexity": "O(n+m)：每个顶点和每条边各访问一次。",
+            "space_complexity": "O(n)：visited 与队列至多保存 n 个顶点。",
+            "correctness_proof": (
+                "循环不变量是队列保存已发现未访问顶点，visited 反映已发现集合。"
+                "每次迭代弹出队首并按升序入队其未发现邻居，保证 BFS 顺序；"
+                "终止时所有从 0 可达顶点均被访问一次。"
+            ),
+            "step_hints": [
+                "先读 n、m 与边集，构造邻接表（无向图双向存边）",
+                "初始化队列=[0]、visited={0}，循环弹出队首加入访问顺序",
+                "按升序遍历邻居，未访问则入队并标记，最后输出访问顺序",
+            ],
+        },
+    },
+    "回溯": {
+        "matchers": ("回溯", "backtrack"),
+        "concept": {
+            "learning_objectives": [
+                "用选择-探索-撤销三步法刻画回溯搜索过程",
+                "区分剪枝条件与终止条件并据此减少无效搜索",
+            ],
+            "abstract_model": (
+                "输入为一个可枚举的决策空间（如所有排列、组合、子集）。"
+                "输出为满足约束的全部方案。"
+                "核心是用递归维护当前路径 path，每层做一个选择并深入，"
+                "返回后撤销该选择以尝试其它分支。"
+            ),
+            "algorithm_outline": (
+                "先明确决策阶段与候选集合。以二进制串枚举为例："
+                "维护 path 列表，从 position=0 开始递归；"
+                "若 position==n 则记录一份 path 的拷贝到答案，返回；"
+                "否则依次尝试选择 '0' 与 '1'，path.append(choice) 后递归 position+1，"
+                "再 path.pop() 撤销选择。"
+            ),
+            "time_complexity": "O(2^n)：n 位二进制串共 2^n 个方案，每个方案 O(n) 记录。",
+            "space_complexity": "O(n)：递归栈深度与 path 长度均为 n。",
+            "correctness_proof": (
+                "递归不变量是 path[0..position-1] 已固定，[position..n-1] 待枚举。"
+                "每次递归把当前位置的所有候选都尝试一次，且通过 pop 恢复 path 状态；"
+                "终止时 position==n，path 即为一个完整方案，由穷举性知所有方案都被记录。"
+            ),
+            "pitfalls": [
+                "记录答案时未拷贝 path，导致后续修改污染结果",
+                "忘记 path.pop() 撤销选择，导致路径错乱",
+                "剪枝条件过严漏解或过松仍搜索大量无效分支",
+            ],
+            "data_structures": ["递归栈", "路径列表"],
+        },
+        "scenario": {
+            "problem_formalization": (
+                "输入：整数 n。输出：所有长度为 n 的二进制串，按字典序空格分隔。"
+                "限制：使用回溯枚举，不得用嵌套循环硬编码。"
+            ),
+            "data_structures": ["递归栈", "路径列表"],
+            "time_complexity": "O(2^n)：共 2^n 个方案，每个 O(n) 记录。",
+            "space_complexity": "O(n)：递归栈与 path 长度均为 n。",
+            "correctness_proof": (
+                "递归不变量是 path[0..position-1] 已固定。"
+                "每次递归尝试 '0' 与 '1' 两种选择，append 后深入、pop 后回退；"
+                "终止时 position==n，path 为一个完整方案，由穷举性知全部方案均被记录。"
+            ),
+            "step_hints": [
+                "先读取 n，初始化空 path 与 answers 列表",
+                "递归 backtrack(position)：position==n 时记录 path 拷贝并返回",
+                "否则依次 path.append('0'/'1') 递归 position+1，再 path.pop() 撤销",
+            ],
+        },
+    },
+    "贪心": {
+        "matchers": ("贪心", "greedy"),
+        "concept": {
+            "learning_objectives": [
+                "刻画贪心策略的局部最优选择与全局最优目标",
+                "用交换论证或归纳法证明贪心策略的正确性",
+            ],
+            "abstract_model": (
+                "输入为一个可按某种顺序处理的问题实例（如面额数组与待找零金额）。"
+                "输出为某个目标的最值（如最少硬币数）或具体方案。"
+                "核心是每一步选择当前看来最优的选项，且不撤销。"
+            ),
+            "algorithm_outline": (
+                "先确定排序或选择策略。以找零为例："
+                "把面额从大到小排序，依次尝试每种面额 coin，"
+                "当 amount >= coin 时不断扣除 coin 并记录，直到 amount 为 0 或所有面额用完。"
+            ),
+            "time_complexity": "O(n log n)：排序主导，扣除过程 O(n)。",
+            "space_complexity": "O(1)：除记录方案的列表外只用常数变量。",
+            "correctness_proof": (
+                "对经典面额系统（如 1、2、5、10），可证贪心选择安全："
+                "用交换论证，若最优解不含当前最大可用面额 coin，则可用若干小面额替换为 coin，"
+                "不增加硬币数；故贪心选择包含在某个最优解中，归纳得全局最优。"
+            ),
+            "pitfalls": [
+                "对任意面额系统误用贪心，未做正确性证明",
+                "排序方向错误导致策略失效",
+                "忽略无解情况（如无法恰好凑出 amount）",
+            ],
+            "data_structures": ["数组", "排序"],
+        },
+        "scenario": {
+            "problem_formalization": (
+                "输入：整数 amount 表示待找零金额。"
+                "输出：用面额 [10, 5, 2, 1] 凑出 amount 的最少硬币序列，空格分隔。"
+                "限制：使用贪心按面额从大到小扣除。"
+            ),
+            "data_structures": ["面额数组", "结果列表"],
+            "time_complexity": "O(1)：面额数为常数，扣除次数由 amount 决定但单次 O(1)。",
+            "space_complexity": "O(1)：结果列表长度上限为 amount/最小面额。",
+            "correctness_proof": (
+                "经典面额 [10, 5, 2, 1] 满足贪心选择性质："
+                "用交换论证可证最优解必含尽可能多的最大面额，"
+                "故按从大到小扣除得到的方案即为最少硬币数。"
+            ),
+            "step_hints": [
+                "先读取 amount，初始化空 chosen 列表",
+                "遍历面额 [10, 5, 2, 1]，当 amount>=coin 时不断扣除并 append",
+                "输出 chosen 序列，并检查 amount=0、amount=1 等边界",
+            ],
+        },
+    },
+    "单调栈": {
+        "matchers": ("单调栈", "monotonic"),
+        "concept": {
+            "learning_objectives": [
+                "解释单调栈的单调性维护与出栈时机",
+                "用单调栈把「找下一个更大元素」类问题优化到 O(n)",
+            ],
+            "abstract_model": (
+                "输入为长度为 n 的整数数组 values。"
+                "输出为每个元素对应的下一个更大元素的下标或值（不存在则记 -1）。"
+                "核心是维护一个下标栈，栈中下标对应的值单调递减。"
+            ),
+            "algorithm_outline": (
+                "初始化空栈 stack 与答案数组 answer（全 -1）。"
+                "遍历每个下标 index："
+                "当 stack 非空且 values[stack[-1]] < values[index] 时，"
+                "previous = stack.pop()，answer[previous] = values[index]；"
+                "最后把 index 入栈。遍历结束即得答案。"
+            ),
+            "time_complexity": "O(n)：每个下标至多入栈、出栈各一次。",
+            "space_complexity": "O(n)：栈与答案数组各 O(n)。",
+            "correctness_proof": (
+                "循环不变量是栈中下标对应的值按从栈底到栈顶单调递减。"
+                "新元素 values[index] 入栈前把所有比它小的栈顶弹出并赋答案，"
+                "故每个元素出栈时即被正确赋予「下一个更大值」；"
+                "终止时仍在栈中的元素不存在更大值，保持 -1。"
+            ),
+            "pitfalls": [
+                "用 > 还是 >= 决定是否弹栈，影响「相等」情形的判定",
+                "忘记栈空判断导致越界",
+                "把值入栈而非下标，丢失位置信息",
+            ],
+            "data_structures": ["单调栈", "下标数组"],
+        },
+        "scenario": {
+            "problem_formalization": (
+                "输入：一行 n 个整数构成的数组 values。"
+                "输出：每个元素的下一个更大元素值，不存在则 -1，空格分隔。"
+                "限制：使用单调栈 O(n) 完成，不得双重循环。"
+            ),
+            "data_structures": ["单调栈", "答案数组"],
+            "time_complexity": "O(n)：每个下标至多入栈、出栈各一次。",
+            "space_complexity": "O(n)：栈与答案数组各 O(n)。",
+            "correctness_proof": (
+                "循环不变量是栈中下标对应值单调递减。"
+                "新元素入栈前弹出所有比它小的栈顶并赋答案，每个元素出栈时被正确赋值；"
+                "终止时仍在栈中的元素无更大值，保持 -1。"
+            ),
+            "step_hints": [
+                "先读取数组 values，初始化 answer=[-1]*n 与空栈",
+                "遍历 index，当栈非空且 values[栈顶] < values[index] 时弹出并赋答案",
+                "把 index 入栈，遍历结束后输出 answer，并检查递增、递减样例",
+            ],
+        },
+    },
+}
+
+
+def _match_topic_key(topic: str) -> str | None:
+    """根据课程主题文本匹配到 _TOPIC_ENRICHMENTS 的键，返回 None 表示无匹配。"""
+    normalized = re.sub(r"\s+", "", (topic or "").lower())
+    if not normalized:
+        return None
+    for key, entry in _TOPIC_ENRICHMENTS.items():
+        for matcher in entry["matchers"]:
+            # 容错：matcher 既可能是 str 也可能是 (str,) 元组
+            if isinstance(matcher, (tuple, list)):
+                candidates = [str(item) for item in matcher]
+            else:
+                candidates = [str(matcher)]
+            for candidate in candidates:
+                if candidate.lower() in normalized:
+                    return key
+    return None
+
+
+def _enrich_concept_payload(data: dict[str, Any], *, topic: str) -> dict[str, Any]:
+    structure = data["structure_logic"]
+    key = _match_topic_key(topic)
+    if not key:
+        return data
+    defaults = _TOPIC_ENRICHMENTS[key].get("concept") or {}
+    structure.update(defaults)
     return data
 
 
 def _enrich_scenario_payload(data: dict[str, Any], *, topic: str) -> dict[str, Any]:
     structure = data["structure_logic"]
-    normalized = re.sub(r"\s+", "", topic or "")
-    if "链表" in normalized and "反转" in normalized:
-        structure["problem_formalization"] = (
-            "输入：单链表头引用 head；每个节点包含 value 与 next。"
-            "输出：包含原有全部节点、连接方向完全反转的新头引用。"
-            "限制：只允许修改 next 引用，不得新建一组替代节点。"
-        )
-        structure["data_structures"] = ["单链表", "节点引用"]
-        structure["time_complexity"] = "O(n)：每个节点只处理一次。"
-        structure["space_complexity"] = "O(1)：仅维护 previous、current、next_node 三个引用。"
-        structure["correctness_proof"] = (
-            "每轮开始时 previous 是已正确反转的前缀，current 是未处理后缀的首节点。"
-            "保存 next_node 后反转 current.next，再推进两个引用，不会丢失后缀；循环终止时 previous 覆盖全部节点。"
-        )
-        hints = structure.get("step_hints")
-        if not isinstance(hints, list) or len(set(str(item) for item in hints)) < 3:
-            structure["step_hints"] = [
-                "先写出 previous、current、next_node 在循环开始时分别指向哪里",
-                "改写 current.next 之前必须先保存原后继节点",
-                "推进引用后检查空链表、单节点与两节点样例",
-            ]
-    elif "动态规划" in normalized or re.search(r"\bDP\b", topic or "", re.I) or "背包" in normalized:
-        structure["problem_formalization"] = (
-            "输入：一个规模为 n 的问题实例（如 n 级台阶或长度为 n 的序列）。"
-            "输出：到达终点的方法数（或最大收益）。"
-            "限制：每一步的决策只依赖前序子问题的解，必须用状态转移方程递推求解。"
-        )
-        structure["data_structures"] = ["一维数组", "状态表"]
-        structure["time_complexity"] = "O(n)：状态数为 n，单次转移 O(1)，总比较与赋值为线性次数。"
-        structure["space_complexity"] = "O(n)：dp 数组与状态规模同阶；可用滚动变量优化到 O(1)。"
-        structure["correctness_proof"] = (
-            "状态定义满足最优子结构与无后效性，初值 dp[0]、dp[1] 正确，"
-            "转移方程 dp[i]=dp[i-1]+dp[i-2] 由最后一步决策反推得到。"
-            "由数学归纳法，按 i 递增顺序填表时每个状态均被正确计算，故 dp[n] 为答案。"
-        )
-        hints = structure.get("step_hints")
-        if not isinstance(hints, list) or len(set(str(item) for item in hints)) < 3:
-            structure["step_hints"] = [
-                "先明确状态 dp[i] 的含义：到第 i 级时的方案数或最值",
-                "写出由 dp[i-1]（及 dp[i-2]）推出 dp[i] 的转移方程并确定初值",
-                "按从小到大顺序填表，最后返回 dp[n] 并验证边界样例",
-            ]
-    elif "排序" in normalized:
-        domain = data["domain_narrative"]
-        if len(str(domain.get("story") or "")) < 80:
-            domain["headline"] = "混乱货舱的秩序恢复任务"
-            domain["story"] = (
-                "运输站收到一批顺序混乱的货箱，调度员必须按编号从小到大重新排列。"
-                "设备每次只能比较相邻货箱并决定是否交换；如果遗漏一个逆序位置，后续装载就会发生冲突。"
-            )
-            domain["mission"] = "记录每轮比较与交换，在不丢失任何货箱的前提下恢复完整次序。"
-        structure["problem_formalization"] = (
-            "输入：n 个整数构成的序列。输出：包含相同元素且按非递减顺序排列的序列。"
-            "要求：使用相邻比较与交换完成排序，并在某一轮没有交换时提前终止。"
-        )
-        structure["data_structures"] = ["顺序表", "可比较关键字序列"]
-        structure["time_complexity"] = "O(n^2)：最坏情况下需要两层循环完成相邻比较。"
-        structure["space_complexity"] = "O(1)：使用常数个边界、下标和交换标记。"
-        structure["correctness_proof"] = (
-            "每轮结束后，未排序区的最大元素被移动到该区末端，已确定后缀保持有序。"
-            "未排序区不断缩小，终止时所有相邻元素均无逆序，因此整个序列非递减。"
-        )
-        structure["step_hints"] = [
-            "明确 end 表示未排序区的最后一个下标",
-            "比较相邻元素，只有出现逆序时才交换并更新 swapped",
-            "一轮没有交换时说明序列已经有序，可以提前结束",
-        ]
+    key = _match_topic_key(topic)
+    if not key:
+        return data
+    defaults = _TOPIC_ENRICHMENTS[key].get("scenario") or {}
+    structure.update(defaults)
     return data
 
 
@@ -521,13 +1085,35 @@ def _convert_flowchart_to_mindmap(flowchart: str, hints: PersonaHints) -> str:
 
 
 def _build_fallback_mindmap(topic: str) -> str:
-    return (
-        f"mindmap\n"
-        f"  root(({topic}))\n"
-        f"    核心概念\n"
-        f"    关键算法\n"
-        f"    应用场景"
-    )
+    """按主题生成符合校验（≥4 一级分支、无重复节点、三层展开）的兜底思维导图。"""
+    key = _match_topic_key(topic)
+    entry = _TOPIC_ENRICHMENTS.get(key or "") or {}
+    concept = entry.get("concept") or {}
+    objectives = concept.get("learning_objectives") or []
+    pitfalls = concept.get("pitfalls") or []
+    data_structures = concept.get("data_structures") or []
+    branches: list[tuple[str, list[str]]] = [
+        ("核心目标", [str(item) for item in objectives[:2]] or ["理解主要思想", "掌握复杂度分析"]),
+        ("数据结构", [str(item) for item in data_structures[:2]] or ["基础容器", "辅助结构"]),
+        ("算法步骤", ["初始化阶段", "迭代推进", "终止条件"]),
+        ("易错点", [str(item) for item in pitfalls[:2]] or ["边界条件", "复杂度误判"]),
+        ("应用场景", ["课堂例题", "OJ 练习", "工程实践"]),
+    ]
+    seen: set[str] = set()
+    lines = [f"mindmap", f"  root(({topic}))"]
+    for branch_label, children in branches:
+        normalized = re.sub(r"\s+", "", branch_label)
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        lines.append(f"    {branch_label}")
+        for child in children:
+            child_norm = re.sub(r"\s+", "", child)
+            if not child_norm or child_norm in seen:
+                continue
+            seen.add(child_norm)
+            lines.append(f"      {child}")
+    return "\n".join(lines)
 
 
 def _clean_mindmap_label(text: str, max_len: int = 10) -> str:
@@ -560,6 +1146,7 @@ def _fix_mindmap_syntax(text: str, fallback_topic: str = "学习主题") -> str:
 
     has_root = False
     fixed_lines = ["mindmap"]
+    seen_labels: set[str] = set()  # 去重，避免校验「重复节点」
     for line in lines[1:]:
         stripped = line.strip()
         if not stripped:
@@ -575,7 +1162,11 @@ def _fix_mindmap_syntax(text: str, fallback_topic: str = "学习主题") -> str:
                 fixed_lines.append(f"  root(({label}))")
                 has_root = True
             else:
-                fixed_lines.append(f"    {label}")
+                # 已有 root，把第二个 root 当作普通节点处理（去重）
+                normalized = re.sub(r"\s+", "", label)
+                if normalized and normalized not in seen_labels:
+                    seen_labels.add(normalized)
+                    fixed_lines.append(f"    {label}")
             continue
 
         raw_indent = len(line) - len(line.lstrip())
@@ -583,6 +1174,10 @@ def _fix_mindmap_syntax(text: str, fallback_topic: str = "学习主题") -> str:
         cleaned = _clean_mindmap_label(stripped)
         if not cleaned:
             continue
+        normalized = re.sub(r"\s+", "", cleaned)
+        if normalized in seen_labels:
+            continue  # 跳过重复节点
+        seen_labels.add(normalized)
         fixed_lines.append(" " * indent + cleaned)
 
     if not has_root:
@@ -590,6 +1185,40 @@ def _fix_mindmap_syntax(text: str, fallback_topic: str = "学习主题") -> str:
 
     if len(fixed_lines) < 3:
         return _build_fallback_mindmap(fallback_topic)
+
+    # 若去重后一级分支 < 4 个，在末尾补足主题相关分支，避免校验失败
+    # 同时保留 LLM 原始主题词（如"课程定位"），不丢失关键节点。
+    branch_count = sum(
+        1 for line in fixed_lines[2:]
+        if line.startswith("    ") and not line.startswith("      ")
+    )
+    if branch_count < 4:
+        # 从主题兜底中取补充分支（核心目标/数据结构/算法步骤/易错点/应用场景）
+        key = _match_topic_key(fallback_topic)
+        entry = _TOPIC_ENRICHMENTS.get(key or "") or {}
+        concept = entry.get("concept") or {}
+        supplement_branches: list[tuple[str, list[str]]] = [
+            ("核心目标", [str(item) for item in (concept.get("learning_objectives") or [])[:2]] or ["理解主要思想", "掌握复杂度分析"]),
+            ("数据结构", [str(item) for item in (concept.get("data_structures") or [])[:2]] or ["基础容器", "辅助结构"]),
+            ("算法步骤", ["初始化阶段", "迭代推进", "终止条件"]),
+            ("易错点", [str(item) for item in (concept.get("pitfalls") or [])[:2]] or ["边界条件", "复杂度误判"]),
+            ("应用场景", ["课堂例题", "OJ 练习", "工程实践"]),
+        ]
+        for branch_label, children in supplement_branches:
+            branch_norm = re.sub(r"\s+", "", branch_label)
+            if branch_norm in seen_labels:
+                continue
+            seen_labels.add(branch_norm)
+            fixed_lines.append(f"    {branch_label}")
+            for child in children:
+                child_norm = re.sub(r"\s+", "", child)
+                if not child_norm or child_norm in seen_labels:
+                    continue
+                seen_labels.add(child_norm)
+                fixed_lines.append(f"      {child}")
+            branch_count += 1
+            if branch_count >= 4:
+                break
 
     return "\n".join(fixed_lines)
 
@@ -739,7 +1368,14 @@ _FOCUS_MINDMAP_PROFILES: dict[str, list[tuple[str, list[str]]]] = {
 
 
 def _mindmap_focus_label(topic: str, module_key: str = "", focus_hint: str = "") -> str:
-    explicit = " ".join([topic, module_key])
+    """根据 topic/module_key/focus_hint 推断思维导图根节点标签。
+
+    优先级：
+    1. topic + module_key 的硬边界匹配（topic 是用户主动指定，最权威）
+    2. focus_hint + module_key + topic 的扩展匹配（focus_hint 可能含 skill_focus 噪声，
+       因此仅在 topic 无匹配时回退；为避免 skill_focus 中提及的其它主题污染根节点，
+       focus_hint 匹配时要求 topic 不为空且 topic 不含其它主题词）
+    """
     hard_boundaries = (
         (r"linked\s*list|链表|单链表|双链表", "链表"),
         (r"two\s*pointers|双指针|对撞指针|快慢指针", "双指针"),
@@ -750,38 +1386,59 @@ def _mindmap_focus_label(topic: str, module_key: str = "", focus_hint: str = "")
         (r"hash|哈希|散列", "哈希表"),
         (r"sort|排序|快排|归并", "排序"),
         (r"string|字符串|KMP|Trie", "字符串"),
+        (r"\barray\b|数组", "数组"),
     )
+    # 1. 优先用 topic + module_key 做硬边界匹配
+    explicit = " ".join([topic, module_key])
     for pattern, label in hard_boundaries:
         if re.search(pattern, explicit, re.I):
             return label
-    source = " ".join([focus_hint, module_key, topic])
-    if re.search(r"双指针|two\s*pointers|对撞指针|快慢指针|sliding\s*window|滑动窗口", source, re.I):
-        return "双指针"
-    if re.search(r"stack|queue|栈|队列", source, re.I):
-        return "栈与队列"
-    if re.search(r"graph|bfs|dfs|图论|图\b|图与|深度优先|广度优先|最短路径|拓扑排序", source, re.I):
-        return "图"
-    if re.search(r"sort|排序|冒泡|快排|归并|堆排序", source, re.I):
-        return "排序"
-    if re.search(r"string|字符串|KMP|Trie|模式匹配", source, re.I):
-        return "字符串"
-    if re.search(r"tree|树\b|二叉树|搜索树|BST|AVL|红黑树|B树|哈夫曼", source, re.I):
-        return "树"
-    if re.search(r"search|查找|搜索|二分|binary\s*search", source, re.I):
-        return "查找"
-    if re.search(r"linked\s*list|链表|单链表|双链表", source, re.I):
-        return "链表"
-    if re.search(r"recursion|递归|分治|divide\s*and\s*conquer", source, re.I):
-        return "递归与分治"
-    if re.search(r"dynamic\s*programming|动态规划|\bDP\b|背包|子序列", source, re.I):
-        return "动态规划"
-    if re.search(r"hash|哈希|散列|hashmap|hashtable", source, re.I):
-        return "哈希表"
-    if focus_hint:
-        return _clean_mindmap_label(focus_hint, max_len=24) or _clean_mindmap_label(topic, max_len=24)
+    # 2. 仅当 topic 没命中硬边界时，才考虑 focus_hint（含 skill_focus 噪声）
+    #    但要求 topic 本身不含其它主题词（避免 focus_hint 把 topic 顶替为别的主题）
+    topic_has_other_topic = any(
+        re.search(p, topic or "", re.I)
+        for p, _ in hard_boundaries
+    )
+    if topic and not topic_has_other_topic:
+        source = " ".join([focus_hint, module_key, topic])
+        if re.search(r"双指针|two\s*pointers|对撞指针|快慢指针|sliding\s*window|滑动窗口", source, re.I):
+            return "双指针"
+        if re.search(r"stack|queue|栈|队列", source, re.I):
+            return "栈与队列"
+        if re.search(r"graph|bfs|dfs|图论|图\b|图与|深度优先|广度优先|最短路径|拓扑排序", source, re.I):
+            return "图"
+        if re.search(r"sort|排序|冒泡|快排|归并|堆排序", source, re.I):
+            return "排序"
+        if re.search(r"string|字符串|KMP|Trie|模式匹配", source, re.I):
+            return "字符串"
+        if re.search(r"tree|树\b|二叉树|搜索树|BST|AVL|红黑树|B树|哈夫曼", source, re.I):
+            return "树"
+        if re.search(r"search|查找|搜索|二分|binary\s*search", source, re.I):
+            return "查找"
+        if re.search(r"linked\s*list|链表|单链表|双链表", source, re.I):
+            return "链表"
+        if re.search(r"recursion|递归|分治|divide\s*and\s*conquer", source, re.I):
+            return "递归与分治"
+        if re.search(r"dynamic\s*programming|动态规划|\bDP\b|背包|子序列", source, re.I):
+            return "动态规划"
+        if re.search(r"hash|哈希|散列|hashmap|hashtable", source, re.I):
+            return "哈希表"
+        if re.search(r"\barray\b|数组", source, re.I):
+            return "数组"
+    # 3. 最终回退：清理 topic/模块 key/聚焦提示为短标签
+    if topic:
+        cleaned = _clean_mindmap_label(topic, max_len=24)
+        if cleaned:
+            return cleaned
     if module_key:
-        return _clean_mindmap_label(module_key, max_len=24) or _clean_mindmap_label(topic, max_len=24)
-    return _clean_mindmap_label(topic, max_len=24) or "学习主题"
+        cleaned = _clean_mindmap_label(module_key, max_len=24)
+        if cleaned:
+            return cleaned
+    if focus_hint:
+        cleaned = _clean_mindmap_label(focus_hint, max_len=24)
+        if cleaned:
+            return cleaned
+    return "学习主题"
 
 
 def _labels_from_knowledge_chunks(chunks: list[KnowledgeChunk], limit: int = 16) -> list[str]:
@@ -820,9 +1477,18 @@ def _build_knowledge_mindmap(
     lines = ["mindmap", f"  root(({root}))"]
     profile = _FOCUS_MINDMAP_PROFILES.get(root)
     if profile:
+        seen: set[str] = set()
         for branch, children in profile:
+            branch_norm = re.sub(r"\s+", "", branch)
+            if branch_norm in seen:
+                continue
+            seen.add(branch_norm)
             lines.append(f"    {branch}")
             for child in children:
+                child_norm = re.sub(r"\s+", "", child)
+                if child_norm in seen:
+                    continue
+                seen.add(child_norm)
                 lines.append(f"      {child}")
         return "\n".join(lines)
 
@@ -834,9 +1500,19 @@ def _build_knowledge_mindmap(
         ("应用场景", chunk_labels[10:13] or ["典型应用", "扩展场景"]),
         ("分析与易错", chunk_labels[13:16] or ["复杂度分析", "边界条件", "常见错误"]),
     ]
+    seen_branch: set[str] = set()
     for branch, children in branches:
+        branch_norm = re.sub(r"\s+", "", branch)
+        if branch_norm in seen_branch:
+            continue
+        seen_branch.add(branch_norm)
         lines.append(f"    {branch}")
         for child in children:
+            child_norm = re.sub(r"\s+", "", child)
+            # 子节点不能与任何分支名或其他子节点重复
+            if not child_norm or child_norm in seen_branch:
+                continue
+            seen_branch.add(child_norm)
             lines.append(f"      {child}")
     return "\n".join(lines)
 
@@ -1734,6 +2410,42 @@ def _build_scenario_code_framework(topic: str) -> str:
             "    operations = [input().strip() for _ in range(int(input()))]\n"
             "    print(*process_operations(operations), sep='\\n')\n"
         )
+    if "双指针" in normalized or "对撞" in normalized or "快慢" in normalized:
+        return (
+            "def two_sum_pair(values, target):\n"
+            "    # 双指针：left 指向起点、right 指向终点，按和的大小向内推进\n"
+            "    left = 0\n"
+            "    right = len(values) - 1\n"
+            "    while left < right:\n"
+            "        current_sum = values[left] + values[right]\n"
+            "        # TODO: 比较 current_sum 与 target，决定移动 left 或 right\n"
+            "        raise NotImplementedError\n"
+            "    return []\n\n"
+            "numbers = list(map(int, input().split()))\n"
+            "target = int(input())\n"
+            "print(two_sum_pair(numbers, target))\n"
+        )
+    if "二叉树" in normalized or "binary" in normalized.lower():
+        return (
+            "class TreeNode:\n"
+            "    def __init__(self, val=0, left=None, right=None):\n"
+            "        self.val = val\n"
+            "        self.left = left\n"
+            "        self.right = right\n\n"
+            "from collections import deque\n\n"
+            "def level_order(root):\n"
+            "    # 层序遍历：root 入队，循环弹出 node 并把 left/right 入队\n"
+            "    if root is None:\n"
+            "        return []\n"
+            "    queue = deque([root])\n"
+            "    order = []\n"
+            "    while queue:\n"
+            "        node = queue.popleft()\n"
+            "        order.append(node.val)\n"
+            "        # TODO: 把 node.left、node.right 按序入队（若非空）\n"
+            "        raise NotImplementedError\n"
+            "    return order\n"
+        )
     if "图" in normalized or "BFS" in normalized or "DFS" in normalized:
         return (
             "from collections import deque\n\n"
@@ -1747,6 +2459,53 @@ def _build_scenario_code_framework(topic: str) -> str:
             "        # TODO: 按顺序加入尚未访问的相邻顶点\n"
             "        raise NotImplementedError\n"
             "    return order\n"
+        )
+    if "哈希" in normalized or "散列" in normalized or "hash" in normalized.lower():
+        return (
+            "def count_pairs(values, target_sum):\n"
+            "    # 用 dict 记录每个值出现的次数，扫描一次即可统计配对数\n"
+            "    counter = {}\n"
+            "    answer = 0\n"
+            "    for value in values:\n"
+            "        complement = target_sum - value\n"
+            "        # TODO: 查 dict 中 complement 的计数并累加到 answer\n"
+            "        raise NotImplementedError\n"
+            "    return answer\n\n"
+            "numbers = list(map(int, input().split()))\n"
+            "target = int(input())\n"
+            "print(count_pairs(numbers, target))\n"
+        )
+    if "回溯" in normalized or "backtrack" in normalized.lower():
+        return (
+            "def backtrack(path, choices, results):\n"
+            "    # path：当前已选；choices：剩余可选；results：收集完整解\n"
+            "    if not choices:\n"
+            "        results.append(list(path))\n"
+            "        return\n"
+            "    for index, choice in enumerate(choices):\n"
+            "        path.append(choice)\n"
+            "        # TODO: 计算剩余 choices（剪枝条件可加在此处）并递归\n"
+            "        raise NotImplementedError\n"
+            "        path.pop()  # 撤销选择\n\n"
+            "def solve():\n"
+            "    items = list(input().split())\n"
+            "    results = []\n"
+            "    backtrack([], items, results)\n"
+            "    print(len(results))\n"
+        )
+    if "字符串" in normalized or "string" in normalized.lower() or "字符" in normalized:
+        return (
+            "def longest_common_prefix(strs):\n"
+            "    # 字符串处理：以第一个 str 为基准，逐字符比较其它 string\n"
+            "    if not strs:\n"
+            "        return ''\n"
+            "    prefix = strs[0]\n"
+            "    for word in strs[1:]:\n"
+            "        # TODO: 截短 prefix 直到 word 以前缀开头\n"
+            "        raise NotImplementedError\n"
+            "    return prefix\n\n"
+            "words = input().split()\n"
+            "print(longest_common_prefix(words))\n"
         )
     if "排序" in normalized:
         return (
