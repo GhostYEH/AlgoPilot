@@ -474,7 +474,8 @@ class ResourceGenerationWorkflow:
             )
             gen_meta["status"] = "draft"
             gen_meta["draft_reason"] = safety_logs[-1].get("detail", "") if safety_logs else "内容未通过安全审查"
-            safe_text = (content[:2000] + "\n\n> ⚠️ 内容未通过安全审查，已标记为草稿供人工复核。") if content else ""
+            # 安全审查未通过：不向前端下发原文，仅保留审查日志与草稿状态，由人工复核
+            safe_text = ""
         elif passed:
             gen_meta["status"] = "published"
         else:

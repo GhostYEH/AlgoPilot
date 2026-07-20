@@ -264,7 +264,7 @@ def _structured_quality_issues(
     chunks: list[KnowledgeChunk] | None = None,
 ) -> list[str]:
     """Deterministic publication checks for structured teaching resources."""
-    structured_types = {"document", "exercises", "code_case", "reading"}
+    structured_types = {"document", "exercises", "code_case", "reading", "ppt", "video_script"}
     if resource_type in structured_types and not _is_json_payload(content):
         return [f"{resource_type} 必须输出可解析的结构化 JSON，当前内容格式无效"]
     if resource_type == "mindmap":
@@ -474,6 +474,86 @@ def _structured_quality_issues(
                     issues.append(f"阅读材料“{title}”未得到知识库支持")
         if len(set(all_titles)) != len(all_titles):
             issues.append("拓展阅读存在重复材料，未形成基础到挑战的梯度")
+
+    # 教学短视频脚本校验：shots 数量、字段完整性、字幕/配音长度与互补
+    shots = data.get("shots")
+    if isinstance(shots, list):
+        if not (6 <= len(shots) <= 10):
+            issues.append("教学短视频分镜数量应为 6～10 个")
+        subtitles: list[str] = []
+        for index, shot in enumerate(shots, start=1):
+            if not isinstance(shot, dict):
+                issues.append(f"第 {index} 镜结构无效")
+                continue
+            for key in ("scene", "visual_hint", "subtitle", "voiceover"):
+                value = str(shot.get(key) or "").strip()
+                if not value:
+                    issues.append(f"第 {index} 镜缺少 {key} 字段")
+            subtitle = str(shot.get("subtitle") or "").strip()
+            voiceover = str(shot.get("voiceover") or "").strip()
+            subtitles.append(subtitle)
+            if len(subtitle) > 30:
+                issues.append(f"第 {index} 镜字幕超过 30 字，应精炼为关键词")
+            if len(voiceover) > 200:
+                issues.append(f"第 {index} 镜配音文案过长，单镜不宜超过 200 字")
+            if subtitle and voiceover and subtitle == voiceover:
+                issues.append(f"第 {index} 镜字幕与配音文案完全重复，字幕应为关键词提炼")
+            duration = shot.get("duration_sec")
+            if duration is not None:
+                try:
+                    dur_val = int(duration)
+                    if not (3 <= dur_val <= 20):
+                        issues.append(f"第 {index} 镜时长 {dur_val} 秒不在 3～20 秒范围")
+                except (TypeError, ValueError):
+                    issues.append(f"第 {index} 镜 duration_sec 必须为整数")
+        if len(set(subtitles)) != len(subtitles):
+            issues.append("分镜字幕存在重复，缺少知识点区分度")
+
+    # PPT 大纲校验：与 PptAgent 的 8～12 页质量约束保持一致，并拒绝提示词回声。
+    slides = data.get("slides")
+    if isinstance(slides, list):
+        if not (8 <= len(slides) <= 12):
+            issues.append("PPT 大纲页数应为 8～12 页")
+        layouts = [str(s.get("layout") or "").strip() for s in slides if isinstance(s, dict)]
+        if layouts.count("cover") != 1 or (layouts and layouts[0] != "cover"):
+            issues.append("PPT 必须以唯一的 cover 封面页开场")
+        if "agenda" not in layouts:
+            issues.append("PPT 大纲缺少学习路径页（layout=agenda）")
+        if layouts.count("closing") != 1 or (layouts and layouts[-1] != "closing"):
+            issues.append("PPT 必须以唯一的 closing 总结页收尾")
+        placeholder_tokens = (
+            "封面标题", "页面标题", "代码页", "要点1", "要点2", "要点3",
+            "章节1", "章节2", "关键伪代码或代码片段", "副标题（可空）",
+            "讲者备注", "逐行解释",
+        )
+        titles: list[str] = []
+        for index, slide in enumerate(slides, start=1):
+            if not isinstance(slide, dict):
+                issues.append(f"第 {index} 页结构无效")
+                continue
+            layout = str(slide.get("layout") or "").strip()
+            title = str(slide.get("title") or "").strip()
+            if not title:
+                issues.append(f"第 {index} 页缺少标题")
+            titles.append(title)
+            notes = str(slide.get("notes") or "").strip()
+            if len(notes) < 10:
+                issues.append(f"第 {index} 页讲者备注过短，应说明讲解重点")
+            flattened = json.dumps(slide, ensure_ascii=False)
+            if any(token in flattened for token in placeholder_tokens):
+                issues.append(f"第 {index} 页仍含提示词示意文字，必须替换为真实课程内容")
+            bullets_raw = slide.get("bullets")
+            if layout in {"agenda", "content", "closing"}:
+                if not isinstance(bullets_raw, list) or not (3 <= len(bullets_raw) <= 5):
+                    issues.append(f"第 {index} 页应包含 3～5 条精炼要点")
+                elif len({str(item).strip() for item in bullets_raw}) != len(bullets_raw):
+                    issues.append(f"第 {index} 页存在重复要点")
+            if layout == "code":
+                code_lines = [line for line in str(slide.get("code") or "").splitlines() if line.strip()]
+                if not (3 <= len(code_lines) <= 12):
+                    issues.append(f"第 {index} 页代码应为 3～12 行可讲解片段")
+        if len(set(titles)) != len(titles):
+            issues.append("PPT 页面标题存在重复，叙事层次不足")
 
     return list(dict.fromkeys(issues))
 

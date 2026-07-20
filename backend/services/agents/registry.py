@@ -51,6 +51,12 @@ AGENT_REGISTRY: list[AgentMeta] = [
         "layer": "resource",
     },
     {
+        "id": "ExerciseAgent",
+        "display_name": "ExerciseAgent",
+        "role": "练习导师 · 选择/填空/代码题个性化题单",
+        "layer": "resource",
+    },
+    {
         "id": "PptAgent",
         "display_name": "PptAgent",
         "role": "演示文稿资源生成扩展节点",
@@ -100,9 +106,12 @@ AGENT_REGISTRY: list[AgentMeta] = [
 RESOURCE_TYPE_TO_AGENT: dict[str, str] = {
     "document": "ConceptAgent",
     "mindmap": "GraphAgent",
+    "exercises": "ExerciseAgent",
     "code_case": "ScenarioAgent",
     "trace_animation": "TraceAgent",
     "reading": "ReadingAgent",
+    "ppt": "PptAgent",
+    "video_script": "VideoScriptAgent",
 }
 
 

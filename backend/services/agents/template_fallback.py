@@ -11,10 +11,14 @@ from services.agents.resource_roles import (
     PersonaHints,
     _build_knowledge_mindmap,
     _build_scenario_code_framework,
+    _fallback_ppt_slides,
     _fallback_reading_levels,
     _fallback_trace_payload,
+    _fallback_video_shots,
     _match_topic_key,
     _mindmap_focus_label,
+    _normalize_ppt_slide,
+    _normalize_video_shot,
     _sanitize_domain_narrative,
     _TOPIC_ENRICHMENTS,
 )
@@ -87,6 +91,8 @@ def _build_title(resource_type: ResourceType, topic: str, module_key: str) -> st
         "code_case": "代码案例",
         "trace_animation": "轨迹动画",
         "reading": "拓展阅读",
+        "ppt": "课程讲义",
+        "video_script": "教学短视频脚本",
     }
     base = labels.get(resource_type, resource_type)
     return f"[模板] {base} · {_topic_label(topic, module_key)}"
@@ -185,11 +191,87 @@ def generate_exercises(
     hints: PersonaHints,
     fallback_reason: str,
 ) -> tuple[str, str, dict]:
+    topic_name = topic[:40] or module_key or "当前模块"
+
+    # 动态规划是演示与比赛答辩中的高频主题。LLM 连续未通过结构校验时，
+    # 兜底题单也必须能真正检验状态定义、转移、边界与遍历顺序，不能退化成
+    # “哪一项有依据”式的同义复述。
+    if module_key == "dp" or "动态规划" in topic_name:
+        focus = "动态规划：状态定义、转移方程、边界初始化与遍历顺序"
+        questions = [
+            {
+                "type": "choice",
+                "stem": "把 0/1 背包的二维状态压缩为一维后，dp[j] 最准确的含义是什么？",
+                "options": [
+                    "处理完当前及之前物品后，容量不超过 j 时可取得的最大价值",
+                    "恰好选择 j 件物品时可取得的最大价值",
+                    "容量为 j 时必须装满背包的方案数量",
+                    "只使用当前这一件物品时可取得的价值",
+                ],
+                "hint": "先说清楚 j 表示容量，状态还要包含“已经处理到哪些物品”的阶段含义。",
+                "focus": focus,
+                "difficulty": "easy",
+                "answer": "处理完当前及之前物品后，容量不超过 j 时可取得的最大价值",
+                "explanation": "一维数组省略了物品维度，但循环轮次仍代表已处理的物品集合；dp[j] 保存该阶段容量上限为 j 的最优价值。",
+            },
+            {
+                "type": "choice",
+                "stem": "0/1 背包使用一维 dp 时，为什么容量 j 必须从大到小遍历？",
+                "options": [
+                    "保证 dp[j-w] 仍是上一轮物品的结果，避免同一件物品被重复选取",
+                    "把时间复杂度从 O(nW) 降为 O(W)",
+                    "保证每次都优先选择价值最大的物品",
+                    "让背包在每一步都恰好被装满",
+                ],
+                "hint": "比较更新 dp[j] 时读取的 dp[j-w]，它应该来自本轮还是上一轮？",
+                "focus": focus,
+                "difficulty": "medium",
+                "answer": "保证 dp[j-w] 仍是上一轮物品的结果，避免同一件物品被重复选取",
+                "explanation": "倒序更新时 j-w 尚未被当前物品改写，因此每件物品至多使用一次；升序会读到本轮刚更新的状态，效果会变成允许重复选取。",
+            },
+            {
+                "type": "choice",
+                "stem": "关于 0/1 背包与完全背包的一维遍历顺序，哪项正确？",
+                "options": [
+                    "0/1 背包容量倒序，完全背包容量正序",
+                    "两者都必须倒序，否则无法得到最优解",
+                    "两者都必须正序，才能复用较小容量状态",
+                    "遍历顺序只影响运行速度，不影响答案",
+                ],
+                "hint": "关键区别是每件物品能否在同一轮被再次使用。",
+                "focus": focus,
+                "difficulty": "medium",
+                "answer": "0/1 背包容量倒序，完全背包容量正序",
+                "explanation": "0/1 背包要隔离上一轮状态，所以倒序；完全背包允许当前物品重复贡献，因此正序读取本轮已更新的较小容量状态。",
+            },
+            {
+                "type": "fill",
+                "stem": "物品重量为 w、价值为 v、背包容量为 W。请写出 0/1 背包的一维转移式和 j 的遍历范围。",
+                "hint": "比较“不选当前物品”和“选当前物品”两种来源，并注意 j 的方向。",
+                "focus": focus,
+                "difficulty": "medium",
+                "answer": "dp[j] = max(dp[j], dp[j-w] + v)，j 从 W 递减到 w。",
+                "explanation": "dp[j] 表示不选当前物品，dp[j-w]+v 表示选当前物品；j 倒序才能保证每件物品只使用一次。",
+            },
+            {
+                "type": "fill",
+                "stem": "设计一个动态规划解法时，至少要明确哪四项信息？",
+                "hint": "从“状态表示什么”开始，再考虑状态如何得到、最小规模答案以及计算依赖顺序。",
+                "focus": focus,
+                "difficulty": "hard",
+                "answer": "状态定义、状态转移方程、边界或初始值、满足依赖关系的遍历顺序。",
+                "explanation": "四项共同决定 DP 是否正确：状态定义消除歧义，转移描述子问题关系，边界提供递推起点，遍历顺序保证依赖状态已就绪且未被错误覆盖。",
+            },
+        ]
+        payload = _strip_internal_fields({"questions": questions})
+        content = json.dumps(payload, ensure_ascii=False, indent=2)
+        meta = {"format": "quiz_json", "template": "quiz_dp_grounded", "fallback_reason": fallback_reason}
+        return _build_title("exercises", topic, module_key), content, meta
+
     focus = hints.error_preference or "边界与复杂度"
     bullets = _bullet_lines(chunks, 5)
     while len(bullets) < 3:
         bullets.append(f"{topic}：结合课程讲义分析核心操作与边界条件")
-    topic_name = topic[:40] or module_key or "当前模块"
     distractors = [
         f"{topic_name}在任何输入下都不需要处理边界条件",
         f"{topic_name}的所有操作时间复杂度都固定为 O(1)",
@@ -343,6 +425,91 @@ def generate_trace_placeholder(
     return _build_title("trace_animation", topic, module_key), content, meta
 
 
+def generate_ppt(
+    *,
+    topic: str,
+    module_key: str,
+    chunks: list[KnowledgeChunk],
+    hints: PersonaHints,
+    fallback_reason: str,
+) -> tuple[str, str, dict]:
+    """模板降级：用知识库要点 + 内置 fallback 大纲组装 PPT JSON。"""
+    topic_label = (topic or module_key or "数据结构与算法")[:48]
+    title = f"{topic_label} · 课程讲义"
+    # fallback 本身按课程知识与 topic enrichment 组织完整叙事，不再把同一条
+    # “知识库要点”机械复制到多页。
+    enriched = _fallback_ppt_slides(topic_label, hints, chunks)
+
+    payload = _strip_internal_fields({
+        "title": title,
+        "slides": [_normalize_ppt_slide(s, hints=hints) for s in enriched],
+    })
+    content = json.dumps(payload, ensure_ascii=False, indent=2)
+    meta = {
+        "format": "ppt_outline_json",
+        "template": "ppt_from_chunks",
+        "fallback_reason": fallback_reason,
+    }
+    return _build_title("ppt", topic, module_key), content, meta
+
+
+def generate_video_script(
+    *,
+    topic: str,
+    module_key: str,
+    chunks: list[KnowledgeChunk],
+    hints: PersonaHints,
+    fallback_reason: str,
+) -> tuple[str, str, dict]:
+    """模板降级：用知识库要点 + 内置 fallback 分镜组装教学短视频脚本 JSON。
+
+    不做真实视频渲染；前端结合 TTS 朗读 voiceover 文案即可形成
+    "图文 + 语音" 的伪视频体验。
+    """
+    bullets = _bullet_lines(chunks, 6)
+    topic_label = _topic_label(topic, module_key)
+    title = f"{topic_label} · 教学短视频"
+    goal = hints.learning_goals[:80] or f"理解{topic_label}的核心思路与典型应用"
+    base_shots = _fallback_video_shots(topic_label, hints)
+
+    # 用知识库要点增强分镜：第 3 镜（概念定义）注入知识库第一条要点；
+    # 第 5 镜（易错点）注入易错点偏好或知识库第二条要点
+    enriched: list[dict[str, Any]] = []
+    for shot in base_shots:
+        copied = dict(shot)
+        idx = copied.get("index")
+        if idx == 3 and bullets:
+            # 概念定义镜：用知识库要点替换 voiceover 末段
+            kb_hint = bullets[0][:60]
+            copied["voiceover"] = str(copied.get("voiceover", ""))[:80] + f" 课程知识库指出：{kb_hint}。"
+        elif idx == 5:
+            # 易错点镜：若有知识库第二条，作为补充示例
+            if len(bullets) > 1:
+                copied["scene"] = str(copied.get("scene", "")) + f" 配合课程要点：{bullets[1][:50]}。"
+        enriched.append(copied)
+
+    normalized_shots = [
+        _normalize_video_shot(s, idx, hints=hints)
+        for idx, s in enumerate(enriched, start=1)
+    ]
+    duration_total = sum(int(s.get("duration_sec") or 8) for s in normalized_shots)
+
+    payload = _strip_internal_fields({
+        "title": title,
+        "duration_sec": duration_total,
+        "goal": goal,
+        "shots": normalized_shots,
+        "summary": f"回顾{topic_label}的核心步骤，对照易错点再练习一次。",
+    })
+    content = json.dumps(payload, ensure_ascii=False, indent=2)
+    meta = {
+        "format": "video_script_json",
+        "template": "video_script_from_chunks",
+        "fallback_reason": fallback_reason,
+    }
+    return _build_title("video_script", topic, module_key), content, meta
+
+
 def generate_fallback_resource(
     resource_type: ResourceType,
     *,
@@ -376,6 +543,20 @@ def generate_fallback_resource(
         ),
         "trace_animation": lambda: generate_trace_placeholder(
             topic=topic, module_key=module_key, fallback_reason=fallback_reason
+        ),
+        "ppt": lambda: generate_ppt(
+            topic=topic,
+            module_key=module_key,
+            chunks=chunks,
+            hints=hints,
+            fallback_reason=fallback_reason,
+        ),
+        "video_script": lambda: generate_video_script(
+            topic=topic,
+            module_key=module_key,
+            chunks=chunks,
+            hints=hints,
+            fallback_reason=fallback_reason,
         ),
     }
     gen = generators.get(resource_type)

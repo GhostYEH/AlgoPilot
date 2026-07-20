@@ -75,6 +75,9 @@ const isReading = computed(
 const isTrace = computed(
   () => props.resourceType === 'trace_animation' || props.meta?.format === 'trace_json',
 )
+const isPpt = computed(
+  () => props.resourceType === 'ppt' || props.meta?.format === 'ppt_outline_json',
+)
 const safeContent = computed(() => props.content ?? '')
 const looksLikeRawJson = computed(() => {
   const text = safeContent.value.trim()
@@ -195,6 +198,37 @@ const answeredCount = computed(() => {
 function difficultyLabel(value?: string): string {
   return { easy: '基础', medium: '进阶', hard: '挑战' }[value ?? 'medium'] ?? '进阶'
 }
+
+interface PptSlide {
+  layout: string
+  title?: string
+  subtitle?: string
+  bullets?: string[]
+  code?: string
+  notes?: string
+}
+
+const pptOutline = computed<{ title?: string; slides?: PptSlide[] } | null>(() => {
+  if (!isPpt.value) return null
+  const data = parsed.value as Record<string, unknown> | null
+  if (!data) return null
+  const slides = Array.isArray(data.slides) ? (data.slides as PptSlide[]) : []
+  return { title: typeof data.title === 'string' ? data.title : '', slides }
+})
+
+const pptSlides = computed<PptSlide[]>(() => pptOutline.value?.slides ?? [])
+
+const PPT_LAYOUT_LABELS: Record<string, string> = {
+  cover: '封面',
+  agenda: '目录',
+  content: '正文',
+  code: '代码',
+  closing: '收尾',
+}
+
+function pptLayoutLabel(layout: string): string {
+  return PPT_LAYOUT_LABELS[layout] ?? layout
+}
 </script>
 
 <template>
@@ -281,6 +315,39 @@ function difficultyLabel(value?: string): string {
     :content="content"
     :mode="domainStructureMode"
   />
+
+  <div v-else-if="isPpt && pptSlides.length" class="ppt-preview">
+    <div class="ppt-deck-header">
+      <span class="ppt-deck-icon">PPT</span>
+      <div class="ppt-deck-title">
+        <span class="ppt-deck-label">课程讲义 PPT 大纲</span>
+        <strong>{{ pptOutline?.title || '未命名讲义' }}</strong>
+        <span class="ppt-deck-meta">共 {{ pptSlides.length }} 页 · 可在右侧「下载 PPT」生成 .pptx 文件</span>
+      </div>
+    </div>
+    <div class="ppt-slide-list">
+      <div
+        v-for="(slide, i) in pptSlides"
+        :key="i"
+        class="ppt-slide"
+        :class="`ppt-slide--${slide.layout}`"
+      >
+        <div class="ppt-slide-side">
+          <span class="ppt-slide-index">{{ i + 1 }}</span>
+          <span class="ppt-slide-layout">{{ pptLayoutLabel(slide.layout) }}</span>
+        </div>
+        <div class="ppt-slide-body">
+          <h4 v-if="slide.title">{{ slide.title }}</h4>
+          <p v-if="slide.subtitle" class="ppt-slide-subtitle">{{ slide.subtitle }}</p>
+          <ul v-if="slide.bullets?.length" class="ppt-slide-bullets">
+            <li v-for="(b, j) in slide.bullets" :key="j">{{ b }}</li>
+          </ul>
+          <pre v-if="slide.code" class="ppt-slide-code"><code>{{ slide.code }}</code></pre>
+          <p v-if="slide.notes" class="ppt-slide-notes">讲者备注：{{ slide.notes }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div v-else-if="isReading && parsed?.levels" class="reading-preview">
     <h3>分层拓展阅读</h3>
@@ -543,6 +610,175 @@ function difficultyLabel(value?: string): string {
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid var(--alp-color-border);
+}
+
+/* PPT 大纲预览：沿用 --alp-* 全局变量，保持与暗色主题一致 */
+.ppt-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ppt-deck-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--alp-color-primary) 10%, var(--alp-bg-soft-block));
+  border: 1px solid color-mix(in srgb, var(--alp-color-primary) 35%, transparent);
+}
+
+.ppt-deck-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: var(--alp-color-primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.ppt-deck-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ppt-deck-label {
+  font-size: 11px;
+  color: var(--alp-color-muted);
+  letter-spacing: 0.5px;
+}
+
+.ppt-deck-title strong {
+  font-size: 16px;
+  color: var(--alp-color-primary);
+  line-height: 1.3;
+}
+
+.ppt-deck-meta {
+  font-size: 12px;
+  color: var(--alp-color-muted);
+}
+
+.ppt-slide-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ppt-slide {
+  display: flex;
+  border: 1px solid var(--alp-color-border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--alp-bg-soft-block);
+  transition: border-color 0.2s;
+}
+
+.ppt-slide:hover {
+  border-color: color-mix(in srgb, var(--alp-color-primary) 40%, transparent);
+}
+
+.ppt-slide-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 56px;
+  padding: 10px 4px;
+  background: color-mix(in srgb, var(--alp-color-primary) 12%, transparent);
+  color: var(--alp-color-primary);
+  flex-shrink: 0;
+}
+
+.ppt-slide-index {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.ppt-slide-layout {
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  opacity: 0.85;
+}
+
+.ppt-slide--cover .ppt-slide-side,
+.ppt-slide--closing .ppt-slide-side {
+  background: color-mix(in srgb, var(--alp-color-primary) 25%, transparent);
+}
+
+.ppt-slide--code .ppt-slide-side {
+  background: color-mix(in srgb, var(--el-color-warning-light-9) 30%, transparent);
+  color: var(--el-color-warning);
+}
+
+.ppt-slide-body {
+  flex: 1;
+  padding: 12px 14px;
+  min-width: 0;
+}
+
+.ppt-slide-body h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--alp-color-text);
+  line-height: 1.4;
+}
+
+.ppt-slide-subtitle {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--alp-color-muted);
+}
+
+.ppt-slide-bullets {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--alp-color-text);
+}
+
+.ppt-slide-bullets li {
+  margin: 2px 0;
+}
+
+.ppt-slide-code {
+  margin: 6px 0 0;
+  padding: 10px 12px;
+  background: #181f1d;
+  border-radius: 6px;
+  overflow: auto;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #e6e6e6;
+}
+
+.ppt-slide-code code {
+  font-family: inherit;
+  white-space: pre;
+}
+
+.ppt-slide-notes {
+  margin: 8px 0 0;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: var(--alp-color-muted);
+  background: color-mix(in srgb, var(--alp-color-primary) 6%, transparent);
+  border-radius: 6px;
+  line-height: 1.5;
 }
 
 </style>

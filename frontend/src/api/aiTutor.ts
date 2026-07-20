@@ -142,8 +142,9 @@ export async function streamAiTutorChat(
               streamError = String(ev.message || 'AI 助教生成失败')
               handlers.onError?.(streamError)
             }
-          } catch {
-            /* skip */
+          } catch (e) {
+            // 记录格式异常，便于排查后端事件格式问题
+            console.warn('[AI Tutor SSE] chunk parse failed:', line, e)
           }
         }
       }

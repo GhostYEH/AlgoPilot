@@ -271,6 +271,10 @@ class Orchestrator:
                 profile_summary=summary,
                 existing_dims=existing_dims,
             ):
+                # 流式画像对话同样做敏感词/Prompt 注入增量过滤
+                if content_filter.check_stream_chunk(chunk):
+                    yield "[CONTENT_BLOCKED] 该回复未通过内容安全校验，请换个问法或联系管理员。"
+                    return
                 yield chunk
         except Exception as exc:
             if not is_llm_related_error(exc):
@@ -283,6 +287,9 @@ class Orchestrator:
                 history=history,
                 existing_dims=existing_dims,
             ):
+                if content_filter.check_stream_chunk(chunk):
+                    yield "[CONTENT_BLOCKED] 该回复未通过内容安全校验，请换个问法或联系管理员。"
+                    return
                 yield chunk
 
     def last_persona_chat_meta(self) -> dict:
@@ -488,15 +495,27 @@ class Orchestrator:
         *,
         profile_block: str = "",
     ) -> AsyncIterator[str]:
+        # 流式输出同样需要做内容安全过滤：对每个 chunk 做轻量增量检测，
+        # 命中敏感词/Prompt 注入即立即终止流并发送安全提示事件。
         async for chunk in _tutor.run_stream(request=request, profile_block=profile_block):
+            if content_filter.check_stream_chunk(chunk):
+                yield "[CONTENT_BLOCKED] 该回复未通过内容安全校验，请换个问法或联系管理员。"
+                return
             yield chunk
 
     async def oj_assistant(self, body: OjAssistantRequest) -> str:
-        return await _oj.run_for_request(body)
+        reply = await _oj.run_for_request(body)
+        safety = content_filter.check(reply)
+        if safety.blocked:
+            return "抱歉，回复未通过内容安全校验，请换个问法或联系管理员。"
+        return safety.text
 
     async def oj_assistant_stream(self, body: OjAssistantRequest) -> AsyncIterator[str]:
         """流式产出 OJ 助手回复（ds_hint / code_hint）。"""
         async for chunk in _oj.run_stream_for_request(body):
+            if content_filter.check_stream_chunk(chunk):
+                yield "[CONTENT_BLOCKED] 该回复未通过内容安全校验，请换个问法或联系管理员。"
+                return
             yield chunk
 
     def list_agents(self) -> list[dict]:
@@ -517,16 +536,17 @@ class Orchestrator:
             "  CONCEPT -.摘要.-> SCENARIO[ScenarioAgent<br/>剧本沙盒]\n"
             "  SCENARIO -.TODO框架.-> TRACE[TraceAgent<br/>轨迹动画JSON]\n"
             "  CONCEPT -.拓展方向.-> READ[ReadingAgent<br/>三层拓展阅读]\n"
+            "  CONCEPT -.讲义大纲.-> PPT[PptAgent<br/>课程讲义JSON]\n"
             "  CONCEPT --> VERIFY{ContentVerifier}\n"
             "  GRAPH --> VERIFY\n"
             "  SCENARIO --> VERIFY\n"
             "  PPT --> VERIFY\n"
-            "  VIDEO --> VERIFY\n"
             "  READ --> VERIFY\n"
             "  TRACE --> SAFETY[SafetyAgent]\n"
             "  VERIFY -->|passed| SAFETY\n"
             "  VERIFY -->|failed| CONCEPT\n"
             "  SAFETY --> STORE[落库 + agent_logs]\n"
+            "  PPT --> DL[Download .pptx<br/>python-pptx 渲染]\n"
         )
 
     async def evaluate_learning(
@@ -1085,7 +1105,13 @@ class Orchestrator:
         task = asyncio.create_task(_runner())
         try:
             while True:
-                ev = await queue.get()
+                # 单资源流加 3s 心跳：LLM 卡顿时前端不会误判断流，
+                # 与 generate_all_resources_stream 的 2.5s 心跳语义一致
+                try:
+                    ev = await asyncio.wait_for(queue.get(), timeout=3.0)
+                except asyncio.TimeoutError:
+                    yield _sse({"type": "heartbeat", "ts": datetime.now(timezone.utc).isoformat()})
+                    continue
                 if ev is _SENTINEL:
                     break
                 yield _sse(ev)

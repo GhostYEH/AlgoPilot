@@ -31,6 +31,8 @@ _RESOURCE_TYPE_LABELS: dict[str, str] = {
     "code_case": "剧本沙盒",
     "trace_animation": "轨迹动画",
     "reading": "分层拓展阅读",
+    "ppt": "课程讲义 PPT",
+    "video_script": "教学短视频脚本",
 }
 
 _RESOURCE_TYPE_FEATURES: dict[str, list[str]] = {
@@ -40,6 +42,8 @@ _RESOURCE_TYPE_FEATURES: dict[str, list[str]] = {
     "code_case": ["代码实操", "交互式沙盒", "调试练习"],
     "trace_animation": ["Trace 动画", "执行过程可视化", "逐步跟踪"],
     "reading": ["拓展阅读", "分层深入", "学术/工程视角"],
+    "ppt": ["课程讲义", "结构化大纲", "可下载 PPTX"],
+    "video_script": ["分镜脚本", "字幕+配音文案", "TTS 语音讲解"],
 }
 
 _DIMENSION_LABELS: dict[str, str] = {

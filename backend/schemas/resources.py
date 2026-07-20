@@ -5,9 +5,12 @@ from pydantic import BaseModel, Field
 ResourceType = Literal[
     "document",
     "mindmap",
+    "exercises",
     "code_case",
     "trace_animation",
     "reading",
+    "ppt",
+    "video_script",
 ]
 
 # 学习资源 ↔ 角色 Agent
@@ -21,6 +24,11 @@ RESOURCE_AGENT_META: dict[str, dict[str, str]] = {
         "agent_name": "GraphAgent",
         "label": "知识思维导图",
         "role": "拓扑专家",
+    },
+    "exercises": {
+        "agent_name": "ExerciseAgent",
+        "label": "个性化题单",
+        "role": "练习导师",
     },
     "code_case": {
         "agent_name": "ScenarioAgent",
@@ -37,22 +45,40 @@ RESOURCE_AGENT_META: dict[str, dict[str, str]] = {
         "label": "分层拓展阅读",
         "role": "学术/工程阅读策展人",
     },
+    "ppt": {
+        "agent_name": "PptAgent",
+        "label": "课程讲义 PPT",
+        "role": "演示文稿",
+    },
+    "video_script": {
+        "agent_name": "VideoScriptAgent",
+        "label": "教学短视频脚本",
+        "role": "短视频导演",
+    },
 }
 
 # 批量生成流水线
 CORE_RESOURCE_PIPELINE: list[ResourceType] = [
     "document",
     "mindmap",
+    "exercises",
     "code_case",
     "trace_animation",
     "reading",
+    "ppt",
+    "video_script",
 ]
 
+# 阶段拓扑：
+#   Phase 1: document            ← 无依赖
+#   Phase 2: mindmap             ← 依赖 document
+#   Phase 3: exercises + code_case ← 依赖 document（练习题与代码沙盒并行）
+#   Phase 4: trace_animation + reading + ppt + video_script ← 展示型资源并行
 PARALLEL_PHASES: list[list[ResourceType]] = [
     ["document"],
     ["mindmap"],
-    ["code_case"],
-    ["trace_animation", "reading"],
+    ["exercises", "code_case"],
+    ["trace_animation", "reading", "ppt", "video_script"],
 ]
 
 

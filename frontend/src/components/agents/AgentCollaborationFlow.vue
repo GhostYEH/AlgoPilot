@@ -38,6 +38,7 @@ const phases: Array<{ label: string; agents: FlowAgent[] }> = [
     agents: [
       { id: 'ConceptAgent', label: 'ConceptAgent', role: '概念讲解' },
       { id: 'GraphAgent', label: 'GraphAgent', role: '知识图谱' },
+      { id: 'ExerciseAgent', label: 'ExerciseAgent', role: '个性化题单' },
       { id: 'ScenarioAgent', label: 'ScenarioAgent', role: '场景沙箱' },
       { id: 'TraceAgent', label: 'TraceAgent', role: '执行轨迹' },
       { id: 'ReadingAgent', label: 'ReadingAgent', role: '分层阅读' },

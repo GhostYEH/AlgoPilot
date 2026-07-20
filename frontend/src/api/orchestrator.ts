@@ -265,9 +265,12 @@ export const RESOURCE_TYPE_META: Record<
 > = {
   document: { label: '概念讲解', agentName: 'ConceptAgent', color: '#4a6e94' },
   mindmap: { label: '知识思维导图', agentName: 'GraphAgent', color: '#8b5cf6' },
+  exercises: { label: '个性化题单', agentName: 'ExerciseAgent', color: '#d97706' },
   code_case: { label: '剧本沙盒', agentName: 'ScenarioAgent', color: '#9e5a5a' },
   trace_animation: { label: '轨迹动画', agentName: 'TraceAgent', color: '#ec4899' },
   reading: { label: '分层阅读', agentName: 'ReadingAgent', color: '#3d8a6e' },
+  ppt: { label: '课程讲义 PPT', agentName: 'PptAgent', color: '#0F8588' },
+  video_script: { label: '教学短视频脚本', agentName: 'VideoScriptAgent', color: '#7C3AED' },
 }
 
 export interface AgentInfo {
@@ -358,8 +361,9 @@ function parseSseChunk(chunk: string, onEvent: (data: Record<string, unknown>) =
       if (!json) continue
       try {
         onEvent(JSON.parse(json) as Record<string, unknown>)
-      } catch {
-        /* skip malformed */
+      } catch (e) {
+        // 记录格式异常，便于排查后端事件格式问题
+        console.warn('[SSE] chunk parse failed:', json, e)
       }
     }
   }
@@ -524,15 +528,20 @@ export async function patchPersonaFromLearning(body: {
     detail?: string
   }>
 }): Promise<PersonaProfile> {
-  return request.post('/api/orchestrator/persona/patch-from-learning', body) as Promise<PersonaProfile>
+  // 后端会触发多次 build_dimension_evidence + record_section_completion，可能慢
+  return request.post('/api/orchestrator/persona/patch-from-learning', body, {
+    timeout: 60000,
+  }) as Promise<PersonaProfile>
 }
 
 export async function fetchRecommendedResources(params?: {
   module_key?: string
   limit?: number
 }): Promise<GeneratedResource[]> {
+  // 后端会对每个推荐资源调用 generate_resource_explain，N 次串行
   const r = (await request.get('/api/orchestrator/resources/recommendations', {
     params: { module_key: params?.module_key ?? '', limit: params?.limit ?? 6 },
+    timeout: 45000,
   })) as { items: GeneratedResource[] }
   return r.items ?? []
 }
@@ -561,7 +570,10 @@ export async function syncPersonaFromStored(): Promise<{
   fallback_reason?: string
   generated_by?: string
 }> {
-  return request.post('/api/orchestrator/persona/sync-from-stored', {}) as Promise<{
+  // 后端调 LLM extract_dimensions 最长 90s，前端必须显式延长超时
+  return request.post('/api/orchestrator/persona/sync-from-stored', {}, {
+    timeout: 120000,
+  }) as Promise<{
     profile: PersonaProfile
     message: string
     fallback?: boolean
@@ -879,4 +891,50 @@ export async function streamGenerateAllResources(
     handlers.onError?.(msg)
     throw e
   }
+}
+
+/**
+ * 下载课程讲义 PPT。
+ *
+ * 后端 GET /api/orchestrator/resources/{id}/download.pptx 直接返回 .pptx 二进制，
+ * 这里沿用 LearningEffectivenessCard.vue 的 fetch → blob → createObjectURL 范式，
+ * 保证 Authorization 头能正常携带，并复用浏览器原生下载流程。
+ */
+export async function downloadPptxResource(resource: {
+  id: number
+  title?: string
+}): Promise<void> {
+  const url = `${getApiBaseUrl()}/api/orchestrator/resources/${resource.id}/download.pptx`
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: authHeaders(),
+  })
+  if (!res.ok) {
+    throw new Error(await readHttpError(res, 'PPT 下载失败'))
+  }
+  const blob = await res.blob()
+  // 优先用后端 Content-Disposition 的 filename*，回退到资源标题
+  let filename = ''
+  const disposition = res.headers.get('Content-Disposition') || ''
+  const match = /filename\*=UTF-8''([^;]+)/i.exec(disposition)
+  if (match) {
+    try {
+      filename = decodeURIComponent(match[1])
+    } catch {
+      filename = match[1]
+    }
+  }
+  if (!filename) {
+    const safe = (resource.title || '课程讲义').replace(/[\\/:*?"<>|]/g, '_')
+    filename = `${safe}.pptx`
+  }
+  const objectUrl = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = objectUrl
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  // 释放对象 URL，避免内存泄漏
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 0)
 }

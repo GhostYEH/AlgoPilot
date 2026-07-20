@@ -15,10 +15,13 @@ import {
   Box,
   CircleCheck,
   Clock,
+  Postcard,
+  Download,
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   deleteResource,
+  downloadPptxResource,
   fetchResources,
   resourceVerifyTag,
   RESOURCE_TYPE_META,
@@ -46,6 +49,7 @@ const TYPE_ICONS: Record<string, Component> = {
   reading: Reading,
   code_case: Monitor,
   trace_animation: VideoCamera,
+  ppt: Postcard,
 }
 
 const route = useRoute()
@@ -327,6 +331,25 @@ async function onToggleFavorite(r: GeneratedResource) {
   resources.value = resources.value.map((x) => (x.id === updated.id ? updated : x))
 }
 
+const pptDownloadingId = ref<number | null>(null)
+
+async function onDownloadPptx(r: GeneratedResource) {
+  if (r.resource_type !== 'ppt') {
+    ElMessage.warning('仅课程讲义 PPT 支持下载')
+    return
+  }
+  pptDownloadingId.value = r.id
+  try {
+    await downloadPptxResource({ id: r.id, title: r.title })
+    ElMessage.success('PPT 已开始下载')
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'PPT 下载失败'
+    ElMessage.error(msg)
+  } finally {
+    pptDownloadingId.value = null
+  }
+}
+
 function isTemplateFallback(meta: Record<string, unknown> | undefined): boolean {
   return meta?.fallback === true || meta?.generated_by === 'TemplateFallbackAgent'
 }
@@ -347,7 +370,7 @@ function verifyTag(meta: Record<string, unknown>) {
       <div class="page-header">
         <el-page-header title="个性化资源库" @back="router.push({ name: 'home' })" />
         <p class="page-desc">
-          多智能体协同生成讲解文档、思维导图、题单、拓展阅读、代码案例与视频脚本；内容由编排层调度，基于你的学习画像。
+          多智能体协同生成讲解文档、思维导图、题单、代码案例、轨迹动画、拓展阅读、课程讲义 PPT 与视频脚本；内容由编排层调度，基于你的学习画像。
         </p>
       </div>
 
@@ -581,6 +604,16 @@ function verifyTag(meta: Record<string, unknown>) {
                     🔗 证据
                   </el-button>
                   <el-button
+                    v-if="r.resource_type === 'ppt'"
+                    link
+                    type="primary"
+                    :icon="Download"
+                    :loading="pptDownloadingId === r.id"
+                    @click="onDownloadPptx(r)"
+                  >
+                    下载
+                  </el-button>
+                  <el-button
                     link
                     :type="r.meta?.favorited ? 'warning' : 'default'"
                     :icon="Star"
@@ -684,6 +717,16 @@ function verifyTag(meta: Record<string, unknown>) {
                 :resource-type="activeResource.resource_type"
               />
               <div class="preview-evidence-row">
+                <el-button
+                  v-if="activeResource.resource_type === 'ppt'"
+                  type="primary"
+                  size="small"
+                  :icon="Download"
+                  :loading="pptDownloadingId === activeResource.id"
+                  @click="onDownloadPptx(activeResource!)"
+                >
+                  下载 PPT (.pptx)
+                </el-button>
                 <el-button type="primary" plain size="small" @click="openEvidence(activeResource!)">
                   🔗 可信证据链
                 </el-button>
@@ -1286,5 +1329,7 @@ function verifyTag(meta: Record<string, unknown>) {
   margin-top: 12px;
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 </style>

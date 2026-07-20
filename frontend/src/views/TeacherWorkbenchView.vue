@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import {
   Document,
+  Download,
   EditPen,
   MagicStick,
   Monitor,
@@ -13,6 +14,7 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import {
+  downloadPptxResource,
   fetchResourceEvidence,
   fetchResources,
   RESOURCE_TYPE_META,
@@ -36,6 +38,7 @@ const previewVisible = ref(false)
 const previewResource = ref<GeneratedResource | null>(null)
 const previewEvidence = ref<TrustEvidence | null>(null)
 const previewEvidenceLoading = ref(false)
+const pptDownloadingId = ref<number | null>(null)
 
 const TYPE_ICONS: Record<string, typeof Document> = {
   document: Document,
@@ -263,6 +266,21 @@ async function loadPreviewEvidence(resourceId: number) {
   }
 }
 
+async function downloadPreviewPpt() {
+  const resource = previewResource.value
+  if (!resource || resource.resource_type !== 'ppt') return
+
+  pptDownloadingId.value = resource.id
+  try {
+    await downloadPptxResource({ id: resource.id, title: resource.title })
+    ElMessage.success('PPT 已开始下载')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : 'PPT 下载失败')
+  } finally {
+    pptDownloadingId.value = null
+  }
+}
+
 function resourceVerifyTag(resource: GeneratedResource): {
   label: string
   type: 'success' | 'warning' | 'danger' | 'info'
@@ -466,6 +484,16 @@ onMounted(loadResources)
             {{ previewEvidence.final_decision === 'publish' ? '已发布' : previewEvidence.final_decision === 'blocked' ? '已屏蔽' : '待复核' }}
           </el-tag>
           <span class="preview-date">{{ formatDate(previewResource.created_at) }}</span>
+          <el-button
+            v-if="previewResource.resource_type === 'ppt'"
+            class="preview-download-button"
+            type="primary"
+            :icon="Download"
+            :loading="pptDownloadingId === previewResource.id"
+            @click="downloadPreviewPpt"
+          >
+            下载 PPT
+          </el-button>
         </div>
         <ResourceContentPreview
           :resource-type="previewResource.resource_type"
@@ -897,6 +925,10 @@ onMounted(loadResources)
 .preview-date {
   color: var(--alp-color-muted);
   font-size: 12px;
+}
+
+.preview-download-button {
+  margin-left: auto;
 }
 
 .preview-body {

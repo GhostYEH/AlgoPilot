@@ -1100,7 +1100,7 @@ def _build_fallback_mindmap(topic: str) -> str:
         ("应用场景", ["课堂例题", "OJ 练习", "工程实践"]),
     ]
     seen: set[str] = set()
-    lines = [f"mindmap", f"  root(({topic}))"]
+    lines = ["mindmap", f"  root(({topic}))"]
     for branch_label, children in branches:
         normalized = re.sub(r"\s+", "", branch_label)
         if normalized in seen:
@@ -2214,12 +2214,328 @@ class ReadingAgent(ResourceRoleAgent):
         return json.dumps(normalized, ensure_ascii=False, indent=2)
 
 
+class ExerciseAgent(ResourceRoleAgent):
+    """练习导师：生成选择/填空/代码题题单（5 题：3 选择 + 2 填空）。
+
+    设计要点：
+      - 干扰项来自 SkillCard.common_mistakes（如命中技能卡）与画像易错点偏好；
+      - 题干与选项必须基于知识库片段，不得编造题号/外链；
+      - 输出 JSON 必须可通过 ContentVerifierAgent 的 _structured_quality_issues
+        （5 题、3 选择 + 2 填空、选项 4 个互不重复、答案与某选项完全一致）。
+    """
+
+    agent_id = "ExerciseAgent"
+    display_name = "ExerciseAgent"
+    role = "练习导师 · 选择/填空/代码题个性化题单"
+
+    def system_prompt(self, hints: PersonaHints) -> str:
+        focus = hints.error_preference or "边界条件与复杂度"
+        return f"""你是 ExerciseAgent（练习导师）。为高校《数据结构与算法》课程生成**个性化练习题单**，覆盖当前课程主题的核心概念、易错点与典型操作。
+
+## 个性化要求
+- 知识基础：{hints.knowledge_base or '大一计科入门'}
+- 代码实操能力：{hints.coding_ability or '待评估'}
+- 易错点偏好：{focus}（题目应针对该方向设置干扰项与考察点）
+- 学习目标：{hints.learning_goals or '夯实课程基础'}
+
+## 生成侧重
+- 若协作上下文（focus_hint）指定了 SkillCard 的 common_mistakes，必须把这些常见误区转化为干扰项；
+- 干扰项应当是「似是而非」的绝对化表述、混淆概念或边界条件误用，避免明显荒谬选项；
+- 题目必须紧扣课程主题，禁止把其他算法的内容换标题后混入。
+
+## 输出规范
+输出**唯一 JSON**，不要 markdown 代码围栏：
+{{
+  "questions": [
+    {{
+      "type": "choice",
+      "stem": "选择题题干（明确指向一个知识点）",
+      "options": ["选项A", "选项B", "选项C", "选项D"],
+      "answer": "与选项完全一致的字符串",
+      "hint": "针对易错点的提示（20~60字）",
+      "explanation": "答案解析（不少于 30 字，说明为什么对、其他为什么错）",
+      "focus": "{focus}",
+      "difficulty": "easy"
+    }},
+    {{"type": "choice", "stem": "...", "options": [...], "answer": "...", "hint": "...", "explanation": "...", "focus": "...", "difficulty": "medium"}},
+    {{"type": "choice", "stem": "...", "options": [...], "answer": "...", "hint": "...", "explanation": "...", "focus": "...", "difficulty": "medium"}},
+    {{
+      "type": "fill",
+      "stem": "填空题题干（要求学生用一句话说明某个操作/边界/复杂度）",
+      "answer": "参考答案（30~120字）",
+      "hint": "提示",
+      "explanation": "答案解析（不少于 30 字，说明评分要点）",
+      "focus": "{focus}",
+      "difficulty": "medium"
+    }},
+    {{"type": "fill", "stem": "...", "answer": "...", "hint": "...", "explanation": "...", "focus": "...", "difficulty": "hard"}}
+  ]
+}}
+
+## 质量底线（必须严格满足，否则会被校验拒绝回流重试）
+1. questions 数组**恰好 5 题**，顺序为 3 道 choice + 2 道 fill；
+2. 每道 choice 题：options 长度恰好 4，且互不重复；answer 必须**与 4 个选项之一完全一致**；
+3. 每题 stem、answer、explanation 均非空；explanation 长度 ≥ 8；
+4. 5 题 stem 互不重复，覆盖不同知识点；
+5. difficulty 取值：easy / medium / hard；
+6. 不得编造题号、URL、出版物、论文名；选项中不得出现外链；
+7. 题干与选项必须**紧扣课程主题**，禁止把其他算法内容换标题后混入；
+8. 干扰项应基于常见误区（如「任何输入下都不需要边界」「复杂度恒为 O(1)」等绝对化错误表述）。"""
+
+    def temperature(self) -> float:
+        return 0.4
+
+    def max_tokens(self) -> int:
+        return 2000
+
+    def output_format(self) -> str:
+        return "quiz_json"
+
+    def normalize_output(
+        self,
+        raw: str,
+        *,
+        hints: PersonaHints,
+        topic: str = "",
+        module_key: str = "",
+        chunks: list[KnowledgeChunk] | None = None,
+    ) -> str:
+        data = _parse_json_object(raw)
+        questions = data.get("questions") if isinstance(data, dict) else None
+        if not isinstance(questions, list) or not questions:
+            # 解析失败：交由 verifier 规则快检主动失败、走 template_fallback
+            return json.dumps({"questions": []}, ensure_ascii=False, indent=2)
+
+        normalized: list[dict[str, Any]] = []
+        expected_types = ["choice", "choice", "choice", "fill", "fill"]
+        focus = hints.error_preference or "边界条件与复杂度"
+        for idx, q in enumerate(questions[:5]):
+            if not isinstance(q, dict):
+                continue
+            qtype = str(q.get("type") or "").strip()
+            if idx < len(expected_types):
+                qtype = expected_types[idx]
+            stem = str(q.get("stem") or "").strip()
+            answer = str(q.get("answer") or "").strip()
+            explanation = str(q.get("explanation") or "").strip()
+            hint = str(q.get("hint") or "").strip()
+            difficulty = str(q.get("difficulty") or ("easy" if idx == 0 else "medium")).strip()
+            entry: dict[str, Any] = {
+                "type": qtype,
+                "stem": stem,
+                "answer": answer,
+                "hint": hint,
+                "explanation": explanation,
+                "focus": str(q.get("focus") or focus),
+                "difficulty": difficulty,
+            }
+            if qtype == "choice":
+                options = [str(o).strip() for o in (q.get("options") or []) if str(o).strip()]
+                entry["options"] = options
+            normalized.append(entry)
+        return json.dumps({"questions": normalized}, ensure_ascii=False, indent=2)
+
+
+class PptAgent(ResourceRoleAgent):
+    """演示文稿：生成课程讲义胶片大纲 JSON（供 python-pptx 渲染为 .pptx）。"""
+
+    agent_id = "PptAgent"
+    display_name = "PptAgent"
+    role = "演示文稿 · 课程讲义胶片"
+
+    def system_prompt(self, hints: PersonaHints) -> str:
+        return f"""你是 PptAgent。为高校《数据结构与算法》课程生成可下载为 .pptx 的教学讲义胶片大纲。
+
+## 个性化要求
+- 学习目标：{hints.learning_goals or '掌握本主题核心算法与典型应用'}
+- 知识基础：{hints.knowledge_base or '大一计科入门'}
+- 代码能力：{hints.coding_ability or '待评估'}
+- 易错点偏好：{hints.error_preference or '边界与复杂度'}
+
+## 输出规范
+输出唯一 JSON，不要 markdown 代码块围栏：
+{{
+  "title": "整套 PPT 标题（不超过 24 字）",
+  "slides": [
+    {{"layout": "cover", "title": "封面标题", "subtitle": "副标题（可空）", "notes": "讲者备注"}},
+    {{"layout": "agenda", "title": "目录", "bullets": ["章节1", "章节2"], "notes": "本课脉络"}},
+    {{"layout": "content", "title": "页面标题", "bullets": ["要点1", "要点2", "要点3"], "notes": "讲解要点"}},
+    {{"layout": "code", "title": "页面标题", "code": "关键伪代码或代码片段", "notes": "逐行解释"}},
+    {{"layout": "closing", "title": "总结与作业", "bullets": ["总结1", "作业1"], "notes": "课后任务"}}
+  ]
+}}
+
+## 质量底线
+- 总页数 8～12 页，必须含 1 个 cover、1 个 agenda、1 个 closing，其余为 content/code
+- 每个 bullets 数组 3～5 条，单条不超过 25 字
+- code 页的 code 字段不超过 12 行，使用 Python3 伪代码或精简片段
+- 术语与知识库一致，不得编造题号、URL 或知识库未出现的外部文献
+- notes 用 30～80 字给讲者讲解提示，不得为空
+- 不得混入其他算法或无关主题，紧扣当前课程主题
+- 上方 JSON 仅用于说明字段；严禁原样输出“封面标题、页面标题、要点1、章节1、关键伪代码或代码片段、讲者备注”等示意文字
+- 每一页标题必须表达一个具体结论或学习任务，禁止只写“概述、内容、代码页”等空泛名称"""
+
+    def temperature(self) -> float:
+        return 0.4
+
+    def max_tokens(self) -> int:
+        return 2400
+
+    def output_format(self) -> str:
+        return "ppt_outline_json"
+
+    def normalize_output(
+        self,
+        raw: str,
+        *,
+        hints: PersonaHints,
+        topic: str = "",
+        module_key: str = "",
+        chunks: list[KnowledgeChunk] | None = None,
+    ) -> str:
+        data = _parse_json_object(raw)
+        topic_name = topic or module_key or "算法主题"
+        slides = data.get("slides") if isinstance(data, dict) else None
+        if not _ppt_outline_is_usable(slides):
+            slides = _fallback_ppt_slides(topic_name, hints, chunks)
+        title = str(data.get("title") or "").strip()
+        if not title:
+            title = f"{topic_name} · 课程讲义"
+        normalized_slides = [_normalize_ppt_slide(s, hints=hints) for s in slides]
+        normalized_slides = normalized_slides[:12]
+        # 防御性保证结构完整；正常路径已由 _ppt_outline_is_usable 校验。
+        layouts = {s.get("layout") for s in normalized_slides}
+        if "cover" not in layouts:
+            normalized_slides.insert(0, _fallback_ppt_cover(title, hints))
+        if "agenda" not in layouts:
+            normalized_slides.insert(1, {
+                "layout": "agenda",
+                "title": "一条可复用的学习路径",
+                "bullets": ["识别问题", "建立模型", "写出步骤", "验证与优化"],
+                "notes": "用四个阶段建立全课导航，让学生知道每一页分别解决什么问题，并在结尾形成可执行的方法。",
+            })
+        if "closing" not in layouts:
+            normalized_slides.append(_fallback_ppt_closing(topic_name, hints))
+        normalized = {"title": title, "slides": normalized_slides}
+        return json.dumps(normalized, ensure_ascii=False, indent=2)
+
+
+class VideoScriptAgent(ResourceRoleAgent):
+    """教学短视频脚本：输出 JSON 脚本（含分镜 + 字幕 + 配音文案）。
+
+    不做真实视频渲染；前端结合 TTS 朗读 voiceover 文案即可形成
+    "图文 + 语音" 的伪视频体验。
+    """
+
+    agent_id = "VideoScriptAgent"
+    display_name = "VideoScriptAgent"
+    role = "短视频导演 · 教学短视频脚本"
+
+    def system_prompt(self, hints: PersonaHints) -> str:
+        return f"""你是 VideoScriptAgent。为高校《数据结构与算法》课程生成 60～90 秒教学短视频的脚本 JSON。
+
+## 个性化要求
+- 学习目标：{hints.learning_goals or '掌握本主题核心算法与典型应用'}
+- 知识基础：{hints.knowledge_base or '大一计科入门'}
+- 认知风格：{hints.cognitive_style or '图示+文字+动手练习混合'}
+- 易错点偏好：{hints.error_preference or '边界与复杂度'}
+
+## 输出规范
+输出唯一 JSON，不要 markdown 代码块围栏：
+{{
+  "title": "视频标题（不超过 24 字）",
+  "duration_sec": 75,
+  "goal": "看完本视频后学习者能掌握的一句话能力",
+  "shots": [
+    {{
+      "index": 1,
+      "scene": "分镜场景描述（画面中出现什么、镜头如何运动，30～80 字）",
+      "visual_hint": "画面插图/动画提示（如：左侧数组高亮 i，右侧文本框显示 sum）",
+      "subtitle": "本镜字幕（屏幕上显示的精炼文字，10～30 字）",
+      "voiceover": "本镜配音文案（口播讲解，40～120 字，须与字幕互补不重复）",
+      "duration_sec": 8
+    }}
+  ],
+  "summary": "视频结尾的一句话总结（10～30 字）"
+}}
+
+## 质量底线
+- shots 数量 6～10 个，总 duration_sec 介于 60～90
+- 每个 shot 必须含 scene/visual_hint/subtitle/voiceover 四字段，均不得为空
+- subtitle 单条 ≤ 30 字；voiceover 单条 40～120 字
+- 字幕不得与配音文案完全重复，字幕是关键词提炼、配音是讲解
+- 术语与知识库一致，不得编造题号、URL 或外部文献
+- 第 1 镜应为引入（场景描述现实问题或学习目标），最后 1 镜应为总结
+- 不得混入其他算法或无关主题，紧扣当前课程主题"""
+
+    def temperature(self) -> float:
+        return 0.5
+
+    def max_tokens(self) -> int:
+        return 2200
+
+    def output_format(self) -> str:
+        return "video_script_json"
+
+    def normalize_output(
+        self,
+        raw: str,
+        *,
+        hints: PersonaHints,
+        topic: str = "",
+        module_key: str = "",
+        chunks: list[KnowledgeChunk] | None = None,
+    ) -> str:
+        data = _parse_json_object(raw)
+        shots = data.get("shots") if isinstance(data, dict) else None
+        if not isinstance(shots, list) or len(shots) < 4:
+            shots = _fallback_video_shots(topic or module_key or "算法主题", hints)
+        title = str(data.get("title") or "").strip()
+        if not title:
+            title = f"{topic or module_key or '数据结构与算法'} · 教学短视频"
+        goal = str(data.get("goal") or "").strip()
+        if not goal:
+            goal = hints.learning_goals[:80] or f"理解{topic or module_key or '本主题'}的核心思路与典型应用"
+        summary = str(data.get("summary") or "").strip()
+        if not summary:
+            summary = f"回顾{topic or module_key or '本主题'}的核心步骤，对照易错点再练习一次。"
+        duration_total = 0
+        normalized_shots: list[dict[str, Any]] = []
+        for idx, shot in enumerate(shots, start=1):
+            ns = _normalize_video_shot(shot, idx, hints=hints)
+            duration_total += int(ns.get("duration_sec") or 8)
+            normalized_shots.append(ns)
+        # 总时长约束到 60～90 秒
+        if duration_total < 60:
+            # 平均拉长每镜
+            extra = 60 - duration_total
+            per = max(1, extra // max(1, len(normalized_shots)))
+            for ns in normalized_shots:
+                ns["duration_sec"] = int(ns.get("duration_sec") or 8) + per
+        elif duration_total > 90:
+            # 等比例压缩
+            scale = 90.0 / duration_total
+            for ns in normalized_shots:
+                ns["duration_sec"] = max(3, int((ns.get("duration_sec") or 8) * scale))
+        normalized = {
+            "title": title,
+            "duration_sec": sum(int(ns.get("duration_sec") or 8) for ns in normalized_shots),
+            "goal": goal,
+            "shots": normalized_shots,
+            "summary": summary,
+        }
+        return json.dumps(normalized, ensure_ascii=False, indent=2)
+
+
 ROLE_AGENT_BY_TYPE: dict[ResourceType, ResourceRoleAgent] = {
     "document": ConceptAgent(),
     "mindmap": GraphAgent(),
+    "exercises": ExerciseAgent(),
     "code_case": ScenarioAgent(),
     "trace_animation": TraceAgent(),
     "reading": ReadingAgent(),
+    "ppt": PptAgent(),
+    "video_script": VideoScriptAgent(),
 }
 
 
@@ -2890,6 +3206,550 @@ def _fallback_reading_levels(hints: PersonaHints) -> list[dict[str, Any]]:
             ],
         },
     ]
+
+
+# ── PPT 大纲 fallback 与归一化 ──
+
+_PPT_ALLOWED_LAYOUTS = ("cover", "agenda", "content", "code", "closing")
+_PPT_PLACEHOLDER_TEXT = (
+    "封面标题",
+    "页面标题",
+    "代码页",
+    "要点1",
+    "要点2",
+    "要点3",
+    "章节1",
+    "章节2",
+    "关键伪代码或代码片段",
+    "副标题（可空）",
+    "讲者备注",
+    "逐行解释",
+)
+
+
+def _ppt_outline_is_usable(slides: Any) -> bool:
+    """Reject short, structurally weak, or prompt-echo PPT outlines."""
+    if not isinstance(slides, list) or not (8 <= len(slides) <= 12):
+        return False
+    if not all(isinstance(slide, dict) for slide in slides):
+        return False
+    layouts = [str(slide.get("layout") or "").strip().lower() for slide in slides]
+    if layouts[0] != "cover" or layouts[-1] != "closing":
+        return False
+    if layouts.count("cover") != 1 or layouts.count("closing") != 1 or "agenda" not in layouts:
+        return False
+    titles: list[str] = []
+    for slide, layout in zip(slides, layouts):
+        title = str(slide.get("title") or "").strip()
+        notes = str(slide.get("notes") or "").strip()
+        flattened = json.dumps(slide, ensure_ascii=False)
+        if not title or len(notes) < 10:
+            return False
+        if any(token in flattened for token in _PPT_PLACEHOLDER_TEXT):
+            return False
+        titles.append(title)
+        if layout in {"agenda", "content", "closing"}:
+            bullets = slide.get("bullets")
+            if not isinstance(bullets, list) or not (3 <= len(bullets) <= 5):
+                return False
+        if layout == "code":
+            code_lines = [line for line in str(slide.get("code") or "").splitlines() if line.strip()]
+            if not (3 <= len(code_lines) <= 12):
+                return False
+    return len(set(titles)) == len(titles)
+
+
+def _fallback_ppt_cover(title: str, hints: PersonaHints) -> dict[str, Any]:
+    topic_label = re.split(r"[：·]", title, maxsplit=1)[0].strip()[:28] or "本课主题"
+    return {
+        "layout": "cover",
+        "title": title,
+        "subtitle": f"掌握{topic_label}的核心模型、实现步骤与边界条件",
+        "notes": "开场介绍本课主题，与学生的学习目标对齐，明确本节课的产出。",
+    }
+
+
+def _fallback_ppt_closing(topic: str, hints: PersonaHints) -> dict[str, Any]:
+    return {
+        "layout": "closing",
+        "title": f"{topic} · 总结与作业",
+        "bullets": [
+            f"回顾{topic}的核心概念与典型操作",
+            f"针对{hints.error_preference or '边界与初始条件'}设计反例",
+            f"完成一道{topic}基础练习并复盘",
+        ],
+        "notes": "总结要点并布置课后任务，提示学生回顾本课易错点。",
+    }
+
+
+def _ppt_points(value: Any, *, limit: int = 4) -> list[str]:
+    """Turn grounded prose into short, presentation-ready claims."""
+    if isinstance(value, list):
+        raw_points = [str(item).strip() for item in value]
+    else:
+        raw_points = re.split(r"[。；;，,\n]+", str(value or ""))
+    points: list[str] = []
+    for point in raw_points:
+        cleaned = re.sub(r"^[-*•\s]+", "", point).strip()
+        if len(cleaned) < 4 or cleaned in points:
+            continue
+        points.append(cleaned[:50].rstrip("，、（("))
+        if len(points) >= limit:
+            break
+    return points
+
+
+def _ppt_pad_points(
+    points: list[str],
+    fallbacks: list[str],
+    *,
+    minimum: int = 3,
+    limit: int = 4,
+) -> list[str]:
+    """Return enough distinct bullets to keep a content slide scannable."""
+    merged = list(dict.fromkeys([*points, *fallbacks]))
+    return merged[:limit] if len(merged) >= minimum else merged
+
+
+def _ppt_chunk_points(
+    chunks: list[KnowledgeChunk] | None,
+    *,
+    markers: tuple[str, ...],
+    limit: int = 4,
+) -> list[str]:
+    if not chunks:
+        return []
+    matched: list[str] = []
+    for chunk in chunks:
+        title = str(chunk.get("title") or "")
+        if markers and not any(marker in title for marker in markers):
+            continue
+        matched.extend(_ppt_points(chunk.get("content"), limit=limit))
+        if len(matched) >= limit:
+            break
+    return list(dict.fromkeys(matched))[:limit]
+
+
+def _ppt_code_sample(topic: str) -> str:
+    key = _match_topic_key(topic) or ""
+    samples = {
+        "链表": (
+            "def reverse_list(head):\n"
+            "    prev, cur = None, head\n"
+            "    while cur:\n"
+            "        nxt = cur.next\n"
+            "        cur.next = prev\n"
+            "        prev, cur = cur, nxt\n"
+            "    return prev"
+        ),
+        "动态规划": (
+            "def climb_stairs(n):\n"
+            "    if n <= 1:\n"
+            "        return 1\n"
+            "    prev2, prev1 = 1, 1\n"
+            "    for _ in range(2, n + 1):\n"
+            "        prev2, prev1 = prev1, prev1 + prev2\n"
+            "    return prev1"
+        ),
+        "排序": (
+            "def bubble_sort(a):\n"
+            "    for end in range(len(a) - 1, 0, -1):\n"
+            "        swapped = False\n"
+            "        for i in range(end):\n"
+            "            if a[i] > a[i + 1]:\n"
+            "                a[i], a[i + 1] = a[i + 1], a[i]\n"
+            "                swapped = True\n"
+            "        if not swapped: break\n"
+            "    return a"
+        ),
+        "数组": (
+            "def prefix_sums(values):\n"
+            "    prefix = [0]\n"
+            "    for value in values:\n"
+            "        prefix.append(prefix[-1] + value)\n"
+            "    return prefix"
+        ),
+        "字符串": (
+            "from collections import Counter\n\n"
+            "def is_anagram(left, right):\n"
+            "    return Counter(left) == Counter(right)"
+        ),
+        "双指针": (
+            "def pair_sum(a, target):\n"
+            "    left, right = 0, len(a) - 1\n"
+            "    while left < right:\n"
+            "        total = a[left] + a[right]\n"
+            "        if total == target: return left, right\n"
+            "        if total < target: left += 1\n"
+            "        else: right -= 1\n"
+            "    return None"
+        ),
+        "栈与队列": (
+            "def valid_brackets(text):\n"
+            "    pairs = {')': '(', ']': '[', '}': '{'}\n"
+            "    stack = []\n"
+            "    for char in text:\n"
+            "        if char in '([{': stack.append(char)\n"
+            "        elif not stack or stack.pop() != pairs[char]:\n"
+            "            return False\n"
+            "    return not stack"
+        ),
+        "哈希表": (
+            "def two_sum(values, target):\n"
+            "    seen = {}\n"
+            "    for i, value in enumerate(values):\n"
+            "        need = target - value\n"
+            "        if need in seen: return seen[need], i\n"
+            "        seen[value] = i\n"
+            "    return None"
+        ),
+        "二叉树": (
+            "def max_depth(root):\n"
+            "    if root is None:\n"
+            "        return 0\n"
+            "    left = max_depth(root.left)\n"
+            "    right = max_depth(root.right)\n"
+            "    return 1 + max(left, right)"
+        ),
+        "图": (
+            "from collections import deque\n\n"
+            "def bfs(graph, start):\n"
+            "    queue, seen = deque([start]), {start}\n"
+            "    while queue:\n"
+            "        node = queue.popleft()\n"
+            "        for nxt in graph[node]:\n"
+            "            if nxt not in seen:\n"
+            "                seen.add(nxt); queue.append(nxt)\n"
+            "    return seen"
+        ),
+        "回溯": (
+            "def subsets(values):\n"
+            "    result, path = [], []\n"
+            "    def dfs(index):\n"
+            "        if index == len(values):\n"
+            "            result.append(path.copy()); return\n"
+            "        dfs(index + 1)\n"
+            "        path.append(values[index])\n"
+            "        dfs(index + 1); path.pop()\n"
+            "    dfs(0); return result"
+        ),
+        "贪心": (
+            "def max_non_overlapping(intervals):\n"
+            "    intervals.sort(key=lambda item: item[1])\n"
+            "    count, last_end = 0, float('-inf')\n"
+            "    for start, end in intervals:\n"
+            "        if start >= last_end:\n"
+            "            count, last_end = count + 1, end\n"
+            "    return count"
+        ),
+    }
+    return samples.get(key, "")
+
+
+def _ppt_complexity_claim(value: Any, label: str) -> str:
+    text = str(value or "").strip()
+    match = re.match(r"^(O\s*\([^)]*\))\s*[：:]?\s*(.*)$", text, re.I)
+    notation = match.group(1).replace(" ", "") if match else ""
+    detail = match.group(2) if match else text
+    first_clause = re.split(r"[。；;，,]", detail, maxsplit=1)[0].strip()
+    if notation:
+        return f"{label} {notation}：{first_clause[:32]}"
+    return f"{label}：{first_clause[:38] or '依据状态数与单次操作代价计算'}"
+
+
+def _fallback_ppt_slides(
+    topic: str,
+    hints: PersonaHints,
+    chunks: list[KnowledgeChunk] | None = None,
+) -> list[dict[str, Any]]:
+    """Build a grounded 10–11 slide teaching narrative when LLM output is unusable."""
+    topic_name = (topic or "本课主题")[:36]
+    key = _match_topic_key(topic_name)
+    concept = (_TOPIC_ENRICHMENTS.get(key or "") or {}).get("concept") or {}
+    objectives = _ppt_points(concept.get("learning_objectives"), limit=3) or [
+        f"解释{topic_name}解决的问题",
+        "独立写出核心步骤与边界",
+        "用小样例验证实现正确性",
+    ]
+    objectives = _ppt_pad_points(
+        objectives,
+        [
+            f"解释{topic_name}解决的问题",
+            "独立写出核心步骤与边界",
+            "用最小样例和边界输入验证实现正确性",
+        ],
+        limit=3,
+    )
+    model_points = _ppt_points(concept.get("abstract_model"), limit=4) or [
+        "明确输入、输出与规模约束",
+        "找出贯穿过程的核心状态",
+        "写清操作前后必须保持的不变量",
+    ]
+    algorithm_points = _ppt_points(concept.get("algorithm_outline"), limit=4) or [
+        "先定义状态与每个变量的语义",
+        "再写核心操作或状态转移",
+        "补齐初值、终止条件与遍历顺序",
+        "最后用最小样例逐步验证",
+    ]
+    structures = _ppt_points(concept.get("data_structures"), limit=3)
+    proof = _ppt_points(concept.get("correctness_proof"), limit=2)
+    structure_points = _ppt_pad_points(
+        structures + proof,
+        [
+            "明确每个状态或结构的职责",
+            "每一步都保持关键不变量",
+            "终止时结果覆盖全部输入",
+        ],
+    )
+    case_points = _ppt_chunk_points(chunks, markers=("课堂案例", "案例", "例题"), limit=4)
+    if len(case_points) < 3:
+        case_points.extend([
+            "先选一个最小但完整的输入",
+            "逐步记录状态变化与中间结果",
+            "再用一个边界样例反向检查",
+        ])
+    pitfalls = _ppt_points(concept.get("pitfalls"), limit=4) or [
+        hints.error_preference or "忽略边界与初始条件",
+        "变量含义与实际更新逻辑不一致",
+        "只验证常规输入，没有验证最小规模",
+    ]
+    complexity = [
+        _ppt_complexity_claim(concept.get("time_complexity"), "时间"),
+        _ppt_complexity_claim(concept.get("space_complexity"), "空间"),
+        "先保证正确，再依据重复计算或冗余状态优化",
+    ]
+    if key in {"dp", "动态规划"}:
+        complexity = [
+            "时间 O(n)：每个状态只计算一次",
+            "基础表格占用 O(n)，当前滚动变量代码降为 O(1)",
+            "先写对状态转移，再压缩只依赖相邻状态的存储",
+        ]
+    code = _ppt_code_sample(topic_name)
+    title = f"{topic_name}：从概念到实现"
+    slides: list[dict[str, Any]] = [
+        _fallback_ppt_cover(title, hints),
+        {
+            "layout": "agenda",
+            "title": "一条可复用的学习路径",
+            "bullets": ["识别问题", "建立模型", "写出步骤", "验证与优化"],
+            "notes": "用四个阶段建立全课导航。提醒学生后续每一页都会回答其中一个问题，并最终形成可执行的方法。",
+        },
+        {
+            "layout": "content",
+            "title": "学完这节，你能完成三件事",
+            "bullets": objectives,
+            "notes": "先明确可观察的学习产出。讲解时要求学生用自己的话复述目标，避免只记住术语而不会应用。",
+        },
+        {
+            "layout": "content",
+            "title": "先把问题压缩成一个清晰模型",
+            "bullets": model_points,
+            "notes": "从输入、输出、状态和不变量四个角度拆解问题。这里不急着写代码，先确保模型能够解释每一步。",
+        },
+        {
+            "layout": "content",
+            "title": "把方法写成可执行的四个步骤",
+            "bullets": algorithm_points,
+            "notes": "按顺序讲清初始化、核心更新、终止与返回值。每讲一步都追问变量此刻代表什么，防止机械背诵。",
+        },
+        {
+            "layout": "content",
+            "title": "关键结构决定了过程是否正确",
+            "bullets": structure_points[:4],
+            "notes": "把数据结构与正确性联系起来。重点强调不变量在每一次更新后仍成立，终止时自然得到目标结果。",
+        },
+        {
+            "layout": "content",
+            "title": "课堂案例：先用小样例看见状态变化",
+            "bullets": list(dict.fromkeys(case_points))[:4],
+            "notes": "带学生手算一个最小完整案例，逐步记录状态变化。随后更换边界输入，验证同一套规则是否仍然成立。",
+        },
+    ]
+    if code:
+        slides.append({
+            "layout": "code",
+            "title": "把核心方法落到一段可运行代码",
+            "code": code,
+            "notes": "逐行对应前一页的算法步骤，先指出状态变量和更新语句，再用最小样例走一遍，确认返回值与模型一致。",
+        })
+    slides.extend([
+        {
+            "layout": "content",
+            "title": "复杂度不是结论，而是设计约束",
+            "bullets": complexity,
+            "notes": "先说明状态数或操作次数，再解释单次代价，最后讨论空间换时间的条件。不要只让学生背复杂度符号。",
+        },
+        {
+            "layout": "content",
+            "title": "真正拉开差距的是边界与易错点",
+            "bullets": pitfalls,
+            "notes": "把易错点改写成检查清单。要求学生为每一项构造一个能触发错误的输入，并说明预期结果。",
+        },
+        _fallback_ppt_closing(topic_name, hints),
+    ])
+    return slides
+
+
+def _normalize_ppt_slide(raw: Any, *, hints: PersonaHints) -> dict[str, Any]:
+    slide = raw if isinstance(raw, dict) else {}
+    layout = str(slide.get("layout") or "content").strip().lower()
+    if layout not in _PPT_ALLOWED_LAYOUTS:
+        layout = "content"
+    title = str(slide.get("title") or "").strip()
+    if not title:
+        title = "（未命名页）"
+    notes = str(slide.get("notes") or "").strip()
+    if not notes:
+        notes = "本页讲解要点请由教师补充。"
+    normalized: dict[str, Any] = {"layout": layout, "title": title, "notes": notes}
+    subtitle = str(slide.get("subtitle") or "").strip()
+    if subtitle:
+        normalized["subtitle"] = subtitle
+    bullets_raw = slide.get("bullets")
+    if isinstance(bullets_raw, list):
+        bullets = [str(b).strip() for b in bullets_raw if str(b).strip()]
+        bullets = [b[:60] for b in bullets[:5]]
+        if bullets:
+            normalized["bullets"] = bullets
+    code = str(slide.get("code") or "").strip()
+    if code:
+        # 截断到 12 行，避免一页过载
+        lines = code.splitlines()[:12]
+        normalized["code"] = "\n".join(lines)
+    return normalized
+
+
+# ── VideoScript fallback 与归一化 ──
+
+_VIDEO_ALLOWED_SHOT_KEYS = ("index", "scene", "visual_hint", "subtitle", "voiceover", "duration_sec")
+
+
+def _fallback_video_shots(topic: str, hints: PersonaHints) -> list[dict[str, Any]]:
+    """LLM 输出不可用时的最小可用 6 镜教学短视频脚本。"""
+    topic_name = topic[:32] or "本主题"
+    error_hint = hints.error_preference or "边界条件与初始状态"
+    return [
+        {
+            "index": 1,
+            "scene": (
+                f"开场镜头：教室白板特写，老师写下「{topic_name}」三个字，"
+                "镜头缓慢拉远展示学习目标。"
+            ),
+            "visual_hint": f"白板居中显示「{topic_name}」，下方列出 2 条学习目标",
+            "subtitle": f"今天我们用 60 秒搞懂{topic_name}",
+            "voiceover": (
+                f"同学们好，今天我们用一分钟时间，把{topic_name}的核心思路与"
+                "最容易踩坑的地方讲清楚。看完之后，你应该能独立完成一道基础练习。"
+            ),
+            "duration_sec": 8,
+        },
+        {
+            "index": 2,
+            "scene": (
+                f"问题动机镜头：现实场景图片淡入（如排队、查找、路径规划），"
+                f"配以箭头标注引出「{topic_name}」要解决的问题。"
+            ),
+            "visual_hint": "左侧现实场景图，右侧抽象出输入/输出格式",
+            "subtitle": "它解决的是这类典型问题",
+            "voiceover": (
+                f"在工程或竞赛中，我们经常遇到这样的问题：给定一组数据，"
+                f"需要按某种规则高效地完成一次操作。{topic_name}就是为这类问题设计的核心方法。"
+            ),
+            "duration_sec": 10,
+        },
+        {
+            "index": 3,
+            "scene": (
+                f"概念定义镜头：屏幕中央浮现「{topic_name}」的形式化定义，"
+                "关键词逐字打字机效果出现。"
+            ),
+            "visual_hint": "中央文字定义 + 关键词高亮（不变量/输入/输出）",
+            "subtitle": "记住这三个关键词",
+            "voiceover": (
+                f"{topic_name}的关键在于三个要点：明确的输入输出、贯穿始终的不变量、"
+                "以及终止条件。这三个要点也是后续判断代码正确性的依据。"
+            ),
+            "duration_sec": 10,
+        },
+        {
+            "index": 4,
+            "scene": (
+                "算法步骤镜头：分屏左侧显示伪代码，右侧手算 5 元素示例，"
+                "高亮当前执行的代码行与对应数据位置。"
+            ),
+            "visual_hint": "左侧伪代码逐行高亮，右侧数组/状态逐步变化",
+            "subtitle": "手算一遍比看十遍更有效",
+            "voiceover": (
+                "我们用 5 个元素的样例手算一遍：每一步保持不变量成立，"
+                "状态随循环推进，直到终止条件满足。请暂停视频自己先算一次再对照。"
+            ),
+            "duration_sec": 12,
+        },
+        {
+            "index": 5,
+            "scene": (
+                "易错点镜头：红色警告图标浮现，列出 2～3 个常见错误，"
+                f"每条配反例截图。突出「{error_hint}」。"
+            ),
+            "visual_hint": "红色警告图标 + 反例代码片段（带删除线）",
+            "subtitle": f"小心：{error_hint[:18]}",
+            "voiceover": (
+                f"同学们最容易在「{error_hint}」上栽跟头：要么忘了初始化，"
+                "要么边界少算一格，导致结果偏差或死循环。请每次写完代码都先自查这一处。"
+            ),
+            "duration_sec": 10,
+        },
+        {
+            "index": 6,
+            "scene": (
+                "总结镜头：白板上的「{topic_name}」三个字下方浮现 3 条要点，"
+                "镜头定格后淡出。"
+            ),
+            "visual_hint": "白板 + 3 条要点 + 课后练习提示",
+            "subtitle": "回顾要点，课后练一题",
+            "voiceover": (
+                f"总结一下：{topic_name}的核心是不变量与边界，手算样例是检验标准，"
+                f"易错点要重点自查。课后请完成一道基础练习巩固。下节课见。"
+            ),
+            "duration_sec": 8,
+        },
+    ]
+
+
+def _normalize_video_shot(raw: Any, index: int, *, hints: PersonaHints) -> dict[str, Any]:
+    shot = raw if isinstance(raw, dict) else {}
+    scene = str(shot.get("scene") or "").strip()
+    if not scene:
+        scene = f"第 {index} 镜：围绕当前课程主题展开分镜，配以示意图与字幕。"
+    visual_hint = str(shot.get("visual_hint") or "").strip()
+    if not visual_hint:
+        visual_hint = "画面以示意图 + 关键文字为主，避免冗余装饰"
+    subtitle = str(shot.get("subtitle") or "").strip()
+    if not subtitle:
+        subtitle = f"第 {index} 镜 · 关键要点"
+    subtitle = subtitle[:30]
+    voiceover = str(shot.get("voiceover") or "").strip()
+    if not voiceover:
+        voiceover = (
+            f"本镜口播：请围绕第 {index} 镜的场景与字幕展开 40～120 字的讲解，"
+            "强调与课程主题相关的核心思路或易错点。"
+        )
+    # voiceover 限长 200，避免溢出；不足 40 字也不强行填充（由校验层提示）
+    voiceover = voiceover[:200]
+    duration_raw = shot.get("duration_sec")
+    try:
+        duration = int(duration_raw) if duration_raw is not None else 8
+    except (TypeError, ValueError):
+        duration = 8
+    duration = max(3, min(20, duration))
+    return {
+        "index": index,
+        "scene": scene,
+        "visual_hint": visual_hint,
+        "subtitle": subtitle,
+        "voiceover": voiceover,
+        "duration_sec": duration,
+    }
 
 
 def _normalize_reading_level(raw: Any) -> dict[str, Any]:

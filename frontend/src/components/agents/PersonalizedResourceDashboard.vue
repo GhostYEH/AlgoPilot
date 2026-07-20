@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { ElMessage } from 'element-plus'
 import type { GeneratedResource } from '@/api/orchestrator'
+import { synthesizeTTS } from '@/api/tts'
 import DomainStructurePanels from '@/components/resources/DomainStructurePanels.vue'
 import SafetyValidationPanel from '@/components/resources/SafetyValidationPanel.vue'
 import TrustEvidenceDrawer from '@/components/resources/TrustEvidenceDrawer.vue'
@@ -324,6 +326,255 @@ const readingPayload = computed(() => {
   return robustJsonParse(r.content) as { reading_goal?: string; levels?: ReadingLevel[] } | null
 })
 
+// --- Exercises（个性化题单）---
+interface ExerciseQuestion {
+  type?: string
+  stem?: string
+  options?: string[]
+  answer?: string
+  hint?: string
+  explanation?: string
+  focus?: string
+  difficulty?: string
+}
+
+const exercisesPayload = computed(() => {
+  const r = resourceMap.value.get('exercises')
+  if (!r) return null
+  const data = robustJsonParse(r.content) as { questions?: ExerciseQuestion[] } | null
+  return data?.questions ?? null
+})
+
+const exerciseInputs = ref<Record<number, string>>({})
+const exerciseRevealed = ref<Record<number, boolean>>({})
+
+watch(exercisesPayload, () => {
+  exerciseInputs.value = {}
+  exerciseRevealed.value = {}
+}, { immediate: true })
+
+function isExerciseCorrect(idx: number, q: ExerciseQuestion): boolean | null {
+  if (!exerciseRevealed.value[idx]) return null
+  if (q.type === 'choice') {
+    return !!exerciseInputs.value[idx] && exerciseInputs.value[idx] === q.answer
+  }
+  return null
+}
+
+function revealExercise(idx: number) {
+  exerciseRevealed.value[idx] = true
+}
+
+function resetExercises() {
+  exerciseInputs.value = {}
+  exerciseRevealed.value = {}
+}
+
+// --- VideoScript（教学短视频脚本）---
+interface VideoShot {
+  index?: number
+  scene?: string
+  visual_hint?: string
+  subtitle?: string
+  voiceover?: string
+  duration_sec?: number
+}
+
+interface VideoScriptPayload {
+  title?: string
+  duration_sec?: number
+  goal?: string
+  shots?: VideoShot[]
+  summary?: string
+}
+
+const videoScriptPayload = computed<VideoScriptPayload | null>(() => {
+  const r = resourceMap.value.get('video_script')
+  if (!r) return null
+  return robustJsonParse(r.content) as VideoScriptPayload | null
+})
+
+const videoShots = computed<VideoShot[]>(() => videoScriptPayload.value?.shots ?? [])
+const videoTotalDuration = computed(() =>
+  videoShots.value.reduce((acc, s) => acc + (Number(s.duration_sec) || 0), 0),
+)
+
+// 当前播放分镜索引（-1 表示未开始；shots.length 表示已播完）
+const videoCurrentShot = ref(-1)
+const videoPlaying = ref(false)
+const videoTtsLoading = ref(false)
+// 每镜的 TTS URL 缓存（按 shot.index）
+const videoTtsUrls = ref<Record<number, string>>({})
+let videoAudioEl: HTMLAudioElement | null = null
+let videoPlayTimer: ReturnType<typeof setTimeout> | null = null
+
+function ensureVideoAudio(): HTMLAudioElement | null {
+  if (!videoAudioEl) {
+    videoAudioEl = new Audio()
+    videoAudioEl.preload = 'auto'
+  }
+  return videoAudioEl
+}
+
+function stopVideoPlayback() {
+  videoPlaying.value = false
+  if (videoPlayTimer) {
+    clearTimeout(videoPlayTimer)
+    videoPlayTimer = null
+  }
+  if (videoAudioEl) {
+    videoAudioEl.pause()
+    videoAudioEl.currentTime = 0
+  }
+}
+
+async function ensureShotTtsUrl(shot: VideoShot): Promise<string | null> {
+  const idx = shot.index ?? -1
+  if (idx < 0) return null
+  if (videoTtsUrls.value[idx]) return videoTtsUrls.value[idx]
+  const text = (shot.voiceover || '').trim()
+  if (!text) return null
+  const blob = await synthesizeTTS({ text })
+  const url = URL.createObjectURL(blob)
+  videoTtsUrls.value[idx] = url
+  return url
+}
+
+async function playVideoFromShot(startIdx: number) {
+  const shots = videoShots.value
+  if (!shots.length) return
+  if (startIdx < 0 || startIdx >= shots.length) return
+  stopVideoPlayback()
+  videoCurrentShot.value = startIdx
+  videoPlaying.value = true
+  await playShot(shots[startIdx])
+}
+
+async function playShot(shot: VideoShot) {
+  const duration = Math.max(3, Number(shot.duration_sec) || 8)
+  const audio = ensureVideoAudio()
+  if (!audio) {
+    // 浏览器不支持 Audio：仅按 duration 计时推进
+    videoPlayTimer = setTimeout(() => {
+      advanceToNextShot()
+    }, duration * 1000)
+    return
+  }
+
+  // 尝试播放配音：若 TTS 可用，则用音频时长作为分镜时长；否则用 duration_sec
+  let audioOk = false
+  try {
+    videoTtsLoading.value = true
+    const url = await ensureShotTtsUrl(shot)
+    if (url) {
+      audio.src = url
+      await audio.play()
+      audioOk = true
+    }
+  } catch {
+    // TTS 失败：静默降级为无声分镜，不阻断播放
+    audioOk = false
+  } finally {
+    videoTtsLoading.value = false
+  }
+
+  const waitMs = audioOk ? Math.max(duration * 1000, (audio.duration || 0) * 1000) : duration * 1000
+  videoPlayTimer = setTimeout(() => {
+    advanceToNextShot()
+  }, waitMs)
+}
+
+function advanceToNextShot() {
+  const next = videoCurrentShot.value + 1
+  const shots = videoShots.value
+  if (next >= shots.length) {
+    // 播放结束
+    videoPlaying.value = false
+    videoCurrentShot.value = shots.length // 标记为已播完
+    if (videoAudioEl) {
+      videoAudioEl.pause()
+      videoAudioEl.currentTime = 0
+    }
+    return
+  }
+  videoCurrentShot.value = next
+  void playShot(shots[next])
+}
+
+function toggleVideoPlayback() {
+  if (videoPlaying.value) {
+    stopVideoPlayback()
+    return
+  }
+  const shots = videoShots.value
+  if (!shots.length) return
+  // 已播完或未开始：从头开始
+  const start = videoCurrentShot.value < 0 || videoCurrentShot.value >= shots.length ? 0 : videoCurrentShot.value
+  void playVideoFromShot(start)
+}
+
+function jumpToShot(idx: number) {
+  if (idx < 0 || idx >= videoShots.value.length) return
+  void playVideoFromShot(idx)
+}
+
+async function readSingleShot(shot: VideoShot) {
+  const text = (shot.voiceover || '').trim()
+  if (!text) {
+    return
+  }
+  try {
+    videoTtsLoading.value = true
+    stopVideoPlayback()
+    const audio = ensureVideoAudio()
+    if (!audio) {
+      ElMessage.warning('当前浏览器不支持音频播放')
+      return
+    }
+    // 优先用缓存 URL
+    let url = videoTtsUrls.value[shot.index ?? -1]
+    if (!url) {
+      const blob = await synthesizeTTS({ text })
+      url = URL.createObjectURL(blob)
+      if (shot.index !== undefined) videoTtsUrls.value[shot.index] = url
+    }
+    audio.src = url
+    videoCurrentShot.value = shot.index ?? -1
+    await audio.play()
+  } catch (e) {
+    const err = e as { response?: { status?: number } }
+    if (err?.response?.status === 503) {
+      ElMessage.warning('语音合成未配置：请联系管理员启用讯飞 TTS')
+    } else {
+      ElMessage.error('语音合成失败，请稍后重试')
+    }
+  } finally {
+    videoTtsLoading.value = false
+  }
+}
+
+watch(videoScriptPayload, () => {
+  stopVideoPlayback()
+  videoCurrentShot.value = -1
+  // 撤销旧 URL
+  for (const k of Object.keys(videoTtsUrls.value)) {
+    URL.revokeObjectURL(videoTtsUrls.value[Number(k)])
+  }
+  videoTtsUrls.value = {}
+}, { immediate: true })
+
+onBeforeUnmount(() => {
+  stopVideoPlayback()
+  for (const k of Object.keys(videoTtsUrls.value)) {
+    URL.revokeObjectURL(videoTtsUrls.value[Number(k)])
+  }
+  videoTtsUrls.value = {}
+  if (videoAudioEl) {
+    videoAudioEl.pause()
+    videoAudioEl = null
+  }
+})
+
 const evidenceVisible = ref(false)
 const evidenceResource = ref<GeneratedResource | null>(null)
 
@@ -359,12 +610,12 @@ function openEvidence() {
       <article v-if="activeStreamingContent && !current" class="panel-card stream-preview-card" aria-live="polite">
         <header class="panel-head">
           <h3>正在实时生成{{ tabs.find((item) => item.key === tab)?.label ?? '学习资源' }}</h3>
-          <span class="panel-meta">内容持续更新中</span>
+          <span class="panel-meta"><span class="stream-progress-dot" /> 内容持续更新中</span>
         </header>
-        <div class="stream-progress-copy">
-          <span class="stream-progress-dot" />
+        <div v-if="!activeStreamingContent.trim()" class="stream-progress-copy">
           <p>正在整理结构、核对课程知识并生成可视化内容，完成后将在这里自动呈现。</p>
         </div>
+        <div v-else class="doc-body ai-md-body stream-delta" v-html="renderAiReplyHtml(activeStreamingContent)" />
       </article>
 
       <template v-else>
@@ -400,6 +651,88 @@ function openEvidence() {
         <div ref="mermaidHost" class="mermaid-host" />
         <p v-if="mermaidError" class="mermaid-err">{{ mermaidError }}</p>
         <el-empty v-if="!mermaidSrc" description="等待 GraphAgent 输出思维导图" />
+      </article>
+
+      <!-- 个性化题单 -->
+      <article v-if="tab === 'exercises'" class="panel-card panel-card--exercises">
+        <header class="panel-head">
+          <h3>个性化题单</h3>
+          <span class="panel-meta">ExerciseAgent · 选择 / 填空</span>
+        </header>
+        <template v-if="exercisesPayload && exercisesPayload.length">
+          <div class="quiz-toolbar">
+            <span class="quiz-progress">
+              共 {{ exercisesPayload.length }} 题 ·
+              已作答 {{ Object.keys(exerciseInputs).length }} / {{ exercisesPayload.length }}
+            </span>
+            <div class="quiz-toolbar-actions">
+              <el-button size="small" @click="resetExercises">重置作答</el-button>
+            </div>
+          </div>
+          <div class="quiz-grid">
+            <article
+              v-for="(q, idx) in exercisesPayload"
+              :key="idx"
+              class="quiz-card"
+            >
+              <header class="quiz-head">
+                <span class="quiz-badge">{{ q.type === 'choice' ? '选择' : '填空' }} · 第 {{ idx + 1 }} 题</span>
+                <span v-if="q.difficulty" class="quiz-diff">难度：{{ q.difficulty }}</span>
+                <span v-if="q.focus" class="quiz-focus-tag">焦点：{{ q.focus }}</span>
+              </header>
+              <p class="quiz-stem">{{ q.stem }}</p>
+
+              <div v-if="q.type === 'choice'" class="quiz-options">
+                <el-button
+                  v-for="opt in q.options || []"
+                  :key="opt"
+                  size="small"
+                  :type="exerciseInputs[idx] === opt ? 'primary' : 'default'"
+                  :plain="exerciseInputs[idx] !== opt"
+                  @click="exerciseInputs[idx] = opt"
+                >
+                  {{ opt }}
+                </el-button>
+              </div>
+              <div v-else class="quiz-fill">
+                <el-input
+                  v-model="exerciseInputs[idx]"
+                  size="small"
+                  placeholder="请输入答案后点击「查看解析」"
+                  clearable
+                />
+              </div>
+
+              <p v-if="q.hint" class="quiz-hint">提示：{{ q.hint }}</p>
+
+              <div class="quiz-toolbar-actions">
+                <el-button
+                  size="small"
+                  type="primary"
+                  plain
+                  :disabled="exerciseRevealed[idx]"
+                  @click="revealExercise(idx)"
+                >
+                  查看解析
+                </el-button>
+              </div>
+
+              <div v-if="exerciseRevealed[idx]" class="quiz-answer">
+                <p>
+                  <strong>参考答案：</strong>{{ q.answer }}
+                </p>
+                <p v-if="q.type === 'choice' && isExerciseCorrect(idx, q) === true" class="quiz-correct">
+                  ✓ 回答正确
+                </p>
+                <p v-else-if="q.type === 'choice' && isExerciseCorrect(idx, q) === false" class="quiz-wrong">
+                  ✗ 回答错误，请结合解析再思考一次
+                </p>
+                <p v-if="q.explanation"><strong>解析：</strong>{{ q.explanation }}</p>
+              </div>
+            </article>
+          </div>
+        </template>
+        <el-empty v-else description="ExerciseAgent 将基于易错点生成 3 选择 + 2 填空个性化题单" />
       </article>
 
       <!-- 剧情实操沙盒 -->
@@ -557,6 +890,101 @@ function openEvidence() {
         </div>
         <el-empty v-else description="ReadingAgent 将生成三层拓展阅读清单" />
       </article>
+
+      <!-- 教学短视频脚本 -->
+      <article v-if="tab === 'video_script'" class="panel-card panel-card--video">
+        <header class="panel-head">
+          <h3>教学短视频脚本</h3>
+          <span class="panel-meta">VideoScriptAgent · 分镜 + 字幕 + 配音文案</span>
+        </header>
+
+        <div v-if="videoScriptPayload" class="video-info">
+          <div class="video-info-row">
+            <strong>{{ videoScriptPayload.title || '教学短视频' }}</strong>
+            <span class="video-info-meta">
+              时长 {{ videoScriptPayload.duration_sec ?? videoTotalDuration }}s ·
+              {{ videoShots.length }} 镜
+            </span>
+          </div>
+          <p v-if="videoScriptPayload.goal" class="video-goal">
+            <span class="video-goal-tag">学习目标</span>{{ videoScriptPayload.goal }}
+          </p>
+        </div>
+
+        <div v-if="videoScriptPayload" class="video-controls">
+          <el-button
+            :type="videoPlaying ? 'warning' : 'primary'"
+            :loading="videoTtsLoading"
+            size="small"
+            @click="toggleVideoPlayback"
+          >
+            {{ videoPlaying ? '⏸ 暂停' : '▶ 播放伪视频' }}
+          </el-button>
+          <el-button
+            v-if="videoCurrentShot >= 0 && videoCurrentShot < videoShots.length"
+            size="small"
+            @click="jumpToShot(videoCurrentShot)"
+          >
+            重播本镜
+          </el-button>
+          <el-button
+            size="small"
+            :disabled="videoCurrentShot < 0 || videoCurrentShot >= videoShots.length"
+            @click="stopVideoPlayback"
+          >
+            ⏹ 停止
+          </el-button>
+          <span v-if="videoPlaying" class="video-now-playing">
+            正在播放：第 {{ videoCurrentShot + 1 }} 镜 / 共 {{ videoShots.length }} 镜
+          </span>
+          <span v-else-if="videoCurrentShot >= videoShots.length" class="video-finished">
+            ✓ 播放完毕
+          </span>
+          <span v-else-if="videoCurrentShot >= 0" class="video-paused">
+            已暂停于第 {{ videoCurrentShot + 1 }} 镜
+          </span>
+        </div>
+
+        <div v-if="videoShots.length" class="video-shots">
+          <article
+            v-for="(shot, idx) in videoShots"
+            :key="shot.index ?? idx"
+            class="video-shot"
+            :class="{
+              'video-shot--active': videoCurrentShot === (shot.index ?? idx),
+              'video-shot--done': videoCurrentShot > (shot.index ?? idx) && videoCurrentShot < videoShots.length,
+            }"
+            @click="jumpToShot(shot.index ?? idx)"
+          >
+            <header class="video-shot-head">
+              <span class="video-shot-index">第 {{ shot.index ?? idx + 1 }} 镜</span>
+              <span class="video-shot-duration">{{ shot.duration_sec ?? 8 }}s</span>
+            </header>
+            <p v-if="shot.scene" class="video-shot-scene">{{ shot.scene }}</p>
+            <p v-if="shot.visual_hint" class="video-shot-hint">画面提示：{{ shot.visual_hint }}</p>
+            <p v-if="shot.subtitle" class="video-shot-subtitle">「{{ shot.subtitle }}」</p>
+            <p v-if="shot.voiceover" class="video-shot-voiceover">
+              <span class="video-vo-tag">配音</span>{{ shot.voiceover }}
+            </p>
+            <div class="video-shot-actions">
+              <el-button
+                size="small"
+                plain
+                :loading="videoTtsLoading && videoCurrentShot === (shot.index ?? idx)"
+                @click.stop="readSingleShot(shot)"
+              >
+                🔊 朗读本镜
+              </el-button>
+            </div>
+          </article>
+        </div>
+
+        <p v-if="videoScriptPayload?.summary" class="video-summary">
+          <span class="video-summary-tag">结尾总结</span>{{ videoScriptPayload.summary }}
+        </p>
+
+        <el-empty v-else description="VideoScriptAgent 将生成 60～90 秒教学短视频脚本（含分镜 + 字幕 + 配音文案）" />
+      </article>
       </template>
     </div>
     <SafetyValidationPanel
@@ -700,6 +1128,77 @@ function openEvidence() {
 
 .stream-preview-card {
   min-height: 360px;
+}
+
+.stream-delta {
+  padding: 12px 16px;
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: var(--alp-color-text);
+  border-left: 3px solid color-mix(in srgb, var(--alp-color-primary) 45%, transparent);
+  background: color-mix(in srgb, var(--alp-color-primary) 4%, transparent);
+  border-radius: 4px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.stream-delta :deep(.ai-md-p) {
+  margin: 0 0 0.5em;
+}
+
+.stream-delta :deep(.ai-md-p:last-child) {
+  margin-bottom: 0;
+}
+
+.stream-delta :deep(.ai-md-h) {
+  margin: 0.6em 0 0.35em;
+  font-size: 0.95em;
+  font-weight: 600;
+  color: var(--alp-color-text);
+}
+
+.stream-delta :deep(.ai-md-code) {
+  padding: 0.1em 0.35em;
+  font-size: 0.88em;
+  font-family: ui-monospace, Consolas, monospace;
+  background: color-mix(in srgb, var(--alp-color-primary) 12%, transparent);
+  border-radius: 4px;
+}
+
+.stream-delta :deep(.ai-md-pre) {
+  margin: 0.5em 0;
+  padding: 0.5em 0.65em;
+  background: var(--alp-bg-soft-block, rgba(0, 0, 0, 0.04));
+  border: 1px solid var(--alp-color-border);
+  border-radius: 6px;
+  font-size: 12.5px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.stream-delta :deep(.ai-md-ul),
+.stream-delta :deep(.ai-md-ol) {
+  margin: 0.35em 0 0.5em;
+  padding-left: 1.2em;
+}
+
+.stream-delta :deep(.ai-md-table) {
+  width: 100%;
+  margin: 0.5em 0;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+
+.stream-delta :deep(.ai-md-table th),
+.stream-delta :deep(.ai-md-table td) {
+  padding: 0.3em 0.55em;
+  border: 1px solid var(--alp-color-border);
+  text-align: left;
+}
+
+.stream-delta :deep(.ai-md-table th) {
+  background: var(--alp-bg-nav, rgba(0, 0, 0, 0.04));
+  font-weight: 600;
 }
 
 .stream-progress-copy {
@@ -1160,6 +1659,184 @@ function openEvidence() {
 .reading-item small {
   color: var(--alp-color-muted);
   font-size: 11px;
+}
+
+/* --- 教学短视频脚本 --- */
+.panel-card--video {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.video-info {
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(124, 58, 237, 0.08);
+  border: 1px solid rgba(124, 58, 237, 0.2);
+}
+
+.video-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.video-info-row strong {
+  font-size: 15px;
+  color: var(--alp-color-text);
+}
+
+.video-info-meta {
+  color: var(--alp-color-muted);
+  font-size: 12px;
+}
+
+.video-goal {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--alp-color-text);
+}
+
+.video-goal-tag,
+.video-vo-tag,
+.video-summary-tag {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 8px;
+  font-size: 11px;
+  border-radius: 10px;
+  background: rgba(124, 58, 237, 0.18);
+  color: #7c3aed;
+  vertical-align: middle;
+}
+
+.video-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--alp-color-surface-2, rgba(0, 0, 0, 0.04));
+  border: 1px solid var(--alp-color-border);
+}
+
+.video-now-playing {
+  color: #7c3aed;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.video-finished {
+  color: #10b981;
+  font-size: 12px;
+}
+
+.video-paused {
+  color: var(--alp-color-muted);
+  font-size: 12px;
+}
+
+.video-shots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.video-shot {
+  position: relative;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--alp-color-surface, #fff);
+  border: 1px solid var(--alp-color-border);
+  cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.video-shot:hover {
+  border-color: rgba(124, 58, 237, 0.4);
+  box-shadow: 0 2px 10px rgba(124, 58, 237, 0.12);
+  transform: translateY(-1px);
+}
+
+.video-shot--active {
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.3);
+  background: rgba(124, 58, 237, 0.06);
+}
+
+.video-shot--done {
+  opacity: 0.65;
+}
+
+.video-shot-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.video-shot-index {
+  font-size: 12px;
+  font-weight: 600;
+  color: #7c3aed;
+}
+
+.video-shot-duration {
+  font-size: 11px;
+  color: var(--alp-color-muted);
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: var(--alp-color-surface-2, rgba(0, 0, 0, 0.05));
+}
+
+.video-shot-scene {
+  margin: 0 0 6px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--alp-color-text);
+}
+
+.video-shot-hint {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--alp-color-muted);
+}
+
+.video-shot-subtitle {
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  border-left: 3px solid #7c3aed;
+  background: rgba(124, 58, 237, 0.06);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--alp-color-text);
+  border-radius: 4px;
+}
+
+.video-shot-voiceover {
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--alp-color-text);
+}
+
+.video-shot-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.video-summary {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--alp-color-text);
 }
 
 .evidence-trigger {

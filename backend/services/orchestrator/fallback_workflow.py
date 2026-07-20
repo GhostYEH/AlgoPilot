@@ -13,7 +13,7 @@ from services.agents.template_fallback import GENERATED_BY, generate_fallback_re
 from services.agents.verifier import _rule_check_structured
 from services.knowledge.retriever import build_source_records, retriever
 from services.orchestrator.pipeline_context import PipelineContext
-from services.safety.content_filter import safety_agent
+from services.safety.content_filter import SafetyStructuredResult, safety_agent
 from services.verification.builder import build_verification_result, chunks_to_grounded, verification_for_skipped_type
 
 EmitFn = Callable[[dict[str, Any]], Awaitable[None]]
@@ -223,9 +223,25 @@ class FallbackResourceWorkflow:
                 validation_result={"status": safety_structured.status},
             )
         except Exception as exc:
-            passed_safety = True
-            safe_text = content
-            detail = f"SafetyAgent 跳过：{exc}"
+            # 安全审查异常时采用 fail-closed 策略：标记为草稿且不向前端下发原文，
+            # 与主工作流 workflow.py 的安全语义保持一致。
+            passed_safety = False
+            safe_text = ""
+            detail = f"SafetyAgent 异常，已降级为草稿：{exc}"
+            safety_structured = SafetyStructuredResult(
+                status="failed",
+                passed=False,
+                text="",
+                logs=[
+                    {
+                        "agent": "SafetyAgent",
+                        "action": "skipped",
+                        "detail": detail,
+                        "status": "skipped",
+                        "resource_type": resource_type,
+                    }
+                ],
+            )
             ctx.log("SafetyAgent", "skipped", detail, resource_type=resource_type, status="skipped")
             gen_meta.setdefault("agent_logs", []).append(
                 {

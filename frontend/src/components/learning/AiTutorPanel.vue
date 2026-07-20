@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
-import { ChatDotRound, Delete, Promotion } from '@element-plus/icons-vue'
+import { ChatDotRound, Delete, Promotion, VideoPause, VideoPlay } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { streamAiTutorChat, type ChatHistoryItem } from '@/api/aiTutor'
+import { plainTextForTts, synthesizeTTS } from '@/api/tts'
 import type { LearnSection } from '@/modules/shared/learningTypes'
 import { suggestQuestionsForModule } from '@/modules/shared/aiTutorConfig'
 import { sectionToAiContext } from '@/utils/buildLearnContext'
-import { renderAiReplyHtml } from '@/utils/renderAiReply'
+import { enhanceMermaidBlocks, renderAiReplyHtml } from '@/utils/renderAiReply'
 
 const props = defineProps<{
   moduleKey: string
@@ -28,6 +29,121 @@ const messages = ref<UiMessage[]>([])
 const listRef = ref<HTMLElement | null>(null)
 let msgId = 0
 
+// --- TTS 语音朗读 ---
+// 每条 assistant 消息独立的音频状态
+interface TtsState {
+  loading: boolean
+  url: string | null
+  playing: boolean
+}
+const ttsStates = ref<Record<number, TtsState>>({})
+const ttsAudioEl = ref<HTMLAudioElement | null>(null)
+let ttsCurrentId: number | null = null
+
+function getTtsState(id: number): TtsState {
+  if (!ttsStates.value[id]) {
+    ttsStates.value[id] = { loading: false, url: null, playing: false }
+  }
+  return ttsStates.value[id]
+}
+
+function stopCurrentTts() {
+  const el = ttsAudioEl.value
+  if (el) {
+    el.pause()
+    el.currentTime = 0
+  }
+  if (ttsCurrentId !== null) {
+    const prev = ttsStates.value[ttsCurrentId]
+    if (prev) prev.playing = false
+  }
+  ttsCurrentId = null
+}
+
+async function toggleReadAloud(msg: UiMessage) {
+  const state = getTtsState(msg.id)
+  // 已在播放：暂停
+  if (state.playing && ttsCurrentId === msg.id) {
+    stopCurrentTts()
+    return
+  }
+  // 已有 URL：直接续播
+  if (state.url) {
+    stopCurrentTts()
+    const el = ttsAudioEl.value
+    if (el) {
+      el.src = state.url
+      el.playbackRate = 1
+      ttsCurrentId = msg.id
+      state.playing = true
+      try {
+        await el.play()
+      } catch {
+        state.playing = false
+        ttsCurrentId = null
+        ElMessage.warning('浏览器阻止了音频自动播放，请再次点击朗读')
+      }
+    }
+    return
+  }
+  // 首次合成
+  const text = plainTextForTts(msg.content)
+  if (!text) {
+    ElMessage.warning('当前消息没有可朗读的文本')
+    return
+  }
+  state.loading = true
+  try {
+    const blob = await synthesizeTTS({ text })
+    const url = URL.createObjectURL(blob)
+    state.url = url
+    stopCurrentTts()
+    const el = ttsAudioEl.value
+    if (el) {
+      el.src = url
+      ttsCurrentId = msg.id
+      state.playing = true
+      try {
+        await el.play()
+      } catch {
+        state.playing = false
+        ttsCurrentId = null
+        ElMessage.warning('浏览器阻止了音频自动播放，请再次点击朗读')
+      }
+    }
+  } catch (e: unknown) {
+    const err = e as { response?: { status?: number; data?: Blob } }
+    let detail = '语音合成失败，请稍后重试'
+    if (err?.response?.status === 503) {
+      detail = '语音合成未配置：请联系管理员启用讯飞 TTS'
+    } else if (err?.response?.status === 400) {
+      detail = '文本不符合讯飞 TTS 要求（长度或编码问题）'
+    } else if (err?.response?.status === 502) {
+      detail = '讯飞 TTS 网关异常，请稍后重试'
+    }
+    ElMessage.error(detail)
+  } finally {
+    state.loading = false
+  }
+}
+
+function onAudioEnded() {
+  if (ttsCurrentId !== null) {
+    const s = ttsStates.value[ttsCurrentId]
+    if (s) s.playing = false
+  }
+  ttsCurrentId = null
+}
+
+function onAudioError() {
+  if (ttsCurrentId !== null) {
+    const s = ttsStates.value[ttsCurrentId]
+    if (s) s.playing = false
+  }
+  ttsCurrentId = null
+  ElMessage.error('音频播放失败，请重新点击朗读')
+}
+
 const quickQuestions = computed(() =>
   props.section ? suggestQuestionsForModule(props.moduleKey, props.section) : [],
 )
@@ -44,6 +160,12 @@ function scrollToBottom() {
 }
 
 function clearChat() {
+  stopCurrentTts()
+  for (const id of Object.keys(ttsStates.value)) {
+    const s = ttsStates.value[Number(id)]
+    if (s?.url) URL.revokeObjectURL(s.url)
+  }
+  ttsStates.value = {}
   messages.value = []
   input.value = ''
 }
@@ -127,6 +249,16 @@ watch(
   },
 )
 
+// 流式或历史消息更新后，对气泡容器内的 mermaid 占位块进行异步渲染
+watch(
+  () => messages.value.map((m) => m.content).join('|'),
+  () => {
+    nextTick(() => {
+      void enhanceMermaidBlocks(listRef.value)
+    })
+  },
+)
+
 /** 划词提问、外部快捷调用 */
 async function askQuestion(message: string) {
   focusPanel()
@@ -182,7 +314,21 @@ defineExpose({
           :class="msg.role === 'user' ? 'msg-row--user' : 'msg-row--assistant'"
         >
           <div class="msg-bubble">
-            <span class="msg-role">{{ msg.role === 'user' ? '我' : '助教' }}</span>
+            <span class="msg-role">
+              {{ msg.role === 'user' ? '我' : '助教' }}
+              <el-button
+                v-if="msg.role === 'assistant' && msg.content.trim()"
+                class="msg-tts-btn"
+                text
+                size="small"
+                :icon="getTtsState(msg.id).playing ? VideoPause : VideoPlay"
+                :loading="getTtsState(msg.id).loading"
+                :title="getTtsState(msg.id).playing ? '暂停朗读' : '朗读本条回复'"
+                @click="toggleReadAloud(msg)"
+              >
+                {{ getTtsState(msg.id).playing ? '暂停' : '朗读' }}
+              </el-button>
+            </span>
             <p v-if="msg.role === 'user'" class="msg-text">{{ msg.content }}</p>
             <div
               v-else
@@ -191,6 +337,14 @@ defineExpose({
             />
           </div>
         </div>
+
+        <!-- 隐藏的 <audio> 元素，由 toggleReadAloud 控制 -->
+        <audio
+          ref="ttsAudioEl"
+          preload="auto"
+          @ended="onAudioEnded"
+          @error="onAudioError"
+        />
 
         <div v-if="loading" class="msg-row msg-row--assistant">
           <div class="msg-bubble msg-bubble--loading">
@@ -356,11 +510,50 @@ defineExpose({
 }
 
 .msg-role {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 11px;
   font-weight: 600;
   color: var(--alp-color-muted);
   margin-bottom: 4px;
+}
+
+.msg-tts-btn {
+  margin-left: auto;
+  padding: 0 6px !important;
+  height: 22px !important;
+  font-size: 11px !important;
+  color: var(--alp-color-primary) !important;
+}
+
+.msg-tts-btn :deep(.el-icon) {
+  font-size: 12px;
+}
+
+.msg-text--md :deep(.ai-md-mermaid) {
+  margin: 0.5em 0;
+  padding: 8px;
+  text-align: center;
+  background: var(--alp-bg-code-ish);
+  border: 1px solid var(--alp-color-border);
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+.msg-text--md :deep(.ai-md-mermaid svg) {
+  max-width: 100%;
+  height: auto;
+}
+
+.msg-text--md :deep(.ai-md-mermaid-placeholder) {
+  font-size: 12px;
+  color: var(--alp-color-muted);
+  padding: 8px 4px;
+}
+
+.msg-text--md :deep(.ai-md-mermaid--error) {
+  border-color: var(--alp-color-danger, #f56c6c);
 }
 
 .msg-text {
@@ -442,6 +635,68 @@ defineExpose({
 .msg-text--md :deep(strong) {
   font-weight: 600;
   color: var(--alp-color-text);
+}
+
+.msg-text--md :deep(em) {
+  font-style: italic;
+  color: var(--alp-color-text);
+}
+
+.msg-text--md :deep(del) {
+  color: var(--alp-color-muted);
+  text-decoration: line-through;
+}
+
+.msg-text--md :deep(.ai-md-link) {
+  color: var(--alp-color-primary);
+  text-decoration: none;
+  border-bottom: 1px dashed currentColor;
+  transition: opacity var(--alp-transition-fast);
+}
+
+.msg-text--md :deep(.ai-md-link:hover) {
+  opacity: 0.75;
+}
+
+.msg-text--md :deep(.ai-md-hr) {
+  margin: 0.75em 0;
+  border: 0;
+  border-top: 1px solid var(--alp-color-border);
+}
+
+.msg-text--md :deep(.ai-md-quote) {
+  margin: 0.5em 0;
+  padding: 0.35em 0.75em;
+  border-left: 3px solid var(--alp-color-primary-glow, var(--alp-color-primary));
+  background: var(--alp-bg-soft-block, rgba(0, 0, 0, 0.03));
+  border-radius: 4px;
+  color: var(--alp-color-text);
+  font-size: 0.92em;
+}
+
+.msg-text--md :deep(.ai-md-table) {
+  width: 100%;
+  margin: 0.5em 0;
+  border-collapse: collapse;
+  font-size: 0.88em;
+}
+
+.msg-text--md :deep(.ai-md-table th),
+.msg-text--md :deep(.ai-md-table td) {
+  padding: 0.35em 0.6em;
+  border: 1px solid var(--alp-color-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.msg-text--md :deep(.ai-md-table th) {
+  background: var(--alp-bg-nav, rgba(0, 0, 0, 0.04));
+  font-weight: 600;
+  color: var(--alp-color-text);
+}
+
+.msg-text--md :deep(.ai-md-table tbody tr:nth-child(even)) {
+  background: var(--alp-bg-soft-block, rgba(0, 0, 0, 0.02));
 }
 
 .ai-tutor-quick {

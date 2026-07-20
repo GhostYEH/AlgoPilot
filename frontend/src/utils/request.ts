@@ -18,7 +18,9 @@ const baseURL = getApiBaseUrl()
 
 const service: AxiosInstance = axios.create({
   baseURL,
-  timeout: 15000,
+  // 默认 30s：覆盖大多数 DB 查询场景，避免与后端 LLM 90s 超时不匹配导致误判
+  // 涉及 LLM 长任务的端点（画像同步、评估、路径重排、OJ 挣扎）应在调用处显式覆盖 timeout
+  timeout: 30000,
 })
 
 service.interceptors.request.use(

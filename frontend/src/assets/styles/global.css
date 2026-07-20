@@ -14,7 +14,7 @@ html.dark {
   color-scheme: dark;
 }
 
-/* 鈹€鈹€ 鍏ㄥ眬鎺掔増鍩哄噯 鈹€鈹€ */
+/* ---- 全局排版基准 ---- */
 html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
@@ -30,7 +30,7 @@ body {
   background: var(--alp-bg-page);
 }
 
-/* 鈹€鈹€ 閫夊尯 鈹€鈹€ */
+/* ---- 选区 ---- */
 ::selection {
   background: rgba(var(--alp-color-primary-rgb), 0.25);
   color: #fff;
@@ -41,13 +41,13 @@ html:not(.dark) ::selection {
   color: #0f172a;
 }
 
-/* 鈹€鈹€ 鐒︾偣鐜?鈹€鈹€ */
+/* ---- 焦点环 ---- */
 :focus-visible {
   outline: 2px solid var(--alp-color-primary);
   outline-offset: 2px;
 }
 
-/* 鈹€鈹€ Element Plus 鍏ㄥ眬瑕嗙洊 鈹€鈹€ */
+/* ---- Element Plus 全局覆盖 ---- */
 .el-card {
   --el-card-border-color: var(--alp-color-border);
   box-shadow: var(--alp-shadow-card);
@@ -102,8 +102,8 @@ html:not(.dark) ::selection {
     color var(--alp-transition-fast);
 }
 
-/* 鈹€鈹€ 鍏ㄥ眬娴捣宸ュ叿绫伙紙閫忔槑鐧藉厜褰憋級 鈹€鈹€ */
-/* 鍗＄墖娴捣锛氱櫧鑹查珮鍏?+ 澶栬緣 + 浜害鎻愬崌 */
+/* ---- 全局浮起工具类（透明白光底） ---- */
+/* 卡片浮起：白色高光 + 外缘 + 轻度提升 */
 .alp-lift-card {
   box-shadow: var(--alp-shadow-card);
   transition:
@@ -119,7 +119,7 @@ html:not(.dark) ::selection {
   box-shadow: var(--alp-shadow-card);
 }
 
-/* 鎸夐挳娴捣锛氱櫧楂樺厜 + 浜害鎻愬崌 */
+/* 按钮浮起：白高光 + 轻度提升 */
 .alp-lift-btn {
   box-shadow: var(--alp-shadow-btn);
   transition:
@@ -136,7 +136,7 @@ html:not(.dark) ::selection {
   box-shadow: var(--alp-shadow-btn);
 }
 
-/* 閾炬帴娴捣锛氬井浜害鎻愬崌 */
+/* 链接浮起：微轻度提升 */
 .alp-lift-link {
   transition:
     background-color var(--alp-transition-fast),

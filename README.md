@@ -107,9 +107,9 @@ npm run test:structured-json
 
 | 项目 | 状态 |
 |------|------|
-| Backend pytest | 239 passed（2026-07-19 本地执行，97.81s） |
+| Backend pytest | 241 passed（2026-07-19 本地执行，154.18s） |
 | Frontend typecheck | passed |
-| Frontend build | passed（2.72s） |
+| Frontend build | passed（3.10s） |
 | Frontend test:oj-struggle | passed |
 | Frontend test:path-replan-diff | passed |
 | Frontend test:graph-module | passed |

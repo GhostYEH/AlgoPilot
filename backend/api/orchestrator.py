@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import re
+from io import BytesIO
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
@@ -11,6 +14,7 @@ from sqlalchemy.orm import Session
 from api.deps import get_current_user, get_optional_user
 from core.database import get_db
 from models.db_models import User
+from services.ppt.renderer import render_pptx_bytes_from_json
 from schemas.ai_tutor import AiTutorChatRequest, AiTutorChatResponse
 from schemas.oj_assistant import OjAssistantRequest, OjAssistantResponse
 from schemas.evaluation import (
@@ -29,6 +33,7 @@ from schemas.resources import (
     ResourceListResponse,
 )
 from services.orchestrator import orchestrator
+from services.safety.content_filter import content_filter
 
 router = APIRouter()
 
@@ -43,6 +48,21 @@ def _agent_logs_from_item(item) -> list[AgentLogEntry]:
             continue
     return logs
 
+
+def _reject_if_unsafe(text: str) -> None:
+    """对用户输入做 Prompt 注入与敏感词预检，命中即返回 400。
+
+    在 API 入口预检可以避免恶意输入直接进入 LLM 上下文，
+    降低 Prompt 注入与敏感内容生成的风险。
+    """
+    if not text:
+        return
+    safety = content_filter.check(text)
+    if safety.blocked:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"输入未通过内容安全校验：{'; '.join(safety.reasons) or '请更换内容后重试'}",
+        )
 
 
 def _sse(payload: dict) -> str:
@@ -73,6 +93,8 @@ async def persona_chat_stream(
     db: Session = Depends(get_db),
 ):
     """流式对话；SSE 事件：token / done / error。"""
+    # 用户输入预检：阻止 Prompt 注入与敏感词进入 LLM 上下文
+    _reject_if_unsafe(body.message)
 
     async def event_gen():
         parts: list[str] = []
@@ -185,6 +207,8 @@ async def orchestrator_tutor_chat_stream(
     user: User | None = Depends(get_optional_user),
     db: Session = Depends(get_db),
 ):
+    # 用户输入预检：阻止 Prompt 注入与敏感词进入 LLM 上下文
+    _reject_if_unsafe(body.message)
     profile_block = ""
     if user:
         from models.db_models import StudentProfile
@@ -298,6 +322,9 @@ async def generate_resource(
     db: Session = Depends(get_db),
     stream: bool = Query(default=False, description="true 时返回 SSE 流"),
 ):
+    # 用户输入预检：阻止 Prompt 注入与敏感词进入资源生成 LLM 上下文
+    _reject_if_unsafe(getattr(body, "topic", ""))
+    _reject_if_unsafe(getattr(body, "focus_hint", ""))
     if stream:
         async def event_gen():
             try:
@@ -384,13 +411,63 @@ def get_resource_evidence(
     return result
 
 
+@router.get("/resources/{resource_id}/download.pptx")
+def download_pptx(
+    resource_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """把 PptAgent 输出的讲义大纲 JSON 渲染为 .pptx 并以附件形式下载。
+
+    - 仅当 resource_type == "ppt" 时可用，其余类型返回 400；
+    - 文件名取资源标题（清洗 Windows 非法字符）+ `.pptx`，UTF-8 编码；
+    - 沿用 analytics CSV 导出的 StreamingResponse 范式。
+    """
+    from models.db_models import GeneratedResource as GR
+
+    row = (
+        db.query(GR)
+        .filter(GR.id == resource_id, GR.user_id == user.id)
+        .first()
+    )
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "资源不存在")
+    if row.resource_type != "ppt":
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "该资源不支持 PPT 下载，仅课程讲义 PPT 可下载",
+        )
+
+    try:
+        pptx_bytes = render_pptx_bytes_from_json(row.content or "")
+    except Exception as exc:  # pragma: no cover - 极端情况兜底
+        raise HTTPException(
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+            f"PPT 渲染失败：{exc}",
+        )
+
+    safe_title = re.sub(r'[\\/:*?"<>|]', "_", (row.title or "课程讲义").strip()) or "课程讲义"
+    filename = f"{safe_title}.pptx"
+    return StreamingResponse(
+        BytesIO(pptx_bytes),
+        media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        headers={
+            "Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}",
+            "Cache-Control": "no-cache",
+        },
+    )
+
+
 @router.post("/resources/generate-all")
 async def generate_all_resources_stream(
     body: ResourceGenerateAllRequest,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """流式批量生成五类学习资源（四类核心资源 + 分层拓展阅读）。"""
+    """流式批量生成主学习资源（含个性化题单）。"""
+    # 用户输入预检：阻止 Prompt 注入与敏感词进入资源生成 LLM 上下文
+    _reject_if_unsafe(body.topic)
+    _reject_if_unsafe(body.focus_hint)
 
     async def event_gen():
         try:
