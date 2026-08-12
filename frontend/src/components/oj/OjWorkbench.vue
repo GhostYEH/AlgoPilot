@@ -86,6 +86,8 @@ const canTrace = computed(() => {
 
 const judging = computed(() => props.running || props.submitting)
 
+const busy = computed(() => props.running || props.submitting || props.tracing || props.diagnosing)
+
 const hasJudgeDemo = computed(() => props.problem.slug === 'reverse-linked-list')
 
 const traceDisableReason = computed(() => {
@@ -237,13 +239,13 @@ function onReset() {
       />
 
       <footer class="code-pane-footer">
-        <el-button :icon="VideoPlay" :loading="running" :disabled="!problem.ready" @click="emit('run')">
+        <el-button :icon="VideoPlay" :loading="running" :disabled="!problem.ready || (busy && !running)" @click="emit('run')">
           运行
         </el-button>
         <el-button
           :icon="View"
           :loading="tracing"
-          :disabled="!canTrace"
+          :disabled="!canTrace || (busy && !tracing)"
           :title="
             traceDisableReason ||
             (language === 'cpp'
@@ -261,7 +263,7 @@ function onReset() {
           plain
           :icon="MagicStick"
           :loading="diagnosing"
-          :disabled="!canTrace"
+          :disabled="!canTrace || (busy && !diagnosing)"
           title="追踪真实失败用例（无判题结果时使用首个样例）→ AI 定位首次可疑步骤"
           @click="emit('diagnose')"
         >
@@ -271,7 +273,7 @@ function onReset() {
           type="primary"
           :icon="Upload"
           :loading="submitting"
-          :disabled="!problem.ready"
+          :disabled="!problem.ready || (busy && !submitting)"
           @click="emit('submit')"
         >
           提交

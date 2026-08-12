@@ -838,8 +838,8 @@ async def api_ai_diagnose(
             def _ce_user_runner(args_list: list[Any]) -> Any:
                 ce_case = {
                     "args": args_list,
-                    "stdin": "",
-                    "stdout": "",
+                    "stdin": None,
+                    "stdout": None,
                     "expected": None,
                 }
                 verdict, _msg = _judge_single_case(
@@ -862,8 +862,8 @@ async def api_ai_diagnose(
                     return None
                 ce_case = {
                     "args": args_list,
-                    "stdin": "",
-                    "stdout": "",
+                    "stdin": None,
+                    "stdout": None,
                     "expected": None,
                 }
                 verdict, _msg = _judge_single_case(
@@ -887,6 +887,14 @@ async def api_ai_diagnose(
 
             if ce_result.source == "generated_verified" and ce_result.selected_case:
                 edge_case = ce_result.selected_case
+                edge_verdict, edge_message = _judge_single_case(
+                    user_code=body.code,
+                    lang=lang,
+                    problem=problem_full,
+                    slug=slug,
+                    case=edge_case,
+                    time_limit_ms=tl,
+                )
                 edge = {
                     "case": edge_case,
                     "reason": ce_result.reason,
@@ -1187,14 +1195,14 @@ async def api_ai_diagnose(
 
             module_key = str(problem.get("module_key") or "")
             concept_id = str(problem.get("skill_id") or "")
-            if module_key or concept_id:
+            if module_key or concept_id and submission_id is not None:
                 update_knowledge_state(
                     db,
                     user_id=user.id,
                     module_key=module_key,
                     concept_id=concept_id,
                     knowledge_point=diagnosis_title,
-                    verdict=edge_verdict,
+                    verdict=body.judge_verdict or edge_verdict,
                     bug_type=bug_type,
                     hint_level_used=hint_level_used,
                     difficulty=str(problem.get("difficulty") or "medium"),

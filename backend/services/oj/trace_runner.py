@@ -271,25 +271,24 @@ def run_trace_stdio(
     shutil.copy2(_TRACE_SERIALIZE_PATH, path.parent / "trace_serialize.py")
 
     try:
-        proc = subprocess.run(
-            python_exec_args(str(path)),
-            capture_output=True,
-            text=True,
-            timeout=max(1, time_limit_ms / 1000),
-            cwd=str(path.parent),
-        )
-    except subprocess.TimeoutExpired:
+        try:
+            proc = subprocess.run(
+                python_exec_args(str(path)),
+                capture_output=True,
+                text=True,
+                timeout=max(1, time_limit_ms / 1000),
+                cwd=str(path.parent),
+            )
+        except subprocess.TimeoutExpired:
+            return TraceSummary(
+                verdict="TLE",
+                message=f"追踪超时（>{time_limit_ms}ms）",
+                user_line_count=user_lines,
+                steps=[],
+            )
+    finally:
         path.unlink(missing_ok=True)
         (path.parent / "trace_serialize.py").unlink(missing_ok=True)
-        return TraceSummary(
-            verdict="TLE",
-            message=f"追踪超时（>{time_limit_ms}ms）",
-            user_line_count=user_lines,
-            steps=[],
-        )
-
-    path.unlink(missing_ok=True)
-    (path.parent / "trace_serialize.py").unlink(missing_ok=True)
 
     if proc.returncode != 0:
         err = (proc.stderr or proc.stdout or "运行错误").strip()

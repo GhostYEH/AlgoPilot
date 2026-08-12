@@ -132,7 +132,7 @@ def update_knowledge_state(
                 db.refresh(record)
                 return record
 
-        is_ac = verdict == "AC"
+        is_ac = verdict == "AC" and evidence_type == _EVIDENCE_SUBMISSION
         repeated_bug = bool(bug_type and bug_type in record.recent_bug_types)
 
         if evidence_type == _EVIDENCE_SUBMISSION:

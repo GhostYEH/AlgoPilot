@@ -80,15 +80,15 @@
 
 ```
 frontend/          Vue 3 + Vite + Pinia + vue-router
-  src/views/       14 个页面（学习/OJ/Trace/诊断/教师看板）
-  src/components/  70+ 组件（含 Trace 可视化 12 个子组件）
+  src/views/       24 个页面（学习/OJ/Trace/诊断/教师看板）
+  src/components/  70+ 组件（含 Trace 可视化 13 个子组件）
   src/stores/      Pinia 状态管理
-  src/api/         16 个 API 模块
+  src/api/         15 个 API 模块
 
 backend/           FastAPI + SQLite + JWT + RBAC
   api/             17 个路由模块
   services/        核心业务逻辑
-    agents/        21 个多智能体节点
+    agents/        22 个多智能体节点
     orchestrator/  DAG 编排核心
     oj/            OJ 判题 + Trace + AI 诊断 + 反例生成
     evidence/      信任证据链 + Execution Evidence Engine
@@ -196,6 +196,7 @@ npm run test:structured-json
 ### CI 测试运行
 
 ```powershell
+# 在 backend 目录下执行
 python scripts/ci_test_runner.py fast      # 仅快速测试（137 passed, 18 deselected）
 python scripts/ci_test_runner.py slow      # 仅 slow 测试（需 LLM + subprocess）
 python scripts/ci_test_runner.py migrate   # 仅迁移测试（6 passed）
@@ -275,19 +276,19 @@ algo/
 ├── backend/                 FastAPI 后端
 │   ├── api/                 17 个路由模块
 │   ├── services/
-│   │   ├── agents/          21 个多智能体节点
+│   │   ├──     agents/          22 个多智能体节点
 │   │   ├── orchestrator/    DAG 编排
 │   │   ├── oj/              OJ + Trace + 诊断 + 反例
 │   │   ├── evidence/        证据链 + Execution Evidence
 │   │   ├── mastery/         掌握度模型
 │   │   └── llm/             LLM 调用与验证
-│   ├── models/              16 张表（含 4 张 Execution Evidence 表）
-│   ├── schemas/             22 个 schema
+│   ├── models/              12 张表（含 4 张 Execution Evidence 表）
+│   ├── schemas/             20 个 schema
 │   ├── migrations/          Alembic 迁移（4 个版本）
 │   └── tests/               pytest 测试（137 passed, 18 slow）
 �%── frontend/               Vue 3 前端
 │   └── src/
-│       ├── views/           14 个页面
+│       ├── views/           24 个页面
 │       ├── components/      70+ 组件
 │       └── utils/           40+ 工具模块（含 5 个 .test.ts）
 └── evaluation/              系统评测框架（12 项指标）

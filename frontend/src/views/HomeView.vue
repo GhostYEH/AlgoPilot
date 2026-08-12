@@ -223,6 +223,7 @@ onMounted(async () => {
 <template>
   <div class="home-workspace">
     <HomeHitokotoBar />
+    <p class="home-tagline">AlgoPilot · 基于程序执行证据链的智能算法学习与诊断系统</p>
     <section class="continue-learning" aria-labelledby="continue-title">
       <div class="continue-learning__main">
         <p class="section-kicker">今天继续</p>
@@ -362,6 +363,14 @@ onMounted(async () => {
   margin: 0 auto;
   padding: 2px 0 44px;
   color: var(--color-text-primary);
+}
+
+.home-tagline {
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-text-secondary, #888);
+  margin: 8px 0 4px;
+  letter-spacing: 0.02em;
 }
 
 .continue-learning {

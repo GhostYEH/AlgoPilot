@@ -287,28 +287,28 @@ def run_cases(
             path = Path(f.name)
 
         try:
-            proc = subprocess.run(
-                python_exec_args(str(path)),
-                capture_output=True,
-                text=True,
-                timeout=max(1, time_limit_ms / 1000),
-                cwd=str(path.parent),
-            )
-        except subprocess.TimeoutExpired:
-            results.append(
-                CaseResult(
-                    index=idx,
-                    verdict="TLE",
-                    message=f"超出时间限制 {time_limit_ms}ms",
-                    input_preview=_preview_args(args),
-                    expected_preview=_preview_value(expected),
-                    actual_preview=None,
+            try:
+                proc = subprocess.run(
+                    python_exec_args(str(path)),
+                    capture_output=True,
+                    text=True,
+                    timeout=max(1, time_limit_ms / 1000),
+                    cwd=str(path.parent),
                 )
-            )
+            except subprocess.TimeoutExpired:
+                results.append(
+                    CaseResult(
+                        index=idx,
+                        verdict="TLE",
+                        message=f"超出时间限制 {time_limit_ms}ms",
+                        input_preview=_preview_args(args),
+                        expected_preview=_preview_value(expected),
+                        actual_preview=None,
+                    )
+                )
+                return RunSummary(verdict="TLE", passed=passed, total=len(cases), cases=results)
+        finally:
             path.unlink(missing_ok=True)
-            return RunSummary(verdict="TLE", passed=passed, total=len(cases), cases=results)
-
-        path.unlink(missing_ok=True)
 
         if proc.returncode != 0:
             err = (proc.stderr or proc.stdout or "运行错误").strip()

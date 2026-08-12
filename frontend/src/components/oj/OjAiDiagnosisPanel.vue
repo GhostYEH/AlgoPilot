@@ -13,7 +13,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{ viewTrace: [] }>()
 const revealedLevel = ref(1)
-const detailsOpen = ref<string[]>([])
+const detailsOpen = ref<string[]>(['exec-evidence'])
 
 const guided = computed(() => props.diagnosis?.diagnosis ?? null)
 const hints = computed(() => guided.value?.hints ?? [])
@@ -306,8 +306,8 @@ function revealNextHint() {
             </div>
             <div class="detail-card">
               <span>复杂度观察</span>
-              <strong>{{ diagnosis.complexity.estimated_complexity }}</strong>
-              <p>{{ diagnosis.complexity.report }}</p>
+              <strong>{{ diagnosis.complexity?.estimated_complexity ?? '未分析' }}</strong>
+              <p>{{ diagnosis.complexity?.report ?? '' }}</p>
             </div>
           </div>
         </el-collapse-item>
@@ -317,28 +317,6 @@ function revealNextHint() {
           name="exec-evidence"
           title="执行证据链（展开查看）"
         >
-          <!-- Bug 分类与可疑行 -->
-          <div v-if="diagnosis.execution_evidence?.bug_diagnosis" class="detail-grid">
-            <div class="detail-card">
-              <span>Bug 类型</span>
-              <strong>{{ diagnosis.execution_evidence.bug_diagnosis?.bug_type_label || diagnosis.execution_evidence.bug_diagnosis?.bug_type || '暂未确定错误类型' }}</strong>
-              <p v-if="diagnosis.execution_evidence.bug_diagnosis?.root_cause">
-                {{ String(diagnosis.execution_evidence.bug_diagnosis.root_cause).slice(0, 200) }}
-              </p>
-            </div>
-            <div class="detail-card">
-              <span>可疑代码行</span>
-              <code>{{
-                Array.isArray(diagnosis.execution_evidence.bug_diagnosis?.suspicious_lines)
-                  ? (diagnosis.execution_evidence.bug_diagnosis.suspicious_lines as number[]).join(', ')
-                  : '未定位'
-              }}</code>
-              <p v-if="diagnosis.execution_evidence.bug_diagnosis?.confidence">
-                置信度: {{ diagnosis.execution_evidence.bug_diagnosis.confidence }}
-              </p>
-            </div>
-          </div>
-
           <!-- 失败测试用例 -->
           <div v-if="diagnosis.execution_evidence?.failed_test_cases?.length" class="evidence-failed-cases">
             <div class="section-heading">
@@ -381,6 +359,28 @@ function revealNextHint() {
             <p v-else class="evidence-fd__fallback">
               {{ diagnosis.first_divergence?.reason || '暂未找到可靠的首次状态偏离点（可能缺少参考解或执行轨迹不可比较）' }}
             </p>
+          </div>
+
+          <!-- Bug 分类与可疑行 -->
+          <div v-if="diagnosis.execution_evidence?.bug_diagnosis" class="detail-grid">
+            <div class="detail-card">
+              <span>Bug 类型</span>
+              <strong>{{ diagnosis.execution_evidence.bug_diagnosis?.bug_type_label || diagnosis.execution_evidence.bug_diagnosis?.bug_type || '暂未确定错误类型' }}</strong>
+              <p v-if="diagnosis.execution_evidence.bug_diagnosis?.root_cause">
+                {{ String(diagnosis.execution_evidence.bug_diagnosis.root_cause).slice(0, 200) }}
+              </p>
+            </div>
+            <div class="detail-card">
+              <span>可疑代码行</span>
+              <code>{{
+                Array.isArray(diagnosis.execution_evidence.bug_diagnosis?.suspicious_lines)
+                  ? (diagnosis.execution_evidence.bug_diagnosis.suspicious_lines as number[]).join(', ')
+                  : '未定位'
+              }}</code>
+              <p v-if="diagnosis.execution_evidence.bug_diagnosis?.confidence">
+                置信度: {{ diagnosis.execution_evidence.bug_diagnosis.confidence }}
+              </p>
+            </div>
           </div>
 
           <!-- Counterexample -->

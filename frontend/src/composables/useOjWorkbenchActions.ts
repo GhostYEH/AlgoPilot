@@ -247,7 +247,7 @@ export function useOjWorkbenchActions(options: {
       onVerdictRecorded(options.result.value?.verdict)
       autoTriggerTraceReport(options.result.value?.verdict)
     } catch {
-      /* judgeClient 拦截器已提示 */
+      ElMessage.warning('运行请求失败，请检查网络或判题服务')
     } finally {
       running.value = false
     }
@@ -284,8 +284,11 @@ export function useOjWorkbenchActions(options: {
       }
       onVerdictRecorded(options.result.value?.verdict)
       autoTriggerTraceReport(options.result.value?.verdict)
+      if (options.result.value?.verdict === 'AC') {
+        await loadPlan().catch(() => {})
+      }
     } catch {
-      /* judgeClient 拦截器已提示 */
+      ElMessage.warning('提交请求失败，请检查网络或判题服务')
     } finally {
       submitting.value = false
     }
@@ -406,7 +409,7 @@ export function useOjWorkbenchActions(options: {
         }
       }
     } catch {
-      /* judgeClient 拦截器已提示 */
+      ElMessage.warning('追踪请求失败，请检查网络或判题服务')
     } finally {
       tracing.value = false
     }
