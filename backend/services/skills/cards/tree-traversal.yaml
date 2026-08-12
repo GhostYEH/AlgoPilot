@@ -1,0 +1,98 @@
+id: tree-traversal
+name: 二叉树遍历与递归
+course_id: data_structures_algorithms
+chapter_id: ch05-tree-binary-tree
+description: |
+  针对二叉树前中后序、层序遍历与递归写法：强调空结点返回、遍历顺序与栈/队列
+  角色。辅导时若检测到「递归错误」「栈溢出」「遍历序错」，用 SkillCard 分层提示
+  而非直接给完整遍历函数。
+prerequisites:
+  - ch03-stack-queue
+triggers:
+  keywords:
+    - 二叉树
+    - 树遍历
+    - 前序
+    - 中序
+    - 后序
+    - 层序
+    - 递归
+    - DFS
+    - 二叉树遍历
+  module_keys:
+    - binary-tree
+  chapter_ids:
+    - ch05-tree-binary-tree
+  oj_verdicts:
+    - WA
+    - RE
+  error_patterns:
+    - 递归
+    - 空指针
+    - 遍历顺序
+    - 栈溢出
+    - 中序
+    - 前序
+  min_consecutive_failures: 2
+common_mistakes:
+  - text: 递归未写 if not root return，导致空指针 RE。
+    severity: high
+    detector_hint: Trace 在 null 结点仍进入函数
+  - text: 前中后序访问根结点时机混淆，输出序列错误 WA。
+    severity: high
+    detector_hint: 输出序列与样例首项不符
+  - text: 迭代中序栈维护顺序错误，死循环或漏结点。
+    severity: medium
+    detector_hint: 栈深度异常或结点重复
+  - text: 层序遍历未按层收集，层次信息丢失。
+    severity: medium
+    detector_hint: BFS 队列未记录 size
+  - text: BST 验证时未维护前驱值，只比较子树。
+    severity: medium
+    detector_hint: 中序非严格递增
+resource_strategy:
+  default: 每题配 4～6 结点小树图示；强调「根访问时机」。
+  document: 四种遍历对比表 + 递归三行模板 + 迭代中序栈图示。
+  exercises: 给遍历序列求树形态（选择）+ 判遍历合法性。
+  trace_animation: tree 面板按步高亮访问结点，标注当前遍历名。
+  code_case: "仅递归骨架 def dfs(root) — TODO 访问与递归左右子树"
+  ppt: 一张图四种遍历颜色序号。
+hint_policy:
+  max_code_lines: 10
+  forbid_full_solution: true
+  socratic: true
+  escalation_after_failures: 2
+  levels:
+    - level: 1
+      policy: 问「根结点在哪一步被访问？」让用户自选前/中/后序。
+    - level: 2
+      policy: 提示空结点边界一行，不贴完整函数。
+    - level: 3
+      policy: 用 3 结点树让用户手排期望序列，再对照代码。
+    - level: 4
+      policy: 允许给出递归框架缺 visit 顺序两处填空。
+trace_focus:
+  - 当前访问结点值与遍历名
+  - 递归返回后回到哪一层
+  - 迭代栈顶元素
+evaluation_rules:
+  - rule_id: null-safe
+    description: 空树与单子树用例不 RE。
+    weight: 0.35
+    pass_threshold: 80
+  - rule_id: order-correct
+    description: 手算 5 结点树遍历序列正确。
+    weight: 0.4
+    pass_threshold: 70
+  - rule_id: explain-recursion
+    description: 能口述递归调用栈两层关系。
+    weight: 0.25
+    pass_threshold: 65
+recommended_resources:
+  - document
+  - trace_animation
+  - exercises
+  - ppt
+recommended_problems:
+  - binary-tree-inorder-traversal
+  - max-depth-of-binary-tree

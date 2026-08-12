@@ -1,0 +1,14 @@
+{
+  "assessment_dimensions": [
+    {"dimension": "概念理解", "weight": 0.2, "excellent": "能准确解释 ADT、复杂度和不变量，并能举反例。"},
+    {"dimension": "建模与选型", "weight": 0.2, "excellent": "能根据输入规模和操作频率选择结构，并说明取舍。"},
+    {"dimension": "编码实现", "weight": 0.25, "excellent": "代码结构清晰，能覆盖边界，能通过隐藏测例。"},
+    {"dimension": "调试与验证", "weight": 0.2, "excellent": "能构造边界测例，使用 Trace/OJ 定位错误步骤。"},
+    {"dimension": "迁移拓展", "weight": 0.15, "excellent": "能连接工程实现、面试题型或学术材料。"}
+  ],
+  "resource_quality_rubric": {
+    "knowledge_grounding": "资源必须引用 knowledge_base 切片或课程元数据，禁止编造题号和 URL。",
+    "personalization": "资源应显式响应学生画像中的知识基础、认知风格、代码能力、易错点和学习目标。",
+    "multimodal": "同一主题至少覆盖文本、图谱、题库、代码、动画、PPT、短视频脚本和阅读清单中的 5 类。"
+  }
+}

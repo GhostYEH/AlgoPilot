@@ -1,0 +1,32 @@
+id: stack-queue-simulation
+name: 栈与队列模拟
+course_id: data_structures_algorithms
+chapter_id: ch03-stack-queue
+description: 栈 LIFO、队列 FIFO 与括号匹配；生成内容须说明栈/队列在 BFS/DFS 中的角色。
+prerequisites: [ch02-linear-list]
+triggers:
+  keywords: [栈, 队列, stack, queue, 括号, LIFO, FIFO]
+  module_keys: [stack-queue]
+  chapter_ids: [ch03-stack-queue]
+  oj_verdicts: [WA]
+  error_patterns: [栈空, 队空, 括号]
+  min_consecutive_failures: 2
+common_mistakes:
+  - text: 栈空时 pop 未判断。
+    severity: high
+resource_strategy:
+  default: 用表格模拟 push/pop 序列。
+  trace_animation: sequence 视图 stack/queue。
+hint_policy:
+  forbid_full_solution: true
+  levels:
+    - level: 1
+      policy: 让用户写出每一步栈内容。
+trace_focus: [栈顶, 队首]
+evaluation_rules:
+  - rule_id: simulate-stack
+    description: 手算括号匹配栈变化正确。
+    weight: 1.0
+    pass_threshold: 70
+recommended_resources: [document, trace_animation]
+recommended_problems: [valid-parentheses]

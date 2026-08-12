@@ -1,0 +1,20 @@
+{
+  "course_code": "CS-DSA-101",
+  "course_name": "数据结构与算法",
+  "credit_hours": 64,
+  "target_audience": "高校计算机类专业一年级至二年级学生",
+  "course_positioning": "以抽象数据类型、算法范式、复杂度分析和工程化在线评测为主线，支撑后续操作系统、数据库、编译原理、人工智能等专业课程。",
+  "chapters": [
+    {"chapter": 1, "module_key": "array", "title": "数组与顺序存储", "hours": 6},
+    {"chapter": 2, "module_key": "linked-list", "title": "链表与指针模型", "hours": 6},
+    {"chapter": 3, "module_key": "stack-queue", "title": "栈、队列与受限线性表", "hours": 6},
+    {"chapter": 4, "module_key": "hash-table", "title": "哈希表与字典结构", "hours": 6},
+    {"chapter": 5, "module_key": "binary-tree", "title": "二叉树与递归遍历", "hours": 8},
+    {"chapter": 6, "module_key": "sorting", "title": "排序算法专题", "hours": 8, "difficulty": "中等", "prerequisites": ["array", "two-pointers"], "topics": ["冒泡排序", "选择排序", "插入排序", "归并排序", "快速排序", "堆排序", "排序稳定性", "时间复杂度"]},
+    {"chapter": 7, "module_key": "greedy", "title": "贪心策略与交换论证", "hours": 8},
+    {"chapter": 8, "module_key": "dp", "title": "动态规划与状态转移", "hours": 10},
+    {"chapter": 9, "module_key": "graph", "title": "图搜索与最短路入门", "hours": 8},
+    {"chapter": 10, "module_key": "backtracking", "title": "回溯搜索与剪枝", "hours": 6}
+  ],
+  "resource_requirement": "每个核心模块配套讲解文档、知识图谱、题库、代码实操、Trace 动画、PPT 胶片、短视频脚本、拓展阅读。"
+}

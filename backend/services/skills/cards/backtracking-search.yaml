@@ -1,0 +1,32 @@
+id: backtracking-search
+name: 回溯搜索
+course_id: data_structures_algorithms
+chapter_id: ch12-backtracking
+description: 选择-探索-撤销模板与剪枝；Trace 展示 path 压栈与回退。
+prerequisites: [ch09-recursion-divide-conquer]
+triggers:
+  keywords: [回溯, backtracking, 排列, 组合, 子集, 剪枝]
+  module_keys: [backtracking]
+  chapter_ids: [ch12-backtracking]
+  oj_verdicts: [WA, TLE]
+  error_patterns: [撤销, pop, 剪枝, 重复]
+  min_consecutive_failures: 2
+common_mistakes:
+  - text: 忘记 path.pop() 撤销导致重复或漏解。
+    severity: high
+resource_strategy:
+  default: 画解空间树；代码仅骨架。
+  trace_animation: path 与 used 回退。
+hint_policy:
+  forbid_full_solution: true
+  levels:
+    - level: 1
+      policy: 问「这一层选择了什么？何时撤销？」
+trace_focus: [path, used, 递归深度]
+evaluation_rules:
+  - rule_id: undo-template
+    description: 能写出带撤销的递归三行注释。
+    weight: 1.0
+    pass_threshold: 65
+recommended_resources: [document, code_case, trace_animation]
+recommended_problems: [subsets]

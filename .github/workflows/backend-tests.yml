@@ -1,0 +1,70 @@
+name: Backend Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-tests.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'backend/**'
+
+jobs:
+  fast-tests:
+    name: Fast Tests (no slow)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt -r requirements-dev.txt
+      - name: Run fast tests
+        run: |
+          python scripts/ci_test_runner.py fast
+
+  migration-tests:
+    name: Migration Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt -r requirements-dev.txt
+      - name: Run migration tests
+        run: |
+          python scripts/ci_test_runner.py migrate
+
+  slow-tests:
+    name: Slow Tests (scheduled)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt -r requirements-dev.txt
+      - name: Run slow tests
+        env:
+          SPARK_API_PASSWORD: ${{ secrets.SPARK_API_PASSWORD }}
+        run: |
+          python scripts/ci_test_runner.py slow

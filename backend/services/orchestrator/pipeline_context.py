@@ -1,0 +1,193 @@
+"""多 Agent 协作共享上下文（批量生成时跨 Agent 传递摘要）。"""
+
+from __future__ import annotations
+
+import json
+import logging
+import re
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+
+# Prevent unbounded log growth in multi-agent pipeline
+_PIPELINE_LOG_LIMIT: int = 200
+
+_logger = logging.getLogger(__name__)
+
+
+@dataclass
+class PipelineContext:
+    """多 Agent 协作共享上下文。
+
+    并发安全说明（asyncio 协作式调度）：
+      本类所有方法（log / agent_hints_block / update_from_resource）均为纯同步操作，
+      不含 await 点。在 asyncio 单线程事件循环中，两个 await 之间的同步代码原子执行，
+      不会被中断。因此当多个 Agent 通过 asyncio.gather 并行运行时：
+        - log() 的 list.append() 原子完成，不会出现半写入状态
+        - update_from_resource() 中不同 resource_type 写不同字段，无写冲突
+        - agent_hints_block() 读取时，所有先前阶段的写入已完成
+      如需引入线程池或多进程，须加锁保护。
+    """
+
+    doc_summary: str = ""
+    graph_outline: str = ""
+    scenario_hook: str = ""
+    trace_hint: str = ""
+    collaboration_log: list[dict] = field(default_factory=list)
+    agent_logs: list[dict] = field(default_factory=list)
+
+    def log(
+        self,
+        agent: str,
+        action: str,
+        detail: str = "",
+        *,
+        role: str = "",
+        resource_type: str = "",
+        status: str = "done",
+        duration_ms: int | None = None,
+        validation_result: dict | None = None,
+        retry_count: int = 0,
+        input_summary: str = "",
+        output_summary: str = "",
+        failure_reason: str = "",
+    ) -> None:
+        if len(self.agent_logs) >= _PIPELINE_LOG_LIMIT:
+            return
+        entry = {
+            "agent": agent,
+            "agent_id": agent,
+            "agent_name": agent,
+            "role": role,
+            "action": action,
+            "detail": detail[:500],
+            "message": detail[:500],
+            "resource_type": resource_type,
+            "status": status,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "duration_ms": duration_ms,
+            "validation_result": validation_result,
+            "retry_count": retry_count,
+            "input_summary": input_summary[:500],
+            "output_summary": output_summary[:500],
+            "failure_reason": failure_reason[:500],
+        }
+        self.collaboration_log.append(entry)
+        self.agent_logs.append(entry)
+
+    def agent_hints_block(self) -> str:
+        parts: list[str] = []
+        if self.doc_summary:
+            parts.append(f"【ConceptAgent 讲解摘要】\n{self.doc_summary[:800]}")
+        if self.graph_outline:
+            parts.append(f"【GraphAgent 知识拓扑】\n{self.graph_outline[:600]}")
+        if self.scenario_hook:
+            parts.append(f"【ScenarioAgent 剧本钩子】\n{self.scenario_hook[:400]}")
+        if self.trace_hint:
+            parts.append(f"【TraceAgent 动画提示】\n{self.trace_hint[:300]}")
+        return "\n\n".join(parts)
+
+    def update_from_resource(self, resource_type: str, content: str) -> None:
+        if resource_type == "document":
+            self.doc_summary = _extract_summary(content)
+            self.log(
+                "ConceptAgent",
+                "output_summary",
+                self.doc_summary[:120],
+                role="概念导师",
+                resource_type=resource_type,
+            )
+        elif resource_type == "mindmap":
+            self.graph_outline = _extract_graph_outline(content)
+            self.log(
+                "GraphAgent",
+                "output_outline",
+                self.graph_outline[:120],
+                role="拓扑专家",
+                resource_type=resource_type,
+            )
+        elif resource_type == "code_case":
+            self.scenario_hook = _extract_scenario_hook(content)
+            self.log(
+                "ScenarioAgent",
+                "output_hook",
+                self.scenario_hook[:120],
+                role="互动编剧",
+                resource_type=resource_type,
+            )
+        elif resource_type == "trace_animation":
+            self.trace_hint = _extract_trace_hint(content)
+            self.log(
+                "TraceAgent",
+                "output_trace",
+                self.trace_hint[:120],
+                role="动画总导演",
+                resource_type=resource_type,
+            )
+        else:
+            _logger.warning(
+                "PipelineContext.update_from_resource 收到未知 resource_type=%r，已忽略",
+                resource_type,
+            )
+
+
+def _try_parse_domain_structure(raw: str) -> dict | None:
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        start, end = raw.find("{"), raw.rfind("}")
+        if start < 0 or end <= start:
+            return None
+        try:
+            data = json.loads(raw[start : end + 1])
+        except json.JSONDecodeError:
+            return None
+    if isinstance(data, dict) and data.get("domain_narrative") and data.get("structure_logic"):
+        return data
+    return None
+
+
+def _extract_summary(md: str) -> str:
+    ds = _try_parse_domain_structure(md)
+    if ds:
+        domain = ds.get("domain_narrative")
+        if isinstance(domain, dict):
+            headline = str(domain.get("headline") or "")
+            story = str(domain.get("story") or "")
+            return f"{headline} {story}".strip()[:800]
+        return str(domain)[:800]
+    lines = [ln.strip() for ln in md.splitlines() if ln.strip() and not ln.startswith("#")]
+    text = " ".join(lines[:12])
+    return text[:800] if text else md[:500]
+
+
+def _extract_graph_outline(raw: str) -> str:
+    labels = re.findall(r'\[["\']?([^"\']+)["\']?\]', raw)
+    if labels:
+        return " → ".join(labels[:15])
+    return raw[:400]
+
+
+def _extract_scenario_hook(raw: str) -> str:
+    ds = _try_parse_domain_structure(raw)
+    if ds:
+        domain = ds.get("domain_narrative")
+        if isinstance(domain, dict):
+            parts = [str(domain.get("story") or ""), str(domain.get("mission") or "")]
+            return " ".join(p for p in parts if p).strip()[:300]
+    for ln in raw.splitlines():
+        if ln.strip().startswith("##") and "背景" in ln:
+            idx = raw.splitlines().index(ln)
+            body = "\n".join(raw.splitlines()[idx + 1 : idx + 4]).strip()
+            return body[:300]
+    return raw[:200]
+
+
+def _extract_trace_hint(raw: str) -> str:
+    try:
+        data = json.loads(raw)
+        hint = str(data.get("narration_hint") or "")
+        steps = data.get("steps") or []
+        verdict = str(data.get("verdict") or "")
+        return f"{hint}（{verdict}，{len(steps)} 步）"[:300]
+    except Exception:
+        return raw[:200]

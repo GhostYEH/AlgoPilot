@@ -1,0 +1,155 @@
+/* AlgoPilot product shell — shared visual language for learning, teacher and OJ surfaces. */
+:root {
+  --alp-color-primary: #16a6a1;
+  --alp-color-primary-rgb: 22, 166, 161;
+  --alp-color-primary-soft: rgba(22, 166, 161, 0.1);
+  --alp-color-primary-glow: rgba(22, 166, 161, 0.18);
+  --alp-color-accent: #d49a31;
+  --alp-color-accent-rgb: 212, 154, 49;
+  --alp-color-success: #38b77a;
+  --alp-color-warning: #d49a31;
+  --alp-color-danger: #ef6659;
+  --alp-color-info: #438df5;
+  --alp-color-text: #e9f0f2;
+  --alp-color-text-secondary: #b8c4c9;
+  --alp-color-muted: #7f9098;
+  --alp-color-border: rgba(157, 181, 189, 0.16);
+  --alp-color-border-strong: rgba(157, 181, 189, 0.3);
+  --alp-bg-page: #09151b;
+  --alp-bg-shell: #09151b;
+  --alp-bg-header: rgba(8, 20, 26, 0.96);
+  --alp-bg-toolbar: #101f26;
+  --alp-bg-surface: #101e25;
+  --alp-bg-surface-solid: #101e25;
+  --alp-bg-surface-muted: #0d1a20;
+  --alp-bg-soft-block: #14242b;
+  --alp-bg-main-panel: #0c191f;
+  --alp-bg-aside-gradient: #0b181e;
+  --alp-bg-nav: #122229;
+  --alp-bg-nav-hover: rgba(22, 166, 161, 0.08);
+  --alp-bg-nav-active: rgba(22, 166, 161, 0.14);
+  --alp-bg-code-ish: #081218;
+  --alp-bg-elevated: #15262e;
+  --alp-bg-hover: rgba(255, 255, 255, 0.035);
+  --alp-radius-sm: 4px;
+  --alp-radius-card: 6px;
+  --alp-radius-lg: 8px;
+  --alp-radius-xl: 10px;
+  --alp-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.16);
+  --alp-shadow-card-hover: 0 4px 14px rgba(0, 0, 0, 0.2);
+  --alp-shadow-btn: none;
+  --alp-shadow-btn-hover: none;
+  --alp-shadow-glow: 0 0 0 3px rgba(22, 166, 161, 0.12);
+  --alp-header-height: 64px;
+  --alp-layout-padding-x: clamp(16px, 1.7vw, 28px);
+  --alp-layout-padding-y: 18px;
+  --alp-content-max: 1600px;
+  --el-color-primary: #16a6a1;
+  --el-bg-color: #101e25;
+  --el-bg-color-overlay: #15262e;
+  --el-fill-color-blank: #101e25;
+  --el-fill-color-light: #14242b;
+  --el-fill-color-lighter: #172830;
+  --el-text-color-primary: #e9f0f2;
+  --el-text-color-regular: #b8c4c9;
+  --el-text-color-secondary: #7f9098;
+  --el-border-color: rgba(157, 181, 189, 0.16);
+  --el-border-color-light: rgba(157, 181, 189, 0.11);
+}
+
+html:not(.dark) {
+  --alp-color-primary: #0f8588;
+  --alp-color-primary-rgb: 15, 133, 136;
+  --alp-color-primary-soft: #eaf6f5;
+  --alp-color-primary-glow: rgba(15, 133, 136, 0.14);
+  --alp-color-accent: #b87813;
+  --alp-color-accent-rgb: 184, 120, 19;
+  --alp-color-text: #172b2d;
+  --alp-color-text-secondary: #667779;
+  --alp-color-muted: #98a6a7;
+  --alp-color-border: #dde7e7;
+  --alp-color-border-strong: #c7d6d6;
+  --alp-bg-page: #f5f8f8;
+  --alp-bg-shell: #f5f8f8;
+  --alp-bg-header: rgba(255, 255, 255, 0.97);
+  --alp-bg-toolbar: #f8fafc;
+  --alp-bg-surface: #ffffff;
+  --alp-bg-surface-solid: #ffffff;
+  --alp-bg-surface-muted: #f0f5f5;
+  --alp-bg-soft-block: #e8f0f0;
+  --alp-bg-main-panel: #ffffff;
+  --alp-bg-aside-gradient: #fbfcfd;
+  --alp-bg-nav: #eef5f5;
+  --alp-bg-nav-hover: rgba(15, 133, 136, 0.06);
+  --alp-bg-nav-active: rgba(15, 133, 136, 0.1);
+  --alp-bg-code-ish: #f5f8fb;
+  --alp-bg-elevated: #ffffff;
+  --alp-bg-hover: rgba(18, 35, 63, 0.035);
+  --alp-shadow-card: 0 1px 2px rgba(18, 35, 63, 0.035);
+  --alp-shadow-card-hover: 0 4px 14px rgba(18, 35, 63, 0.07);
+  --alp-shadow-glow: 0 0 0 3px rgba(15, 133, 136, 0.1);
+  --el-color-primary: #0f8588;
+  --el-bg-color: #ffffff;
+  --el-bg-color-overlay: #ffffff;
+  --el-fill-color-blank: #ffffff;
+  --el-fill-color-light: #f5f8fb;
+  --el-fill-color-lighter: #f8fafc;
+  --el-text-color-primary: #172b2d;
+  --el-text-color-regular: #667779;
+  --el-text-color-secondary: #98a6a7;
+  --el-border-color: #dde7e7;
+  --el-border-color-light: #e8eeee;
+}
+
+html, body, #app { min-height: 100%; }
+body { background: var(--alp-bg-page); color: var(--alp-color-text); }
+html::before { content: none !important; }
+
+/* Familiar, dense product controls; no floating or decorative motion. */
+.el-card {
+  --el-card-bg-color: var(--alp-bg-surface) !important;
+  border-radius: var(--alp-radius-card) !important;
+  border-color: var(--alp-color-border) !important;
+  box-shadow: var(--alp-shadow-card) !important;
+}
+.el-card.is-hoverable:hover, .el-card.is-always-shadow:hover,
+.alp-lift-card:hover, .alp-lift-btn:hover, .alp-lift-link:hover {
+  transform: none !important;
+  filter: none !important;
+  box-shadow: var(--alp-shadow-card-hover) !important;
+  border-color: var(--alp-color-border-strong) !important;
+}
+.el-button { border-radius: var(--alp-radius-sm); font-weight: 600; box-shadow: none !important; }
+.el-button:not(.is-disabled):hover, .el-button:not(.is-disabled):active { transform: none !important; filter: none !important; }
+.el-input__wrapper, .el-select__wrapper, .el-textarea__inner {
+  border-radius: var(--alp-radius-sm) !important;
+  box-shadow: 0 0 0 1px var(--alp-color-border) inset !important;
+  background: var(--alp-bg-surface-muted) !important;
+}
+.el-input__wrapper.is-focus, .el-select__wrapper.is-focused {
+  box-shadow: 0 0 0 1px var(--alp-color-primary) inset, var(--alp-shadow-glow) !important;
+}
+.el-tag { border-radius: 3px; font-weight: 500; }
+.el-table { --el-table-bg-color: var(--alp-bg-surface); --el-table-tr-bg-color: var(--alp-bg-surface); --el-table-header-bg-color: var(--alp-bg-surface-muted); }
+.el-table th.el-table__cell { color: var(--alp-color-text-secondary); font-weight: 600; }
+.el-dialog, .el-drawer { background: var(--alp-bg-surface); border: 1px solid var(--alp-color-border); border-radius: var(--alp-radius-lg); }
+
+/* Make existing page panels read as one analytical workspace. */
+.page-shell, .page-container, .dashboard-page, .learning-page, .practice-page,
+.teacher-dashboard, .my-learning-page, .resource-library-page {
+  max-width: var(--alp-content-max);
+  margin-inline: auto;
+}
+.section-title, .page-title, h1, h2, h3 { text-wrap: balance; letter-spacing: -0.015em; }
+p { text-wrap: pretty; }
+
+@media (max-width: 900px) {
+  :root { --alp-header-height: 58px; --alp-layout-padding-x: 14px; }
+  .el-card__body { padding: 16px; }
+}
+
+@media (max-width: 600px) {
+  :root { --alp-layout-padding-x: 10px; }
+  .el-button { min-height: 40px; }
+  .el-input__wrapper, .el-select__wrapper { min-height: 40px; }
+}

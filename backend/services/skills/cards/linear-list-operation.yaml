@@ -1,0 +1,33 @@
+id: linear-list-operation
+name: 线性表操作
+course_id: data_structures_algorithms
+chapter_id: ch02-linear-list
+description: 顺序表与链表操作：强调指针域、虚拟头结点与复杂度对比；OJ 辅导聚焦断链与 off-by-one。
+prerequisites: [ch01-introduction-complexity]
+triggers:
+  keywords: [链表, 线性表, 顺序表, 反转, 插入, 删除]
+  module_keys: [array, linked-list]
+  chapter_ids: [ch02-linear-list]
+  oj_verdicts: [WA, RE]
+  error_patterns: [指针, 断链, 下标, 越界]
+  min_consecutive_failures: 2
+common_mistakes:
+  - text: 链表删除未保存 next 导致断链。
+    severity: high
+    detector_hint: Trace next 为 null 异常
+resource_strategy:
+  default: 画图优先；代码仅骨架。
+  trace_animation: linked_list 指针变化。
+hint_policy:
+  forbid_full_solution: true
+  levels:
+    - level: 1
+      policy: 要求手画删除前三指针位置。
+trace_focus: [next, prev, dummy]
+evaluation_rules:
+  - rule_id: pointer-diagram
+    description: 能画图表达操作后链接关系。
+    weight: 1.0
+    pass_threshold: 65
+recommended_resources: [document, trace_animation, code_case]
+recommended_problems: [reverse-linked-list]

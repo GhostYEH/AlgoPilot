@@ -1,0 +1,13 @@
+{
+  "id": "visual_foundation_weak",
+  "name": "基础薄弱 / 偏好图解",
+  "summary": "刚学程序设计，能读简单代码，但抽象符号和复杂度分析较弱。",
+  "dimensions": {
+    "knowledge_base": "基础薄弱，数组和循环尚可，链表、递归和复杂度不稳定",
+    "cognitive_style": "偏好图解、动画、类比和逐步演示",
+    "coding_ability": "能补全模板代码，但独立处理边界较慢",
+    "learning_goals": "先建立数据结构直觉，降低算法恐惧",
+    "error_preference": "越界、空输入、指针断链、初始化遗漏",
+    "grit_level": "遇到连续报错容易放弃，需要分步反馈"
+  }
+}

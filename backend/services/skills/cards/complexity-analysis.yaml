@@ -1,0 +1,34 @@
+id: complexity-analysis
+name: 复杂度分析
+course_id: data_structures_algorithms
+chapter_id: ch01-introduction-complexity
+description: 引导学生对循环、递归建立 O/Ω/Θ 直觉，资源生成须含渐进分析与反例，禁止空泛「很快/很慢」表述。
+prerequisites: []
+triggers:
+  keywords: [复杂度, 时间复杂度, 空间复杂度, O(n), 渐进]
+  module_keys: [array]
+  chapter_ids: [ch01-introduction-complexity]
+  oj_verdicts: [TLE]
+  error_patterns: [超时, TLE, 嵌套循环]
+  min_consecutive_failures: 0
+common_mistakes:
+  - text: 把单层循环说成 O(1)。
+    severity: high
+    detector_hint: 循环变量随 n 增长
+resource_strategy:
+  default: 先界定基本操作再计数；配循环嵌套示意图。
+  document: 逐步分析表格式讲解。
+hint_policy:
+  forbid_full_solution: true
+  socratic: true
+  levels:
+    - level: 1
+      policy: 问「基本操作是什么？执行多少次？」
+trace_focus: [循环变量 i/j, 递归深度]
+evaluation_rules:
+  - rule_id: big-o-statement
+    description: 能写出主导项复杂度。
+    weight: 1.0
+    pass_threshold: 60
+recommended_resources: [document, exercises, ppt]
+recommended_problems: [complexity-loop-analysis]

@@ -1,0 +1,3590 @@
+{
+  "binary-search": {
+    "slug": "binary-search",
+    "title": "二分查找",
+    "lc_id": 704,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "10\n1 3 5 7 9 11 13 15 17 19\n12\n",
+        "stdout": "5\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "array",
+    "tags": [],
+    "common_errors": []
+  },
+  "search-insert-position": {
+    "slug": "search-insert-position",
+    "title": "搜索插入位置",
+    "lc_id": 35,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "4\n1 3 5 6\n0\n",
+        "stdout": "0\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "array",
+    "tags": [],
+    "common_errors": []
+  },
+  "find-first-and-last-position-of-element-in-sorted-array": {
+    "slug": "find-first-and-last-position-of-element-in-sorted-array",
+    "title": "排序数组中查找首尾位置",
+    "lc_id": 34,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "6\n5 7 7 8 8 10\n8\n",
+        "stdout": "3 4\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "array",
+    "tags": [],
+    "common_errors": []
+  },
+  "sqrtx": {
+    "slug": "sqrtx",
+    "title": "x 的平方根",
+    "lc_id": 69,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "2147483647\n",
+        "stdout": "46340\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "array",
+    "tags": [],
+    "common_errors": []
+  },
+  "valid-perfect-square": {
+    "slug": "valid-perfect-square",
+    "title": "有效的完全平方数",
+    "lc_id": 367,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "808201\n",
+        "stdout": "true\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "array",
+    "tags": [],
+    "common_errors": []
+  },
+  "remove-element": {
+    "slug": "remove-element",
+    "title": "移除元素",
+    "lc_id": 27,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "8\n0 1 2 2 3 0 4 2\n2\n",
+        "stdout": "5\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "array",
+    "tags": [],
+    "common_errors": []
+  },
+  "remove-duplicates-from-sorted-array": {
+    "slug": "remove-duplicates-from-sorted-array",
+    "title": "删除有序数组重复项",
+    "lc_id": 26,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "10\n0 0 1 1 1 2 2 3 3 4\n",
+        "stdout": "5\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "array",
+    "tags": [],
+    "common_errors": []
+  },
+  "move-zeroes": {
+    "slug": "move-zeroes",
+    "title": "移动零",
+    "lc_id": 283,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "9\n0 0 1 2 3 0 4 5 0\n",
+        "stdout": "1 2 3 4 5 0 0 0 0\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "array",
+    "tags": [],
+    "common_errors": []
+  },
+  "backspace-string-compare": {
+    "slug": "backspace-string-compare",
+    "title": "比较含退格的字符串",
+    "lc_id": 844,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "bxj#tw\na#b#c#d#\n",
+        "stdout": "true\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "array",
+    "tags": [],
+    "common_errors": []
+  },
+  "squares-of-a-sorted-array": {
+    "slug": "squares-of-a-sorted-array",
+    "title": "有序数组的平方",
+    "lc_id": 977,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "5\n-4 -1 0 3 10\n",
+        "stdout": "0 1 9 16 100\n"
+      }
+    ],
+    "hidden_count": 11,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "array",
+    "tags": [],
+    "common_errors": []
+  },
+  "minimum-size-subarray-sum": {
+    "slug": "minimum-size-subarray-sum",
+    "title": "长度最小的子数组",
+    "lc_id": 209,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "15\n5\n1 2 3 4 5\n",
+        "stdout": "5\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "array",
+    "tags": [],
+    "common_errors": []
+  },
+  "fruit-into-baskets": {
+    "slug": "fruit-into-baskets",
+    "title": "水果成篮",
+    "lc_id": 904,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "11\n3 3 3 1 2 1 1 2 3 3 2\n",
+        "stdout": "5\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "array",
+    "tags": [],
+    "common_errors": []
+  },
+  "minimum-window-substring": {
+    "slug": "minimum-window-substring",
+    "title": "最小覆盖子串",
+    "lc_id": 76,
+    "difficulty": "hard",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "ADOBECODEBANC\nABC\n",
+        "stdout": "BANC\n"
+      }
+    ],
+    "hidden_count": 11,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "array",
+    "tags": [],
+    "common_errors": []
+  },
+  "spiral-matrix-ii": {
+    "slug": "spiral-matrix-ii",
+    "title": "螺旋矩阵 II",
+    "lc_id": 59,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "4\n",
+        "stdout": "1 2 3 4\n12 13 14 5\n11 16 15 6\n10 9 8 7\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "array",
+    "tags": [],
+    "common_errors": []
+  },
+  "spiral-matrix": {
+    "slug": "spiral-matrix",
+    "title": "螺旋矩阵",
+    "lc_id": 54,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "3\n1 2 3 4\n5 6 7 8\n9 10 11 12\n",
+        "stdout": "1 2 3 4 8 12 11 10 9 5 6 7\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "array",
+    "tags": [],
+    "common_errors": []
+  },
+  "combinations": {
+    "slug": "combinations",
+    "title": "组合",
+    "lc_id": 77,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "5\n3\n",
+        "stdout": "1 2 3\n1 2 4\n1 2 5\n1 3 4\n1 3 5\n1 4 5\n2 3 4\n2 3 5\n2 4 5\n3 4 5\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": true,
+    "module_key": "backtracking",
+    "tags": [],
+    "common_errors": []
+  },
+  "permutations": {
+    "slug": "permutations",
+    "title": "全排列",
+    "lc_id": 46,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "3\n1 2 3\n",
+        "stdout": "1 2 3\n1 3 2\n2 1 3\n2 3 1\n3 1 2\n3 2 1\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": true,
+    "module_key": "backtracking",
+    "tags": [],
+    "common_errors": []
+  },
+  "permutations-ii": {
+    "slug": "permutations-ii",
+    "title": "全排列 II",
+    "lc_id": 47,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "4\n1 1 2 2\n",
+        "stdout": "1 1 2 2\n1 2 1 2\n1 2 2 1\n2 1 1 2\n2 1 2 1\n2 2 1 1\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": true,
+    "module_key": "backtracking",
+    "tags": [],
+    "common_errors": []
+  },
+  "subsets": {
+    "slug": "subsets",
+    "title": "子集",
+    "lc_id": 78,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "3\n1 2 3\n",
+        "stdout": "\n1\n2\n1 2\n3\n1 3\n2 3\n1 2 3\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": true,
+    "module_key": "backtracking",
+    "tags": [],
+    "common_errors": []
+  },
+  "n-queens": {
+    "slug": "n-queens",
+    "title": "N 皇后",
+    "lc_id": 51,
+    "difficulty": "hard",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "4\n",
+        "stdout": "[[\".Q..\", \"...Q\", \"Q...\", \"..Q.\"], [\"..Q.\", \"Q...\", \"...Q\", \".Q..\"]]\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": true,
+    "module_key": "backtracking",
+    "tags": [],
+    "common_errors": []
+  },
+  "sudoku-solver": {
+    "slug": "sudoku-solver",
+    "title": "解数独",
+    "lc_id": 37,
+    "difficulty": "hard",
+    "description": "9×9 数独：输入 9 行，每行 9 个数字（0 表示空格）；输出填好后的 9 行。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "9\n5 3 0 0 7 0 0 0 0\n6 0 0 1 9 5 0 0 0\n0 9 8 0 0 0 0 6 0\n8 0 0 0 6 0 0 0 3\n4 0 0 8 0 3 0 0 1\n7 0 0 0 2 0 0 0 6\n0 6 0 0 0 0 2 8 0\n0 0 0 4 1 9 0 0 5\n0 0 0 0 8 0 0 7 9\n",
+        "stdout": "5 3 4 6 7 8 9 1 2\n6 7 2 1 9 5 3 4 8\n1 9 8 3 4 2 5 6 7\n8 5 9 7 6 1 4 2 3\n4 2 6 8 5 3 7 9 1\n7 1 3 9 2 4 8 5 6\n9 6 1 5 3 7 2 8 4\n2 8 7 4 1 9 6 3 5\n3 4 5 2 8 6 1 7 9\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "backtracking",
+    "tags": [],
+    "common_errors": []
+  },
+  "palindrome-partitioning": {
+    "slug": "palindrome-partitioning",
+    "title": "分割回文串",
+    "lc_id": 131,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "aab\n",
+        "stdout": "[[\"a\", \"a\", \"b\"], [\"aa\", \"b\"]]\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": true,
+    "module_key": "backtracking",
+    "tags": [],
+    "common_errors": []
+  },
+  "binary-tree-preorder-traversal": {
+    "slug": "binary-tree-preorder-traversal",
+    "title": "二叉树的前序遍历",
+    "lc_id": 144,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "8\n1 null 2 3 4 null 5 6\n",
+        "stdout": "1 2 3 5 4 6\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "binary-tree-inorder-traversal": {
+    "slug": "binary-tree-inorder-traversal",
+    "title": "二叉树的中序遍历",
+    "lc_id": 94,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "8\n1 null 2 3 4 null 5 6\n",
+        "stdout": "1 3 5 2 6 4\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "binary-tree-postorder-traversal": {
+    "slug": "binary-tree-postorder-traversal",
+    "title": "二叉树的后序遍历",
+    "lc_id": 145,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "8\n1 null 2 3 4 null 5 6\n",
+        "stdout": "5 3 6 4 2 1\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "binary-tree-level-order-traversal": {
+    "slug": "binary-tree-level-order-traversal",
+    "title": "二叉树的层序遍历",
+    "lc_id": 102,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "7\n3 9 20 null null 15 7\n",
+        "stdout": "3\n9 20\n15 7\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "binary-tree-level-order-traversal-ii": {
+    "slug": "binary-tree-level-order-traversal-ii",
+    "title": "二叉树的层序遍历 II",
+    "lc_id": 107,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "7\n1 2 3 4 5 6 7\n",
+        "stdout": "4 5 6 7\n2 3\n1\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "binary-tree-right-side-view": {
+    "slug": "binary-tree-right-side-view",
+    "title": "二叉树的右视图",
+    "lc_id": 199,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "15\n1 2 3 4 5 null 6 7 null null null null null null 8\n",
+        "stdout": "1 3 6 7 8\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "average-of-levels-in-binary-tree": {
+    "slug": "average-of-levels-in-binary-tree",
+    "title": "二叉树的层平均值",
+    "lc_id": 637,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "7\n1 2 3 4 5 6 7\n",
+        "stdout": "[1.0, 2.5, 5.5]\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "invert-binary-tree": {
+    "slug": "invert-binary-tree",
+    "title": "翻转二叉树",
+    "lc_id": 226,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "7\n1 2 3 4 5 6 7\n",
+        "stdout": "1 3 2 7 6 5 4\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "symmetric-tree": {
+    "slug": "symmetric-tree",
+    "title": "对称二叉树",
+    "lc_id": 101,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "11\n1 2 2 3 4 4 3 5 6 6 5\n",
+        "stdout": "true\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "same-tree": {
+    "slug": "same-tree",
+    "title": "相同的树",
+    "lc_id": 100,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "5\n1 2 3 4 5\n5\n1 2 3 4 null\n",
+        "stdout": "false\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "subtree-of-another-tree": {
+    "slug": "subtree-of-another-tree",
+    "title": "另一棵树的子树",
+    "lc_id": 572,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "10\n3 4 5 1 2 null null null null 0\n3\n4 1 2\n",
+        "stdout": "false\n"
+      }
+    ],
+    "hidden_count": 11,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "maximum-depth-of-binary-tree": {
+    "slug": "maximum-depth-of-binary-tree",
+    "title": "二叉树的最大深度",
+    "lc_id": 104,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "14\n1 2 3 4 null null 5 6 null null null null null 7\n",
+        "stdout": "4\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "minimum-depth-of-binary-tree": {
+    "slug": "minimum-depth-of-binary-tree",
+    "title": "二叉树的最小深度",
+    "lc_id": 111,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "7\n1 2 3 4 null null 5\n",
+        "stdout": "2\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "count-complete-tree-nodes": {
+    "slug": "count-complete-tree-nodes",
+    "title": "完全二叉树的节点个数",
+    "lc_id": 222,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "10\n1 2 3 4 5 6 7 8 9 10\n",
+        "stdout": "10\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "balanced-binary-tree": {
+    "slug": "balanced-binary-tree",
+    "title": "平衡二叉树",
+    "lc_id": 110,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "7\n3 9 20 null null 15 7\n",
+        "stdout": "true\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "binary-tree-paths": {
+    "slug": "binary-tree-paths",
+    "title": "二叉树的所有路径",
+    "lc_id": 257,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "7\n1 2 3 4 5 null 6\n",
+        "stdout": "[\"1->2->4\", \"1->2->5\", \"1->3->6\"]\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": true,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "sum-of-left-leaves": {
+    "slug": "sum-of-left-leaves",
+    "title": "左叶子之和",
+    "lc_id": 404,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "7\n1 2 3 4 5 6 7\n",
+        "stdout": "10\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "find-bottom-left-tree-value": {
+    "slug": "find-bottom-left-tree-value",
+    "title": "找树左下角的值",
+    "lc_id": 513,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "8\n1 2 3 4 null 5 6 7\n",
+        "stdout": "7\n"
+      }
+    ],
+    "hidden_count": 11,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "path-sum": {
+    "slug": "path-sum",
+    "title": "路径总和",
+    "lc_id": 112,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "13\n5 4 8 11 null 13 4 7 2 null null null 1\n22\n",
+        "stdout": "true\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "path-sum-ii": {
+    "slug": "path-sum-ii",
+    "title": "路径总和 II",
+    "lc_id": 113,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "13\n5 4 8 11 null 13 4 7 2 null null 5 1\n22\n",
+        "stdout": "5 4 11\n5 8 4 5\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": true,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "construct-binary-tree-from-inorder-and-postorder-traversal": {
+    "slug": "construct-binary-tree-from-inorder-and-postorder-traversal",
+    "title": "从中序与后序遍历序列构造二叉树",
+    "lc_id": 106,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "6\n9 3 15 20 7 8\n6\n9 15 7 8 20 3\n",
+        "stdout": "[3, 9, 20, null, null, 15, 7, null, null, null, 8]\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "construct-binary-tree-from-preorder-and-inorder-traversal": {
+    "slug": "construct-binary-tree-from-preorder-and-inorder-traversal",
+    "title": "从前序与中序遍历序列构造二叉树",
+    "lc_id": 105,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "6\n3 9 20 15 7 8\n6\n9 3 15 20 7 8\n",
+        "stdout": "[3, 9, 20, null, null, 15, 7, null, null, null, 8]\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "maximum-binary-tree": {
+    "slug": "maximum-binary-tree",
+    "title": "最大二叉树",
+    "lc_id": 654,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "6\n3 2 1 6 0 5\n",
+        "stdout": "[6, 3, 5, null, 2, 0, null, null, 1]\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "merge-two-binary-trees": {
+    "slug": "merge-two-binary-trees",
+    "title": "合并二叉树",
+    "lc_id": 617,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "4\n1 3 2 5\n7\n2 1 3 null 4 null 7\n",
+        "stdout": "[3, 4, 5, 5, 4, null, 7]\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "search-in-a-binary-search-tree": {
+    "slug": "search-in-a-binary-search-tree",
+    "title": "二叉搜索树中的搜索",
+    "lc_id": 700,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "7\n5 3 6 2 4 null 7\n6\n",
+        "stdout": "6 7\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "validate-binary-search-tree": {
+    "slug": "validate-binary-search-tree",
+    "title": "验证二叉搜索树",
+    "lc_id": 98,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "7\n5 1 4 null null 3 6\n",
+        "stdout": "false\n"
+      }
+    ],
+    "hidden_count": 11,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "minimum-absolute-difference-in-bst": {
+    "slug": "minimum-absolute-difference-in-bst",
+    "title": "二叉搜索树的最小绝对差",
+    "lc_id": 530,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "7\n1 0 48 null null 12 49\n",
+        "stdout": "1\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "find-mode-in-binary-search-tree": {
+    "slug": "find-mode-in-binary-search-tree",
+    "title": "二叉搜索树中的众数",
+    "lc_id": 501,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "6\n1 1 2 2 2 2\n",
+        "stdout": "2\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": true,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "lowest-common-ancestor-of-a-binary-tree": {
+    "slug": "lowest-common-ancestor-of-a-binary-tree",
+    "title": "二叉树的最近公共祖先",
+    "lc_id": 236,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "11\n3 5 1 6 2 0 8 null null 7 4\n6\n4\n",
+        "stdout": "5\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "lowest-common-ancestor-of-a-binary-search-tree": {
+    "slug": "lowest-common-ancestor-of-a-binary-search-tree",
+    "title": "二叉搜索树的最近公共祖先",
+    "lc_id": 235,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "11\n6 2 8 0 4 7 9 null null 3 5\n0\n4\n",
+        "stdout": "2\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "insert-into-a-binary-search-tree": {
+    "slug": "insert-into-a-binary-search-tree",
+    "title": "二叉搜索树中的插入操作",
+    "lc_id": 701,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "5\n4 2 7 1 3\n10\n",
+        "stdout": "[4, 2, 7, 1, 3, null, 10]\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "delete-node-in-a-bst": {
+    "slug": "delete-node-in-a-bst",
+    "title": "删除二叉搜索树中的节点",
+    "lc_id": 450,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "7\n5 3 6 2 4 null 7\n7\n",
+        "stdout": "5 3 6 2 4\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "trim-a-binary-search-tree": {
+    "slug": "trim-a-binary-search-tree",
+    "title": "修剪二叉搜索树",
+    "lc_id": 669,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "3\n1 0 2\n1\n2\n",
+        "stdout": "[1, null, 2]\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "convert-sorted-array-to-binary-search-tree": {
+    "slug": "convert-sorted-array-to-binary-search-tree",
+    "title": "将有序数组转换为二叉搜索树",
+    "lc_id": 108,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "7\n-10 -3 0 5 9 12 15\n",
+        "stdout": "5 -3 12 -10 0 9 15\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "convert-bst-to-greater-tree": {
+    "slug": "convert-bst-to-greater-tree",
+    "title": "把二叉搜索树转换为累加树",
+    "lc_id": 538,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "11\n4 1 6 0 2 5 7 null null null 3\n",
+        "stdout": "[7, 7, 6, 6, 2, 5, 7, null, null, null, 3]\n"
+      }
+    ],
+    "hidden_count": 11,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "binary-tree",
+    "tags": [],
+    "common_errors": []
+  },
+  "climbing-stairs": {
+    "slug": "climbing-stairs",
+    "title": "爬楼梯",
+    "lc_id": 70,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "2\n",
+        "stdout": "2\n"
+      },
+      {
+        "stdin": "3\n",
+        "stdout": "3\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "dp",
+    "tags": [],
+    "common_errors": []
+  },
+  "fibonacci-number": {
+    "slug": "fibonacci-number",
+    "title": "斐波那契数",
+    "lc_id": 509,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "10\n",
+        "stdout": "55\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "dp",
+    "tags": [],
+    "common_errors": []
+  },
+  "partition-equal-subset-sum": {
+    "slug": "partition-equal-subset-sum",
+    "title": "分割等和子集",
+    "lc_id": 416,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "4\n1 5 11 5\n",
+        "stdout": "true\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "dp",
+    "tags": [],
+    "common_errors": []
+  },
+  "coin-change": {
+    "slug": "coin-change",
+    "title": "零钱兑换",
+    "lc_id": 322,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "4\n2 5 10 1\n27\n",
+        "stdout": "4\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "dp",
+    "tags": [],
+    "common_errors": []
+  },
+  "coin-change-ii": {
+    "slug": "coin-change-ii",
+    "title": "零钱兑换 II",
+    "lc_id": 518,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "10\n3\n1 2 5\n",
+        "stdout": "10\n"
+      }
+    ],
+    "hidden_count": 11,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "dp",
+    "tags": [],
+    "common_errors": []
+  },
+  "longest-increasing-subsequence": {
+    "slug": "longest-increasing-subsequence",
+    "title": "最长递增子序列",
+    "lc_id": 300,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "8\n10 9 2 5 3 7 101 18\n",
+        "stdout": "4\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "dp",
+    "tags": [],
+    "common_errors": []
+  },
+  "number-of-islands": {
+    "slug": "number-of-islands",
+    "title": "岛屿数量",
+    "lc_id": 200,
+    "difficulty": "medium",
+    "description": "## 岛屿数量\n\n给定由 `0` 和 `1` 组成的网格，`1` 表示陆地。上下左右相邻的陆地属于同一座岛屿，请输出岛屿数量。\n\n**输入**：第一行 `rows cols`，随后 `rows` 行为长度为 `cols` 的 01 字符串。\n\n**输出**：一个整数，表示岛屿数量。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "4 5\n11110\n11010\n11000\n00000\n",
+        "stdout": "1\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "graph",
+    "tags": [
+      "graph",
+      "bfs",
+      "dfs",
+      "grid"
+    ],
+    "common_errors": []
+  },
+  "course-schedule": {
+    "slug": "course-schedule",
+    "title": "课程表",
+    "lc_id": 207,
+    "difficulty": "medium",
+    "description": "## 课程表\n\n给定课程数 `n` 和 `m` 条先修关系，每条关系 `a b` 表示学习课程 `a` 前必须先学习课程 `b`。请判断是否可以完成所有课程。\n\n**输入**：第一行 `n m`，随后 `m` 行每行两个整数 `a b`。\n\n**输出**：可以完成输出 `true`，否则输出 `false`。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "2 1\n1 0\n",
+        "stdout": "true\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "graph",
+    "tags": [
+      "graph",
+      "topological-sort",
+      "indegree"
+    ],
+    "common_errors": []
+  },
+  "rotting-oranges": {
+    "slug": "rotting-oranges",
+    "title": "腐烂的橘子",
+    "lc_id": 994,
+    "difficulty": "medium",
+    "description": "## 腐烂的橘子\n\n网格中 `0` 表示空格，`1` 表示新鲜橘子，`2` 表示腐烂橘子。每分钟腐烂橘子会使上下左右相邻的新鲜橘子腐烂。输出所有橘子腐烂所需的最少分钟数；无法全部腐烂输出 `-1`。\n\n**输入**：第一行 `rows cols`，随后 `rows` 行每行 `cols` 个整数。\n\n**输出**：最少分钟数或 `-1`。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "3 3\n2 1 1\n1 1 0\n0 1 1\n",
+        "stdout": "4\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "graph",
+    "tags": [
+      "graph",
+      "bfs",
+      "multi-source-bfs",
+      "grid"
+    ],
+    "common_errors": []
+  },
+  "assign-cookies": {
+    "slug": "assign-cookies",
+    "title": "分发饼干",
+    "lc_id": 455,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "4\n10 9 8 7\n4\n5 6 7 8\n",
+        "stdout": "2\n"
+      }
+    ],
+    "hidden_count": 11,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "greedy",
+    "tags": [],
+    "common_errors": []
+  },
+  "non-overlapping-intervals": {
+    "slug": "non-overlapping-intervals",
+    "title": "无重叠区间",
+    "lc_id": 435,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "4\n1 2\n2 3\n3 4\n1 3\n",
+        "stdout": "1\n"
+      }
+    ],
+    "hidden_count": 11,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "greedy",
+    "tags": [],
+    "common_errors": []
+  },
+  "minimum-number-of-arrows-to-burst-balloons": {
+    "slug": "minimum-number-of-arrows-to-burst-balloons",
+    "title": "用最少数量的箭引爆气球",
+    "lc_id": 452,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "4\n1 2\n2 3\n3 4\n4 5\n",
+        "stdout": "2\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "greedy",
+    "tags": [],
+    "common_errors": []
+  },
+  "jump-game": {
+    "slug": "jump-game",
+    "title": "跳跃游戏",
+    "lc_id": 55,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "5\n2 3 1 1 4\n",
+        "stdout": "true\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "greedy",
+    "tags": [],
+    "common_errors": []
+  },
+  "jump-game-ii": {
+    "slug": "jump-game-ii",
+    "title": "跳跃游戏 II",
+    "lc_id": 45,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "5\n1 1 1 1 1\n",
+        "stdout": "4\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "greedy",
+    "tags": [],
+    "common_errors": []
+  },
+  "gas-station": {
+    "slug": "gas-station",
+    "title": "加油站",
+    "lc_id": 134,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "5\n5 1 2 3 4\n5\n4 4 1 5 1\n",
+        "stdout": "4\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "greedy",
+    "tags": [],
+    "common_errors": []
+  },
+  "best-time-to-buy-and-sell-stock": {
+    "slug": "best-time-to-buy-and-sell-stock",
+    "title": "买卖股票的最佳时机",
+    "lc_id": 121,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "10\n2 4 1 7 11 9 13 15 14 12\n",
+        "stdout": "14\n"
+      }
+    ],
+    "hidden_count": 11,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "greedy",
+    "tags": [],
+    "common_errors": []
+  },
+  "best-time-to-buy-and-sell-stock-ii": {
+    "slug": "best-time-to-buy-and-sell-stock-ii",
+    "title": "买卖股票的最佳时机 II",
+    "lc_id": 122,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "9\n1 2 3 4 5 6 7 8 9\n",
+        "stdout": "8\n"
+      }
+    ],
+    "hidden_count": 11,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "greedy",
+    "tags": [],
+    "common_errors": []
+  },
+  "valid-anagram": {
+    "slug": "valid-anagram",
+    "title": "有效的字母异位词",
+    "lc_id": 242,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "listen\nsilent\n",
+        "stdout": "true\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "hash-table",
+    "tags": [],
+    "common_errors": []
+  },
+  "ransom-note": {
+    "slug": "ransom-note",
+    "title": "赎金信",
+    "lc_id": 383,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "aa\naab\n",
+        "stdout": "true\n"
+      }
+    ],
+    "hidden_count": 15,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "hash-table",
+    "tags": [],
+    "common_errors": []
+  },
+  "group-anagrams": {
+    "slug": "group-anagrams",
+    "title": "字母异位词分组",
+    "lc_id": 49,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "eat\ntea\ntan\nate\nnat\nbat\n",
+        "stdout": "[[\"bat\"], [\"nat\", \"tan\"], [\"ate\", \"eat\", \"tea\"]]\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": true,
+    "module_key": "hash-table",
+    "tags": [],
+    "common_errors": []
+  },
+  "intersection-of-two-arrays": {
+    "slug": "intersection-of-two-arrays",
+    "title": "两个数组的交集",
+    "lc_id": 349,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "3\n4 9 5\n5\n9 4 9 8 4\n",
+        "stdout": "9 4\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": true,
+    "module_key": "hash-table",
+    "tags": [],
+    "common_errors": []
+  },
+  "intersection-of-two-arrays-ii": {
+    "slug": "intersection-of-two-arrays-ii",
+    "title": "两个数组的交集 II",
+    "lc_id": 350,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "3\n4 9 5\n5\n9 4 9 8 4\n",
+        "stdout": "4 9 9\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": true,
+    "module_key": "hash-table",
+    "tags": [],
+    "common_errors": []
+  },
+  "happy-number": {
+    "slug": "happy-number",
+    "title": "快乐数",
+    "lc_id": 202,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "967\n",
+        "stdout": "true\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "hash-table",
+    "tags": [],
+    "common_errors": []
+  },
+  "two-sum": {
+    "slug": "two-sum",
+    "title": "两数之和",
+    "lc_id": 1,
+    "difficulty": "easy",
+    "description": "给定整数数组 nums 与 target，返回两数之和等于 target 的两个下标。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "5\n1 5 3 7 9\n12\n",
+        "stdout": "1 4\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": true,
+    "module_key": "hash-table",
+    "tags": [],
+    "common_errors": []
+  },
+  "two-sum-ii-input-array-is-sorted": {
+    "slug": "two-sum-ii-input-array-is-sorted",
+    "title": "两数之和 II - 输入有序数组",
+    "lc_id": 167,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "8\n1 2 3 4 4 9 56 90\n8\n",
+        "stdout": "4 5\n"
+      }
+    ],
+    "hidden_count": 11,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "hash-table",
+    "tags": [],
+    "common_errors": []
+  },
+  "4sum-ii": {
+    "slug": "4sum-ii",
+    "title": "四数相加 II",
+    "lc_id": 454,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "3\n0 1 -1\n3\n0 -1 2\n3\n-1 2 -2\n3\n-2 0 1\n",
+        "stdout": "11\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "hash-table",
+    "tags": [],
+    "common_errors": []
+  },
+  "3sum": {
+    "slug": "3sum",
+    "title": "三数之和",
+    "lc_id": 15,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "5\n-2 0 1 1 2\n",
+        "stdout": "-2 0 2\n-2 1 1\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": true,
+    "module_key": "hash-table",
+    "tags": [],
+    "common_errors": []
+  },
+  "4sum": {
+    "slug": "4sum",
+    "title": "四数之和",
+    "lc_id": 18,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "8\n1 0 -1 0 -2 2 3 -3\n0\n",
+        "stdout": "-3 -2 2 3\n-3 -1 1 3\n-3 0 0 3\n-3 0 1 2\n-2 -1 0 3\n-2 -1 1 2\n-2 0 0 2\n-1 0 0 1\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": true,
+    "module_key": "hash-table",
+    "tags": [],
+    "common_errors": []
+  },
+  "remove-linked-list-elements": {
+    "slug": "remove-linked-list-elements",
+    "title": "移除链表元素",
+    "lc_id": 203,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "10\n1 2 6 3 4 5 6 6 7 6\n6\n",
+        "stdout": "1 2 3 4 5 7\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "linked-list",
+    "tags": [],
+    "common_errors": []
+  },
+  "delete-node-in-a-linked-list": {
+    "slug": "delete-node-in-a-linked-list",
+    "title": "删除链表中的节点",
+    "lc_id": 237,
+    "difficulty": "medium",
+    "description": "删除给定结点（不含头结点）；输出删除后的链表序列。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "6\n1 2 3 4 5 6\n3\n",
+        "stdout": "1 2 4 5 6\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "linked-list",
+    "tags": [],
+    "common_errors": []
+  },
+  "middle-of-the-linked-list": {
+    "slug": "middle-of-the-linked-list",
+    "title": "链表的中间结点",
+    "lc_id": 876,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "6\n1 2 3 4 5 6\n",
+        "stdout": "4 5 6\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "linked-list",
+    "tags": [],
+    "common_errors": []
+  },
+  "design-linked-list": {
+    "slug": "design-linked-list",
+    "title": "设计链表",
+    "lc_id": 707,
+    "difficulty": "medium",
+    "description": "## 设计链表（707）\n\n从标准输入读操作序列，输出每次有返回值的操作结果。\n\n**输入**：`n` 后 `n` 行：`init`、`addAtHead val`、`addAtTail val`、`addAtIndex index val`、`get index`、`deleteAtIndex index`。\n\n**输出**：`get` 输出整数；非法下标输出 -1。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "9\naddAtHead 1\naddAtTail 3\naddAtIndex 1 2\nget 1\naddAtIndex 0 4\nget 0\nget 3\ndeleteAtIndex 2\nget 2\n",
+        "stdout": "2\n4\n3\n2\n"
+      }
+    ],
+    "hidden_count": 14,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "linked-list",
+    "tags": [],
+    "common_errors": []
+  },
+  "reverse-linked-list": {
+    "slug": "reverse-linked-list",
+    "title": "反转链表",
+    "lc_id": 206,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "5\n1 2 3 4 5\n",
+        "stdout": "5 4 3 2 1\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "linked-list",
+    "tags": [],
+    "common_errors": []
+  },
+  "reverse-linked-list-ii": {
+    "slug": "reverse-linked-list-ii",
+    "title": "反转链表 II",
+    "lc_id": 92,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "7\n1 2 3 4 5 6 7\n2\n5\n",
+        "stdout": "1 5 4 3 2 6 7\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "linked-list",
+    "tags": [],
+    "common_errors": []
+  },
+  "reverse-nodes-in-k-group": {
+    "slug": "reverse-nodes-in-k-group",
+    "title": "K 个一组翻转链表",
+    "lc_id": 25,
+    "difficulty": "hard",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "5\n1 2 3 4 5\n2\n",
+        "stdout": "2 1 4 3 5\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "linked-list",
+    "tags": [],
+    "common_errors": []
+  },
+  "palindrome-linked-list": {
+    "slug": "palindrome-linked-list",
+    "title": "回文链表",
+    "lc_id": 234,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "5\n1 2 3 2 1\n",
+        "stdout": "true\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "linked-list",
+    "tags": [],
+    "common_errors": []
+  },
+  "swap-nodes-in-pairs": {
+    "slug": "swap-nodes-in-pairs",
+    "title": "两两交换链表中的节点",
+    "lc_id": 24,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "6\n1 2 3 4 5 6\n",
+        "stdout": "2 1 4 3 6 5\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "linked-list",
+    "tags": [],
+    "common_errors": []
+  },
+  "remove-nth-node-from-end-of-list": {
+    "slug": "remove-nth-node-from-end-of-list",
+    "title": "删除链表的倒数第 N 个结点",
+    "lc_id": 19,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "8\n1 2 3 4 5 6 7 8\n3\n",
+        "stdout": "1 2 3 4 5 6 8\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "linked-list",
+    "tags": [],
+    "common_errors": []
+  },
+  "intersection-of-two-linked-lists": {
+    "slug": "intersection-of-two-linked-lists",
+    "title": "相交链表",
+    "lc_id": 160,
+    "difficulty": "easy",
+    "description": "给定两条链表头，返回相交结点；不相交返回 null。测例用 a/b/common 表示前缀与共用后缀。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "2\n4 1\n3\n5 6 1\n3\n8 4 5\n",
+        "stdout": "8 4 5\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "linked-list",
+    "tags": [],
+    "common_errors": []
+  },
+  "linked-list-cycle-ii": {
+    "slug": "linked-list-cycle-ii",
+    "title": "环形链表 II",
+    "lc_id": 142,
+    "difficulty": "medium",
+    "description": "给定链表头，返回环入口节点；无环返回 null。判题输出为入口下标对应的值列表或 null。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "6\n1 2 3 4 5 6\n",
+        "stdout": "null\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "linked-list",
+    "tags": [],
+    "common_errors": []
+  },
+  "linked-list-cycle": {
+    "slug": "linked-list-cycle",
+    "title": "环形链表",
+    "lc_id": 141,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。\n\n**输入约定**：整数序列先给个数再跟数值；二叉树层序用 `null` 表示空结点；相交链表依次给出 `a` 长度与 `a` 结点、`b` 长度与 `b` 结点、公共后缀长度与结点值。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "8\n1 2 3 4 5 6 7 8\n",
+        "stdout": "false\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "linked-list",
+    "tags": [],
+    "common_errors": []
+  },
+  "daily-temperatures": {
+    "slug": "daily-temperatures",
+    "title": "每日温度",
+    "lc_id": 739,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "8\n73 74 75 71 69 72 76 73\n",
+        "stdout": "1 1 4 2 1 1 0 0\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "monotonic-stack",
+    "tags": [],
+    "common_errors": []
+  },
+  "next-greater-element-i": {
+    "slug": "next-greater-element-i",
+    "title": "下一个更大元素 I",
+    "lc_id": 496,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "5\n1 3 5 2 4\n5\n5 4 2 1 3\n",
+        "stdout": "-1 5 -1 3 -1\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "monotonic-stack",
+    "tags": [],
+    "common_errors": []
+  },
+  "next-greater-element-ii": {
+    "slug": "next-greater-element-ii",
+    "title": "下一个更大元素 II",
+    "lc_id": 503,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "5\n3 8 4 1 2\n",
+        "stdout": "8 -1 8 2 3\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "monotonic-stack",
+    "tags": [],
+    "common_errors": []
+  },
+  "largest-rectangle-in-histogram": {
+    "slug": "largest-rectangle-in-histogram",
+    "title": "柱状图中最大的矩形",
+    "lc_id": 84,
+    "difficulty": "hard",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "6\n2 1 5 6 2 3\n",
+        "stdout": "10\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "monotonic-stack",
+    "tags": [],
+    "common_errors": []
+  },
+  "trapping-rain-water": {
+    "slug": "trapping-rain-water",
+    "title": "接雨水",
+    "lc_id": 42,
+    "difficulty": "hard",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "12\n0 1 0 2 1 0 1 3 2 1 2 1\n",
+        "stdout": "6\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "monotonic-stack",
+    "tags": [],
+    "common_errors": []
+  },
+  "sorting-basic-output": {
+    "slug": "sorting-basic-output",
+    "title": "基础排序输出",
+    "lc_id": 0,
+    "difficulty": "easy",
+    "description": "## 基础排序输出\n\n给定 `n` 个整数，请按非递减顺序输出排序结果。\n\n**输入**：第一行一个整数 `n`；第二行包含 `n` 个整数。\n\n**输出**：一行 `n` 个整数，相邻整数以一个空格分隔。\n\n**样例输入**\n```text\n5\n5 1 4 2 8\n```\n\n**样例输出**\n```text\n1 2 4 5 8\n```\n\n建议先验证输入输出与边界，再比较标准库排序和手写排序的复杂度。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "5\n5 1 4 2 8\n",
+        "stdout": "1 2 4 5 8\n"
+      },
+      {
+        "stdin": "6\n3 -1 3 0 -5 2\n",
+        "stdout": "-5 -1 0 2 3 3\n"
+      }
+    ],
+    "hidden_count": 12,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "sorting",
+    "tags": [
+      "sorting",
+      "数组",
+      "基础排序"
+    ],
+    "common_errors": [
+      "只读取了第一行部分数据，未按 n 读取完整序列。",
+      "输出格式多出括号、逗号或提示文字，导致标准输出不匹配。",
+      "重复值、负数或 n=1 时使用了错误的边界。"
+    ]
+  },
+  "sorting-inversion-count": {
+    "slug": "sorting-inversion-count",
+    "title": "逆序对统计",
+    "lc_id": 0,
+    "difficulty": "medium",
+    "description": "## 逆序对统计\n\n若 `i < j` 且 `a[i] > a[j]`，则 `(i,j)` 是一个逆序对。给定整数序列，输出逆序对总数。\n\n**输入**：第一行一个整数 `n`；第二行包含 `n` 个整数。\n\n**输出**：一个整数，表示逆序对数量。\n\n**样例输入**\n```text\n5\n7 5 6 4 3\n```\n\n**样例输出**\n```text\n8\n```\n\n建议使用归并排序，在合并有序区间时累计跨区间逆序对。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "5\n7 5 6 4 3\n",
+        "stdout": "8\n"
+      },
+      {
+        "stdin": "4\n1 2 3 4\n",
+        "stdout": "0\n"
+      }
+    ],
+    "hidden_count": 11,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "sorting",
+    "tags": [
+      "sorting",
+      "归并排序",
+      "逆序对",
+      "分治"
+    ],
+    "common_errors": [
+      "合并后没有把临时数组正确写回原区间。",
+      "右侧元素先取出时，逆序对增量应为左半区剩余元素数量。",
+      "逆序对总数可能超过 32 位整数范围，应使用 64 位整数。"
+    ]
+  },
+  "sorting-kth-largest": {
+    "slug": "sorting-kth-largest",
+    "title": "第 K 大元素",
+    "lc_id": 0,
+    "difficulty": "medium",
+    "description": "## 第 K 大元素\n\n给定 `n` 个整数和整数 `k`，输出按从大到小排列后的第 `k` 个元素。重复元素分别计数。\n\n**输入**：第一行两个整数 `n k`；第二行包含 `n` 个整数，保证 `1 <= k <= n`。\n\n**输出**：一个整数，表示第 `k` 大元素。\n\n**样例输入**\n```text\n6 2\n3 2 1 5 6 4\n```\n\n**样例输出**\n```text\n5\n```\n\n可使用排序、大小为 k 的小根堆，或平均 O(n) 的快速选择。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "6 2\n3 2 1 5 6 4\n",
+        "stdout": "5\n"
+      },
+      {
+        "stdin": "9 4\n3 2 3 1 2 4 5 5 6\n",
+        "stdout": "4\n"
+      }
+    ],
+    "hidden_count": 12,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "sorting",
+    "tags": [
+      "sorting",
+      "TopK",
+      "快速选择",
+      "堆"
+    ],
+    "common_errors": [
+      "混淆第 k 大与升序下标，目标位置应换算为 n-k。",
+      "快速选择分区后仍处理错误区间，或重复值使指针无法前进。",
+      "使用小根堆时堆大小未限制为 k，导致复杂度和结果错误。"
+    ]
+  },
+  "implement-queue-using-stacks": {
+    "slug": "implement-queue-using-stacks",
+    "title": "用栈实现队列",
+    "lc_id": 232,
+    "difficulty": "easy",
+    "description": "## 用栈实现队列（232）\n\n请按洛谷格式编写完整程序，从标准输入读入操作序列，向标准输出写出每次有返回值的操作结果。\n\n**输入**：第一行整数 `n`；接下来 `n` 行，每行一条操作：`push x`、`pop`、`peek`、`empty`。\n\n**输出**：`pop` / `peek` 各输出一行整数；`empty` 输出 `true` 或 `false`（小写）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "8\npush 1\npush 2\npush 3\npop\npeek\npush 4\npop\nempty\n",
+        "stdout": "1\n2\n4\nfalse\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "stack-queue",
+    "tags": [],
+    "common_errors": []
+  },
+  "implement-stack-using-queues": {
+    "slug": "implement-stack-using-queues",
+    "title": "用队列实现栈",
+    "lc_id": 225,
+    "difficulty": "easy",
+    "description": "## 用队列实现栈（225）\n\n请按洛谷格式编写完整程序，从标准输入读入操作序列，向标准输出写出每次有返回值的操作结果。\n\n**输入**：第一行整数 `n`；接下来 `n` 行，每行一条操作：`push x`、`pop`、`top`、`empty`。\n\n**输出**：`pop` / `top` 各输出一行整数；`empty` 输出 `true` 或 `false`（小写）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "7\npush 1\npush 2\npush 3\npop\ntop\npop\nempty\n",
+        "stdout": "3\n2\nfalse\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "stack-queue",
+    "tags": [],
+    "common_errors": []
+  },
+  "valid-parentheses": {
+    "slug": "valid-parentheses",
+    "title": "有效的括号",
+    "lc_id": 20,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "{[()()]}\n",
+        "stdout": "true\n"
+      },
+      {
+        "stdin": "([)]\n",
+        "stdout": "false\n"
+      }
+    ],
+    "hidden_count": 8,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "stack-queue",
+    "tags": [],
+    "common_errors": []
+  },
+  "remove-all-adjacent-duplicates-in-string": {
+    "slug": "remove-all-adjacent-duplicates-in-string",
+    "title": "删除字符串中的所有相邻重复项",
+    "lc_id": 1047,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "aabbbaca\n",
+        "stdout": "ca\n"
+      }
+    ],
+    "hidden_count": 11,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "stack-queue",
+    "tags": [],
+    "common_errors": []
+  },
+  "evaluate-reverse-polish-notation": {
+    "slug": "evaluate-reverse-polish-notation",
+    "title": "逆波兰表达式求值",
+    "lc_id": 150,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "10\n6\n9\n3\n+\n-11\n*\n/\n*\n17\n+\n5\n+\n",
+        "stdout": "22\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "stack-queue",
+    "tags": [],
+    "common_errors": []
+  },
+  "sliding-window-maximum": {
+    "slug": "sliding-window-maximum",
+    "title": "滑动窗口最大值",
+    "lc_id": 239,
+    "difficulty": "hard",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "8\n1 3 -1 -3 5 3 6 7\n3\n",
+        "stdout": "3 3 5 5 6 7\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "stack-queue",
+    "tags": [],
+    "common_errors": []
+  },
+  "top-k-frequent-elements": {
+    "slug": "top-k-frequent-elements",
+    "title": "前 K 个高频元素",
+    "lc_id": 347,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "9\n4 4 4 6 6 7 8 8 8\n2\n",
+        "stdout": "4 8\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": true,
+    "module_key": "stack-queue",
+    "tags": [],
+    "common_errors": []
+  },
+  "reverse-string": {
+    "slug": "reverse-string",
+    "title": "反转字符串",
+    "lc_id": 344,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "p\nr\no\ng\nr\na\nm\nm\ni\nn\ng\n",
+        "stdout": "[\"g\", \"n\", \"i\", \"m\", \"m\", \"a\", \"r\", \"g\", \"o\", \"r\", \"p\"]\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "string",
+    "tags": [],
+    "common_errors": []
+  },
+  "reverse-vowels-of-a-string": {
+    "slug": "reverse-vowels-of-a-string",
+    "title": "反转字符串中的元音字母",
+    "lc_id": 345,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "leetcode\n",
+        "stdout": "leotcede\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "string",
+    "tags": [],
+    "common_errors": []
+  },
+  "reverse-string-ii": {
+    "slug": "reverse-string-ii",
+    "title": "反转字符串 II",
+    "lc_id": 541,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "abcdefgh\n3\n",
+        "stdout": "cbadefhg\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "string",
+    "tags": [],
+    "common_errors": []
+  },
+  "reverse-words-in-a-string": {
+    "slug": "reverse-words-in-a-string",
+    "title": "反转字符串中的单词",
+    "lc_id": 151,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "  a good   example  \n",
+        "stdout": "example good a\n"
+      }
+    ],
+    "hidden_count": 11,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "string",
+    "tags": [],
+    "common_errors": []
+  },
+  "reverse-words-in-a-string-ii": {
+    "slug": "reverse-words-in-a-string-ii",
+    "title": "反转字符串中的单词 II",
+    "lc_id": 186,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "  a good   example  \n",
+        "stdout": "example good a\n"
+      }
+    ],
+    "hidden_count": 11,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "string",
+    "tags": [],
+    "common_errors": []
+  },
+  "rotate-array": {
+    "slug": "rotate-array",
+    "title": "轮转数组",
+    "lc_id": 189,
+    "difficulty": "medium",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "7\n1 2 3 4 5 6 7\n3\n",
+        "stdout": "5 6 7 1 2 3 4\n"
+      }
+    ],
+    "hidden_count": 10,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "string",
+    "tags": [],
+    "common_errors": []
+  },
+  "longest-happy-prefix": {
+    "slug": "longest-happy-prefix",
+    "title": "最长快乐前缀",
+    "lc_id": 1392,
+    "difficulty": "hard",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "ababab\n",
+        "stdout": "abab\n"
+      }
+    ],
+    "hidden_count": 12,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "string",
+    "tags": [],
+    "common_errors": []
+  },
+  "shortest-palindrome": {
+    "slug": "shortest-palindrome",
+    "title": "最短回文串",
+    "lc_id": 214,
+    "difficulty": "hard",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "abababab\n",
+        "stdout": "babababab\n"
+      }
+    ],
+    "hidden_count": 11,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "string",
+    "tags": [],
+    "common_errors": []
+  },
+  "repeated-substring-pattern": {
+    "slug": "repeated-substring-pattern",
+    "title": "重复的子字符串",
+    "lc_id": 459,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "abcabcabcabc\n",
+        "stdout": "true\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "string",
+    "tags": [],
+    "common_errors": []
+  },
+  "rotate-string": {
+    "slug": "rotate-string",
+    "title": "旋转字符串",
+    "lc_id": 796,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "abcdefgabcdefg\ndefgabcdefgabc\n",
+        "stdout": "true\n"
+      }
+    ],
+    "hidden_count": 12,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "string",
+    "tags": [],
+    "common_errors": []
+  },
+  "add-strings": {
+    "slug": "add-strings",
+    "title": "字符串相加",
+    "lc_id": 415,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "456\n77\n",
+        "stdout": "533\n"
+      }
+    ],
+    "hidden_count": 11,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "string",
+    "tags": [],
+    "common_errors": []
+  },
+  "length-of-last-word": {
+    "slug": "length-of-last-word",
+    "title": "最后一个单词的长度",
+    "lc_id": 58,
+    "difficulty": "easy",
+    "description": "按洛谷格式编写完整程序，使用标准输入/输出（cin/cout 或 input/print）。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "   fly me   to   the moon  \n",
+        "stdout": "4\n"
+      }
+    ],
+    "hidden_count": 17,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "string",
+    "tags": [],
+    "common_errors": []
+  },
+  "replace-space-lcof": {
+    "slug": "replace-space-lcof",
+    "title": "替换空格（剑指 Offer 05）",
+    "lc_id": 5,
+    "difficulty": "easy",
+    "description": "剑指 Offer 05：将字符串中的空格替换为 `%20`。",
+    "judge_mode": "stdio",
+    "entry": {
+      "mode": "stdio"
+    },
+    "starter_code": {
+      "python": "import sys\n\n\ndef main():\n    # 洛谷风格：从标准输入读入，向标准输出写出答案\n    # data = sys.stdin.read().split()\n    pass\n\n\nif __name__ == '__main__':\n    main()\n",
+      "cpp": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // 洛谷风格：cin 读入，cout 输出\n    return 0;\n}\n"
+    },
+    "samples": [
+      {
+        "stdin": "The moon is beautiful.\n",
+        "stdout": "The%20moon%20is%20beautiful.\n"
+      }
+    ],
+    "hidden_count": 9,
+    "ready": true,
+    "time_limit_ms": 3000,
+    "order_insensitive": false,
+    "module_key": "two-pointers",
+    "tags": [],
+    "common_errors": []
+  }
+}

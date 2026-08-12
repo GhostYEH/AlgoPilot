@@ -1,0 +1,13 @@
+{
+  "id": "theory_research",
+  "name": "理论加强 / 偏好证明",
+  "summary": "数学基础较好，希望从正确性证明、复杂度下界和算法范式理解课程。",
+  "dimensions": {
+    "knowledge_base": "概念基础较好，工程编码速度一般",
+    "cognitive_style": "偏好定义、定理、反例和证明草图",
+    "coding_ability": "能读懂伪代码，代码实现需要模板支撑",
+    "learning_goals": "掌握算法设计范式与可证明正确性",
+    "error_preference": "证明跳步、复杂度前提遗漏、递归边界",
+    "grit_level": "能接受挑战题，但需要明确评估标准"
+  }
+}

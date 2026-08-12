@@ -1,0 +1,102 @@
+id: dp-state-design
+name: 动态规划状态设计
+course_id: data_structures_algorithms
+chapter_id: ch11-dynamic-programming
+description: |
+  面向《数据结构与算法》动态规划章：引导学生用「状态含义一句话 + 转移方程 + 边界初始化」
+  三件套建模，而非直接背诵题解。资源生成须出现填表示意图、滚动数组与状态维度说明；
+  辅导时禁止一次性给出可提交完整代码，用分层提示拆解初始化与转移错误。
+prerequisites:
+  - ch09-recursion-divide-conquer
+  - ch10-greedy
+triggers:
+  keywords:
+    - 动态规划
+    - DP
+    - 状态转移
+    - 背包
+    - 路径计数
+    - 初始化
+    - dp数组
+  module_keys:
+    - dp
+  chapter_ids:
+    - ch11-dynamic-programming
+  oj_verdicts:
+    - WA
+    - RE
+  error_patterns:
+    - 初始化
+    - 边界
+    - 状态定义
+    - 转移方程
+    - 下标
+    - 未定义
+    - 空数组
+  min_consecutive_failures: 2
+common_mistakes:
+  - text: 未定义 dp[i] 的语义就写转移，导致「能跑样例但无法解释」。
+    severity: high
+    detector_hint: 学生无法口头回答「dp[i] 表示什么」
+  - text: 边界初始化漏写 dp[0]、首行首列或空输入，造成 WA 或 RE。
+    severity: high
+    detector_hint: 第 0 步 trace 中 dp 全为 0 或未赋值
+  - text: 循环方向与依赖方向不一致（先用了未计算的 dp[i+1]）。
+    severity: high
+    detector_hint: Trace 显示使用了未来状态
+  - text: 一维滚动优化时覆盖仍需要的旧值。
+    severity: medium
+    detector_hint: 空间优化后结果随 n 跳变异常
+  - text: 把完全背包当成 0-1 背包遍历顺序。
+    severity: medium
+    detector_hint: 硬币无限仍用倒序一维
+resource_strategy:
+  default: 先状态定义表，再转移示意，最后 2～3 个手填格子；禁止四位力扣题号。
+  document: 用「状态含义 → 转移 → 边界 → 复杂度」四段式；配 3×3 填表图。
+  mindmap: 根节点 DP，分支线性/背包/区间三类入门模型。
+  exercises: 2 道选择（状态定义）+ 1 道填空（转移式）；不给完整代码。
+  code_case: 只提供 dp 数组声明与 TODO 填表循环，15～25 行。
+  trace_animation: 必须展示 dp 表逐格更新，高亮当前 (i,j) 与来源格。
+  ppt: 三张胶片：状态定义、转移箭头、常见初始化错误对比。
+  video_script: 60 秒「一句话状态 + 手填三格」微课。
+  reading: 链接背包与路径 DP 的差异，强调遍历方向。
+hint_policy:
+  max_code_lines: 12
+  forbid_full_solution: true
+  socratic: true
+  escalation_after_failures: 2
+  levels:
+    - level: 1
+      policy: 只问「你如何定义 dp[i] 或 dp[i][j]？边界条件是什么？」不给公式。
+    - level: 2
+      policy: 指出可能错的边界下标（0、n-1），让用户自行改初始化两行。
+    - level: 3
+      policy: 给出转移方向示意（从左上来 / 从上一行），仍不贴完整循环。
+    - level: 4
+      policy: 允许伪代码 8 行内仅含循环骨架，不含可 AC 的完整实现。
+trace_focus:
+  - dp 数组或矩阵在每一步的赋值来源
+  - 初始化行/列是否与题意一致
+  - 循环变量 i、j 是否与转移方向一致
+evaluation_rules:
+  - rule_id: state-clarity
+    description: 学生能用一句话说明每个状态的含义。
+    weight: 0.35
+    pass_threshold: 70
+  - rule_id: boundary-init
+    description: 能列出所有边界条件并在小样例手推正确。
+    weight: 0.35
+    pass_threshold: 65
+  - rule_id: transfer-correct
+    description: 在 3×3 手填表上转移结果正确。
+    weight: 0.3
+    pass_threshold: 60
+recommended_resources:
+  - document
+  - exercises
+  - trace_animation
+  - mindmap
+recommended_problems:
+  - climbing-stairs
+  - coin-change
+  - unique-paths

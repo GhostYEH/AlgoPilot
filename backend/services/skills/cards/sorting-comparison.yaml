@@ -1,0 +1,31 @@
+id: sorting-comparison
+name: 排序算法比较
+course_id: data_structures_algorithms
+chapter_id: ch08-sorting
+description: 排序稳定性与复杂度对比；资源生成须含冒泡/插入/归并/快排思想，不绑定虚构题号。
+prerequisites: [ch02-linear-list]
+triggers:
+  keywords: [排序, 快排, 归并, 稳定, 原地]
+  module_keys: [sorting]
+  chapter_ids: [ch08-sorting]
+  oj_verdicts: [WA, TLE]
+  error_patterns: [pivot, 分区, 稳定]
+  min_consecutive_failures: 2
+common_mistakes:
+  - text: 快排 pivot 选取不当最坏 O(n^2)。
+    severity: medium
+resource_strategy:
+  default: 对比表 + 单趟分区手算。
+hint_policy:
+  forbid_full_solution: true
+  levels:
+    - level: 1
+      policy: 问「需要稳定吗？空间限制？」
+trace_focus: [pivot, i, j 指针]
+evaluation_rules:
+  - rule_id: sort-choice
+    description: 能按需求选排序算法。
+    weight: 1.0
+    pass_threshold: 60
+recommended_resources: [document, ppt, mindmap]
+recommended_problems: [sorting-basic-output, sorting-inversion-count, sorting-kth-largest]

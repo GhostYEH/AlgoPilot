@@ -1,0 +1,31 @@
+id: string-matching
+name: 字符串与滑动窗口
+course_id: data_structures_algorithms
+chapter_id: ch04-string
+description: 双指针与滑动窗口：强调窗口合法性与字符频次更新，禁止直接给完整子串答案代码。
+prerequisites: [ch02-linear-list]
+triggers:
+  keywords: [字符串, 滑动窗口, 子串, 双指针, 频次]
+  module_keys: [string, two-pointers]
+  chapter_ids: [ch04-string]
+  oj_verdicts: [WA, TLE]
+  error_patterns: [窗口, 频次, 左指针]
+  min_consecutive_failures: 2
+common_mistakes:
+  - text: 窗口收缩时未更新字符计数。
+    severity: high
+resource_strategy:
+  default: 窗口不变式三步：扩右、判非法、缩左。
+hint_policy:
+  forbid_full_solution: true
+  levels:
+    - level: 1
+      policy: 问「窗口内要保证什么性质？」
+trace_focus: [left, right, freq]
+evaluation_rules:
+  - rule_id: window-invariant
+    description: 能写出窗口合法性条件。
+    weight: 1.0
+    pass_threshold: 65
+recommended_resources: [document, exercises, video_script]
+recommended_problems: [longest-substring-without-repeating]

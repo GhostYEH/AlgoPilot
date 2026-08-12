@@ -1,0 +1,31 @@
+id: union-find
+name: 并查集
+course_id: data_structures_algorithms
+chapter_id: ch13-heap-union-find
+description: 并查集路径压缩与按秩合并；用于连通分量与 Kruskal 入门（了解）。
+prerequisites: [ch06-graph]
+triggers:
+  keywords: [并查集, union-find, 连通, 合并集合]
+  module_keys: [union-find, graph, monotonic-stack]
+  chapter_ids: [ch13-heap-union-find]
+  oj_verdicts: [WA, TLE]
+  error_patterns: [父节点, 路径压缩, 连通]
+  min_consecutive_failures: 2
+common_mistakes:
+  - text: find 未路径压缩导致 TLE。
+    severity: high
+resource_strategy:
+  default: parent 数组图示 + 两次 find 对比。
+hint_policy:
+  forbid_full_solution: true
+  levels:
+    - level: 1
+      policy: 问「两个元素是否同一集合？如何合并？」
+trace_focus: [parent 数组变化]
+evaluation_rules:
+  - rule_id: union-find-template
+    description: 能写出 find/union 骨架。
+    weight: 1.0
+    pass_threshold: 65
+recommended_resources: [document, reading]
+recommended_problems: [number-of-connected-components]

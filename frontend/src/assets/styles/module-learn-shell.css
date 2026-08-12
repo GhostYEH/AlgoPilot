@@ -1,0 +1,1238 @@
+/**
+ * 学习模块页公共壳层：面包屑、Hero、侧栏目录、主内容卡片等
+ * 与 variables.css 暗色终端风一致；各页根节点添加 class="module-learn-shell"
+ */
+
+.module-learn-shell {
+  width: 100%;
+  padding-bottom: 32px;
+}
+
+.module-learn-shell .el-breadcrumb .el-breadcrumb__inner {
+  color: var(--alp-color-muted);
+  font-weight: 500;
+}
+
+.module-learn-shell .el-breadcrumb .el-breadcrumb__item:last-child .el-breadcrumb__inner {
+  color: var(--alp-color-text);
+  font-weight: 600;
+}
+
+.module-learn-shell .el-breadcrumb .el-breadcrumb__separator {
+  color: var(--alp-color-muted);
+}
+
+.module-learn-shell .top-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.module-learn-shell .top-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.module-learn-shell .progress-label {
+  font-size: 12px;
+  color: var(--alp-color-muted);
+}
+
+.module-learn-shell .hero {
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--alp-color-border);
+}
+
+.module-learn-shell .hero-main {
+  padding: 4px 0 0;
+}
+
+.module-learn-shell .back-btn {
+  padding-left: 0;
+  margin-bottom: 4px;
+}
+
+.module-learn-shell .hero-title {
+  margin: 0 0 8px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--alp-color-text);
+}
+
+.module-learn-shell .hero-intro {
+  margin: 0 0 10px;
+  color: var(--alp-color-muted);
+  line-height: 1.65;
+  font-size: 14px;
+  max-width: 900px;
+}
+
+.module-learn-shell .hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.module-learn-shell .attrib {
+  margin-bottom: 18px;
+}
+
+.module-learn-shell .attrib .el-alert__title {
+  line-height: 1.55;
+  color: var(--alp-color-text);
+}
+
+.module-learn-shell .layout-row {
+  align-items: flex-start;
+}
+
+.module-learn-shell .layout-row > .el-col {
+  margin-bottom: 0;
+}
+
+/* 章节目录：3 列栅格布局 — 目录 / 主内容 / 右侧辅助 */
+.module-learn-shell .module-layout-row {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr) 320px;
+  gap: 20px;
+  align-items: start;
+}
+
+/* 目录侧栏：收起时让整列同步缩小，让网格自动收缩到 52px，不留空白 */
+.module-learn-shell .module-layout-row:has(.section-aside-col.is-collapsed) {
+  grid-template-columns: 52px minmax(0, 1fr) 320px;
+}
+
+.module-learn-shell .section-aside-col {
+  width: 100%;
+  align-self: start;
+}
+
+.module-learn-shell .module-layout-main {
+  min-width: 0;
+}
+
+/* 右侧辅助列：sticky 整体吸顶，子面板纵向紧凑堆叠 */
+.module-learn-shell .module-layout-side {
+  position: sticky;
+  top: calc(var(--alp-header-height, 60px) + 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-self: start;
+}
+
+/* 右侧子面板：让每个子面板也能独立滚动 */
+.module-learn-shell .module-layout-side > * {
+  min-width: 0;
+  overflow: visible;
+}
+
+.module-learn-shell .aside-head-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.module-learn-shell .section-directory .aside-head {
+  gap: 8px;
+}
+
+.module-learn-shell .section-directory.is-collapsed .aside-head,
+.module-learn-shell .section-aside-col.is-collapsed .aside-head {
+  justify-content: center;
+  padding: 10px 6px;
+}
+
+.module-learn-shell .section-aside-col.is-collapsed .aside-collapse-btn {
+  margin: 0 auto;
+}
+
+.module-learn-shell .section-nav-mini {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 4px 12px;
+  max-height: calc(100vh - var(--alp-header-height, 60px) - 120px);
+  overflow-y: auto;
+}
+
+.module-learn-shell .mini-nav-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: var(--alp-bg-nav);
+  color: var(--alp-color-muted);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s,
+    transform 0.15s ease;
+}
+
+.module-learn-shell .mini-nav-btn:hover {
+  background: var(--alp-bg-nav-hover);
+  border-color: rgba(58, 138, 158, 0.35);
+  color: var(--alp-color-text);
+}
+
+.module-learn-shell .mini-nav-btn.active {
+  background: var(--alp-bg-nav-active);
+  border-color: var(--alp-color-primary, #3a8a9e);
+  color: var(--alp-color-primary, #3a8a9e);
+  box-shadow: 0 2px 10px rgba(58, 138, 158, 0.2);
+}
+
+.module-learn-shell .mini-nav-btn.done:not(.active) {
+  color: #6aa878;
+}
+
+.module-learn-shell .aside-sticky {
+  position: sticky;
+  top: calc(var(--alp-header-height, 60px) + 16px);
+  align-self: flex-start;
+  width: 100%;
+  height: auto;
+  max-height: calc(100vh - var(--alp-header-height, 60px) - 32px);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--alp-color-border);
+  border-radius: 12px;
+  background: var(--alp-bg-aside-gradient);
+  overflow: hidden;
+  box-shadow: var(--alp-shadow-card);
+}
+
+/* 条目少时高度随内容；条目多时在目录内滚动，避免底部大块空白 */
+.module-learn-shell .section-nav-body {
+  overflow-y: auto;
+  max-height: calc(100vh - var(--alp-header-height, 60px) - 32px - 52px);
+}
+
+.module-learn-shell .aside-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--alp-color-border);
+  background: var(--alp-bg-surface-muted);
+}
+
+.module-learn-shell .aside-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--alp-color-text);
+}
+
+.module-learn-shell .aside-sub {
+  font-size: 12px;
+  color: var(--alp-color-muted);
+}
+
+.module-learn-shell .section-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  gap: 6px;
+}
+
+.module-learn-shell .nav-btn {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 10px 10px;
+  cursor: pointer;
+  background: var(--alp-bg-nav);
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s,
+    transform 0.18s ease,
+    filter var(--alp-transition-fast);
+  font: inherit;
+  color: inherit;
+}
+
+.module-learn-shell .nav-btn:hover {
+  background: var(--alp-bg-nav-hover);
+  border-color: rgba(58, 138, 158, 0.35);
+  transform: translateY(-2px);
+  box-shadow: var(--alp-shadow-btn-hover);
+  filter: brightness(1.08);
+}
+
+.module-learn-shell .nav-btn.active {
+  background: var(--alp-bg-nav-active);
+  border-color: var(--alp-color-primary, #3a8a9e);
+  box-shadow: 0 2px 12px rgba(58, 138, 158, 0.2);
+}
+
+.module-learn-shell .nav-btn:active {
+  transform: scale(0.98);
+}
+
+.module-learn-shell .nav-btn.done:not(.active) {
+  opacity: 0.92;
+}
+
+.module-learn-shell .nav-idx {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--alp-nav-index-bg);
+  color: var(--alp-nav-index-fg);
+  font-size: 12px;
+  font-weight: 600;
+  display: grid;
+  place-items: center;
+}
+
+.module-learn-shell .nav-btn.active .nav-idx {
+  background: var(--alp-color-primary, #3a8a9e);
+  color: #0f172a;
+}
+
+.module-learn-shell .nav-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.module-learn-shell .nav-line {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--alp-color-text);
+}
+
+.module-learn-shell .nav-sub {
+  font-size: 11px;
+  color: var(--alp-color-muted);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.module-learn-shell .nav-check {
+  flex-shrink: 0;
+  color: #6aa878;
+  margin-top: 2px;
+}
+
+.module-learn-shell .content-card.el-card {
+  border-radius: 14px;
+  border: 1px solid var(--alp-color-border);
+  background: var(--alp-bg-surface) !important;
+  box-shadow: var(--alp-shadow-card);
+}
+
+/* 内嵌 OJ 侧栏 sticky 需祖先 overflow 可见 */
+.module-learn-shell .content-card.el-card:has(.inline-oj) {
+  overflow: visible;
+}
+
+.module-learn-shell .content-card.el-card:has(.inline-oj) .el-card__body {
+  overflow: visible;
+}
+
+/* 主刷题区：在 content-card 外；行可向左右撑开，勿裁切侧栏 */
+.module-learn-shell .module-layout-main {
+  overflow: visible;
+}
+
+.module-learn-shell .inline-oj-zone {
+  width: 100%;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  overflow: visible;
+}
+
+.module-learn-shell .inline-oj-zone .divider-label {
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: var(--alp-color-primary);
+}
+
+.module-learn-shell .inline-oj-zone > .el-divider {
+  margin: 20px 0 14px;
+}
+
+.module-learn-shell .inline-oj-zone > .el-divider .el-divider__text {
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--alp-color-primary);
+  background: transparent;
+}
+
+/* 随堂练习区：向左右扩展至整行宽度，充分利用横向空间 */
+.module-learn-shell .module-layout-main > .inline-oj-zone {
+  width: auto;
+  margin-left: calc(-1 * (260px + 20px));
+  margin-right: calc(-1 * (320px + 20px));
+}
+
+/* 目录侧栏收起时：左侧重叠量随之缩小 */
+.module-learn-shell .module-layout-row:has(.section-aside-col.is-collapsed) .module-layout-main > .inline-oj-zone {
+  margin-left: calc(-1 * (52px + 20px));
+}
+
+/* 中等屏：右侧辅助面板移至下方，仅向左扩展 */
+@media (max-width: 1280px) {
+  .module-learn-shell .module-layout-main > .inline-oj-zone {
+    margin-left: calc(-1 * (240px + 20px));
+    margin-right: 0;
+  }
+
+  .module-learn-shell .module-layout-row:has(.section-aside-col.is-collapsed) .module-layout-main > .inline-oj-zone {
+    margin-left: calc(-1 * (52px + 20px));
+  }
+}
+
+/* 小屏：单列布局，不扩展 */
+@media (max-width: 992px) {
+  .module-learn-shell .module-layout-main > .inline-oj-zone {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
+.module-learn-shell .content-card .el-card__body {
+  padding: 20px 22px 24px;
+}
+
+@media (min-width: 1280px) {
+  .module-learn-shell .content-card .el-card__body {
+    padding: 24px 28px 28px;
+  }
+}
+
+.module-learn-shell .content-card .el-card__header {
+  border-bottom-color: var(--alp-color-border);
+}
+
+.module-learn-shell .content-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.module-learn-shell .content-title {
+  margin: 0 0 6px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--alp-color-text);
+}
+
+.module-learn-shell .content-sub {
+  margin: 0;
+  font-size: 14px;
+  color: var(--alp-color-muted);
+  line-height: 1.6;
+  max-width: var(--alp-content-prose-max);
+}
+
+.module-learn-shell .meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin-bottom: 6px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--alp-bg-surface-muted);
+  border: 1px solid var(--alp-color-border);
+}
+
+.module-learn-shell .meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--alp-color-muted);
+}
+
+.module-learn-shell .kw-tag {
+  border-radius: 6px;
+}
+
+.module-learn-shell .content-card .el-divider {
+  margin: 24px 0 14px;
+}
+
+.module-learn-shell .content-card .el-divider__text {
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--alp-color-primary);
+  background: transparent;
+}
+
+.module-learn-shell .divider-label {
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+
+/* 栈队列等：左演示、右详解 */
+.module-learn-shell .content-viz-split {
+  display: grid;
+  grid-template-columns: minmax(280px, 42%) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+  margin: 4px 0 16px;
+}
+
+.module-learn-shell .content-visual--split {
+  margin: 0;
+  min-width: 0;
+}
+
+.module-learn-shell .content-visual--split .step-anim {
+  height: 100%;
+}
+
+.module-learn-shell .content-visual--split .step-anim .step-anim-caption,
+.module-learn-shell .content-visual--split .step-anim .step-desc {
+  text-align: left;
+}
+
+.module-learn-shell .content-visual--split .sq-paren-viz {
+  min-height: 220px;
+}
+
+.module-learn-shell .content-viz-split .learn-section-body--side-viz {
+  padding-left: 8px;
+  border-left: 1px solid var(--alp-color-border);
+}
+
+@media (max-width: 960px) {
+  .module-learn-shell .content-viz-split {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .module-learn-shell .content-viz-split .learn-section-body--side-viz {
+    padding-left: 0;
+    border-left: none;
+    padding-top: 16px;
+    border-top: 1px solid var(--alp-color-border);
+  }
+}
+
+/* 示意动画区：宽屏居中、与正文分层 */
+.module-learn-shell .content-visual {
+  margin: 4px 0 8px;
+  min-height: var(--lv-section-window-h, var(--lv-stage-h, 248px));
+}
+
+.module-learn-shell .content-visual > * {
+  min-height: var(--lv-section-window-h, auto);
+}
+
+.module-learn-shell .content-visual .anim-root,
+.module-learn-shell .content-visual .ht-anim,
+.module-learn-shell .content-visual .ll-anim,
+.module-learn-shell .content-visual .str-anim,
+.module-learn-shell .content-visual .sq-theory-trio {
+  margin-bottom: 0;
+  background: var(--alp-bg-soft-block);
+  border-color: var(--alp-color-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.module-learn-shell .content-visual--sq-theory {
+  width: 100%;
+  max-width: none;
+  margin-bottom: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.module-learn-shell .content-visual--sq-theory .sq-theory-trio {
+  width: 100%;
+}
+
+.module-learn-shell .content-visual .panel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.module-learn-shell .content-visual .theory-row,
+.module-learn-shell .content-visual .bin-visual,
+.module-learn-shell .content-visual .ptr-track,
+.module-learn-shell .content-visual .sq-row,
+.module-learn-shell .content-visual .win-track,
+.module-learn-shell .content-visual .spiral-grid,
+.module-learn-shell .content-visual .flow-line,
+.module-learn-shell .content-visual .row,
+.module-learn-shell .content-visual .twosum-stage {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.module-learn-shell .content-visual .ll-anim .node,
+.module-learn-shell .content-visual .str-anim .chip,
+.module-learn-shell .content-visual .str-anim .cell {
+  background: var(--alp-bg-surface-solid);
+  border-color: var(--alp-color-border);
+  color: var(--alp-color-text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.module-learn-shell .content-visual .str-anim .step-desc {
+  color: var(--alp-color-muted);
+  background: var(--alp-bg-code-ish);
+  border-color: var(--alp-color-border);
+}
+
+.module-learn-shell .content-visual .anim-note,
+.module-learn-shell .content-visual .ll-anim-caption,
+.module-learn-shell .content-visual .str-anim-caption {
+  text-align: center;
+  max-width: var(--alp-content-prose-max);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (min-width: 1200px) {
+  .module-learn-shell .content-visual .bin-visual,
+  .module-learn-shell .content-visual .sq-row {
+    max-width: min(480px, 100%);
+  }
+
+  .module-learn-shell .content-visual .spiral-grid {
+    transform: scale(1.05);
+    transform-origin: center top;
+  }
+}
+
+.module-learn-shell .content-prose {
+  max-width: var(--alp-content-prose-max);
+}
+
+/* 加厚正文组件内使用独立列表样式，避免「卡片套卡片」 */
+.module-learn-shell .learn-section-body .points,
+.module-learn-shell .learn-section-body .topic-point-list,
+.module-learn-shell .learn-section-body .recall-list {
+  animation: none;
+}
+
+.module-learn-shell .points {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+  line-height: 1.72;
+  color: var(--alp-color-text);
+  font-size: 14px;
+}
+
+.module-learn-shell .points li {
+  position: relative;
+  margin: 0;
+  padding: 11px 14px 11px 36px;
+  border-radius: 10px;
+  background: var(--alp-bg-soft-block);
+  border: 1px solid var(--alp-color-border);
+  transition:
+    border-color var(--alp-transition-fast),
+    background var(--alp-transition-fast);
+}
+
+.module-learn-shell .points li::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 1.15em;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--alp-color-primary);
+  box-shadow: 0 0 0 3px var(--alp-color-primary-soft);
+  transform: translateY(-50%);
+}
+
+.module-learn-shell .points li:hover {
+  border-color: rgba(58, 138, 158, 0.35);
+  background: rgba(58, 138, 158, 0.06);
+}
+
+.module-learn-shell .pitfall-group {
+  display: grid;
+  gap: 10px;
+}
+
+@media (min-width: 960px) {
+  .module-learn-shell .pitfall-group {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.module-learn-shell .pitfall-alert {
+  margin-bottom: 0;
+}
+
+.module-learn-shell .checklist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  line-height: 1.65;
+  font-size: 14px;
+  color: var(--alp-color-text);
+  max-width: var(--alp-content-prose-max);
+}
+
+.module-learn-shell .checklist li {
+  position: relative;
+  padding: 9px 12px 9px 34px;
+  border-radius: 8px;
+  background: var(--alp-bg-code-ish);
+  border: 1px solid var(--alp-color-border);
+}
+
+.module-learn-shell .checklist li::before {
+  content: '☐';
+  position: absolute;
+  left: 12px;
+  top: 0.55em;
+  font-size: 13px;
+  color: var(--alp-color-primary);
+  line-height: 1;
+}
+
+.module-learn-shell .code-sketch {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: var(--alp-radius-card, 12px);
+  background: var(--alp-bg-code-ish);
+  border: 1px solid var(--alp-color-border);
+  font-family: ui-monospace, 'Cascadia Code', 'Consolas', monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--alp-color-text);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  tab-size: 2;
+}
+
+.module-learn-shell .complexity {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--alp-color-muted);
+  background: var(--alp-bg-code-ish);
+  border-radius: 8px;
+  border-left: 3px solid var(--alp-color-primary, #3a8a9e);
+}
+
+.module-learn-shell .practice-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--alp-color-primary-soft);
+  border: 1px solid rgba(58, 138, 158, 0.28);
+  max-width: var(--alp-content-prose-max);
+}
+
+.module-learn-shell .main-practice-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.module-learn-shell .related {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.module-learn-shell .related-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 14px;
+  font-size: 14px;
+  border-radius: 8px;
+  background: var(--alp-bg-soft-block);
+  border: 1px solid var(--alp-color-border);
+  transition:
+    border-color var(--alp-transition-fast),
+    background var(--alp-transition-fast),
+    transform var(--alp-transition-fast),
+    filter var(--alp-transition-fast);
+}
+
+.module-learn-shell .related-link:hover {
+  border-color: rgba(58, 138, 158, 0.4);
+  background: var(--alp-color-primary-soft);
+  transform: translateY(-1px);
+  box-shadow: var(--alp-shadow-btn);
+  filter: brightness(1.06);
+}
+
+.module-learn-shell .hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--alp-color-muted);
+  line-height: 1.6;
+}
+
+.module-learn-shell .pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px dashed var(--alp-color-border);
+}
+
+.module-learn-shell .pager-hint {
+  font-size: 12px;
+  color: var(--alp-color-muted);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.module-learn-shell .pager-spacer {
+  flex: 1;
+  min-width: 8px;
+}
+
+/* 章节切换与列表入场（数组 / 字符串等共用） */
+.module-learn-shell .section-body {
+  min-height: 140px;
+}
+
+.module-learn-shell .section-swap-enter-active,
+.module-learn-shell .section-swap-leave-active {
+  transition:
+    opacity 0.28s ease,
+    transform 0.28s ease;
+}
+
+.module-learn-shell .section-swap-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.module-learn-shell .section-swap-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.module-learn-shell .points li {
+  opacity: 0;
+  animation: alp-point-in 0.45s ease forwards;
+}
+
+.module-learn-shell .points li:nth-child(1) {
+  animation-delay: 0.03s;
+}
+.module-learn-shell .points li:nth-child(2) {
+  animation-delay: 0.08s;
+}
+.module-learn-shell .points li:nth-child(3) {
+  animation-delay: 0.13s;
+}
+.module-learn-shell .points li:nth-child(4) {
+  animation-delay: 0.18s;
+}
+.module-learn-shell .points li:nth-child(5) {
+  animation-delay: 0.23s;
+}
+.module-learn-shell .points li:nth-child(6) {
+  animation-delay: 0.28s;
+}
+.module-learn-shell .points li:nth-child(7) {
+  animation-delay: 0.33s;
+}
+.module-learn-shell .points li:nth-child(8) {
+  animation-delay: 0.38s;
+}
+
+@keyframes alp-point-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.module-learn-shell .alert-stagger-enter-active,
+.module-learn-shell .alert-stagger-leave-active {
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+}
+
+.module-learn-shell .alert-stagger-enter-from {
+  opacity: 0;
+  transform: translateX(-14px);
+}
+
+.module-learn-shell .alert-stagger-leave-to {
+  opacity: 0;
+  transform: translateX(10px);
+}
+
+.module-learn-shell .alert-stagger-move {
+  transition: transform 0.28s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .module-learn-shell .section-swap-enter-active,
+  .module-learn-shell .section-swap-leave-active,
+  .module-learn-shell .alert-stagger-enter-active,
+  .module-learn-shell .alert-stagger-leave-active {
+    transition: none !important;
+  }
+
+  .module-learn-shell .section-swap-enter-from,
+  .module-learn-shell .section-swap-leave-to,
+  .module-learn-shell .alert-stagger-enter-from,
+  .module-learn-shell .alert-stagger-leave-to {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .module-learn-shell .points li {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* 中等屏：收起右侧辅助面板为单列并堆叠在底部；目录与主内容保持两列 */
+@media (max-width: 1280px) {
+  .module-learn-shell .module-layout-row {
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+
+  .module-learn-shell .module-layout-row:has(.section-aside-col.is-collapsed) {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+
+  .module-learn-shell .module-layout-side {
+    grid-column: 1 / -1;
+    position: static;
+    max-height: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .module-learn-shell .module-layout-side > * {
+    flex: 1 1 320px;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 992px) {
+  .module-learn-shell .module-layout-row,
+  .module-learn-shell .module-layout-row:has(.section-aside-col.is-collapsed) {
+    grid-template-columns: 1fr;
+  }
+
+  .module-learn-shell .section-aside-col {
+    width: 100%;
+  }
+
+  .module-learn-shell .module-layout-side {
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+
+  .module-learn-shell .module-layout-side > * {
+    flex: none;
+  }
+
+  .module-learn-shell .aside-sticky {
+    position: relative;
+    top: 0;
+    margin-bottom: 16px;
+    height: auto;
+    max-height: none;
+  }
+
+  .module-learn-shell .section-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .module-learn-shell .section-nav-mini {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    max-height: none;
+    padding: 8px;
+  }
+
+  .module-learn-shell .nav-btn {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 140px;
+  }
+}
+
+@media (max-width: 576px) {
+  .module-learn-shell .nav-btn {
+    flex: 1 1 100%;
+  }
+
+  .module-learn-shell .top-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* 哈希页：同壳变量（保留原有 DOM 与交互） */
+.module-learn-shell.hash-table-page .page-head {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--alp-color-border);
+}
+
+.module-learn-shell.hash-table-page .intro {
+  margin: 0 0 12px;
+  color: var(--alp-color-muted);
+  line-height: 1.65;
+  font-size: 14px;
+  max-width: 900px;
+}
+
+.module-learn-shell.hash-table-page .inline-code {
+  margin: 0 2px;
+  padding: 1px 6px;
+  font-size: 12px;
+  font-family: ui-monospace, monospace;
+  background: var(--alp-bg-code-ish);
+  color: var(--alp-color-text);
+  border: 1px solid var(--alp-color-border);
+  border-radius: 4px;
+}
+
+.module-learn-shell.hash-table-page .module-body {
+  border: 1px solid var(--alp-color-border);
+  border-radius: 12px;
+  background: var(--alp-bg-surface);
+  box-shadow: var(--alp-shadow-card);
+  /* 不可 hidden：侧栏 position:sticky 依赖祖先可见 overflow */
+  overflow: visible;
+}
+
+.module-learn-shell.hash-table-page .aside-icon {
+  color: var(--alp-color-primary);
+}
+
+.module-learn-shell.hash-table-page .main {
+  background: var(--alp-bg-main-panel);
+}
+
+.module-learn-shell.hash-table-page .content-card.el-card {
+  border-radius: 12px;
+  border: 1px solid var(--alp-color-border);
+  background: var(--alp-bg-soft-block) !important;
+  box-shadow: none;
+}
+
+.module-learn-shell.hash-table-page .content-card .el-card__body {
+  padding: 18px 20px 20px;
+}
+
+.module-learn-shell.hash-table-page .complexity {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--alp-color-muted);
+  background: var(--alp-bg-code-ish);
+  border-left: 3px solid var(--alp-color-primary);
+}
+
+.module-learn-shell.hash-table-page .card-footer-nav {
+  border-top-color: var(--alp-color-border);
+}
+
+.module-learn-shell.hash-table-page .attrib .el-alert__title {
+  line-height: 1.55;
+  color: var(--alp-color-text);
+}
+
+.module-learn-shell.hash-table-page .points {
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.module-learn-shell.hash-table-page .points-item {
+  position: relative;
+  margin: 0;
+  padding: 11px 14px 11px 36px;
+  border-radius: 10px;
+  background: var(--alp-bg-soft-block);
+  border: 1px solid var(--alp-color-border);
+  line-height: 1.72;
+  font-size: 14px;
+  color: var(--alp-color-text);
+}
+
+.module-learn-shell.hash-table-page .points-item::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 1.15em;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--alp-color-primary);
+  box-shadow: 0 0 0 3px var(--alp-color-primary-soft);
+  transform: translateY(-50%);
+}
+
+.module-learn-shell.hash-table-page .table-wrap {
+  margin-bottom: 8px;
+}
+
+.module-learn-shell.hash-table-page .guide-table {
+  width: 100%;
+}
+
+/** 分步动画壳层（slot 内容在子组件中定义，样式须全局生效） */
+.module-learn-shell .step-anim {
+  margin: 0;
+  padding: 14px 16px 12px;
+  border-radius: var(--alp-radius-card, 12px);
+  background: var(--alp-bg-soft-block);
+  border: 1px solid var(--alp-color-border);
+  overflow: hidden;
+}
+
+.module-learn-shell .step-anim-caption {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--alp-color-muted);
+  line-height: 1.45;
+}
+
+.module-learn-shell .step-anim .anim-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.module-learn-shell .step-anim .anim-toolbar-meta {
+  font-size: 11px;
+  color: var(--alp-color-muted);
+}
+
+.module-learn-shell .step-anim .step-desc {
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  /* 预留 3 行文字高度，避免不同 step 的 hint 行数变化导致页面高度跳动 */
+  min-height: 54px;
+  border-radius: 8px;
+  background: rgba(37, 99, 235, 0.08);
+  border-left: 3px solid var(--alp-color-primary, #2563eb);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--alp-color-text);
+}
+
+/* 分步动画面板/格子样式见 learn-viz.css */
+
+.module-learn-shell .step-anim .arrow {
+  color: var(--alp-color-primary, #2563eb);
+  font-weight: 700;
+}
+
+.module-learn-shell .step-anim .pill {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--alp-color-primary, #2563eb);
+}
+
+@keyframes alp-flow-pulse {
+  0%,
+  100% {
+    opacity: 0.65;
+    transform: translateX(0) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(4px) scale(1.04);
+  }
+}
+
+.module-learn-shell .step-anim .loop-anim .pill {
+  animation: alp-flow-pulse 1.35s ease-in-out infinite;
+}
+
+@media (min-width: 1280px) {
+  .module-learn-shell.hash-table-page .module-body .aside {
+    flex: 0 0 272px;
+    width: 272px;
+  }
+
+  .module-learn-shell.hash-table-page .main {
+    padding: 16px 28px 24px;
+  }
+
+  .module-learn-shell.hash-table-page .viz-flow {
+    justify-content: center;
+  }
+}

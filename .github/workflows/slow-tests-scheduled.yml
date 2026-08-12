@@ -1,0 +1,27 @@
+name: Slow Tests (Scheduled)
+
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+jobs:
+  slow-tests:
+    name: Slow Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt -r requirements-dev.txt
+      - name: Run slow tests
+        env:
+          SPARK_API_PASSWORD: ${{ secrets.SPARK_API_PASSWORD }}
+        run: |
+          python scripts/ci_test_runner.py slow

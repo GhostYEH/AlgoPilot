@@ -1,0 +1,297 @@
+# AlgoPilot — 《数据结构与算法》课程级知识库清单
+course_id: data_structures_algorithms
+course_name: 数据结构与算法
+course_code: CS-DSA-101
+credit_hours: 64
+target_majors:
+  - 计算机科学与技术
+  - 软件工程
+  - 人工智能
+  - 信息安全
+target_audience: 高校计算机类专业一年级至二年级学生
+
+# 全局适合生成的资源类型
+default_resource_types:
+  - document
+  - mindmap
+  - exercises
+  - code_case
+  - trace_animation
+  - ppt
+  - video_script
+  - reading
+
+module_key_aliases:
+  array: ch02-linear-list
+  linked-list: ch02-linear-list
+  stack-queue: ch03-stack-queue
+  string: ch04-string
+  binary-tree: ch05-tree-binary-tree
+  graph: ch06-graph
+  hash-table: ch07-search
+  two-pointers: ch04-string
+  sorting: ch08-sorting
+  greedy: ch10-greedy
+  dp: ch11-dynamic-programming
+  backtracking: ch12-backtracking
+  monotonic-stack: ch13-heap-union-find
+  heap: ch13-heap-union-find
+  union-find: ch13-heap-union-find
+
+chapters:
+  - id: ch01-introduction-complexity
+    title: 绪论与复杂度分析
+    difficulty: 入门
+    prerequisites: []
+    module_keys: []
+    learning_outcomes:
+      - 理解数据结构、算法与程序的关系
+      - 掌握最坏、平均、均摊复杂度记号
+      - 能分析简单循环与递归的时间空间复杂度
+    resource_types: [document, mindmap, exercises, ppt]
+    recommended_problems:
+      - complexity-loop-analysis
+      - recursion-depth-estimate
+    oj_trace_hooks:
+      - 用 Trace 观察循环变量随步数变化，验证复杂度直觉
+
+  - id: ch02-linear-list
+    title: 线性表（顺序表与链表）
+    difficulty: 入门
+    prerequisites: [ch01-introduction-complexity]
+    module_keys: [array, linked-list]
+    learning_outcomes:
+      - 比较顺序表与链表的存储与操作复杂度
+      - 实现插入、删除、反转等基本操作
+      - 理解虚拟头结点与双指针在线性表中的应用
+    resource_types: [document, exercises, code_case, trace_animation]
+    recommended_problems:
+      - reverse-linked-list
+      - merge-two-sorted-lists
+    oj_trace_hooks:
+      - 链表题 Trace 展示指针域变化；数组题展示下标移动
+
+  - id: ch03-stack-queue
+    title: 栈与队列
+    difficulty: 入门
+    prerequisites: [ch02-linear-list]
+    module_keys: [stack-queue]
+    learning_outcomes:
+      - 掌握栈 LIFO、队列 FIFO 抽象及数组/链式实现
+      - 用栈解决括号匹配、表达式求值等问题
+      - 理解 BFS 中队列的角色
+    resource_types: [document, mindmap, exercises, trace_animation]
+    recommended_problems:
+      - valid-parentheses
+      - implement-queue-using-stacks
+    oj_trace_hooks:
+      - Trace sequence 视图展示栈顶/队首元素变化
+
+  - id: ch04-string
+    title: 字符串与双指针
+    difficulty: 标准
+    prerequisites: [ch02-linear-list, ch03-stack-queue]
+    module_keys: [string, two-pointers]
+    learning_outcomes:
+      - 理解字符串匹配、子串、字符频次统计
+      - 掌握对撞指针与滑动窗口模板
+      - 分析字符串算法的时间空间复杂度
+    resource_types: [document, exercises, code_case, video_script]
+    recommended_problems:
+      - two-sum-sorted
+      - longest-substring-without-repeating
+    oj_trace_hooks:
+      - 滑动窗口题 Trace 高亮窗口左右边界变量
+
+  - id: ch05-tree-binary-tree
+    title: 树与二叉树遍历
+    difficulty: 标准
+    prerequisites: [ch03-stack-queue]
+    module_keys: [binary-tree]
+    learning_outcomes:
+      - 掌握二叉树前中后序与层序遍历（递归与迭代）
+      - 理解 BST 有序性及查找复杂度
+      - 能运用递归树绘制调用栈直觉
+    resource_types: [document, mindmap, exercises, trace_animation, ppt]
+    recommended_problems:
+      - binary-tree-inorder-traversal
+      - max-depth-of-binary-tree
+    oj_trace_hooks:
+      - Trace tree 面板展示遍历顺序与节点访问栈
+
+  - id: ch06-graph
+    title: 图的基本概念与 BFS/DFS
+    difficulty: 标准
+    prerequisites: [ch05-tree-binary-tree, ch03-stack-queue]
+    module_keys: [graph]
+    learning_outcomes:
+      - 理解有向/无向图、邻接表与邻接矩阵
+      - 实现 BFS、DFS 及连通分量遍历
+      - 认识最短路入门（无权图 BFS）
+    resource_types: [document, mindmap, exercises, code_case, trace_animation]
+    recommended_problems:
+      - number-of-islands
+      - course-schedule-topological
+    oj_trace_hooks:
+      - BFS 题 Trace 展示队列中待访问结点与 visited 集合
+
+  - id: ch07-search
+    title: 查找（二分、哈希）
+    difficulty: 标准
+    prerequisites: [ch02-linear-list, ch05-tree-binary-tree]
+    module_keys: [hash-table]
+    learning_outcomes:
+      - 掌握有序数组二分查找不变式
+      - 理解哈希函数、冲突处理与均摊复杂度
+      - 能在 OJ 中正确选择 map/set
+    resource_types: [document, exercises, code_case]
+    recommended_problems:
+      - binary-search
+      - two-sum
+    oj_trace_hooks:
+      - 二分 Trace 展示 left/right/mid 指针收缩过程
+
+  - id: ch08-sorting
+    title: 排序算法专题
+    difficulty: 标准
+    prerequisites: [ch02-linear-list, ch04-string, ch01-introduction-complexity]
+    module_keys: [sorting]
+    learning_outcomes:
+      - 掌握冒泡、选择、插入、归并、快速排序与堆排序思想
+      - 理解稳定排序与原地排序权衡
+      - 能比较常见排序算法的时间复杂度、空间复杂度与适用场景
+      - 能将排序作为双指针、贪心和 TopK 问题的预处理或核心步骤
+    resource_types: [document, mindmap, exercises, code_case, trace_animation, ppt]
+    recommended_problems:
+      - sorting-basic-output
+      - sorting-inversion-count
+      - sorting-kth-largest
+    oj_trace_hooks:
+      - 归并排序 Trace 展示左右区间合并与逆序对累计
+      - 快速排序或快速选择 Trace 展示 pivot、i、j 与分区边界
+      - 堆排序 Trace 展示数组堆化与堆顶交换
+
+  - id: ch09-recursion-divide-conquer
+    title: 递归与分治
+    difficulty: 标准
+    prerequisites: [ch05-tree-binary-tree, ch08-sorting]
+    module_keys: [binary-tree, backtracking]
+    learning_outcomes:
+      - 写出递归终止条件与递推关系
+      - 理解分治：分解、解决、合并三步骤
+      - 分析递归树深度与主定理直觉
+    resource_types: [document, exercises, code_case, trace_animation]
+    recommended_problems:
+      - pow-x-n
+      - merge-sort-divide
+    oj_trace_hooks:
+      - 递归题 Trace 展示调用栈深度与参数快照
+
+  - id: ch10-greedy
+    title: 贪心算法
+    difficulty: 进阶
+    prerequisites: [ch08-sorting, ch05-tree-binary-tree]
+    module_keys: [greedy]
+    learning_outcomes:
+      - 识别贪心选择性质与最优子结构
+      - 能用交换论证或归纳说明贪心正确性（入门级）
+      - 实现区间、调度类经典贪心模型
+    resource_types: [document, exercises, ppt, reading]
+    recommended_problems:
+      - assign-cookies
+      - jump-game
+    oj_trace_hooks:
+      - 贪心过程 Trace 展示当前最优局部选择变量
+
+  - id: ch11-dynamic-programming
+    title: 动态规划
+    difficulty: 进阶
+    prerequisites: [ch09-recursion-divide-conquer, ch10-greedy]
+    module_keys: [dp]
+    learning_outcomes:
+      - 定义状态、转移方程与边界条件
+      - 区分线性 DP、背包、区间 DP 入门模型
+      - 实现自顶向下记忆化与自底向上填表
+    resource_types: [document, mindmap, exercises, code_case, trace_animation, video_script]
+    recommended_problems:
+      - climbing-stairs
+      - coin-change
+      - unique-paths
+    oj_trace_hooks:
+      - DP 填表 Trace 展示 dp 数组滚动更新（矩阵/序列视图）
+
+  - id: ch12-backtracking
+    title: 回溯法
+    difficulty: 进阶
+    prerequisites: [ch09-recursion-divide-conquer, ch05-tree-binary-tree]
+    module_keys: [backtracking]
+    learning_outcomes:
+      - 掌握选择-探索-撤销模板
+      - 运用剪枝减少搜索空间
+      - 解决子集、排列、组合类问题
+    resource_types: [document, exercises, code_case, trace_animation]
+    recommended_problems:
+      - subsets
+      - permutations
+      - n-queens-simplified
+    oj_trace_hooks:
+      - 回溯 Trace 展示 path 与 used 标记的回退瞬间
+
+  - id: ch13-heap-union-find
+    title: 堆、并查集与单调栈拓展
+    difficulty: 进阶
+    prerequisites: [ch05-tree-binary-tree, ch06-graph]
+    module_keys: [monotonic-stack]
+    learning_outcomes:
+      - 理解二叉堆与优先队列操作复杂度（拓展阅读）
+      - 掌握并查集路径压缩与按秩合并（拓展阅读）
+      - 认识单调栈解决 Next Greater Element 类问题
+    resource_types: [document, exercises, reading]
+    recommended_problems:
+      - next-greater-element
+      - kth-largest-element
+    oj_trace_hooks:
+      - 单调栈题 Trace 展示栈内下标与值单调性
+      - 堆与并查集作为拓展阅读与资源生成内容，无独立学习页；堆操作可用 sequence 视图展示数组堆化过程，并查集可用 parent 数组变化演示路径压缩
+
+  - id: ch14-comprehensive-project
+    title: 综合项目与课程总结
+    difficulty: 综合
+    prerequisites: [ch11-dynamic-programming, ch06-graph, ch12-backtracking]
+    module_keys: []
+    learning_outcomes:
+      - 串联画像、路径、资源生成与 OJ 辅导完成课程项目
+      - 能向他人讲解自己的算法选型与复杂度论证
+      - 形成可展示的学习档案（资源库 + 评估报告）
+    resource_types: [document, ppt, code_case, reading]
+    recommended_problems: []
+    oj_trace_hooks:
+      - 综合项目结合 Trace 可视化调试器与校园导航图建模（见 projects/）
+
+labs:
+  - id: lab-01-complexity-analysis
+    chapter_id: ch01-introduction-complexity
+    title: 实验一 复杂度分析
+  - id: lab-02-linked-list-operations
+    chapter_id: ch02-linear-list
+    title: 实验二 链表操作
+  - id: lab-03-stack-queue-simulation
+    chapter_id: ch03-stack-queue
+    title: 实验三 栈队列模拟
+  - id: lab-04-tree-traversal
+    chapter_id: ch05-tree-binary-tree
+    title: 实验四 树遍历
+  - id: lab-05-graph-bfs-dfs
+    chapter_id: ch06-graph
+    title: 实验五 图 BFS/DFS
+  - id: lab-06-dp-path-counting
+    chapter_id: ch11-dynamic-programming
+    title: 实验六 路径计数 DP
+
+projects:
+  - id: project-01-visual-oj-debugger
+    chapter_id: ch14-comprehensive-project
+    title: 项目一 可视化 OJ 调试器（Trace）
+  - id: project-02-campus-navigation-graph
+    chapter_id: ch14-comprehensive-project
+    title: 项目二 校园导航图建模
