@@ -261,19 +261,23 @@ def _build_cpp_source(
             f"{class_name} __sol; auto __result = __sol.{method_name}(__heads.first, __heads.second);"
         )
     else:
-        arg_exprs = []
+        arg_decls = []
+        arg_names = []
         for i, a in enumerate(args):
-            arg_exprs.append(_to_cpp_literal(a, as_list_node=(i in list_idx)))
-        call = f"{class_name} __sol; auto __result = __sol.{method_name}({', '.join(arg_exprs)});"
+            expr = _to_cpp_literal(a, as_list_node=(i in list_idx))
+            name = f"__arg{i}"
+            arg_decls.append(f"auto {name} = {expr};")
+            arg_names.append(name)
+        call = (
+            " ".join(arg_decls)
+            + f" {class_name} __sol; auto __result = __sol.{method_name}({', '.join(arg_names)});"
+        )
 
     if in_place_arg is not None:
-        out_expr = _to_cpp_literal(args[in_place_arg])
-        if isinstance(args[in_place_arg], list):
-            out_expr = "{" + ", ".join(str(x) for x in args[in_place_arg]) + "}"
+        in_place_var = f"__arg{in_place_arg}"
         print_stmt = (
             'cout << "{\\"ok\\":true,\\"in_place\\":[";\n'
-            f"  auto __v = {out_expr};\n"
-            "  for (size_t i=0; i<__v.size(); ++i) { if(i) cout<<','; cout<<__v[i]; }\n"
+            f"  for (size_t i=0; i<{in_place_var}.size(); ++i) {{ if(i) cout<<','; cout<<{in_place_var}[i]; }}\n"
             '  cout << "],\\"ms\\":0}";'
         )
     elif needs_list and expected is not None and isinstance(expected, list):
