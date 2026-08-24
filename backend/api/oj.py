@@ -7,7 +7,8 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from api.deps import get_current_user, get_optional_user
+from api.deps import get_current_user
+from api.rate_limit import enforce_oj_rate_limit
 from core.config import settings
 from core.database import get_db
 from models.db_models import OjSubmission, User
@@ -71,6 +72,14 @@ from services.mastery.mastery_update import update_knowledge_state
 router = APIRouter(prefix="/oj", tags=["oj"])
 
 _logger = logging.getLogger(__name__)
+
+
+def _validate_oj_code(code: str) -> None:
+    if len(code or "") > settings.oj_max_code_chars:
+        raise HTTPException(
+            status_code=413,
+            detail=f"代码长度超过限制（最多 {settings.oj_max_code_chars} 个字符）",
+        )
 
 
 def _count_consecutive_failures(db: Session, user_id: int, slug: str) -> int:
@@ -171,7 +180,8 @@ def api_get_problem(slug: str):
 
 
 @router.post("/problems/{slug}/run", response_model=JudgeResponse)
-def api_run_samples(slug: str, body: JudgeRequest):
+def api_run_samples(slug: str, body: JudgeRequest, user: User = Depends(get_current_user)):
+    enforce_oj_rate_limit(user, "run")
     return _judge(slug, body, mode="run")
 
 
@@ -182,6 +192,7 @@ def api_submit(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    enforce_oj_rate_limit(user, "submit")
     resp = _judge(slug, body, mode="submit")
     event_logs: list[dict[str, str]] = []
     event_id: str | None = None
@@ -485,8 +496,14 @@ def _detect_code_style_mismatch(code: str, judge_mode: str, lang: str) -> str | 
 
 
 @router.post("/problems/{slug}/trace", response_model=TraceResponse)
-def api_trace_execution(slug: str, body: TraceRequest):
+def api_trace_execution(
+    slug: str,
+    body: TraceRequest,
+    user: User = Depends(get_current_user),
+):
     """可视化调试：Python sys.settrace / C++ GDB MI（可指定样例下标）。"""
+    enforce_oj_rate_limit(user, "trace")
+    _validate_oj_code(body.code)
     lang = _normalize_lang(body.language)
 
     ast_gate = gate_code_before_dynamic_analysis(body.code, language=lang)
@@ -632,13 +649,15 @@ def _judge_single_case(
 async def api_trace_bug_diagnose(
     slug: str,
     body: TraceBugDiagnoseRequest,
-    user: User | None = Depends(get_optional_user),
+    user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
     AI 轨迹诊断：基于已有 trace steps 压缩投喂 LLM，定位 bug 起源步。
     适用于 WA / TLE 等场景下用户已生成可视化轨迹。
     """
+    enforce_oj_rate_limit(user, "trace_diagnose")
+    _validate_oj_code(body.code)
     try:
         problem = get_public_problem(slug)
     except ProblemNotFoundError:
@@ -674,30 +693,23 @@ async def api_trace_bug_diagnose(
         judge_verdict=body.judge_verdict or "WA",
         code=body.code,
     )
-    # M6 修复：未登录用户诊断结果不入库，记录日志便于审计
-    if user is None:
-        _logger.info(
-            "未登录用户调用 trace_bug_diagnose slug=%s，诊断结果未入库",
-            slug,
-        )
-    else:
-        try:
-            from services.events.event_bus import event_bus
+    try:
+        from services.events.event_bus import event_bus
 
-            event_bus.publish(
-                db,
-                event_type="on_trace_diagnosed",
-                user_id=user.id,
-                payload={
-                    "problem_slug": slug,
-                    "diagnosis": result,
-                    "source": "trace_bug",
-                    "memory_written": True,
-                    "memory_event_id": tutoring.memory_event_id,
-                },
-            )
-        except Exception:
-            _logger.exception("trace_bug_diagnose 事件发布失败 user=%s slug=%s", user.id, slug)
+        event_bus.publish(
+            db,
+            event_type="on_trace_diagnosed",
+            user_id=user.id,
+            payload={
+                "problem_slug": slug,
+                "diagnosis": result,
+                "source": "trace_bug",
+                "memory_written": True,
+                "memory_event_id": tutoring.memory_event_id,
+            },
+        )
+    except Exception:
+        _logger.exception("trace_bug_diagnose 事件发布失败 user=%s slug=%s", user.id, slug)
     return TraceBugDiagnoseResponse(**result, tutoring=tutoring)
 
 
@@ -705,12 +717,14 @@ async def api_trace_bug_diagnose(
 async def api_ai_diagnose(
     slug: str,
     body: AiDiagnoseRequest,
-    user: User | None = Depends(get_optional_user),
+    user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
     AI 深度诊断：生成边界测例 → 判题验证 → 可视化追踪 → 破案式旁白 → 复杂度报告。
     """
+    enforce_oj_rate_limit(user, "ai_diagnose")
+    _validate_oj_code(body.code)
     lang = _normalize_lang(body.language)
 
     ast_gate = gate_code_before_dynamic_analysis(body.code, language=lang)
@@ -1267,8 +1281,14 @@ async def api_ai_diagnose(
 
 
 @router.post("/problems/{slug}/trace/narrate", response_model=TraceResponse)
-async def api_trace_narrate(slug: str, body: TraceNarrateRequest):
+async def api_trace_narrate(
+    slug: str,
+    body: TraceNarrateRequest,
+    user: User = Depends(get_current_user),
+):
     """为已有 trace steps 生成旁白（优先演示预置，否则单次 LLM）。"""
+    enforce_oj_rate_limit(user, "trace_narrate")
+    _validate_oj_code(body.code)
     try:
         problem = get_public_problem(slug)
     except ProblemNotFoundError:
@@ -1314,6 +1334,7 @@ def _normalize_lang(lang: str) -> str:
 
 
 def _judge(slug: str, body: JudgeRequest, *, mode: str) -> JudgeResponse:
+    _validate_oj_code(body.code)
     lang = _normalize_lang(body.language)
 
     try:
@@ -1374,7 +1395,7 @@ def _judge(slug: str, body: JudgeRequest, *, mode: str) -> JudgeResponse:
 async def api_trace_report(
     slug: str,
     body: TraceReportRequest,
-    user: User | None = Depends(get_optional_user),
+    user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     from services.oj.trace_report import (
@@ -1382,6 +1403,8 @@ async def api_trace_report(
         _build_demo_trace_steps,
     )
 
+    enforce_oj_rate_limit(user, "trace_report")
+    _validate_oj_code(body.code)
     lang = _normalize_lang(body.language)
 
     try:
@@ -1518,31 +1541,24 @@ async def api_trace_report(
         trace_case_message=trace_case_message,
     )
 
-    # M6 修复：未登录用户诊断结果不入库，记录日志便于审计
-    if user is None:
-        _logger.info(
-            "未登录用户调用 trace_report slug=%s，诊断结果未入库",
-            slug,
-        )
-    else:
-        try:
-            from services.events.event_bus import event_bus
+    try:
+        from services.events.event_bus import event_bus
 
-            event_bus.publish(
-                db,
-                event_type="on_trace_diagnosed",
-                user_id=user.id,
-                payload={
-                    "problem_slug": slug,
-                    "diagnosis": {
-                        "bug_step_index": bug_step_index,
-                        "diagnosis_title": diagnosis_title,
-                        "source": source,
-                    },
-                    "source": "trace_report",
+        event_bus.publish(
+            db,
+            event_type="on_trace_diagnosed",
+            user_id=user.id,
+            payload={
+                "problem_slug": slug,
+                "diagnosis": {
+                    "bug_step_index": bug_step_index,
+                    "diagnosis_title": diagnosis_title,
+                    "source": source,
                 },
-            )
-        except Exception:
-            _logger.exception("trace_report 事件发布失败 user=%s slug=%s", user.id, slug)
+                "source": "trace_report",
+            },
+        )
+    except Exception:
+        _logger.exception("trace_report 事件发布失败 user=%s slug=%s", user.id, slug)
 
     return report

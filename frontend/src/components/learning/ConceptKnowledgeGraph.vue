@@ -22,11 +22,17 @@ const props = withDefaults(
     moduleKey?: string
     highlightPathIds?: string[]
     height?: string
+    navigateOnClick?: boolean
   }>(),
   {
     height: '420px',
+    navigateOnClick: true,
   },
 )
+
+const emit = defineEmits<{
+  select: [node: ConceptGraphNode]
+}>()
 
 const router = useRouter()
 const { masteryMap } = useConceptMastery()
@@ -66,14 +72,14 @@ const layoutNodes = computed<Node[]>(() => {
         label: n.label,
         data: { ...n, highlighted },
         style: {
-          border: `2px solid ${highlighted ? '#9c8540' : n.accent}`,
+          border: `2px solid ${highlighted ? 'var(--alp-color-primary)' : n.accent}`,
           borderRadius: '10px',
           padding: '8px 12px',
           fontSize: '12px',
           background: n.kind === 'problem' ? 'var(--alp-bg-soft-block)' : 'var(--alp-bg-surface-solid)',
           color: 'var(--alp-color-text)',
           minWidth: '100px',
-          boxShadow: highlighted ? '0 0 12px rgba(156, 133, 64, 0.45)' : undefined,
+          boxShadow: highlighted ? '0 0 0 3px var(--alp-color-primary-glow)' : undefined,
         },
       })
     })
@@ -86,7 +92,18 @@ const flowEdges = computed<Edge[]>(() =>
     id: `e-${i}-${e.source}-${e.target}`,
     source: e.source,
     target: e.target,
-    label: e.label,
+    label:
+      e.label === 'prerequisite'
+        ? '先修'
+        : e.label === 'applies'
+          ? '应用'
+          : e.label === 'uses'
+            ? '使用'
+            : e.label === 'extends'
+              ? '扩展'
+              : e.label === 'requires_sort'
+                ? '依赖排序'
+                : e.label,
     animated: props.highlightPathIds?.includes(e.target),
     style: { stroke: 'var(--alp-color-muted)' },
     labelStyle: { fill: 'var(--alp-color-muted)', fontSize: 10 },
@@ -103,6 +120,8 @@ const moduleLabel = computed(() => {
 function onNodeClick({ node }: { node: Node }) {
   selectedId.value = node.id
   const data = node.data as ConceptGraphNode
+  emit('select', data)
+  if (!props.navigateOnClick) return
   const routeName = MODULE_ROUTE_NAMES[data.moduleKey as keyof typeof MODULE_ROUTE_NAMES]
   if (routeName && data.kind === 'concept') {
     void router.push({ name: routeName })
@@ -129,7 +148,7 @@ function onNodeClick({ node }: { node: Node }) {
     <div v-if="selectedNode" class="concept-flow-hint">
       <strong>{{ selectedNode.label }}</strong>
       <span v-if="moduleLabel"> · {{ moduleLabel }}</span>
-      <span class="hint-muted"> — 点击概念节点可跳转模块</span>
+      <span class="hint-muted"> · {{ props.navigateOnClick ? '点击可打开对应内容' : '已在当前路径中定位' }}</span>
     </div>
   </div>
 </template>

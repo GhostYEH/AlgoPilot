@@ -12,7 +12,7 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from core.database import get_db
@@ -314,7 +314,6 @@ class TestE2EFullFlow:
         verify_session = TestSessionLocal()
         try:
             ks_after_wa = verify_session.query(StudentKnowledgeState).first()
-            mastery_after_wa = ks_after_wa.mastery if ks_after_wa else 0.0
             attempt_after_wa = ks_after_wa.attempt_count if ks_after_wa else 0
         finally:
             verify_session.close()

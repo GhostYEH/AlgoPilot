@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
+import CustomCursor from '@/components/common/CustomCursor.vue'
 import PageTransition from '@/components/layout/PageTransition.vue'
 </script>
 
 <template>
   <el-config-provider :locale="zhCn">
+    <CustomCursor />
     <router-view v-slot="{ Component, route }">
       <PageTransition v-if="Component" :route="route" shell>
         <component :is="Component" />

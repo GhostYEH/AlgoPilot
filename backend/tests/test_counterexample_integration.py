@@ -8,8 +8,6 @@ Case 4: Generator 异常 → 整个 AI diagnosis 不崩溃
 
 from __future__ import annotations
 
-import pytest
-
 from services.oj.counterexample_integration import (
     CounterexampleIntegrationResult,
     try_counterexample,

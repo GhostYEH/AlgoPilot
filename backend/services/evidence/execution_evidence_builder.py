@@ -19,7 +19,6 @@ from schemas.execution_evidence import (
     KnowledgePointMapping,
     LayeredHint,
     StaticAnalysisFinding,
-    TraceVariableChange,
 )
 from services.oj.error_patterns import ERROR_TYPE_LABELS, classify_error_type
 
@@ -228,7 +227,7 @@ def _build_evidence_text(
     label = ERROR_TYPE_LABELS.get(bug_type, bug_type)
     parts.append(f"错误类型：{label}")
     if suspicious_lines:
-        parts.append(f"疑似位置：Line {', '.join(str(l) for l in suspicious_lines)}")
+        parts.append(f"疑似位置：Line {', '.join(str(line_no) for line_no in suspicious_lines)}")
     if first_divergence.detected:
         loc = f"Step {first_divergence.step_index}"
         if first_divergence.line:

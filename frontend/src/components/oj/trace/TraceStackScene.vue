@@ -4,11 +4,21 @@ import type { StackScene } from '@/utils/traceStack'
 
 const props = defineProps<{
   scene: StackScene
+  previousItems?: string[]
   changed: Set<string>
 }>()
 
 /** 展示：栈顶在上（items 数组为栈底→栈顶） */
 const cellsTopFirst = computed(() => [...props.scene.items].reverse())
+
+const operationSummary = computed(() => {
+  const previous = props.previousItems ?? []
+  const current = props.scene.items
+  if (!props.previousItems || previous.join('\u0000') === current.join('\u0000')) return ''
+  if (current.length > previous.length) return `压栈：${current.at(-1) ?? ''}`
+  if (current.length < previous.length) return `出栈：${previous.at(-1) ?? ''}`
+  return '栈内元素已更新'
+})
 </script>
 
 <template>
@@ -25,6 +35,7 @@ const cellsTopFirst = computed(() => [...props.scene.items].reverse())
       <span class="ts-input-label">输入 s</span>
       <code class="ts-input-val">{{ scene.inputString === '' ? '""' : scene.inputString }}</code>
     </div>
+    <p v-if="operationSummary" class="ts-operation" aria-live="polite">本步{{ operationSummary }}</p>
 
     <div v-if="scene.currentChar != null" class="ts-cursor">
       <span class="ts-cursor-label">当前字符 c</span>
@@ -101,6 +112,13 @@ const cellsTopFirst = computed(() => [...props.scene.items].reverse())
 
 .ts-badge--bad {
   color: #f87171;
+}
+
+.ts-operation {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #9c7a3d;
 }
 
 .ts-input {

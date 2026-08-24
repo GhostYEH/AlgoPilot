@@ -14,6 +14,37 @@ html.dark {
   color-scheme: dark;
 }
 
+/* ---- Global custom cursor tokens and native-editor escape hatches ---- */
+:root {
+  --alp-cursor-color: #111;
+}
+
+html.dark {
+  --alp-cursor-color: rgba(255, 255, 255, 0.92);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html.alp-custom-cursor-enabled,
+  html.alp-custom-cursor-enabled * {
+    cursor: none !important;
+  }
+
+  /* Text entry and CodeMirror keep a native cursor for precise editing. */
+  html.alp-custom-cursor-enabled input:not([type='button']):not([type='submit']):not([type='reset']):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']),
+  html.alp-custom-cursor-enabled textarea,
+  html.alp-custom-cursor-enabled [contenteditable='true'],
+  html.alp-custom-cursor-enabled .cm-content {
+    cursor: text !important;
+  }
+
+  html.alp-custom-cursor-enabled select,
+  html.alp-custom-cursor-enabled .cm-editor,
+  html.alp-custom-cursor-enabled .cm-scroller,
+  html.alp-custom-cursor-enabled .cm-gutters {
+    cursor: default !important;
+  }
+}
+
 /* ---- 全局排版基准 ---- */
 html {
   font-size: 16px;

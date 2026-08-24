@@ -6,7 +6,6 @@ AlgoPilot 核心创新：将 OJ 判题 + Trace + 静态分析 + AI 诊断
 
 from __future__ import annotations
 
-from schemas.execution_evidence import ExecutionEvidence
 from services.evidence.execution_evidence_builder import build_execution_evidence
 
 

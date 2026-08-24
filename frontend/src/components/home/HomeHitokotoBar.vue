@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { Refresh } from '@element-plus/icons-vue'
+import landscapeUrl from '@/assets/home-quote-landscape.png'
 
 interface HitokotoSentence {
   hitokoto: string
@@ -41,7 +42,9 @@ onMounted(() => {
 
 <template>
   <section class="hitokoto-bar" aria-label="一言">
+    <img class="hitokoto-bar__landscape" :src="landscapeUrl" alt="" aria-hidden="true" />
     <div class="hitokoto-bar__inner">
+      <span class="hitokoto-bar__quote" aria-hidden="true">“</span>
       <p v-if="sentence" class="hitokoto-bar__text">
         「{{ sentence.hitokoto }}」
         <span v-if="sentence.from_who || sentence.from" class="hitokoto-bar__from">
@@ -64,28 +67,40 @@ onMounted(() => {
 
 <style scoped>
 .hitokoto-bar {
-  margin-bottom: 12px;
-  padding: 14px 20px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-bg-surface);
+  position: relative;
+  margin-bottom: 16px;
+  min-height: 64px;
+  box-sizing: border-box;
+  padding: 12px 34px;
+  overflow: hidden;
+  border: 1px solid #deeceb;
+  border-radius: 15px;
+  background: linear-gradient(104deg, #ffffff 0%, #fbfefe 68%, #eff9f8 100%);
+  box-shadow: 0 5px 16px rgba(28, 89, 90, 0.035);
 }
 
+.hitokoto-bar__landscape { position: absolute; right: 0; bottom: 0; width: 50%; height: 100%; object-fit: cover; object-position: right center; opacity: .9; pointer-events: none; }
+
 .hitokoto-bar__inner {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
-  max-width: 960px;
-  margin: 0 auto;
+  justify-content: flex-start;
+  gap: 14px;
+  max-width: none;
+  margin: 0;
 }
+
+.hitokoto-bar__quote { flex: 0 0 auto; color: #73c9c5; font-family: Georgia, serif; font-size: 43px; font-weight: 700; line-height: .6; transform: translateY(-2px); }
 
 .hitokoto-bar__text {
   margin: 0;
   color: var(--color-text-primary);
-  font-size: 15px;
+  font-size: 14px;
+  font-weight: 600;
   line-height: 1.6;
-  text-align: center;
+  text-align: left;
   letter-spacing: 0.02em;
 }
 
@@ -96,7 +111,7 @@ onMounted(() => {
 
 .hitokoto-bar__from {
   display: inline-block;
-  margin-left: 8px;
+  margin-left: 22px;
   color: var(--color-text-muted);
   font-size: 13px;
   white-space: nowrap;
@@ -115,12 +130,13 @@ onMounted(() => {
   border-radius: 999px;
   background: transparent;
   cursor: pointer;
-  transition: color 160ms ease, border-color 160ms ease, transform 320ms ease;
+  transition: color 180ms ease, border-color 180ms ease, transform 320ms ease, background-color 180ms ease;
 }
 
 .hitokoto-bar__refresh:hover:not(:disabled) {
   color: var(--color-brand);
   border-color: var(--color-brand);
+  background: var(--color-brand-soft);
   transform: rotate(180deg);
 }
 
@@ -133,6 +149,8 @@ onMounted(() => {
   .hitokoto-bar {
     padding: 12px 14px;
   }
+
+  .hitokoto-bar__landscape { width: 65%; opacity: .38; }
 
   .hitokoto-bar__text {
     font-size: 14px;

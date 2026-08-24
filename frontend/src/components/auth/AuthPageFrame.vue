@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import LoginGlobe from '@/components/auth/LoginGlobe.vue'
+import BrandLogo from '@/components/common/BrandLogo.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -35,11 +36,7 @@ function goHome() {
   <div class="auth-shell">
     <header class="auth-top">
       <button type="button" class="brand" aria-label="返回算法智能学习平台首页" @click="goHome">
-        <span class="logo" aria-hidden="true">AP</span>
-        <span class="brand-text">
-          <span class="brand-title">AlgoPilot</span>
-          <span class="brand-sub">算法智能学习平台</span>
-        </span>
+        <BrandLogo size="auth" :show-subtitle="true" />
       </button>
 
     </header>
@@ -140,38 +137,6 @@ function goHome() {
   color: var(--auth-ink);
   background: transparent;
   text-align: left;
-}
-
-.logo {
-  width: 38px;
-  height: 38px;
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-  border-radius: 9px;
-  color: #fff;
-  background: var(--auth-primary);
-  font-size: 13px;
-  font-weight: 750;
-  letter-spacing: 0.04em;
-}
-
-.brand-text {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.brand-title {
-  font-size: 14px;
-  font-weight: 650;
-  line-height: 1.35;
-}
-
-.brand-sub {
-  color: var(--auth-muted);
-  font-size: 11px;
-  line-height: 1.35;
 }
 
 .auth-main {
@@ -325,10 +290,6 @@ function goHome() {
   .auth-top {
     height: 64px;
     padding: 0 18px;
-  }
-
-  .brand-sub {
-    display: none;
   }
 
   .auth-hero {

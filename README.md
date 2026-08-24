@@ -123,6 +123,10 @@ JWT_SECRET=请替换为长随机字符串
 SPARK_API_PASSWORD=你的星火_APIPassword
 ```
 
+安全说明：内置 OJ 仅用于受控本机开发。设置 `APP_ENV=production` 时，
+应用会拒绝启动，直到代码执行被迁移到独立隔离的 sandbox worker。公开注册
+支持学生和教师账号，注册后即可登录。
+
 ### 启动后端
 
 ```powershell

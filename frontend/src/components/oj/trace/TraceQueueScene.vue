@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { MonotonicQueueScene } from '@/utils/traceQueue'
 
 const props = defineProps<{
   scene: MonotonicQueueScene
+  previousIndices?: number[]
   changed: Set<string>
 }>()
 
@@ -11,11 +13,23 @@ function numsVal(idx: number): string | null {
   return props.scene.nums[idx] ?? null
 }
 
+const operationSummary = computed(() => {
+  const previous = props.previousIndices ?? []
+  const current = props.scene.queueIndices
+  if (!props.previousIndices || previous.join(',') === current.join(',')) return ''
+  const added = current.filter((value) => !previous.includes(value))
+  const removed = previous.filter((value) => !current.includes(value))
+  const parts: string[] = []
+  if (added.length) parts.push(`入队 ${added.join('、')}`)
+  if (removed.length) parts.push(`移出 ${removed.join('、')}`)
+  return parts.join('；') || '队列顺序已更新'
+})
+
 const inWindow = (i: number) => {
-  const s = props.scene.windowStart
-  const e = props.scene.windowEnd
-  if (s == null || e == null) return false
-  return i >= s && i <= e
+  const start = props.scene.windowStart
+  const end = props.scene.windowEnd
+  if (start == null || end == null) return false
+  return i >= start && i <= end
 }
 </script>
 
@@ -27,9 +41,12 @@ const inWindow = (i: number) => {
       <span v-if="scene.maxInWindow != null" class="tq-badge tq-badge--max">
         窗口最大 = {{ scene.maxInWindow }}
       </span>
+      <span v-if="scene.activeIndex != null" class="tq-badge">当前 i = {{ scene.activeIndex }}</span>
     </header>
 
-    <div class="tq-array">
+    <p v-if="operationSummary" class="tq-operation" aria-live="polite">本步{{ operationSummary }}</p>
+
+    <div v-if="scene.nums.length" class="tq-array" aria-label="输入数组与当前窗口">
       <div v-for="(v, i) in scene.nums" :key="i" class="tq-cell-wrap">
         <span
           class="tq-cell"
@@ -65,7 +82,7 @@ const inWindow = (i: number) => {
         <span class="tq-port">队尾</span>
       </div>
       <p v-if="!scene.queueIndices.length" class="tq-hint">
-        当前步队列内容未采集到（C++ 需 gdb 能展开 deque）；仍显示数组与窗口下标 i、k。
+        当前步队列内容未采集到（C++ 需 gdb 能展开 deque）。
       </p>
     </div>
   </div>
@@ -105,6 +122,13 @@ const inWindow = (i: number) => {
 .tq-badge--max {
   color: #6aa878;
   font-weight: 600;
+}
+
+.tq-operation {
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--alp-color-accent);
 }
 
 .tq-array {

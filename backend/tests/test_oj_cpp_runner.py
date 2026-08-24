@@ -6,8 +6,6 @@
 
 from __future__ import annotations
 
-import shutil
-
 import pytest
 
 from services.oj.cpp_runner import _find_gpp, run_cases_cpp

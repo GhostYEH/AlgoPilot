@@ -26,7 +26,8 @@ async function loadMermaid(): Promise<MermaidApi> {
     _mermaidApi.initialize({
       startOnLoad: false,
       theme: 'dark',
-      securityLevel: 'loose',
+      // Mermaid 源自模型回复，必须使用严格模式，禁止标签/链接把不可信内容注入 DOM。
+      securityLevel: 'strict',
     })
     _mermaidInitDone = true
   }

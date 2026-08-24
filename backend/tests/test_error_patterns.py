@@ -6,8 +6,6 @@ AlgoPilot 核心创新之一：基于程序执行证据的 Bug 类型识别。
 
 from __future__ import annotations
 
-import pytest
-
 from services.oj.error_patterns import (
     ERROR_TYPE_LABELS,
     ErrorType,

@@ -19,11 +19,10 @@ from __future__ import annotations
 
 import logging
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 from services.oj.counterexample import (
-    CounterexampleCandidate,
     CounterexampleResult,
     generate_boundary_cases,
     verify_and_find_best,

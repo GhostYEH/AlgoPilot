@@ -2,10 +2,8 @@
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { Timer } from '@element-plus/icons-vue'
-import AlgorithmUniverseGraph from '@/components/learning/AlgorithmUniverseGraph.vue'
-import ConceptKnowledgeGraph from '@/components/learning/ConceptKnowledgeGraph.vue'
+import LearningPathCommandCenter from '@/components/learning/LearningPathCommandCenter.vue'
 import PersonaChatPanel from '@/components/persona/PersonaChatPanel.vue'
-import RecommendedResourcesPanel from '@/components/learning/RecommendedResourcesPanel.vue'
 import PathReplanDiffCard from '@/components/learning/PathReplanDiffCard.vue'
 import StudyPlanDashboard from '@/components/learning/StudyPlanDashboard.vue'
 import LearningEffectivenessCard from '@/components/learning/LearningEffectivenessCard.vue'
@@ -15,16 +13,13 @@ import { isLoggedIn } from '@/stores/auth'
 import type { PersonaProfile } from '@/api/orchestrator'
 
 const route = useRoute()
-const { plan, loadPlan, lastReplanDiff, clearReplanDiff } = useLearningPathPlan()
+const { loadPlan, lastReplanDiff, clearReplanDiff } = useLearningPathPlan()
 const universeKey = ref(0)
 
 const highlightKey = computed(() => {
   const q = route.query.module
   return typeof q === 'string' ? q : undefined
 })
-
-const pathHighlightIds = computed(() => plan.value?.ordered_keys ?? [])
-
 
 async function onProfileReady(_profile: PersonaProfile) {
   await loadPlan()
@@ -85,45 +80,11 @@ onMounted(async () => {
       </div>
     </section>
 
-    <section class="path-explorer-grid">
-      <div class="universe-panel">
-        <div class="panel-heading">
-          <div>
-            <h3 class="section-title">算法知识宇宙</h3>
-            <p class="muted section-desc">
-              以数据结构、算法范式、练习任务三层构建竞赛式学习星图，支持滚轮缩放、拖拽与路径自动巡航。
-            </p>
-          </div>
-          <el-tag effect="plain" type="success">DAG 路径引擎</el-tag>
-        </div>
-        <AlgorithmUniverseGraph
-          :key="`${universeKey}-${highlightKey ?? 'default'}`"
-          :highlight-key="highlightKey"
-          :auto-start-tour="autoTour"
-        />
-      </div>
-
-      <aside class="concept-side-panel">
-        <div class="panel-heading panel-heading--compact">
-          <div>
-            <h3 class="section-title">概念依赖图谱 · 可交互探索</h3>
-            <p class="muted section-desc">
-              基于 <code>concept_graph.json</code> 的先修关系与题目关联，点击节点跳转到模块或 OJ 练习。
-            </p>
-          </div>
-        </div>
-        <ConceptKnowledgeGraph
-          :module-key="highlightKey"
-          :highlight-path-ids="pathHighlightIds"
-          height="520px"
-        />
-        <RecommendedResourcesPanel
-          v-if="isLoggedIn"
-          :module-key="highlightKey ?? plan?.next_module_key ?? ''"
-          title="路径关联推荐资源"
-        />
-      </aside>
-    </section>
+    <LearningPathCommandCenter
+      :key="`${universeKey}-${highlightKey ?? 'default'}`"
+      :highlight-key="highlightKey"
+      @replan="universeKey += 1"
+    />
   </el-card>
 </template>
 
@@ -398,70 +359,4 @@ onMounted(async () => {
   }
 }
 
-.path-explorer-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
-  gap: 18px;
-  align-items: start;
-}
-
-.universe-panel,
-.concept-side-panel {
-  border: 1px solid var(--alp-color-border);
-  border-radius: var(--alp-radius-card);
-  background: var(--alp-bg-surface);
-}
-
-.universe-panel {
-  min-width: 0;
-  overflow: hidden;
-}
-
-.concept-side-panel {
-  position: sticky;
-  top: calc(var(--alp-header-height, 60px) + 16px);
-  max-height: calc(100vh - var(--alp-header-height, 60px) - 32px);
-  overflow: auto;
-  padding: 14px;
-}
-
-.panel-heading {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 16px 18px 0;
-}
-
-.panel-heading--compact {
-  padding: 0;
-}
-
-.section-desc {
-  margin: 0;
-  font-size: 13px;
-}
-
-.universe-panel :deep(.algorithm-universe) {
-  border: 0;
-  border-radius: 0;
-}
-
-.concept-side-panel :deep(.concept-graph-card) {
-  border-radius: calc(var(--alp-radius-card) - 2px);
-}
-
-.concept-side-panel :deep(.recommended-resources-panel) {
-  margin-top: 14px;
-}
-
-@media (max-width: 1180px) {
-  .path-explorer-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .concept-side-panel {
-    position: static;
-    max-height: none;
-  }
-}
 </style>

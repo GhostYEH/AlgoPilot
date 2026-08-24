@@ -2,7 +2,7 @@ import logging
 import re
 import sys
 from pathlib import Path
-from typing import Self
+from typing import Literal, Self
 
 from pydantic import AliasChoices, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -48,6 +48,10 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=_default_env_file(), env_file_encoding="utf-8", extra="ignore")
 
     database_url: str = Field(default_factory=_default_database_url)
+    app_env: Literal["development", "test", "production"] = Field(
+        default="development",
+        validation_alias="APP_ENV",
+    )
     jwt_secret: str = "dev-change-me-use-long-random-string"
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60 * 24 * 7
@@ -123,6 +127,13 @@ class Settings(BaseSettings):
         default="http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:8000,http://localhost:8000",
         validation_alias="CORS_ORIGINS",
     )
+    oj_max_code_chars: int = Field(default=20_000, ge=1_000, le=200_000, validation_alias="OJ_MAX_CODE_CHARS")
+    oj_run_requests_per_minute: int = Field(
+        default=20, ge=1, le=600, validation_alias="OJ_RUN_REQUESTS_PER_MINUTE"
+    )
+    oj_ai_requests_per_minute: int = Field(
+        default=5, ge=1, le=120, validation_alias="OJ_AI_REQUESTS_PER_MINUTE"
+    )
 
     @property
     def cors_origin_list(self) -> list[str]:
@@ -130,10 +141,8 @@ class Settings(BaseSettings):
 
     @property
     def is_production(self) -> bool:
-        return not any(
-            host in self.cors_origins
-            for host in ("127.0.0.1", "localhost", "0.0.0.0")
-        )
+        """环境必须显式声明，绝不能从 CORS 配置反推安全策略。"""
+        return self.app_env == "production"
 
     @property
     def tts_configured(self) -> bool:

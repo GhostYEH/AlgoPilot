@@ -24,7 +24,7 @@ _BACKEND_DIR = Path(__file__).resolve().parent.parent
 if str(_BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(_BACKEND_DIR))
 
-from core.config import settings
+from core.config import settings  # noqa: E402
 
 
 def _make_alembic_config(db_url: str) -> Config:

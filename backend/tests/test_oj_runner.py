@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from services.oj.runner import CaseResult, RunSummary, run_cases
+from services.oj.runner import run_cases
 
 
 def _two_sum_code_correct() -> str:

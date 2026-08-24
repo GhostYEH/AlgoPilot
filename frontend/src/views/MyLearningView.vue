@@ -25,14 +25,15 @@ import { useModuleNavigation } from '@/composables/useModuleNavigation'
 import { isLoggedIn, getUser } from '@/stores/auth'
 import { buildGameLearningOverview } from '@/utils/gameLearningOverview'
 import { applyRemoteProgressPayload } from '@/utils/learningStorage'
+import { fetchRecentEvents, type LearningEventRecord } from '@/api/events'
 import PersonaChatPanel from '@/components/persona/PersonaChatPanel.vue'
 import RecommendedResourcesPanel from '@/components/learning/RecommendedResourcesPanel.vue'
-import { buildActivityDays, type ActivitySource } from '@/utils/learningActivity'
-import LearningProgressRing from '@/components/learning/LearningProgressRing.vue'
+import { buildActivityDays, type ActivityDay, type ActivitySource } from '@/utils/learningActivity'
 import LearningSectionDonut from '@/components/learning/LearningSectionDonut.vue'
 import LearningModuleBarChart from '@/components/learning/LearningModuleBarChart.vue'
 import LearningModuleRadar from '@/components/learning/LearningModuleRadar.vue'
 import LearningActivityHeatmap from '@/components/learning/LearningActivityHeatmap.vue'
+import LearningPulseChart from '@/components/learning/LearningPulseChart.vue'
 import LearningEvaluationPanel from '@/components/learning/LearningEvaluationPanel.vue'
 import MasteryEvaluationCard from '@/components/learning/MasteryEvaluationCard.vue'
 import LearningEffectivenessCard from '@/components/learning/LearningEffectivenessCard.vue'
@@ -45,8 +46,17 @@ const activeTab = ref(
   typeof route.query.tab === 'string' ? route.query.tab : 'overview',
 )
 
-const overview = computed(() => buildLearningOverview())
+const progressRevision = ref(0)
+const overview = computed(() => {
+  void progressRevision.value
+  return buildLearningOverview()
+})
 const gameRevision = ref(0)
+const dbEvents = ref<LearningEventRecord[]>([])
+const dbActivityReady = ref(false)
+const activityLoading = ref(false)
+const activityRange = ref<7 | 30 | 90>(30)
+const activityRanges = [7, 30, 90] as const
 const gameOverview = computed(() => {
   void gameRevision.value
   return buildGameLearningOverview()
@@ -55,14 +65,21 @@ const favRevision = ref(0)
 
 onMounted(async () => {
   if (!isLoggedIn.value) return
-  try {
-    const { fetchLearningProgress } = await import('@/api/learning')
-    const r = await fetchLearningProgress()
-    applyRemoteProgressPayload((r.payload || {}) as Record<string, unknown>)
+  activityLoading.value = true
+  const [progressResult, eventsResult] = await Promise.allSettled([
+    import('@/api/learning').then(({ fetchLearningProgress }) => fetchLearningProgress()),
+    fetchRecentEvents({ limit: 100 }),
+  ])
+  if (progressResult.status === 'fulfilled') {
+    applyRemoteProgressPayload((progressResult.value.payload || {}) as Record<string, unknown>)
+    progressRevision.value++
     gameRevision.value++
-  } catch {
-    /* ignore */
   }
+  if (eventsResult.status === 'fulfilled') {
+    dbEvents.value = eventsResult.value.items
+    dbActivityReady.value = true
+  }
+  activityLoading.value = false
 })
 
 const favoriteRows = computed(() => {
@@ -89,10 +106,63 @@ const totalSections = computed(() =>
 
 const activityDays = computed(() => {
   const source: ActivitySource = {
-    visitTimestamps: recentVisits.value.map((v) => v.visitedAt),
+    visitTimestamps: dbActivityReady.value ? [] : recentVisits.value.map((v) => v.visitedAt),
     gameClearTimestamps: gameOverview.value.recentHistory.map((r) => r.clearedAt),
+    eventTimestamps: dbActivityReady.value
+      ? dbEvents.value.map((event) => Date.parse(event.created_at)).filter(Number.isFinite)
+      : [],
   }
-  return buildActivityDays(source)
+  return buildActivityDays(source, 12)
+})
+
+const pulseDays = computed(() => activityDays.value.slice(-activityRange.value))
+
+const pulseSummary = computed(() => {
+  const days = pulseDays.value
+  const activeDays = days.filter((day) => day.count > 0)
+  const total = days.reduce((sum, day) => sum + day.count, 0)
+  const peak = days.reduce<ActivityDay | null>(
+    (best, day) => (!best || day.count > best.count ? day : best),
+    null,
+  )
+  return {
+    total,
+    activeDays: activeDays.length,
+    peakLabel: peak ? `${peak.count} 次 · ${formatActivityDate(peak.date)}` : '暂无记录',
+  }
+})
+
+const eventTypeStats = computed(() => {
+  const labels: Record<string, string> = {
+    section_done: '完成小节',
+    resource_complete: '完成资源',
+    quiz_complete: '完成测验',
+    oj_submit_success: 'OJ 通过',
+    oj_submit_fail: 'OJ 未通过',
+    trace_diagnosis: 'Trace 诊断',
+    evaluation_struggle: '评估反馈',
+  }
+  const counts = new Map<string, number>()
+  for (const event of dbEvents.value) {
+    const key = event.event_type || 'other'
+    counts.set(key, (counts.get(key) ?? 0) + 1)
+  }
+  const total = [...counts.values()].reduce((sum, value) => sum + value, 0)
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .map(([key, count]) => ({
+      key,
+      label: labels[key] ?? '其他学习事件',
+      count,
+      percent: total > 0 ? Math.round((count / total) * 100) : 0,
+    }))
+})
+
+const activitySourceLabel = computed(() => {
+  if (!isLoggedIn.value) return '本地学习记录'
+  if (dbActivityReady.value) return '账号数据库事件'
+  return '正在连接账号数据'
 })
 
 const phaseStats = computed(() => {
@@ -158,6 +228,11 @@ function onTabChange(name: string | number) {
 
 function getModuleHint(key: string) {
   return MODULE_PATH_HINTS[key]
+}
+
+function formatActivityDate(dateKey: string) {
+  const date = new Date(`${dateKey}T00:00:00`)
+  return `${date.getMonth() + 1}月${date.getDate()}日`
 }
 </script>
 
@@ -232,77 +307,150 @@ function getModuleHint(key: string) {
     <el-tabs v-model="activeTab" class="learn-tabs" @tab-change="onTabChange">
       <el-tab-pane label="学习概览" name="overview">
         <section class="dashboard-section">
-          <div class="dashboard-grid">
-            <div class="dash-card dash-card--ring">
-              <div class="dash-head">
-                <el-icon><Aim /></el-icon>
-                <span>总进度</span>
-              </div>
-              <div class="dash-body dash-body--centered">
-                <LearningProgressRing
-                  :percent="overview.overallPercent"
-                  :size="100"
-                  label="完成度"
-                  :sublabel="`${overview.completedModules}/${overview.trackedModules}`"
-                />
-              </div>
-              <div class="dash-foot">
-                <span>{{ overview.completedModules }} 模块已完成</span>
-                <span>{{ overview.trackedModules }} 模块已跟踪</span>
-              </div>
+          <div class="overview-dashboard-head">
+            <div>
+              <span class="dashboard-kicker">学习脉搏</span>
+              <h2>把学习痕迹变成下一步</h2>
+              <p>用活动趋势、阶段结构和模块掌握度，快速找到今天最值得投入的地方。</p>
             </div>
+            <div class="range-switch" role="group" aria-label="活动时间范围">
+              <button
+                v-for="range in activityRanges"
+                :key="range"
+                type="button"
+                :class="{ 'is-active': activityRange === range }"
+                @click="activityRange = range"
+              >
+                {{ range }} 天
+              </button>
+            </div>
+          </div>
 
-            <div class="dash-card dash-card--donut">
-              <div class="dash-head">
+          <div class="dashboard-bento">
+            <section class="viz-panel viz-panel--pulse">
+              <div class="viz-panel-head">
+                <div>
+                  <h3>学习活动趋势</h3>
+                  <p>按天聚合账号事件，看看你的节奏有没有连续起来。</p>
+                </div>
+                <span class="source-chip" :class="{ 'is-loading': activityLoading }">
+                  {{ activitySourceLabel }}
+                </span>
+              </div>
+              <div class="pulse-legend">
+                <span><i class="legend-line" />学习活动</span>
+                <span>{{ activityRange }} 天 · {{ pulseSummary.activeDays }} 天有记录</span>
+              </div>
+              <LearningPulseChart :days="activityDays" :range="activityRange" />
+              <div class="pulse-summary">
+                <div>
+                  <strong>{{ pulseSummary.total }}</strong>
+                  <span>活动次数</span>
+                </div>
+                <div>
+                  <strong>{{ pulseSummary.activeDays }}</strong>
+                  <span>活跃天数</span>
+                </div>
+                <div>
+                  <strong>{{ pulseSummary.peakLabel }}</strong>
+                  <span>单日峰值</span>
+                </div>
+              </div>
+            </section>
+
+            <section class="viz-panel viz-panel--next">
+              <div class="viz-panel-head">
+                <div>
+                  <h3>下一步建议</h3>
+                  <p>从当前进度继续，不需要重新找入口。</p>
+                </div>
+                <el-icon><Compass /></el-icon>
+              </div>
+              <template v-if="overview.nextModule">
+                <div class="next-module-phase">{{ phaseLabel(overview.nextModule.phase) }}</div>
+                <h4 class="next-module-name">{{ overview.nextModule.label }}</h4>
+                <p class="next-module-hint">
+                  {{ getModuleHint(overview.nextModule.key)?.summary ?? '继续完成下一个小节，保持学习节奏。' }}
+                </p>
+                <div class="next-module-progress">
+                  <div><span>模块进度</span><strong>{{ overview.rows.find((r) => r.key === overview.nextModule?.key)?.percent ?? 0 }}%</strong></div>
+                  <div class="thin-progress"><i :style="{ width: `${overview.rows.find((r) => r.key === overview.nextModule?.key)?.percent ?? 0}%` }" /></div>
+                </div>
+                <el-button type="primary" size="small" @click="goModule(overview.nextModule.key)">继续学习</el-button>
+              </template>
+              <el-empty v-else description="完成一个模块后，这里会给出下一步" :image-size="64" />
+            </section>
+
+            <section class="viz-panel viz-panel--phase">
+              <div class="viz-panel-head">
+                <div>
+                  <h3>阶段结构</h3>
+                  <p>完成的小节落在哪个阶段。</p>
+                </div>
                 <el-icon><TrendCharts /></el-icon>
-                <span>阶段分布</span>
               </div>
-              <div class="dash-body dash-body--centered">
-                <LearningSectionDonut :rows="overview.rows" />
+              <LearningSectionDonut :rows="overview.rows" />
+              <div class="phase-list">
+                <div v-for="ps in phaseStats" :key="ps.phase" class="phase-row">
+                  <span>{{ ps.label }}</span>
+                  <strong>{{ ps.percent }}%</strong>
+                </div>
               </div>
-              <div class="dash-foot">
-                <template v-for="ps in phaseStats" :key="ps.phase">
-                  <span v-if="ps.total > 0">{{ ps.label }}: {{ ps.done }}/{{ ps.total }}</span>
-                </template>
-              </div>
-            </div>
+            </section>
 
-            <div class="dash-card dash-card--radar">
-              <div class="dash-head">
-                <el-icon><DataLine /></el-icon>
-                <span>掌握雷达</span>
-              </div>
-              <div class="dash-body dash-body--centered">
-                <LearningModuleRadar :rows="overview.rows" :max-items="6" />
-              </div>
-            </div>
-
-            <div class="dash-card dash-card--heatmap">
-              <div class="dash-head">
+            <section class="viz-panel viz-panel--heatmap">
+              <div class="viz-panel-head">
+                <div>
+                  <h3>学习节奏</h3>
+                  <p>颜色越深，代表当天留下的学习事件越多。</p>
+                </div>
                 <el-icon><Calendar /></el-icon>
-                <span>学习活跃度</span>
               </div>
-              <div class="dash-body">
-                <LearningActivityHeatmap :days="activityDays" :weeks="10" />
+              <LearningActivityHeatmap :days="activityDays" :weeks="12" />
+              <div class="viz-panel-foot">近 7 天 {{ weeklyActivity.total }} 次活动</div>
+            </section>
+
+            <section class="viz-panel viz-panel--radar">
+              <div class="viz-panel-head">
+                <div>
+                  <h3>模块掌握轮廓</h3>
+                  <p>用形状看出优势与需要补强的模块。</p>
+                </div>
+                <el-icon><DataLine /></el-icon>
               </div>
-              <div class="dash-foot">
-                <span>近 7 天活跃 {{ weeklyActivity.total }} 次</span>
+              <LearningModuleRadar :rows="overview.rows" :max-items="6" />
+            </section>
+
+            <section class="viz-panel viz-panel--mix">
+              <div class="viz-panel-head">
+                <div>
+                  <h3>账号行为构成</h3>
+                  <p>数据库最近事件按类型汇总。</p>
+                </div>
+                <el-icon><DataLine /></el-icon>
               </div>
-            </div>
+              <div v-if="eventTypeStats.length" class="event-mix-list">
+                <div v-for="item in eventTypeStats" :key="item.key" class="event-mix-row">
+                  <div><span>{{ item.label }}</span><strong>{{ item.count }}</strong></div>
+                  <div class="event-mix-track"><i :style="{ width: `${item.percent}%` }" /></div>
+                </div>
+              </div>
+              <div v-else class="event-mix-empty">
+                登录并完成一次小节、测验或 OJ 练习后，这里会开始记录你的学习行为。
+              </div>
+            </section>
           </div>
 
-          <div class="dash-card dash-card--bars">
-            <div class="dash-head">
-              <el-icon><TrendCharts /></el-icon>
-              <span>模块进度排行</span>
-              <el-button type="primary" text size="small" class="dash-head-action" @click="router.push({ name: 'learning-path' })">
-                查看全部
-              </el-button>
+          <section class="viz-panel viz-panel--bars">
+            <div class="viz-panel-head">
+              <div>
+                <h3>模块进度对比</h3>
+                <p>点击任意模块，直接回到对应的学习内容。</p>
+              </div>
+              <el-button type="primary" text size="small" @click="router.push({ name: 'learning-path' })">查看学习路径</el-button>
             </div>
-            <div class="dash-body">
-              <LearningModuleBarChart :rows="overview.rows" :max-items="8" @select="goModule" />
-            </div>
-          </div>
+            <LearningModuleBarChart :rows="overview.rows" :max-items="8" @select="goModule" />
+          </section>
         </section>
 
         <section class="modules-section">
@@ -813,91 +961,7 @@ function getModuleHint(key: string) {
   margin-bottom: 20px;
 }
 
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.dash-card {
-  display: flex;
-  flex-direction: column;
-  padding: 12px 14px;
-  border-radius: var(--alp-radius-card);
-  background: var(--alp-bg-soft-block);
-  border: 1px solid var(--alp-color-border);
-}
-
-.dash-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--alp-color-text);
-  margin-bottom: 8px;
-}
-
-.dash-head .el-icon {
-  color: var(--alp-color-primary);
-  font-size: 14px;
-}
-
-.dash-head-action {
-  margin-left: auto;
-}
-
-.dash-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 100px;
-}
-
-.dash-body--centered {
-  align-items: center;
-  justify-content: center;
-}
-
-.dash-foot {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  font-size: 11px;
-  color: var(--alp-color-muted);
-  margin-top: 6px;
-  padding-top: 6px;
-  border-top: 1px dashed var(--alp-color-border);
-}
-
-.dash-card--bars {
-  grid-column: span 4;
-}
-
-.dash-card--bars .dash-body {
-  min-height: 120px;
-}
-
-@media (max-width: 900px) {
-  .dashboard-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .dash-card--bars {
-    grid-column: span 2;
-  }
-}
-
 @media (max-width: 600px) {
-  .dashboard-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .dash-card--bars {
-    grid-column: span 1;
-  }
-
   .page-hero {
     flex-direction: column;
   }
@@ -905,6 +969,368 @@ function getModuleHint(key: string) {
   .hero-stats {
     width: 100%;
     justify-content: space-between;
+  }
+}
+
+/* ===== 学习脉搏重排 ===== */
+.overview-dashboard-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 6px 0 14px;
+}
+
+.dashboard-kicker {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--alp-color-primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.overview-dashboard-head h2 {
+  margin: 0;
+  color: var(--alp-color-text);
+  font-size: clamp(20px, 2vw, 28px);
+  font-weight: 780;
+  letter-spacing: -0.035em;
+}
+
+.overview-dashboard-head p {
+  max-width: 560px;
+  margin: 6px 0 0;
+  color: var(--alp-color-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.range-switch {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 3px;
+  border: 1px solid var(--alp-color-border);
+  border-radius: var(--alp-radius-pill);
+  background: var(--alp-bg-soft-block);
+}
+
+.range-switch button {
+  padding: 6px 10px;
+  border: 0;
+  border-radius: var(--alp-radius-pill);
+  background: transparent;
+  color: var(--alp-color-muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.range-switch button:hover,
+.range-switch button:focus-visible {
+  color: var(--alp-color-primary);
+  outline: none;
+}
+
+.range-switch button.is-active {
+  color: var(--alp-color-primary);
+  background: var(--alp-bg-surface);
+  box-shadow: 0 2px 7px rgba(var(--alp-color-primary-rgb), 0.1);
+}
+
+.dashboard-bento {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(250px, 0.82fr) minmax(230px, 0.76fr);
+  gap: 12px;
+}
+
+.viz-panel {
+  min-width: 0;
+  padding: 16px 18px;
+  border: 1px solid var(--alp-color-border);
+  border-radius: var(--alp-radius-card);
+  background: var(--alp-bg-soft-block);
+}
+
+.viz-panel--pulse {
+  grid-column: span 2;
+  padding: 18px 20px 14px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--alp-color-primary) 8%, var(--alp-bg-soft-block)), var(--alp-bg-soft-block) 55%),
+    var(--alp-bg-soft-block);
+}
+
+.viz-panel--next {
+  display: flex;
+  flex-direction: column;
+}
+
+.viz-panel--heatmap {
+  grid-column: span 2;
+}
+
+.viz-panel--bars {
+  grid-column: 1 / -1;
+  margin-top: 12px;
+  background: var(--alp-bg-surface);
+}
+
+.viz-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.viz-panel-head h3 {
+  margin: 0;
+  color: var(--alp-color-text);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.viz-panel-head p {
+  margin: 4px 0 0;
+  color: var(--alp-color-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.viz-panel-head > .el-icon {
+  flex-shrink: 0;
+  color: var(--alp-color-primary);
+  font-size: 17px;
+}
+
+.source-chip {
+  flex-shrink: 0;
+  padding: 4px 7px;
+  border: 1px solid color-mix(in srgb, var(--alp-color-primary) 28%, var(--alp-color-border));
+  border-radius: var(--alp-radius-pill);
+  color: var(--alp-color-primary);
+  font-size: 10px;
+  line-height: 1;
+}
+
+.source-chip.is-loading {
+  color: var(--alp-color-muted);
+  border-color: var(--alp-color-border);
+}
+
+.pulse-legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+  color: var(--alp-color-muted);
+  font-size: 10px;
+}
+
+.pulse-legend > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--alp-color-text-secondary);
+}
+
+.legend-line {
+  display: inline-block;
+  width: 18px;
+  height: 3px;
+  border-radius: var(--alp-radius-pill);
+  background: var(--alp-color-primary);
+}
+
+.pulse-summary {
+  display: grid;
+  grid-template-columns: 0.85fr 0.85fr 1.3fr;
+  gap: 10px;
+  margin-top: 2px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--alp-color-border);
+}
+
+.pulse-summary div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.pulse-summary strong {
+  overflow: hidden;
+  color: var(--alp-color-text);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pulse-summary span,
+.viz-panel-foot {
+  color: var(--alp-color-muted);
+  font-size: 10px;
+}
+
+.next-module-phase {
+  margin-top: auto;
+  color: var(--alp-color-primary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.next-module-name {
+  margin: 8px 0 0;
+  color: var(--alp-color-text);
+  font-size: 22px;
+  letter-spacing: -0.04em;
+}
+
+.next-module-hint {
+  min-height: 38px;
+  margin: 8px 0 18px;
+  color: var(--alp-color-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.next-module-progress {
+  margin-bottom: 14px;
+}
+
+.next-module-progress > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  color: var(--alp-color-muted);
+  font-size: 10px;
+}
+
+.next-module-progress strong {
+  color: var(--alp-color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.thin-progress,
+.event-mix-track {
+  height: 5px;
+  overflow: hidden;
+  border-radius: var(--alp-radius-pill);
+  background: color-mix(in srgb, var(--alp-color-border) 75%, transparent);
+}
+
+.thin-progress i,
+.event-mix-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--alp-color-primary);
+  transition: width 400ms ease;
+}
+
+.phase-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 14px;
+  margin-top: 8px;
+}
+
+.phase-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--alp-color-muted);
+  font-size: 10px;
+}
+
+.phase-row strong {
+  color: var(--alp-color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.event-mix-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.event-mix-row > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  color: var(--alp-color-muted);
+  font-size: 11px;
+}
+
+.event-mix-row strong {
+  color: var(--alp-color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.event-mix-track i {
+  background: var(--alp-color-accent);
+}
+
+.event-mix-empty {
+  margin-top: 26px;
+  color: var(--alp-color-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.viz-panel--bars :deep(.module-bars) {
+  margin-top: 4px;
+}
+
+@media (max-width: 1040px) {
+  .dashboard-bento {
+    grid-template-columns: minmax(0, 1.2fr) minmax(250px, 0.8fr);
+  }
+
+  .viz-panel--pulse,
+  .viz-panel--heatmap {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 680px) {
+  .overview-dashboard-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .dashboard-bento {
+    grid-template-columns: 1fr;
+  }
+
+  .viz-panel--pulse,
+  .viz-panel--heatmap,
+  .viz-panel--bars {
+    grid-column: span 1;
+  }
+
+  .range-switch {
+    align-self: stretch;
+    justify-content: space-between;
+  }
+
+  .range-switch button {
+    flex: 1;
+  }
+}
+
+@media (max-width: 420px) {
+  .viz-panel,
+  .viz-panel--pulse {
+    padding-inline: 13px;
+  }
+
+  .pulse-summary {
+    gap: 7px;
   }
 }
 

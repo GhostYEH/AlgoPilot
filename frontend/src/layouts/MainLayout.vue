@@ -9,6 +9,7 @@ import { recordModuleVisit } from '@/utils/learningBookmarks'
 import { isLoggedIn, isTeacher, getUser, logout } from '@/stores/auth'
 import PageTransition from '@/components/layout/PageTransition.vue'
 import LearningQuickPanel from '@/components/layout/LearningQuickPanel.vue'
+import BrandLogo from '@/components/common/BrandLogo.vue'
 import { prefetchRoute } from '@/router/prefetch'
 
 const route = useRoute()
@@ -66,7 +67,9 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
 <template>
   <el-container class="main-shell" :class="{ 'teacher-shell': isTeacher }">
     <aside v-if="isTeacher" class="teacher-sidebar">
-      <button class="teacher-brand" type="button" @click="goHome"><span>AP</span><strong>AlgoPilot</strong></button>
+      <button class="teacher-brand" type="button" aria-label="返回教师首页" @click="goHome">
+        <BrandLogo size="teacher" />
+      </button>
       <el-menu :default-active="activeMenu" router class="teacher-menu">
         <el-menu-item index="/teacher-dashboard"><el-icon><DataLine /></el-icon><span>教师看板</span></el-menu-item>
         <el-menu-item index="/student-roster"><el-icon><User /></el-icon><span>班级管理</span></el-menu-item>
@@ -79,11 +82,17 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
       <div class="teacher-profile"><el-avatar :size="36">{{ displayName }}</el-avatar><div><strong>{{ getUser()?.username || '教师' }}</strong><span>授课教师</span></div><el-icon><Setting /></el-icon></div>
     </aside>
     <el-header height="var(--alp-header-height, 60px)" class="app-header" :class="{ 'teacher-header': isTeacher }">
-      <div v-if="!isTeacher" class="header-brand" @click="goHome">
-        <div class="logo-mark" aria-hidden="true">AP</div>
-        <div class="brand-text">
-          <span class="brand-title">AlgoPilot</span>
-        </div>
+      <div
+        v-if="!isTeacher"
+        class="header-brand"
+        role="button"
+        tabindex="0"
+        aria-label="返回 AlgoPilot 首页"
+        @click="goHome"
+        @keydown.enter="goHome"
+        @keydown.space.prevent="goHome"
+      >
+        <BrandLogo size="nav" />
       </div>
 
       <el-menu
@@ -220,39 +229,10 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
   opacity: 0.85;
 }
 
-.logo-mark {
-  position: relative;
-  width: 32px;
-  height: 32px;
-  border-radius: 5px;
-  border: 0;
-  background: var(--alp-color-primary);
-  color: #fff;
-  font-weight: 700;
-  font-size: 13px;
-  display: grid;
-  place-items: center;
-  letter-spacing: 0;
-  box-shadow: none;
-}
-
-.brand-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.15;
-}
-
-.brand-title {
-  font-weight: 600;
-  font-size: 17px;
-  color: var(--alp-color-text);
-  letter-spacing: 0;
-}
-
-.brand-sub {
-  font-size: 11px;
-  color: var(--alp-color-muted);
-  letter-spacing: 0;
+.header-brand:focus-visible {
+  outline: 2px solid var(--alp-color-primary);
+  outline-offset: 4px;
+  border-radius: 6px;
 }
 
 .header-menu {
@@ -427,19 +407,6 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
   border-bottom: 1px solid var(--alp-color-border);
 }
 
-.teacher-brand span {
-  display: grid;
-  width: 30px;
-  height: 30px;
-  place-items: center;
-  border-radius: 7px;
-  background: var(--alp-color-primary);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.teacher-brand strong { font-size: 17px; color: var(--alp-color-text); }
 .teacher-menu { flex: 1; padding: 16px 7px; border: 0; background: transparent; overflow-y: auto; }
 .teacher-menu :deep(.el-menu-item) { height: 46px; margin-bottom: 4px; border-radius: 6px; color: var(--alp-color-text-secondary) !important; transition: color var(--alp-transition-fast), background var(--alp-transition-fast); }
 .teacher-menu :deep(.el-menu-item:hover) { background: var(--alp-bg-nav-hover); color: var(--alp-color-primary) !important; }
@@ -498,17 +465,13 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
 @media (max-width: 960px) {
   .teacher-sidebar { width: 68px; }
   .teacher-brand { justify-content: center; padding: 0; }
-  .teacher-brand strong, .teacher-menu :deep(.el-menu-item span), .teacher-profile div, .teacher-profile > .el-icon { display: none; }
+  .teacher-brand :deep(.brand-logo__text), .teacher-menu :deep(.el-menu-item span), .teacher-profile div, .teacher-profile > .el-icon { display: none; }
   .teacher-menu { padding-inline: 7px; }
   .teacher-menu :deep(.el-menu-item) { justify-content: center; padding: 0; }
   .teacher-menu :deep(.el-icon) { margin: 0; }
   .teacher-profile { display: flex; justify-content: center; padding-inline: 0; }
   .teacher-header { margin-left: 68px; }
   .teacher-shell .app-main { margin-left: 68px; width: calc(100% - 68px); }
-  .brand-sub {
-    display: none;
-  }
-
   .header-menu :deep(.el-menu-item span) {
     display: none;
   }
@@ -530,13 +493,7 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
     padding: 0 12px;
   }
 
-  .logo-mark {
-    width: 34px;
-    height: 34px;
-    border-radius: 9px;
-  }
-
-  .brand-title {
+  .header-brand :deep(.brand-logo__title) {
     max-width: 72px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -566,7 +523,7 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
 }
 
 @media (max-width: 420px) {
-  .brand-title {
+  .header-brand :deep(.brand-logo__title) {
     display: none;
   }
 }

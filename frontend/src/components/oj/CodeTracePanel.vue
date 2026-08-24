@@ -214,6 +214,11 @@ const mergedVars = computed(() => {
   return mergeTraceVarsForViz(props.trace.steps, frame.value)
 })
 
+const prevMergedVars = computed(() => {
+  if (!props.trace?.steps.length || frame.value <= 0) return {}
+  return mergeTraceVarsForViz(props.trace.steps, frame.value - 1)
+})
+
 const currentForViz = computed(() => {
   if (!current.value) return null
   return { ...current.value, vars: mergedVars.value }
@@ -244,9 +249,21 @@ const stackScene = computed(() =>
     : null,
 )
 
+const prevStackScene = computed(() =>
+  props.trace && prevStep.value
+    ? buildStackScene(prevStep.value, prevMergedVars.value, props.trace.steps)
+    : null,
+)
+
 const queueScene = computed(() =>
   props.trace && !stackScene.value
     ? buildMonotonicQueueScene(current.value, mergedVars.value, props.trace.steps)
+    : null,
+)
+
+const prevQueueScene = computed(() =>
+  props.trace && prevStep.value && !prevStackScene.value
+    ? buildMonotonicQueueScene(prevStep.value, prevMergedVars.value, props.trace.steps)
     : null,
 )
 
@@ -283,6 +300,7 @@ const listVars = computed(() => {
     pointers: Record<string, number | undefined>
   }[] = []
   for (const { name, snap } of classified.value.lists) {
+    if (isRawTraceInput(name, snap)) continue
     if (!Array.isArray(snap.value)) continue
     const values = (snap.value as number[]).map((x) => String(x))
     const pointers: Record<string, number | undefined> = {}
@@ -379,10 +397,9 @@ const treeVars = computed(() => {
 
 const mapVars = computed(() => {
   if (stackScene.value || queueScene.value || hashLookupScene.value || slidingWindowScene.value) return []
-  return classified.value.maps.map(({ name, snap }) => ({
-    name,
-    entries: parseMapEntries(snap),
-  }))
+  return classified.value.maps
+    .filter(({ name, snap }) => !isRawTraceInput(name, snap))
+    .map(({ name, snap }) => ({ name, entries: parseMapEntries(snap) }))
 })
 
 /** 已由专用场景接管的变量名，避免重复渲染 */
@@ -396,13 +413,17 @@ const specializedVarNames = computed(() => {
 })
 
 const genericSequences = computed(() =>
-  classified.value.sequences.filter((s) => !specializedVarNames.value.has(s.name)),
+  classified.value.sequences.filter(
+    (s) => !specializedVarNames.value.has(s.name) && !isRawTraceInput(s.name, s.snap),
+  ),
 )
 
 const prevSequences = computed(() => classifyStepVars(prevStep.value).sequences)
 
 const genericAssociatives = computed(() =>
-  classified.value.associatives.filter((a) => !specializedVarNames.value.has(a.name)),
+  classified.value.associatives.filter(
+    (a) => !specializedVarNames.value.has(a.name) && !isRawTraceInput(a.name, a.snap),
+  ),
 )
 
 const prevAssociatives = computed(() => classifyStepVars(prevStep.value).associatives)
@@ -443,6 +464,16 @@ function isNoisyChangedVar(name: string, snap: import('@/types/codeTrace').Trace
   return false
 }
 
+/** 仅隐藏明确标记为传输载荷的变量；算法输入本身仍是调试上下文的一部分。 */
+function isRawTraceInput(name: string, snap: import('@/types/codeTrace').TraceVarSnapshot): boolean {
+  const normalized = name.toLowerCase().replace(/[^a-z0-9]/g, '')
+  if (['stdin', 'input', 'rawinput', 'testinput', 'testcase', 'testdata', 'argv', 'args'].includes(normalized)) {
+    return true
+  }
+  // 只将显式的输入载荷字符串隐藏；s / nums / word 等算法变量应保留。
+  return snap.type === 'str' && ['rawpayload', 'requestbody'].includes(normalized)
+}
+
 const stepHint = computed(() => {
   if (narrationText.value) return narrationText.value
   if (!current.value) return ''
@@ -456,6 +487,7 @@ const stepHint = computed(() => {
 
 const visibleScalars = computed(() =>
   classified.value.scalars.filter(({ name, snap }) => {
+    if (isRawTraceInput(name, snap)) return false
     if (stackScene.value && (name === 's' || name === 'is_valid' || name === 'c')) return false
     if (snap.type === 'int' && name === 'c' && snap.value === 0) return false
     if (isRawPointerScalar(snap)) return false
@@ -577,11 +609,13 @@ const showNarrateBtn = computed(
               <TraceStackScene
                 v-if="stackScene"
                 :scene="stackScene"
+                :previous-items="prevStackScene?.items"
                 :changed="changedSet"
               />
               <TraceQueueScene
                 v-else-if="queueScene"
                 :scene="queueScene"
+                :previous-indices="prevQueueScene?.queueIndices"
                 :changed="changedSet"
               />
               <TraceSlidingWindowScene
@@ -722,11 +756,13 @@ const showNarrateBtn = computed(
           <TraceStackScene
             v-if="stackScene"
             :scene="stackScene"
+            :previous-items="prevStackScene?.items"
             :changed="changedSet"
           />
           <TraceQueueScene
             v-else-if="queueScene"
             :scene="queueScene"
+            :previous-indices="prevQueueScene?.queueIndices"
             :changed="changedSet"
           />
           <TraceSlidingWindowScene

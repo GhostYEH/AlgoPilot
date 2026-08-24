@@ -85,9 +85,25 @@ def _check_jwt_secret() -> None:
     _logger.warning("JWT_SECRET 使用了不安全的默认值，仅限本地开发使用，请勿部署到生产环境。")
 
 
+def _check_oj_execution_mode() -> None:
+    """阻止生产服务退回到宿主机子进程判题。
+
+    ``local`` 模式仅适合单机开发和桌面版；生产环境必须由独立的
+    sandbox worker 接管代码执行。当前进程不把正则或 AST 审计当成
+    隔离边界，因此在 worker 接入前宁可拒绝启动。
+    """
+    if settings.is_production:
+        _logger.critical(
+            "内置 OJ 判题器只能在受控本机开发环境运行。生产环境必须改接隔离 "
+            "sandbox worker；当前服务拒绝以宿主机子进程方式启动。"
+        )
+        sys.exit(1)
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     _check_jwt_secret()
+    _check_oj_execution_mode()
 
     from core.schema_migrations import upgrade_schema
 

@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import TraceSequenceViz from '@/components/oj/trace/TraceSequenceViz.vue'
 import TraceAssociativeViz from '@/components/oj/trace/TraceAssociativeViz.vue'
-import type { TraceStep, TraceVarSnapshot, TraceVarValue } from '@/types/codeTrace'
+import type { TraceVarSnapshot, TraceVarValue } from '@/types/codeTrace'
 import {
   associativeEntries,
   associativeViewHint,
@@ -145,7 +145,6 @@ const operationLog = ref<string[]>([])
 const mockState = ref<TraceVarSnapshot>(emptySequenceSnapshot('stack'))
 const prevSnapshot = ref<TraceVarSnapshot | null>(null)
 const changedKeys = ref<Set<string>>(new Set())
-const lastTraceStep = ref<TraceStep | null>(null)
 
 const activeDef = computed(() => CONTAINERS.find((container) => container.id === activeContainer.value)!)
 const currentOps = computed(() => OPS_BY_CONTAINER[activeContainer.value])
@@ -189,7 +188,6 @@ function commitSnapshot(next: TraceVarSnapshot, pseudo: string) {
   changedKeys.value = new Set([VAR_NAME])
   stepIndex.value += 1
   lastPseudo.value = pseudo
-  lastTraceStep.value = { line: stepIndex.value, vars: { [VAR_NAME]: next }, changed: [VAR_NAME] }
   operationLog.value = [`#${stepIndex.value}  ${pseudo.replace(/\n/g, ' ')}`, ...operationLog.value].slice(0, 8)
 }
 
@@ -367,7 +365,6 @@ function loadDemo() {
   changedKeys.value = new Set([VAR_NAME])
   stepIndex.value += 1
   lastPseudo.value = `// 已载入 ${def.cppName} 演示数据`
-  lastTraceStep.value = { line: stepIndex.value, vars: { [VAR_NAME]: mockState.value }, changed: [VAR_NAME] }
   operationLog.value = [`#${stepIndex.value}  载入 ${def.label} 演示`, ...operationLog.value].slice(0, 8)
   resetChangedPulse()
 }
@@ -381,7 +378,6 @@ function resetForContainer(def: ContainerDef, pseudo: string) {
   changedKeys.value = new Set()
   stepIndex.value = 0
   lastPseudo.value = pseudo
-  lastTraceStep.value = null
   operationLog.value = []
   mockState.value = def.kind === 'sequence'
     ? emptySequenceSnapshot(def.viewHint as SequenceViewHint)
@@ -410,7 +406,7 @@ watch(activeContainer, (id) => {
       </div>
       <div class="pg-hero-meta">
         <span class="pg-chip">16 类 STL 容器</span>
-        <span class="pg-chip">与 OJ Trace 同协议</span>
+        <span class="pg-chip">本地状态模拟</span>
         <span class="pg-chip">Step {{ stepIndex }}</span>
       </div>
     </header>
@@ -468,10 +464,10 @@ watch(activeContainer, (id) => {
         </details>
 
         <details class="pg-panel pg-disclosure">
-          <summary>运行与隔离说明</summary>
+          <summary>此页面如何运行</summary>
           <ul class="pg-sandbox-list">
-            <li>样例运行与 Trace 均有超时和内存上限。</li>
-            <li>判题子进程会拦截危险调用；生产环境需使用容器隔离。</li>
+            <li>此页在浏览器内模拟 STL 容器状态，不会编译或执行 C++ 代码。</li>
+            <li>它复用可视化的数据格式与组件；OJ 可视化调试则由后端独立执行用户代码并生成轨迹。</li>
           </ul>
         </details>
       </aside>
@@ -506,10 +502,6 @@ watch(activeContainer, (id) => {
           />
         </div>
 
-        <details class="pg-protocol">
-          <summary>查看当前 Trace 数据</summary>
-          <pre>{{ JSON.stringify(mockState, null, 2) }}</pre>
-        </details>
       </main>
     </div>
   </div>
@@ -562,7 +554,7 @@ watch(activeContainer, (id) => {
 .pg-quick-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; color: var(--alp-color-muted); font-size: 11px; }
 .pg-pseudo { margin: 0; padding: 11px 12px; border-radius: 9px; font-size: 12px; line-height: 1.5; font-family: ui-monospace, Consolas, monospace; background: var(--alp-bg-code-ish); border: 1px solid var(--alp-color-border); color: #6a9eb0; white-space: pre-wrap; word-break: break-word; }
 .pg-disclosure { padding-block: 12px; }
-.pg-disclosure summary, .pg-protocol summary { cursor: pointer; user-select: none; font-size: 12px; font-weight: 600; color: var(--alp-color-primary); }
+.pg-disclosure summary { cursor: pointer; user-select: none; font-size: 12px; font-weight: 600; color: var(--alp-color-primary); }
 .pg-log-list { margin: 10px 0 0; padding: 0; list-style: none; font-size: 11px; font-family: ui-monospace, Consolas, monospace; color: var(--alp-color-muted); max-height: 120px; overflow-y: auto; }
 .pg-log-list li { padding: 4px 0; border-bottom: 1px solid color-mix(in srgb, var(--alp-color-border) 60%, transparent); }
 .pg-sandbox-list { margin: 10px 0 0; padding-left: 18px; color: var(--alp-color-muted); font-size: 12px; line-height: 1.65; }
@@ -574,8 +566,6 @@ watch(activeContainer, (id) => {
 .pg-var-tag { flex-shrink: 0; font-size: 11px; padding: 4px 9px; border-radius: 6px; background: color-mix(in srgb, var(--alp-color-accent) 16%, var(--alp-bg-surface)); font-family: ui-monospace, Consolas, monospace; color: var(--alp-color-accent); }
 .pg-viz-stage { flex: 1; min-height: 240px; min-width: 0; display: grid; align-items: center; overflow: auto; padding: 4px 0; }
 .pg-viz-stage > :deep(*) { min-width: 0; margin-bottom: 0; }
-.pg-protocol { margin-top: 10px; color: var(--alp-color-muted); }
-.pg-protocol pre { margin: 10px 0 0; padding: 12px; border-radius: 10px; font-size: 11px; overflow: auto; max-height: 180px; background: var(--alp-bg-code-ish); border: 1px solid var(--alp-color-border); }
 
 @media (max-width: 960px) {
   .pg-layout { grid-template-columns: 1fr; }

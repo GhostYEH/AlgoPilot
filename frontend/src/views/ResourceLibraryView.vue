@@ -38,6 +38,7 @@ import ResourceContentPreview from '@/components/resources/ResourceContentPrevie
 import SafetyValidationPanel from '@/components/resources/SafetyValidationPanel.vue'
 import TrustEvidenceDrawer from '@/components/resources/TrustEvidenceDrawer.vue'
 import { ALGORITHM_MODULES, generationPresetForModule } from '@/constants/modules'
+import resourceLibraryHero from '@/assets/resource-library-hero.png'
 
 const personaUi = usePersonaUi()
 const showWorkflowDetail = computed(() => personaUi.value.graphDetail !== 'minimal')
@@ -368,10 +369,23 @@ function verifyTag(meta: Record<string, unknown>) {
   <div class="resource-page">
     <el-card shadow="never" class="page-card">
       <div class="page-header">
-        <el-page-header title="个性化资源库" @back="router.push({ name: 'home' })" />
-        <p class="page-desc">
-          多智能体协同生成讲解文档、思维导图、题单、代码案例、轨迹动画、拓展阅读、课程讲义 PPT 与视频脚本；内容由编排层调度，基于你的学习画像。
-        </p>
+        <div class="hero-copy">
+          <span class="hero-kicker">PERSONAL LEARNING ARCHIVE</span>
+          <el-page-header title="个性化资源库" @back="router.push({ name: 'home' })" />
+          <p class="page-desc">
+            八位智能体围绕你的学习画像协同工作，把当前课程整理成讲解、图谱、练习、代码、动画、阅读、课件与视频脚本。
+          </p>
+          <div class="hero-stats" aria-label="资源库概览">
+            <div><strong>8</strong><span>协作智能体</span></div>
+            <div><strong>{{ generatedCount }}</strong><span>类型已就绪</span></div>
+            <div><strong>{{ resources.length }}</strong><span>资源已归档</span></div>
+          </div>
+        </div>
+        <img
+          :src="resourceLibraryHero"
+          class="hero-illustration"
+          alt="由文档、知识节点、代码和视频素材组成的智能资源库插图"
+        />
       </div>
 
       <el-alert v-if="!isLoggedIn" type="warning" show-icon :closable="false" class="login-alert">
@@ -396,6 +410,7 @@ function verifyTag(meta: Record<string, unknown>) {
               <label class="field-label">课程模块</label>
               <el-select
                 v-model="selectedModule"
+                aria-label="课程模块"
                 size="large"
                 clearable
                 filterable
@@ -413,12 +428,13 @@ function verifyTag(meta: Record<string, unknown>) {
             </el-col>
             <el-col :xs="24" :md="7">
               <label class="field-label">课程主题</label>
-              <el-input v-model="topic" placeholder="如：数据结构与算法" size="large" />
+              <el-input v-model="topic" aria-label="课程主题" placeholder="如：数据结构与算法" size="large" />
             </el-col>
             <el-col :xs="24" :md="6">
               <label class="field-label">生成侧重</label>
               <el-input
                 v-model="focusHint"
+                aria-label="生成侧重"
                 placeholder="如：主攻链表与双指针"
                 size="large"
               />
@@ -472,7 +488,10 @@ function verifyTag(meta: Record<string, unknown>) {
 
       <div class="agents-section">
         <div class="section-head">
-          <h3 class="section-title">智能体矩阵</h3>
+          <div>
+            <h3 class="section-title">智能体矩阵</h3>
+            <p class="section-caption">先由核心智能体建立知识骨架，再并行生成可学习、可练习、可演示的资源。</p>
+          </div>
           <span class="section-badge">{{ generatedCount }} / 8 已生成</span>
         </div>
         <div class="type-grid">
@@ -483,7 +502,6 @@ function verifyTag(meta: Record<string, unknown>) {
             :class="{ 'is-generating': card.generating, 'has-resource': !!card.latest }"
             :style="{ '--card-accent': card.color }"
           >
-            <div class="type-card-accent" />
             <div class="type-card-body">
               <div class="type-card-head">
                 <div class="type-icon-wrap">
@@ -491,8 +509,9 @@ function verifyTag(meta: Record<string, unknown>) {
                 </div>
                 <div class="type-meta">
                   <span class="type-agent">{{ card.agentName }}</span>
-                  <el-tag size="small" effect="dark" class="type-label-tag">{{ card.label }}</el-tag>
+                  <span class="type-label-tag">{{ card.label }}</span>
                 </div>
+                <span class="type-state">{{ card.latest ? 'READY' : 'IDLE' }}</span>
               </div>
               <p class="type-desc">
                 <el-icon v-if="card.latest" class="status-icon done"><CircleCheck /></el-icon>
@@ -750,6 +769,9 @@ function verifyTag(meta: Record<string, unknown>) {
 <style scoped>
 .resource-page {
   animation: fade-in 0.35s ease;
+  --resource-ink: #0b2f35;
+  --resource-teal: #0b9c96;
+  --resource-line: color-mix(in srgb, var(--alp-color-border) 78%, transparent);
 }
 
 @keyframes fade-in {
@@ -764,21 +786,112 @@ function verifyTag(meta: Record<string, unknown>) {
 }
 
 .page-card {
-  border-radius: var(--alp-radius-card);
-  border: 1px solid var(--alp-color-border);
-  background: var(--alp-bg-surface-muted);
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid var(--resource-line);
+  background: color-mix(in srgb, var(--alp-bg-surface-muted) 94%, white);
+  box-shadow: 0 24px 70px rgba(20, 78, 86, 0.08);
+}
+
+.page-card :deep(.el-card__body) {
+  padding: clamp(18px, 2.4vw, 34px);
 }
 
 .page-header {
-  margin-bottom: 20px;
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
+  min-height: 256px;
+  margin: calc(clamp(18px, 2.4vw, 34px) * -1) calc(clamp(18px, 2.4vw, 34px) * -1) 18px;
+  padding: clamp(28px, 4vw, 54px) clamp(24px, 4.5vw, 64px);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 72% 26%, rgba(85, 214, 209, 0.15), transparent 28%),
+    linear-gradient(112deg, #f7fcfc 0%, #fbfefe 48%, #eff9fb 100%);
+  border-bottom: 1px solid rgba(11, 156, 150, 0.1);
+}
+
+.page-header::after {
+  content: '';
+  position: absolute;
+  inset: auto -8% -64% 30%;
+  height: 190px;
+  border-radius: 50%;
+  border: 1px solid rgba(11, 156, 150, 0.12);
+  transform: rotate(-7deg);
+  pointer-events: none;
+}
+
+.hero-copy {
+  position: relative;
+  z-index: 2;
+  align-self: center;
+}
+
+.hero-kicker {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--resource-teal);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+}
+
+.page-header :deep(.el-page-header__left) {
+  margin-right: 14px;
+}
+
+.page-header :deep(.el-page-header__title) {
+  color: var(--resource-ink);
+  font-size: clamp(24px, 2.4vw, 34px);
+  font-weight: 750;
+  letter-spacing: -0.04em;
+}
+
+.hero-illustration {
+  position: absolute;
+  z-index: 1;
+  right: -1.5%;
+  top: 50%;
+  width: min(58%, 720px);
+  height: 118%;
+  object-fit: cover;
+  object-position: right center;
+  transform: translateY(-50%);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  user-select: none;
 }
 
 .page-desc {
   color: var(--alp-color-muted);
-  line-height: 1.7;
-  margin: 12px 0 0;
-  max-width: 72ch;
+  line-height: 1.75;
+  margin: 14px 0 0;
+  max-width: 56ch;
   font-size: 14px;
+}
+
+.hero-stats {
+  display: flex;
+  gap: 22px;
+  margin-top: 22px;
+}
+
+.hero-stats > div {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.hero-stats strong {
+  color: var(--resource-ink);
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.hero-stats span {
+  color: var(--alp-color-muted);
+  font-size: 11px;
 }
 
 .login-alert {
@@ -786,17 +899,20 @@ function verifyTag(meta: Record<string, unknown>) {
 }
 
 .gen-panel {
-  padding: 20px;
-  margin-bottom: 24px;
-  border-radius: var(--alp-radius-card);
-  background: var(--alp-bg-soft-block);
-  border: 1px solid var(--alp-color-border);
+  position: relative;
+  z-index: 3;
+  padding: 18px 20px;
+  margin: 0 0 26px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--alp-bg-surface-solid) 94%, transparent);
+  border: 1px solid var(--resource-line);
+  box-shadow: 0 12px 32px rgba(22, 74, 82, 0.07);
 }
 
 .field-label {
   display: block;
   font-size: 12px;
-  color: var(--alp-color-muted);
+  color: #536b6d;
   margin-bottom: 6px;
   font-weight: 500;
 }
@@ -810,6 +926,9 @@ function verifyTag(meta: Record<string, unknown>) {
   width: 100%;
   font-weight: 600;
   letter-spacing: 0.02em;
+  border: none;
+  background: linear-gradient(135deg, #0b9c96, #0b83a9);
+  box-shadow: 0 8px 20px rgba(11, 156, 150, 0.2);
 }
 
 .progress-block {
@@ -895,43 +1014,68 @@ function verifyTag(meta: Record<string, unknown>) {
 }
 
 .agents-section {
-  margin-bottom: 28px;
+  margin-bottom: 34px;
+  padding: clamp(18px, 2.5vw, 28px);
+  border: 1px solid var(--resource-line);
+  border-radius: 18px;
+  background:
+    linear-gradient(145deg, rgba(11, 156, 150, 0.035), transparent 42%),
+    var(--alp-bg-surface-solid);
 }
 
 .section-head {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .section-title {
   margin: 0;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 750;
   color: var(--alp-color-text);
+  letter-spacing: -0.02em;
+}
+
+.section-caption {
+  margin: 6px 0 0;
+  color: var(--alp-color-muted);
+  font-size: 12px;
+  line-height: 1.55;
 }
 
 .section-badge {
+  flex: 0 0 auto;
   font-size: 11px;
-  padding: 2px 10px;
+  padding: 5px 11px;
   border-radius: 999px;
   background: var(--alp-color-primary-soft);
-  color: var(--alp-color-primary);
-  font-weight: 500;
+  color: #08716f;
+  font-weight: 700;
 }
 
 .type-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.type-card {
+  grid-column: span 2;
+}
+
+.type-card:nth-child(-n + 2) {
+  grid-column: span 3;
 }
 
 .type-card {
   position: relative;
-  border-radius: var(--alp-radius-card);
+  min-height: 172px;
+  border-radius: 14px;
   background: var(--alp-bg-surface-solid);
-  border: 1px solid var(--alp-color-border);
+  border: 1px solid color-mix(in srgb, var(--card-accent) 18%, var(--resource-line));
   overflow: hidden;
   transition:
     transform var(--alp-transition-fast),
@@ -941,10 +1085,9 @@ function verifyTag(meta: Record<string, unknown>) {
 }
 
 .type-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--alp-shadow-card-hover);
+  transform: translateY(-3px);
+  box-shadow: 0 16px 30px color-mix(in srgb, var(--card-accent) 11%, transparent);
   border-color: color-mix(in srgb, var(--card-accent) 40%, transparent);
-  filter: brightness(1.06);
 }
 
 .type-card.is-generating {
@@ -952,18 +1095,11 @@ function verifyTag(meta: Record<string, unknown>) {
   box-shadow: 0 0 20px color-mix(in srgb, var(--card-accent) 15%, transparent);
 }
 
-.type-card.has-resource .type-card-accent {
-  opacity: 1;
-}
-
-.type-card-accent {
-  height: 3px;
-  background: var(--card-accent);
-  opacity: 0.7;
-}
-
 .type-card-body {
-  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 17px 18px 16px;
 }
 
 .type-card-head {
@@ -974,9 +1110,9 @@ function verifyTag(meta: Record<string, unknown>) {
 }
 
 .type-icon-wrap {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -992,16 +1128,27 @@ function verifyTag(meta: Record<string, unknown>) {
 
 .type-agent {
   display: block;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--card-accent);
+  font-size: 14px;
+  font-weight: 750;
+  color: var(--alp-color-text);
   margin-bottom: 4px;
 }
 
 .type-label-tag {
-  --el-tag-bg-color: color-mix(in srgb, var(--card-accent) 18%, transparent);
-  --el-tag-border-color: color-mix(in srgb, var(--card-accent) 30%, transparent);
-  --el-tag-text-color: var(--card-accent);
+  display: inline-block;
+  color: color-mix(in srgb, var(--card-accent) 68%, var(--resource-ink));
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.type-state {
+  margin-left: auto;
+  padding: 3px 6px;
+  color: color-mix(in srgb, var(--card-accent) 58%, var(--resource-ink));
+  background: color-mix(in srgb, var(--card-accent) 9%, transparent);
+  border-radius: 5px;
+  font: 700 9px/1.2 ui-monospace, monospace;
+  letter-spacing: 0.08em;
 }
 
 .type-desc {
@@ -1009,8 +1156,8 @@ function verifyTag(meta: Record<string, unknown>) {
   align-items: flex-start;
   gap: 6px;
   font-size: 12px;
-  color: var(--alp-color-muted);
-  min-height: 40px;
+  color: #5a7072;
+  min-height: 38px;
   margin: 0 0 12px;
   line-height: 1.5;
 }
@@ -1032,11 +1179,97 @@ function verifyTag(meta: Record<string, unknown>) {
   display: flex;
   align-items: center;
   gap: 4px;
+  margin-top: auto;
+}
+
+.type-actions :deep(.el-button--primary) {
+  --el-button-bg-color: #066f6d;
+  --el-button-border-color: #066f6d;
+  --el-button-hover-bg-color: #075f5e;
+  --el-button-hover-border-color: #075f5e;
+  background-color: #066f6d;
+  border-color: #066f6d;
 }
 
 .resources-section {
-  padding-top: 8px;
-  border-top: 1px solid var(--alp-color-border);
+  padding: clamp(18px, 2.5vw, 28px);
+  border: 1px solid var(--resource-line);
+  border-radius: 18px;
+  background: var(--alp-bg-surface-solid);
+}
+
+@media (max-width: 1080px) {
+  .page-header {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+
+  .hero-illustration {
+    right: -13%;
+    width: 62%;
+    opacity: 0.78;
+  }
+
+  .type-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .type-card,
+  .type-card:nth-child(-n + 2) {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 760px) {
+  .page-card :deep(.el-card__body) {
+    padding: 14px;
+  }
+
+  .page-header {
+    display: block;
+    min-height: 300px;
+    margin: -14px -14px 14px;
+    padding: 28px 20px 130px;
+  }
+
+  .hero-illustration {
+    top: auto;
+    right: -7%;
+    bottom: -18%;
+    width: 82%;
+    height: 64%;
+    transform: none;
+    object-position: right bottom;
+    opacity: 0.7;
+  }
+
+  .hero-stats {
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .gen-panel,
+  .agents-section,
+  .resources-section {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .type-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .section-head {
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resource-page,
+  .type-card,
+  .progress-dot.active {
+    animation: none;
+    transition: none;
+  }
 }
 
 .filter-row {
@@ -1076,7 +1309,7 @@ function verifyTag(meta: Record<string, unknown>) {
 
 .empty-desc {
   font-size: 13px;
-  color: var(--alp-color-muted);
+  color: #5a7072;
   margin: 0;
   max-width: 36ch;
   margin-inline: auto;

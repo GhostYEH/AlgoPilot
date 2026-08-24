@@ -18,8 +18,6 @@ mastery 和 confidence 分开维护：
 from __future__ import annotations
 
 import logging
-from typing import Any
-
 from sqlalchemy.orm import Session
 
 from models.db_models import StudentKnowledgeState

@@ -14,8 +14,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -26,7 +24,6 @@ from models.db_models import (
     ExecutionTraceRecord,
     HintRecord,
     OjSubmission,
-    StudentKnowledgeState,
     User,
 )
 from services.evidence.persistence import (

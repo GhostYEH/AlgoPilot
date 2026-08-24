@@ -1,22 +1,12 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { ArrowRight, Check } from '@element-plus/icons-vue'
-import {
-  ALGORITHM_MODULES,
-  MODULE_PHASE_LABELS,
-  type ModulePhase,
-} from '@/constants/modules'
+import { ArrowRight, Check, Lightning, Promotion, CollectionTag, Opportunity } from '@element-plus/icons-vue'
+import { ALGORITHM_MODULES, MODULE_PHASE_LABELS, type ModulePhase } from '@/constants/modules'
+import { getModuleLearnConfig } from '@/modules/shared/moduleRegistry'
 import { getModuleProgressPercent } from '@/utils/moduleProgressSummary'
 
-const props = defineProps<{
-  activeKey: string
-  overallPercent: number
-}>()
-
-const emit = defineEmits<{
-  preview: [key: string]
-  open: [key: string]
-}>()
+const props = defineProps<{ activeKey: string; overallPercent: number }>()
+const emit = defineEmits<{ preview: [key: string]; open: [key: string] }>()
 
 const phaseSummary: Record<ModulePhase, string> = {
   foundation: '数组、链表、哈希与字符串',
@@ -25,15 +15,39 @@ const phaseSummary: Record<ModulePhase, string> = {
   advanced: '贪心、动态规划与图论',
 }
 
+function sectionTitle(title: string) {
+  return title.replace(/^\d+[.、]\s*/, '')
+}
+
 const phaseGroups = computed(() =>
   (Object.keys(MODULE_PHASE_LABELS) as ModulePhase[]).map((phase) => ({
     phase,
     label: MODULE_PHASE_LABELS[phase],
     summary: phaseSummary[phase],
-    modules: ALGORITHM_MODULES.filter((module) => module.phase === phase).map((module) => ({
-      ...module,
-      progress: getModuleProgressPercent(module.key),
-    })),
+    modules: ALGORITHM_MODULES.filter((module) => module.phase === phase).map((module) => {
+      const progress = getModuleProgressPercent(module.key)
+      const config = getModuleLearnConfig(module.key)
+      const doneMap = config?.loadSectionDone() ?? {}
+      const completedCount = Object.values(doneMap).filter(Boolean).length
+      const sections = (config?.sections ?? []).slice(0, 4).map((section, index) => ({
+        id: section.id,
+        title: sectionTitle(section.title),
+        done: Boolean(doneMap[section.id]),
+        status: doneMap[section.id]
+          ? '已完成'
+          : progress > 0 && index === completedCount
+            ? '正在学习'
+            : progress > 0
+              ? '待复习'
+              : '未开始',
+      }))
+      return {
+        ...module,
+        progress,
+        sections,
+        hiddenSectionCount: Math.max(0, (config?.sections.length ?? 0) - sections.length),
+      }
+    }),
   })),
 )
 
@@ -43,9 +57,7 @@ const activePhase = computed(
 const expandedPhases = ref<ModulePhase[]>([activePhase.value])
 
 watch(activePhase, (phase) => {
-  if (!expandedPhases.value.includes(phase)) {
-    expandedPhases.value = [...expandedPhases.value, phase]
-  }
+  if (!expandedPhases.value.includes(phase)) expandedPhases.value = [...expandedPhases.value, phase]
 })
 
 function phaseIsOpen(phase: ModulePhase) {
@@ -68,6 +80,8 @@ function statusLabel(progress: number, active: boolean) {
 function stepNumber(key: string) {
   return String(ALGORITHM_MODULES.findIndex((module) => module.key === key) + 1).padStart(2, '0')
 }
+
+const phaseIcons = { foundation: CollectionTag, technique: Lightning, tree: Opportunity, advanced: Promotion }
 </script>
 
 <template>
@@ -88,20 +102,16 @@ function stepNumber(key: string) {
         v-for="group in phaseGroups"
         :key="group.phase"
         class="learning-map__phase"
-        :class="{
-          'is-current': group.modules.some((module) => module.key === activeKey),
-          'is-open': phaseIsOpen(group.phase),
-        }"
+        :class="{ 'is-current': group.modules.some((module) => module.key === activeKey), 'is-open': phaseIsOpen(group.phase) }"
       >
         <header>
-          <button
-            type="button"
-            :aria-expanded="phaseIsOpen(group.phase)"
-            @click="togglePhase(group.phase)"
-          >
-            <span>
-              <h3>{{ group.label }}</h3>
-              <p>{{ group.summary }}</p>
+          <button type="button" :aria-expanded="phaseIsOpen(group.phase)" @click="togglePhase(group.phase)">
+            <span class="learning-map__phase-copy">
+              <span class="learning-map__phase-mark"><el-icon><component :is="phaseIcons[group.phase]" /></el-icon></span>
+              <span>
+                <h3>{{ group.label }}</h3>
+                <p>{{ group.summary }}</p>
+              </span>
             </span>
             <el-icon><ArrowRight /></el-icon>
           </button>
@@ -112,11 +122,7 @@ function stepNumber(key: string) {
             <button
               type="button"
               class="learning-map__module"
-              :class="{
-                'is-active': module.key === activeKey,
-                'is-done': module.progress === 100,
-                'has-progress': module.progress > 0 && module.progress < 100,
-              }"
+              :class="{ 'is-active': module.key === activeKey, 'is-done': module.progress === 100, 'has-progress': module.progress > 0 && module.progress < 100 }"
               :aria-current="module.key === activeKey ? 'step' : undefined"
               @mouseenter="emit('preview', module.key)"
               @focus="emit('preview', module.key)"
@@ -130,14 +136,27 @@ function stepNumber(key: string) {
                 <strong>{{ module.label }}</strong>
                 <small>{{ statusLabel(module.progress, module.key === activeKey) }}</small>
               </span>
-              <span
-                v-if="module.key === activeKey || (module.progress > 0 && module.progress < 100)"
-                class="learning-map__progress"
-              >
+              <span v-if="module.key === activeKey || (module.progress > 0 && module.progress < 100)" class="learning-map__progress">
                 {{ module.progress }}%
               </span>
               <el-icon class="learning-map__arrow"><ArrowRight /></el-icon>
             </button>
+
+            <div v-if="module.key === activeKey && module.sections.length" class="learning-map__sections">
+              <div v-for="section in module.sections" :key="section.id" class="learning-map__section">
+                <span class="learning-map__section-dot" :class="{ 'is-done': section.done }">
+                  <el-icon v-if="section.done"><Check /></el-icon>
+                </span>
+                <span class="learning-map__section-copy">
+                  <strong>{{ section.title }}</strong>
+                  <small>{{ section.status }}</small>
+                </span>
+                <span class="learning-map__section-status">{{ section.done ? '100%' : section.status }}</span>
+              </div>
+              <span v-if="module.hiddenSectionCount" class="learning-map__more">
+                还有 {{ module.hiddenSectionCount }} 个小节 · 进入模块查看
+              </span>
+            </div>
           </li>
         </ol>
       </li>
@@ -147,34 +166,23 @@ function stepNumber(key: string) {
 
 <style scoped>
 .learning-map {
-  margin-top: 28px;
-  overflow: hidden;
+  margin-top: 16px;
+  overflow: visible;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: 18px;
   background: var(--color-bg-surface);
+  box-shadow: 0 6px 18px rgba(28, 89, 90, 0.035);
 }
-
 .learning-map__head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 24px;
-  padding: 22px 24px 18px;
-  border-bottom: 1px solid var(--color-border);
+  padding: 12px 26px 8px;
+  border-bottom: 0;
 }
-
-.learning-map__head h2 {
-  margin: 0;
-  color: var(--color-text-primary);
-  font-size: 18px;
-}
-
-.learning-map__head p {
-  margin: 4px 0 0;
-  color: var(--color-text-muted);
-  font-size: 12px;
-}
-
+.learning-map__head h2 { margin: 0; color: var(--color-text-primary); font-size: 20px; font-weight: 750; }
+.learning-map__head p:not(.learning-map__eyebrow) { margin: 5px 0 0; color: var(--color-text-muted); font-size: 12px; }
 .learning-map__head > button {
   display: inline-flex;
   align-items: center;
@@ -183,41 +191,24 @@ function stepNumber(key: string) {
   color: var(--color-brand);
   font: inherit;
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 700;
   border: 0;
   background: transparent;
   cursor: pointer;
 }
-
+.learning-map__head > button .el-icon { transition: transform 180ms ease; }
+.learning-map__head > button:hover .el-icon { transform: translateX(3px); }
 .learning-map__phases {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin: 0;
-  padding: 0;
+  gap: 14px;
+  padding: 0 26px 16px;
   list-style: none;
 }
-
-.learning-map__phase {
-  min-width: 0;
-  padding: 20px 16px 22px;
-  border-right: 1px solid var(--color-border);
-}
-
-.learning-map__phase:last-child {
-  border-right: 0;
-}
-
-.learning-map__phase.is-current {
-  background: var(--color-brand-soft);
-  box-shadow: inset 3px 0 0 var(--color-brand);
-}
-
-.learning-map__phase > header {
-  min-height: 58px;
-  padding: 0 4px 14px;
-  border-bottom: 1px solid var(--color-border);
-}
-
+.learning-map__phase { min-width: 0; padding: 14px 12px 10px; border: 1px solid #e4eeee; border-radius: 14px; background: #fff; box-shadow: 0 3px 12px rgba(28, 89, 90, .025); }
+.learning-map__phase.is-current { background: #fff; box-shadow: 0 3px 12px rgba(28, 89, 90, .025); }
+.learning-map__phase > header { min-height: 48px; padding: 0 4px 9px; border-bottom: 1px solid var(--color-border); }
 .learning-map__phase > header > button {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 14px;
@@ -230,34 +221,25 @@ function stepNumber(key: string) {
   border: 0;
   background: transparent;
 }
-
-.learning-map__phase > header > button > .el-icon {
-  display: none;
-  color: var(--color-text-muted);
-  font-size: 11px;
-}
-
-.learning-map__phase h3 {
-  margin: 0;
-  color: var(--color-text-primary);
-  font-size: 15px;
-}
-
-.learning-map__phase header p {
-  margin: 4px 0 0;
-  color: var(--color-text-muted);
-  font-size: 11px;
-  line-height: 1.45;
-}
-
-.learning-map__phase > ol {
+.learning-map__phase > header > button > .el-icon { display: none; color: var(--color-text-muted); font-size: 11px; }
+.learning-map__phase-copy { display: flex; align-items: center; gap: 9px; }
+.learning-map__phase-mark {
   display: grid;
-  gap: 3px;
-  margin: 0;
-  padding: 12px 0 0;
-  list-style: none;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  color: #49a861;
+  font-size: 19px;
+  font-weight: 800;
+  border-radius: 50%;
+  background: #eff9e9;
 }
-
+.learning-map__phase:nth-child(2) .learning-map__phase-mark { color: #218dc8; background: #e7f5fd; }
+.learning-map__phase:nth-child(3) .learning-map__phase-mark { color: #158a86; background: #e5f7f4; }
+.learning-map__phase:nth-child(4) .learning-map__phase-mark { color: #8660ce; background: #f0eaff; }
+.learning-map__phase h3 { margin: 0; color: var(--color-text-primary); font-size: 15px; font-weight: 750; }
+.learning-map__phase header p { margin: 4px 0 0; color: var(--color-text-muted); font-size: 11px; line-height: 1.45; }
+.learning-map__phase > ol { display: grid; gap: 3px; margin: 0; padding: 7px 0 0; list-style: none; }
 .learning-map__module {
   display: grid;
   grid-template-columns: 30px minmax(0, 1fr) auto 14px;
@@ -269,25 +251,14 @@ function stepNumber(key: string) {
   color: var(--color-text-primary);
   text-align: left;
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: 11px;
   background: transparent;
   cursor: pointer;
-  transition: background-color 160ms ease, border-color 160ms ease;
+  transition: background-color 180ms ease, border-color 180ms ease, transform 180ms ease;
 }
-
-.learning-map__module:hover {
-  background: var(--color-bg-subtle);
-}
-
-.learning-map__module.is-active {
-  border-color: var(--color-border-strong);
-  background: var(--color-bg-surface);
-}
-
-.learning-map__module.is-done {
-  color: var(--color-text-secondary);
-}
-
+.learning-map__module:hover { background: var(--color-bg-subtle); transform: translateX(2px); }
+.learning-map__module.is-active { border-color: #8ed7d2; background: #f1fbfa; box-shadow: none; }
+.learning-map__module.is-done { color: var(--color-text-secondary); }
 .learning-map__index {
   display: grid;
   width: 26px;
@@ -295,126 +266,55 @@ function stepNumber(key: string) {
   place-items: center;
   color: var(--color-text-muted);
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 800;
   border: 1px solid var(--color-border);
   border-radius: 50%;
 }
-
-.learning-map__module.is-done .learning-map__index {
-  color: var(--color-success);
-  border-color: color-mix(in srgb, var(--color-success) 48%, var(--color-border));
-}
-
+.learning-map__module.is-done .learning-map__index { color: var(--color-success); border-color: color-mix(in srgb, var(--color-success) 48%, var(--color-border)); }
 .learning-map__module.is-active .learning-map__index,
-.learning-map__module.has-progress .learning-map__index {
-  color: var(--color-brand);
-  border-color: var(--color-brand);
+.learning-map__module.has-progress .learning-map__index { color: var(--color-brand); border-color: var(--color-brand); box-shadow: 0 0 0 4px rgba(15, 133, 136, 0.07); }
+.learning-map__copy, .learning-map__section-copy { display: flex; min-width: 0; flex-direction: column; }
+.learning-map__copy strong { overflow: hidden; font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.learning-map__copy small, .learning-map__section-copy small { margin-top: 2px; color: var(--color-text-muted); font-size: 10px; }
+.learning-map__module.is-active .learning-map__copy strong { color: var(--color-brand-dark); }
+.learning-map__progress { color: var(--color-brand); font-size: 10px; font-weight: 750; font-variant-numeric: tabular-nums; }
+.learning-map__arrow { color: var(--color-text-muted); font-size: 11px; opacity: 0; transition: opacity 180ms ease, transform 180ms ease; }
+.learning-map__module:hover .learning-map__arrow, .learning-map__module.is-active .learning-map__arrow { opacity: 1; transform: translateX(2px); }
+.learning-map__sections { display: grid; gap: 2px; margin: 0 8px 8px 46px; padding: 8px 10px 7px; border-left: 1px solid #b9dedb; border-radius: 0 10px 10px 0; background: rgba(239, 249, 248, 0.75); }
+.learning-map__section { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; align-items: center; gap: 6px; min-width: 0; padding: 5px 0; }
+.learning-map__section-dot {
+  display: grid;
+  width: 12px;
+  height: 12px;
+  place-items: center;
+  color: #fff;
+  font-size: 8px;
+  border: 1px solid #b9d7d5;
+  border-radius: 50%;
+  background: #fff;
 }
-
-.learning-map__copy {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-}
-
-.learning-map__copy strong {
-  overflow: hidden;
-  font-size: 12px;
-  font-weight: 650;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.learning-map__copy small {
-  margin-top: 2px;
-  color: var(--color-text-muted);
-  font-size: 10px;
-}
-
-.learning-map__module.is-active .learning-map__copy strong {
-  color: var(--color-brand-dark);
-}
-
-.learning-map__progress {
-  color: var(--color-brand);
-  font-size: 10px;
-  font-weight: 650;
-  font-variant-numeric: tabular-nums;
-}
-
-.learning-map__arrow {
-  color: var(--color-text-muted);
-  font-size: 11px;
-  opacity: 0;
-  transition: opacity 160ms ease, transform 160ms ease;
-}
-
-.learning-map__module:hover .learning-map__arrow,
-.learning-map__module.is-active .learning-map__arrow {
-  opacity: 1;
-  transform: translateX(2px);
-}
+.learning-map__section-dot.is-done { border-color: var(--color-brand); background: var(--color-brand); }
+.learning-map__section-copy strong { overflow: hidden; color: var(--color-text-primary); font-size: 10px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.learning-map__section-status { color: var(--color-brand); font-size: 9px; white-space: nowrap; }
+.learning-map__more { padding-top: 5px; color: var(--color-text-muted); font-size: 9px; border-top: 1px solid rgba(185, 222, 219, 0.72); }
 
 @media (max-width: 1120px) {
-  .learning-map__phases {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .learning-map__phase:nth-child(2) {
-    border-right: 0;
-  }
-
-  .learning-map__phase:nth-child(-n + 2) {
-    border-bottom: 1px solid var(--color-border);
-  }
+  .learning-map__phases { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .learning-map__phase:nth-child(2) { border-right: 0; }
+  .learning-map__phase:nth-child(-n + 2) { border-bottom: 1px solid var(--color-border); }
 }
-
 @media (max-width: 680px) {
-  .learning-map__head {
-    padding: 19px 17px 16px;
-  }
-
-  .learning-map__phases {
-    grid-template-columns: 1fr;
-  }
-
-  .learning-map__phase,
-  .learning-map__phase:nth-child(2) {
-    padding: 18px 14px;
-    border-right: 0;
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .learning-map__phase:last-child {
-    border-bottom: 0;
-  }
-
-  .learning-map__phase > header {
-    min-height: 0;
-  }
-
-  .learning-map__phase > header > button {
-    cursor: pointer;
-  }
-
-  .learning-map__phase > header > button > .el-icon {
-    display: block;
-    transition: transform 160ms ease;
-  }
-
-  .learning-map__phase.is-open > header > button > .el-icon {
-    transform: rotate(90deg);
-  }
-
-  .learning-map__phase:not(.is-open) > ol {
-    display: none;
-  }
+  .learning-map__head { padding: 19px 17px 16px; }
+  .learning-map__phases { grid-template-columns: 1fr; padding-inline: 0; }
+  .learning-map__phase, .learning-map__phase:nth-child(2) { padding: 18px 14px; border-right: 0; border-bottom: 1px solid var(--color-border); }
+  .learning-map__phase:last-child { border-bottom: 0; }
+  .learning-map__phase > header { min-height: 0; }
+  .learning-map__phase > header > button { cursor: pointer; }
+  .learning-map__phase > header > button > .el-icon { display: block; transition: transform 180ms ease; }
+  .learning-map__phase.is-open > header > button > .el-icon { transform: rotate(90deg); }
+  .learning-map__phase:not(.is-open) > ol { display: none; }
 }
-
 @media (prefers-reduced-motion: reduce) {
-  .learning-map__module,
-  .learning-map__arrow {
-    transition: none;
-  }
+  .learning-map__module, .learning-map__arrow, .learning-map__head > button .el-icon { transition: none; }
 }
 </style>

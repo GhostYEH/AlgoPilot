@@ -15,6 +15,7 @@ from services.oj.cpp_runner import (
     _find_gpp,
     cpp_compile_timeout_seconds,
 )
+from utils.security import CppSecurityViolation, check_cpp_security
 from utils import python_exec_args
 
 Verdict = Literal["AC", "WA", "TLE", "RE", "CE"]
@@ -60,6 +61,10 @@ def run_cases_stdio(
     if not audit.passed:
         return run_summary_rejected(audit, total=max(1, len(cases)))
     if lang in ("cpp", "c++", "cxx"):
+        try:
+            check_cpp_security(user_code)
+        except CppSecurityViolation as exc:
+            return _invalid_summary(str(exc), total=len(cases))
         return _run_cpp_stdio(user_code, cases=cases, time_limit_ms=time_limit_ms, order_insensitive=order_insensitive)
     return _run_python_stdio(user_code, cases=cases, time_limit_ms=time_limit_ms, order_insensitive=order_insensitive)
 

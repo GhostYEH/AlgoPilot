@@ -50,6 +50,13 @@ class TestAuthEndpoint:
         )
         assert resp.status_code in (401, 400)
 
+    def test_oj_run_requires_authentication(self, client: TestClient):
+        resp = client.post(
+            "/api/oj/problems/binary-search/run",
+            json={"code": "print(1)", "language": "python"},
+        )
+        assert resp.status_code == 401
+
 
 class TestApiNotFound:
     def test_unknown_api_route_returns_404(self, client: TestClient):

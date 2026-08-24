@@ -61,6 +61,43 @@ _CPP_UNINIT_PTR = re.compile(
     re.MULTILINE,
 )
 
+# Static policy is defence in depth only; production execution is blocked until
+# an isolated worker is deployed.  These restrictions keep the local desktop
+# runner from accidentally accepting obvious host-access code.
+_PYTHON_SAFE_IMPORT_ROOTS = frozenset(
+    {
+        "bisect",
+        "collections",
+        "functools",
+        "heapq",
+        "itertools",
+        "math",
+        "operator",
+        "random",
+        "re",
+        "statistics",
+        "string",
+        "sys",
+        "typing",
+    }
+)
+_PYTHON_DANGEROUS_BUILTINS = frozenset(
+    {
+        "__import__",
+        "breakpoint",
+        "compile",
+        "delattr",
+        "eval",
+        "exec",
+        "getattr",
+        "globals",
+        "locals",
+        "open",
+        "setattr",
+        "vars",
+    }
+)
+
 _CPP_LLM_SYSTEM = """你是一个 C++ 静态分析器。只检查用户代码中的 while/for 循环与数组访问。
 关注：死循环（指针/计数器未更新）、明显数组越界、未初始化指针解引用。
 不要解释过程。严格只输出一个 JSON 对象：
@@ -379,6 +416,46 @@ class _PythonLoopRiskVisitor(ast.NodeVisitor):
                         f" {joined} 的赋值/自增，可能导致死循环"
                     ),
                     line=line,
+                )
+            )
+        self.generic_visit(node)
+
+    def visit_Import(self, node: ast.Import) -> None:
+        for alias in node.names:
+            root = alias.name.split(".", 1)[0]
+            if root not in _PYTHON_SAFE_IMPORT_ROOTS:
+                self.findings.append(
+                    AstFinding(
+                        level="high",
+                        code="unsafe_import",
+                        message=f"禁止导入可能访问宿主机的模块：{root}",
+                        line=node.lineno,
+                    )
+                )
+        self.generic_visit(node)
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+        root = (node.module or "").split(".", 1)[0]
+        if node.level or root not in _PYTHON_SAFE_IMPORT_ROOTS:
+            display = root or "相对模块"
+            self.findings.append(
+                AstFinding(
+                    level="high",
+                    code="unsafe_import",
+                    message=f"禁止导入可能访问宿主机的模块：{display}",
+                    line=node.lineno,
+                )
+            )
+        self.generic_visit(node)
+
+    def visit_Call(self, node: ast.Call) -> None:
+        if isinstance(node.func, ast.Name) and node.func.id in _PYTHON_DANGEROUS_BUILTINS:
+            self.findings.append(
+                AstFinding(
+                    level="high",
+                    code="unsafe_builtin",
+                    message=f"禁止调用可能访问宿主机的内置函数：{node.func.id}",
+                    line=node.lineno,
                 )
             )
         self.generic_visit(node)

@@ -2,7 +2,8 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowRight, ChatDotRound, Cpu, Reading } from '@element-plus/icons-vue'
+import { ArrowRight, Cpu, Reading, Collection, DataAnalysis, Document, VideoPlay } from '@element-plus/icons-vue'
+import codingHeroUrl from '@/assets/home-coding-hero.png'
 import HomeCommunityPanel from '@/components/home/HomeCommunityPanel.vue'
 import HomeDashboardCharts from '@/components/home/HomeDashboardCharts.vue'
 import HomeHitokotoBar from '@/components/home/HomeHitokotoBar.vue'
@@ -122,7 +123,7 @@ const quickActions: Array<{
     key: 'path',
     label: '学习路径',
     desc: '查看全部模块与学习顺序',
-    icon: Reading,
+    icon: Collection,
     route: { name: 'learning-path' },
     prefetch: '/learning-path',
   },
@@ -138,7 +139,7 @@ const quickActions: Array<{
     key: 'persona',
     label: '学习画像',
     desc: '查看掌握情况与学习建议',
-    icon: ChatDotRound,
+    icon: DataAnalysis,
     route: { name: 'my-learning', query: { tab: 'persona' } },
     prefetch: '/my-learning',
   },
@@ -146,7 +147,7 @@ const quickActions: Array<{
     key: 'resources',
     label: '学习资料',
     desc: '查找讲义、题单与参考资料',
-    icon: Reading,
+    icon: Document,
     route: { name: 'resources' },
     prefetch: '/resources',
   },
@@ -221,51 +222,66 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="home-workspace">
+  <div class="home-workspace home-page">
     <HomeHitokotoBar />
-    <p class="home-tagline">AlgoPilot · 基于程序执行证据链的智能算法学习与诊断系统</p>
-    <section class="continue-learning" aria-labelledby="continue-title">
-      <div class="continue-learning__main">
-        <p class="section-kicker">今天继续</p>
-        <h1 id="continue-title">{{ currentModule?.label ?? '选择一个学习模块' }}</h1>
-        <p class="continue-learning__section">{{ currentSectionLabel }}</p>
-
-        <div class="continue-learning__progress">
-          <div>
-            <span>{{ currentPhaseLabel }}</span>
-            <strong>{{ currentProgress?.percent ?? 0 }}%</strong>
+    <section class="study-hero" aria-labelledby="continue-title">
+      <div class="study-hero__main">
+        <div class="study-hero__copy">
+          <p class="section-kicker">今日学习重点</p>
+          <div class="study-hero__title-row">
+            <h1 id="continue-title">{{ currentModule?.label ?? '选择一个学习模块' }}</h1>
+            <span class="study-hero__topic" :title="currentPhaseLabel">{{ currentPhaseLabel }}</span>
           </div>
-          <div class="progress-track" aria-label="当前模块进度">
-            <i :style="{ width: `${currentProgress?.percent ?? 0}%` }" />
+          <p class="study-hero__section">{{ currentSectionLabel }}</p>
+
+          <div class="continue-learning__progress">
+            <div>
+              <span>基础结构</span>
+              <strong>{{ currentProgress?.percent ?? 0 }}%</strong>
+            </div>
+            <div class="progress-track" aria-label="当前模块进度">
+              <i :style="{ width: `${currentProgress?.percent ?? 0}%` }" />
+            </div>
+          </div>
+
+          <div class="continue-learning__actions">
+            <el-button type="primary" @click="continueLearning">
+              <el-icon><VideoPlay /></el-icon>
+              继续学习
+            </el-button>
+            <el-button plain @click="router.push({ name: 'practice-list' })">
+              <el-icon><Cpu /></el-icon>
+              进入题库
+            </el-button>
           </div>
         </div>
 
-        <div class="continue-learning__actions">
-          <el-button type="primary" @click="continueLearning">
-            继续学习
-            <el-icon><ArrowRight /></el-icon>
-          </el-button>
-          <el-button @click="router.push({ name: 'practice-list' })">进入题库</el-button>
-        </div>
+        <div class="study-hero__visual" aria-hidden="true"><img :src="codingHeroUrl" alt="" /></div>
       </div>
 
-      <dl class="continue-learning__facts">
-        <div>
-          <dt>整体进度</dt>
-          <dd>{{ overview.overallPercent }}%</dd>
-          <small>已完成 {{ overview.completedModules }} / {{ ALGORITHM_MODULES.length }} 个模块</small>
+      <aside class="study-hero__status" aria-label="学习状态">
+        <div class="status-title">整体进度</div>
+        <div class="status-ring">
+          <el-progress type="circle" :percentage="overview.overallPercent" :width="72" :stroke-width="8" :show-text="false" />
+          <strong>{{ overview.overallPercent }}<small>%</small></strong>
         </div>
-        <div>
-          <dt>上次学习</dt>
-          <dd>{{ lastVisitLabel }}</dd>
-          <small>{{ serviceStatusLabel }}</small>
+        <div class="status-ring__label">
+          <strong>已完成 {{ overview.completedModules }} / {{ ALGORITHM_MODULES.length }} 个模块<br />继续加油，稳步提升中！</strong>
         </div>
-        <div>
-          <dt>当前剩余</dt>
-          <dd>{{ remainingSections === null ? '查看章节目录' : `${remainingSections} 个小节` }}</dd>
-          <small>{{ reviewQueue.length ? `${reviewQueue.length} 项内容待复习` : '目前没有待复习内容' }}</small>
-        </div>
-      </dl>
+
+        <dl class="study-hero__facts">
+          <div>
+            <dt>上次学习</dt>
+            <dd>{{ lastVisitLabel }}</dd>
+            <small>{{ serviceStatusLabel }}</small>
+          </div>
+          <div>
+            <dt>当前剩余</dt>
+            <dd>{{ remainingSections === null ? '查看章节目录' : `${remainingSections} 个小节` }}</dd>
+            <small>{{ reviewQueue.length ? `${reviewQueue.length} 项内容待复习` : '目前没有待复习内容' }}</small>
+          </div>
+        </dl>
+      </aside>
     </section>
 
     <nav class="home-tools" aria-label="常用学习工具">
@@ -276,7 +292,7 @@ onMounted(async () => {
         @mouseenter="prefetchRoute(item.prefetch)"
         @click="goQuick(item)"
       >
-        <el-icon><component :is="item.icon" /></el-icon>
+        <span class="home-tools__icon"><el-icon><component :is="item.icon" /></el-icon></span>
         <span>
           <strong>{{ item.label }}</strong>
           <small>{{ item.desc }}</small>
@@ -359,7 +375,7 @@ onMounted(async () => {
 
 <style scoped>
 .home-workspace {
-  width: min(100%, 1440px);
+  width: min(100%, 1536px);
   margin: 0 auto;
   padding: 2px 0 44px;
   color: var(--color-text-primary);
@@ -712,11 +728,122 @@ onMounted(async () => {
   }
 }
 
+/* Reference-inspired student home: quiet surfaces, one strong learning focus. */
+.home-page { padding-top: 4px; }
+.study-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.62fr) minmax(420px, 0.98fr);
+  min-height: 278px;
+  overflow: hidden;
+  border: 1px solid #dceceb;
+  border-radius: 20px;
+  background: linear-gradient(112deg, #fff 0%, #fbfefe 56%, #eff9f8 100%);
+  box-shadow: 0 10px 28px rgba(28, 89, 90, 0.06), 0 2px 6px rgba(28, 89, 90, 0.035);
+}
+.study-hero__main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 0.82fr);
+  align-items: center;
+  min-width: 0;
+  padding: 24px 28px 22px 32px;
+}
+.study-hero__copy { position: relative; z-index: 1; min-width: 0; }
+.study-hero .section-kicker { margin-bottom: 10px; color: var(--color-brand); font-size: 13px; letter-spacing: 0.08em; }
+.study-hero__title-row { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.study-hero h1 { margin: 0; color: #102c31; font-size: clamp(30px, 3.1vw, 40px); font-weight: 800; letter-spacing: -0.05em; line-height: 1.12; }
+.study-hero__topic { flex: 0 0 auto; display: grid; width: 28px; height: 28px; padding: 0; place-items: center; color: var(--color-brand); font-size: 0; font-weight: 700; border: 1px solid #b9dedb; border-radius: 10px; background: rgba(234, 246, 245, 0.72); }
+.study-hero__topic::before { content: '⌘'; font-size: 15px; }
+.study-hero__section { margin: 10px 0 0; color: var(--color-text-secondary); font-size: 15px; font-weight: 600; }
+.study-hero__advice { max-width: 31em; margin: 8px 0 0; color: var(--color-text-muted); font-size: 13px; line-height: 1.65; }
+.study-hero .continue-learning__progress { max-width: 480px; margin-top: 22px; }
+.study-hero .continue-learning__progress > div:first-child { margin-bottom: 9px; color: var(--color-text-muted); font-size: 12px; }
+.study-hero .continue-learning__progress strong { color: var(--color-brand); font-size: 13px; }
+.study-hero .progress-track { height: 8px; background: #e4efee; }
+.study-hero .progress-track i { background: var(--color-brand); box-shadow: 0 0 0 1px rgba(15, 133, 136, 0.04), 0 2px 7px rgba(15, 133, 136, 0.18); animation: home-progress-in 700ms var(--alp-ease-out-expo, ease-out) both; }
+.study-hero .continue-learning__actions { gap: 10px; margin-top: 22px; }
+.study-hero .continue-learning__actions :deep(.el-button) { min-width: 152px; min-height: 44px; padding-inline: 17px; font-size: 15px; border-radius: 6px; transition: transform 200ms ease, box-shadow 200ms ease, background-color 200ms ease; }
+.study-hero .continue-learning__actions :deep(.el-button:hover) { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(15, 133, 136, 0.14); }
+.study-hero__visual { display: grid; min-height: 228px; place-items: center; overflow: hidden; }
+.study-hero__visual img { width: min(100%, 340px); height: 254px; object-fit: contain; filter: drop-shadow(0 12px 12px rgba(15, 133, 136, .08)); }
+.study-hero__status { display: grid; grid-template-columns: 78px 76px minmax(0, 1fr); align-content: center; gap: 10px 12px; min-width: 0; padding: 22px 32px 20px 30px; border-left: 1px solid rgba(196, 224, 222, 0.92); background: rgba(255, 255, 255, 0.54); }
+.status-title { display: flex; align-items: center; color: var(--color-text-muted); font-size: 12px; font-weight: 650; }
+.status-ring { position: relative; display: grid; width: 72px; height: 72px; place-items: center; }
+.status-ring :deep(.el-progress-circle__track) { stroke: #e6eeee; }
+.status-ring :deep(.el-progress-circle__path) { stroke: var(--color-brand); transition: stroke-dasharray 700ms var(--alp-ease-out-expo, ease-out); }
+.status-ring strong { position: absolute; color: #233d42; font-size: 17px; font-weight: 760; }
+.status-ring strong small { margin-left: 1px; color: var(--color-text-muted); font-size: 12px; }
+.status-ring__label { display: flex; min-width: 0; flex-direction: column; justify-content: center; gap: 7px; }
+.status-ring__label span, .study-hero__facts dt { color: var(--color-text-muted); font-size: 12px; }
+.status-ring__label strong { color: var(--color-brand); font-size: 12px; line-height: 1.7; }
+.study-hero__facts { grid-column: 1 / -1; margin: 3px 0 0; padding: 9px 0 0; border-top: 1px solid rgba(196, 224, 222, 0.85); }
+.study-hero__facts > div { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 3px 12px; padding: 10px 0; border-bottom: 1px solid rgba(221, 235, 234, 0.9); }
+.study-hero__facts > div:last-child { border-bottom: 0; }
+.study-hero__facts dd { overflow: hidden; margin: 0; color: #294147; font-size: 14px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.study-hero__facts dd small { color: var(--color-text-muted); font-size: 11px; font-weight: 500; }
+.study-hero__facts small { grid-column: 2; color: var(--color-text-muted); font-size: 11px; }
+.home-tools { gap: 14px; margin-top: 16px; border: 0; }
+.home-tools button { grid-template-columns: 48px minmax(0, 1fr) 18px; gap: 12px; min-height: 82px; padding: 14px 18px; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-bg-surface); box-shadow: 0 4px 14px rgba(28, 89, 90, 0.035); transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease; }
+.home-tools button:last-child, .home-tools button:nth-child(2) { border-right: 1px solid var(--color-border); }
+.home-tools button:hover { color: var(--color-text-primary); border-color: #b7d9d7; background: var(--color-bg-surface); box-shadow: 0 10px 22px rgba(28, 89, 90, 0.08); transform: translateY(-3px); }
+.home-tools__icon { display: grid; width: 46px; height: 46px; place-items: center; color: var(--color-brand); border: 1px solid #c7e4e1; border-radius: 14px; background: #eef9f7; transition: transform 220ms ease, background-color 220ms ease; }
+.home-tools button:nth-child(1) .home-tools__icon { color: #4fa56a; background: #eff9e9; }
+.home-tools button:nth-child(2) .home-tools__icon { color: #258bc3; background: #eaf6fd; }
+.home-tools button:nth-child(3) .home-tools__icon { color: #168d8b; background: #e9f8f5; }
+.home-tools button:nth-child(4) .home-tools__icon { color: #22a598; background: #e7f8f4; }
+.home-tools button:hover .home-tools__icon { background: #e0f4f1; transform: translateX(3px); }
+.home-tools button > span:nth-child(2) { display: flex; min-width: 0; flex-direction: column; gap: 4px; }
+.home-tools strong { font-size: 14px; }
+.home-tools small { color: var(--color-text-muted); font-size: 11px; }
+.home-tools__arrow { transition: transform 220ms ease, color 220ms ease; }
+.home-tools button:hover .home-tools__arrow { color: var(--color-brand); transform: translateX(4px); }
+.learning-map, .home-section { border-radius: 14px; box-shadow: 0 6px 18px rgba(28, 89, 90, 0.035); }
+.learning-map { margin-top: 18px; }
+.learning-map__head { padding: 22px 26px 18px; }
+.learning-map__head h2, .home-section__head h2 { font-size: 20px; font-weight: 750; }
+.recent-learning { margin-top: 18px; }
+@keyframes home-progress-in { from { transform: translateX(-12px) scaleX(0.86); transform-origin: left; } to { transform: translateX(0) scaleX(1); transform-origin: left; } }
+@keyframes home-card-float { 0%, 100% { transform: rotate(-5deg) translateY(0); } 50% { transform: rotate(-5deg) translateY(-5px); } }
+@keyframes home-orb-float { 0%, 100% { transform: translateY(0); opacity: 0.75; } 50% { transform: translateY(-6px); opacity: 1; } }
+@media (max-width: 880px) {
+  .study-hero { grid-template-columns: 1fr; }
+  .study-hero__status { grid-template-columns: 108px minmax(0, 1fr); border-top: 1px solid rgba(196, 224, 222, 0.92); border-left: 0; }
+  .study-hero__facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+  .study-hero__facts > div { display: block; padding: 0 18px 0 0; border-right: 1px solid rgba(221, 235, 234, 0.9); border-bottom: 0; }
+  .study-hero__facts > div:last-child { padding-right: 0; border-right: 0; }
+  .study-hero__facts dd { margin-top: 6px; }
+  .study-hero__facts small { display: block; margin-top: 3px; }
+}
+@media (max-width: 760px) {
+  .home-page { padding-bottom: 28px; }
+  .study-hero__main { grid-template-columns: 1fr; padding: 24px 20px 18px; }
+  .study-hero__visual { min-height: 190px; margin-top: 12px; }
+  .study-hero__status { padding: 22px 20px 24px; }
+  .home-tools { gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .home-tools button:nth-child(2), .home-tools button:last-child { border-right: 1px solid var(--color-border); }
+  .home-tools button { grid-template-columns: 36px minmax(0, 1fr) 14px; min-height: 74px; padding: 13px 12px; }
+  .home-tools__icon { width: 34px; height: 34px; border-radius: 10px; }
+  .study-hero__facts { grid-template-columns: 1fr; gap: 0; }
+  .study-hero__facts > div, .study-hero__facts > div:last-child { padding: 10px 0; border-right: 0; border-bottom: 1px solid rgba(221, 235, 234, 0.9); }
+  .study-hero__facts > div:last-child { border-bottom: 0; }
+  .study-hero__facts dd { margin-top: 3px; }
+  .recent-learning, .home-training, .home-community { padding: 18px 15px; }
+}
+@media (max-width: 420px) {
+  .study-hero__title-row { display: block; }
+  .study-hero__topic { display: inline-block; margin-top: 9px; }
+  .study-hero .continue-learning__actions { display: grid; grid-template-columns: 1fr; }
+  .home-tools { grid-template-columns: 1fr; }
+}
 @media (prefers-reduced-motion: reduce) {
   .progress-track i,
   .home-tools button,
-  .home-tools__arrow {
+  .home-tools__arrow,
+  .home-tools__icon,
+  .study-hero__code-card,
+  .study-hero__orb,
+  .study-hero .continue-learning__actions :deep(.el-button) {
     transition: none;
+    animation: none;
   }
 }
 </style>

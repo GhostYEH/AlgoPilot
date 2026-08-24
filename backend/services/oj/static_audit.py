@@ -5,9 +5,22 @@ from __future__ import annotations
 from services.agents.ast_analyzer import ASTAnalyzerAgent, AstAuditResult
 from services.oj.runner import CaseResult, RunSummary
 from services.oj.trace_runner import TraceSummary
+from utils.security import CppSecurityViolation, check_cpp_security
 
 
 def audit_user_code(user_code: str, *, language: str = "python") -> AstAuditResult:
+    lang = (language or "python").lower().replace("c++", "cpp")
+    if lang in {"cpp", "cxx"}:
+        try:
+            check_cpp_security(user_code)
+        except CppSecurityViolation as exc:
+            return AstAuditResult(
+                passed=False,
+                status="rejected",
+                reason=str(exc),
+                language="cpp",
+                source="rule",
+            )
     return ASTAnalyzerAgent.audit(user_code, language=language)
 
 

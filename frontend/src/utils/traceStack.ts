@@ -83,12 +83,6 @@ export function buildStackScene(
     break
   }
 
-  const inputSnap = step.vars.s ?? mergedVars.s
-  const inputString =
-    inputSnap?.type === 'str' && typeof inputSnap.value === 'string'
-      ? sanitizeDisplayString(inputSnap.value)
-      : null
-
   const validSnap =
     step.vars.is_valid ?? step.vars.valid ?? step.vars.ok ?? mergedVars.is_valid ?? mergedVars.valid ?? mergedVars.ok
   const isValid =
@@ -100,6 +94,12 @@ export function buildStackScene(
   const currentChar =
     cSnap?.type === 'str' && typeof cSnap.value === 'string' && cSnap.value.length === 1
       ? cSnap.value
+      : null
+
+  const inputSnap = step.vars.s ?? mergedVars.s
+  const inputString =
+    inputSnap?.type === 'str' && typeof inputSnap.value === 'string'
+      ? sanitizeDisplayString(inputSnap.value)
       : null
 
   return { name, items, inputString, currentChar, isValid }

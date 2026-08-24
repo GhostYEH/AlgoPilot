@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from services.oj.counterexample import (
     CounterexampleCandidate,
     generate_boundary_cases,

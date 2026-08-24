@@ -110,7 +110,6 @@ class TestACWithoutAIDiagnose:
             assert ks is not None, "WA 提交后应有 knowledge state"
             assert ks.attempt_count >= 1, "attempt_count 应至少为 1"
             assert ks.success_count == 0, "WA 后 success_count 应为 0"
-            mastery_after_wa = ks.mastery
         finally:
             session.close()
 
@@ -181,7 +180,6 @@ class TestRepeatedDiagnosisIdempotency:
         session = TestSessionLocal()
         try:
             ks = session.query(StudentKnowledgeState).first()
-            mastery_after_wa = ks.mastery if ks else 0.0
             attempt_after_wa = ks.attempt_count if ks else 0
         finally:
             session.close()
@@ -282,13 +280,6 @@ class TestHintImpactOnMastery:
             json={"code": AC_CODE, "language": "python"},
             headers=headers_a,
         )
-
-        session = TestSessionLocal()
-        try:
-            ks_a = session.query(StudentKnowledgeState).first()
-            independent_count_a = ks_a.independent_success_count if ks_a else 0
-        finally:
-            session.close()
 
         # 用户 B：也独立完成（对比基线）
         headers_b = _register(client, "e2e_hinted_user")
