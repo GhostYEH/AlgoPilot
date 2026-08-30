@@ -10,6 +10,7 @@ import { isLoggedIn, isTeacher, getUser, logout } from '@/stores/auth'
 import PageTransition from '@/components/layout/PageTransition.vue'
 import LearningQuickPanel from '@/components/layout/LearningQuickPanel.vue'
 import BrandLogo from '@/components/common/BrandLogo.vue'
+import LiquidGlass from '@/components/common/LiquidGlass.vue'
 import { prefetchRoute } from '@/router/prefetch'
 
 const route = useRoute()
@@ -82,18 +83,20 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
       <div class="teacher-profile"><el-avatar :size="36">{{ displayName }}</el-avatar><div><strong>{{ getUser()?.username || '教师' }}</strong><span>授课教师</span></div><el-icon><Setting /></el-icon></div>
     </aside>
     <el-header height="var(--alp-header-height, 60px)" class="app-header" :class="{ 'teacher-header': isTeacher }">
-      <div
+      <LiquidGlass
         v-if="!isTeacher"
-        class="header-brand"
-        role="button"
-        tabindex="0"
+        tag="button"
+        class="header-brand header-brand-liquid"
+        :displacement-scale="18"
+        :blur-amount="14"
+        :elasticity="0.12"
+        :corner-radius="13"
+        padding="5px 9px"
         aria-label="返回 AlgoPilot 首页"
         @click="goHome"
-        @keydown.enter="goHome"
-        @keydown.space.prevent="goHome"
       >
         <BrandLogo size="nav" />
-      </div>
+      </LiquidGlass>
 
       <el-menu
         mode="horizontal"
@@ -124,28 +127,30 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
             <el-icon><Box /></el-icon>
             <span>STL 沙盒</span>
           </el-menu-item>
-          <el-dropdown
-            trigger="hover"
-            placement="bottom-start"
-            :popper-class="isMyLearningActive ? 'nav-dropdown nav-dropdown--active' : 'nav-dropdown'"
-            @mouseenter="prefetchRoute('/my-learning')"
-          >
-            <div
-              class="nav-dropdown-trigger"
-              :class="{ 'is-active': isMyLearningActive }"
-              role="button"
-              tabindex="0"
+          <li class="header-dropdown-item" role="menuitem">
+            <el-dropdown
+              trigger="hover"
+              placement="bottom-start"
+              :popper-class="isMyLearningActive ? 'nav-dropdown nav-dropdown--active' : 'nav-dropdown'"
+              @mouseenter="prefetchRoute('/my-learning')"
             >
-              <el-icon><User /></el-icon>
-              <span>我的学习</span>
-              <el-icon class="arrow-icon"><ArrowDown /></el-icon>
-            </div>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <LearningQuickPanel />
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
+              <div
+                class="nav-dropdown-trigger"
+                :class="{ 'is-active': isMyLearningActive }"
+                role="button"
+                tabindex="0"
+              >
+                <el-icon><User /></el-icon>
+                <span>我的学习</span>
+                <el-icon class="arrow-icon"><ArrowDown /></el-icon>
+              </div>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <LearningQuickPanel />
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </li>
         </template>
 
         <el-menu-item v-if="!isTeacher" index="/help" @mouseenter="prefetchRoute('/help')">
@@ -161,9 +166,19 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
       <div class="header-actions">
         <span v-if="isTeacher" class="term-range">本学期 · 实时数据</span>
         <el-tooltip :content="isDark ? '切换浅色' : '切换深色'" placement="bottom">
-          <el-button circle size="small" class="theme-btn" @click="toggleTheme">
+          <LiquidGlass
+            tag="button"
+            class="theme-btn theme-liquid-button"
+            :displacement-scale="16"
+            :blur-amount="12"
+            :elasticity="0.2"
+            :corner-radius="999"
+            padding="0"
+            :aria-label="isDark ? '切换浅色模式' : '切换深色模式'"
+            @click="toggleTheme"
+          >
             <el-icon><Moon v-if="isDark" /><Sunny v-else /></el-icon>
-          </el-button>
+          </LiquidGlass>
         </el-tooltip>
         <template v-if="!isLoggedIn">
           <el-button type="primary" plain round size="small" @click="goLogin">登录</el-button>
@@ -172,7 +187,18 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
         <template v-else>
           <span v-if="!isTeacher" class="user-name">{{ getUser()?.username }}</span>
           <el-dropdown trigger="click">
-            <el-avatar :size="32" class="user-avatar">{{ displayName }}</el-avatar>
+            <LiquidGlass
+              tag="button"
+              class="avatar-liquid-button"
+              :displacement-scale="14"
+              :blur-amount="12"
+              :elasticity="0.16"
+              :corner-radius="999"
+              padding="2px"
+              aria-label="打开用户菜单"
+            >
+              <el-avatar :size="32" class="user-avatar">{{ displayName }}</el-avatar>
+            </LiquidGlass>
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item v-if="isTeacher" @click="router.push({ name: 'teacher-dashboard' })">教学看板</el-dropdown-item>
@@ -274,7 +300,7 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
 }
 
 .header-menu :deep(.el-menu-item.is-active) {
-  color: var(--alp-color-primary) !important;
+  color: #0b7477 !important;
   border-bottom-color: transparent !important;
   background: var(--alp-bg-nav-active) !important;
 }
@@ -376,6 +402,14 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
   max-height: calc(100vh - var(--alp-header-height, 60px));
   display: flex;
   flex-direction: column;
+}
+
+.header-dropdown-item {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .teacher-sidebar {

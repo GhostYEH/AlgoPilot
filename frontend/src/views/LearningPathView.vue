@@ -42,7 +42,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <el-card shadow="never" class="page-card">
+  <el-card shadow="never" class="page-card learning-page">
     <StudyPlanDashboard />
 
     <section

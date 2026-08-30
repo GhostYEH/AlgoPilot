@@ -1,0 +1,510 @@
+/**
+ * AlgoPilot liquid glass web approximation.
+ * Inspired by rdev/liquid-glass-react (MIT) and adapted for Vue 3.
+ * Apple does not provide an official Liquid Glass implementation for the web.
+ */
+
+:root {
+  --alp-liquid-fill:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.22) 42%, rgba(224, 245, 243, 0.3)),
+    rgba(246, 252, 251, 0.64);
+  --alp-liquid-fill-soft:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0.18)),
+    rgba(246, 252, 251, 0.58);
+  --alp-liquid-fill-subtle:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.12)),
+    rgba(246, 252, 251, 0.48);
+  --alp-liquid-fill-strong:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.82), rgba(236, 249, 248, 0.54)),
+    rgba(249, 253, 252, 0.78);
+  --alp-liquid-fill-over-light: rgba(221, 237, 236, 0.66);
+  --alp-liquid-solid-fallback: #f8fbfb;
+  --alp-liquid-border: rgba(255, 255, 255, 0.82);
+  --alp-liquid-border-soft: rgba(151, 181, 178, 0.34);
+  --alp-liquid-border-hover: rgba(255, 255, 255, 0.96);
+  --alp-liquid-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.34),
+    0 14px 38px rgba(29, 72, 69, 0.1),
+    0 2px 7px rgba(29, 72, 69, 0.06);
+  --alp-liquid-shadow-hover:
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.48),
+    0 18px 46px rgba(29, 72, 69, 0.14),
+    0 4px 12px rgba(29, 72, 69, 0.08);
+  --alp-liquid-shadow-subtle:
+    inset 0 1px 0 rgba(255, 255, 255, 0.68),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.22),
+    0 7px 22px rgba(29, 72, 69, 0.07);
+  --alp-liquid-blur: 22px;
+  --alp-liquid-radius: 16px;
+  --alp-liquid-radius-small: 10px;
+}
+
+html.dark {
+  --alp-liquid-fill:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.025) 48%, rgba(61, 138, 126, 0.08)),
+    rgba(18, 26, 24, 0.58);
+  --alp-liquid-fill-soft:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.018)),
+    rgba(19, 27, 25, 0.54);
+  --alp-liquid-fill-subtle:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.012)),
+    rgba(19, 27, 25, 0.46);
+  --alp-liquid-fill-strong:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.035)),
+    rgba(13, 20, 18, 0.78);
+  --alp-liquid-fill-over-light: rgba(12, 18, 17, 0.72);
+  --alp-liquid-solid-fallback: #18211f;
+  --alp-liquid-border: rgba(255, 255, 255, 0.2);
+  --alp-liquid-border-soft: rgba(255, 255, 255, 0.12);
+  --alp-liquid-border-hover: rgba(255, 255, 255, 0.34);
+  --alp-liquid-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.055),
+    0 18px 48px rgba(0, 0, 0, 0.25),
+    0 3px 9px rgba(0, 0, 0, 0.18);
+  --alp-liquid-shadow-hover:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.09),
+    0 22px 58px rgba(0, 0, 0, 0.32),
+    0 4px 13px rgba(0, 0, 0, 0.22);
+  --alp-liquid-shadow-subtle:
+    inset 0 1px 0 rgba(255, 255, 255, 0.13),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.035),
+    0 9px 25px rgba(0, 0, 0, 0.17);
+}
+
+body {
+  background:
+    radial-gradient(circle at 12% 8%, rgba(var(--alp-color-primary-rgb), 0.12), transparent 31rem),
+    radial-gradient(circle at 88% 82%, rgba(91, 141, 168, 0.1), transparent 34rem),
+    var(--alp-bg-page);
+  background-attachment: fixed;
+}
+
+html.dark body {
+  background:
+    radial-gradient(circle at 12% 8%, rgba(var(--alp-color-primary-rgb), 0.13), transparent 32rem),
+    radial-gradient(circle at 90% 84%, rgba(91, 141, 168, 0.075), transparent 36rem),
+    var(--alp-bg-page);
+}
+
+/* Structural glass keeps navigation and page context visually continuous. */
+.app-header,
+.teacher-sidebar,
+.game-play-header,
+.problem-toolbar,
+.main-toolbar,
+.plan-toolbar,
+.command-toolbar {
+  border-color: var(--alp-liquid-border-soft) !important;
+  background: var(--alp-liquid-fill-strong) !important;
+  box-shadow: var(--alp-liquid-shadow) !important;
+  backdrop-filter: blur(26px) saturate(170%) contrast(1.03);
+  -webkit-backdrop-filter: blur(26px) saturate(170%) contrast(1.03);
+}
+
+/* Reusable material hooks for new Vue surfaces. */
+.alp-liquid-surface,
+.alp-liquid-surface--strong,
+.alp-liquid-surface--subtle {
+  border: 1px solid var(--alp-liquid-border-soft) !important;
+}
+
+.alp-liquid-surface {
+  background: var(--alp-liquid-fill-soft) !important;
+  box-shadow: var(--alp-liquid-shadow) !important;
+  backdrop-filter: blur(var(--alp-liquid-blur)) saturate(155%) contrast(1.025);
+  -webkit-backdrop-filter: blur(var(--alp-liquid-blur)) saturate(155%) contrast(1.025);
+}
+
+.alp-liquid-surface--strong {
+  background: var(--alp-liquid-fill-strong) !important;
+  box-shadow: var(--alp-liquid-shadow-hover) !important;
+  backdrop-filter: blur(28px) saturate(170%) contrast(1.04);
+  -webkit-backdrop-filter: blur(28px) saturate(170%) contrast(1.04);
+}
+
+.alp-liquid-surface--subtle {
+  background: var(--alp-liquid-fill-subtle) !important;
+  box-shadow: var(--alp-liquid-shadow-subtle) !important;
+  backdrop-filter: blur(10px) saturate(135%);
+  -webkit-backdrop-filter: blur(10px) saturate(135%);
+}
+
+.app-header {
+  top: 8px !important;
+  margin: 0 10px;
+  width: calc(100% - 20px) !important;
+  border: 1px solid var(--alp-liquid-border-soft) !important;
+  border-radius: 18px;
+}
+
+.teacher-header {
+  width: calc(100% - 216px) !important;
+}
+
+.teacher-sidebar {
+  inset: 8px auto 8px 8px !important;
+  height: calc(100dvh - 16px) !important;
+  border: 1px solid var(--alp-liquid-border-soft) !important;
+  border-radius: 18px;
+}
+
+/* Primary product surfaces. Editors, charts and tables keep their solid internals. */
+.el-card,
+.page-card,
+.content-card,
+.auth-card,
+.quick-card,
+.type-card,
+.preview-card,
+.module-card-compact,
+.strength-card,
+.fav-card,
+.game-stat-card,
+.game-card,
+.metric-card,
+.summary-card,
+.data-panel,
+.overview-panel,
+.panel-card,
+.table-card,
+.viz-panel,
+.pg-panel,
+.gen-panel-inner,
+.favorite-panel,
+.oj-panel,
+.struggle-panel,
+.io-card,
+.agent-card,
+.phase-card,
+.inspector-panel,
+.graph-rec-panel,
+.console-panel,
+.trace-ai-diagnosis-card,
+.evidence-card,
+.detail-card,
+.hint-card,
+.ht-trace-card,
+.step-card,
+.skill-card-brief {
+  border-color: var(--alp-liquid-border-soft) !important;
+  background: var(--alp-liquid-fill-soft) !important;
+  box-shadow: var(--alp-liquid-shadow) !important;
+  backdrop-filter: blur(var(--alp-liquid-blur)) saturate(155%) contrast(1.025);
+  -webkit-backdrop-filter: blur(var(--alp-liquid-blur)) saturate(155%) contrast(1.025);
+}
+
+/* Additional product surfaces found during the full component inventory. */
+.analytics-panel,
+.ai-tutor-card,
+.auth-panel,
+.cases-dialog,
+.contact-card,
+.dash-panel,
+.detail-panel,
+.drawer-info-card,
+.ds-panel,
+.effectiveness-card,
+.eval-card,
+.faq-card,
+.generate-panel,
+.goal-card,
+.learning-quick-panel,
+.loading-card,
+.mastery-card,
+.oj-agent-card,
+.oj-practice-shell,
+.quiz-card,
+.recall-panel,
+.recommend-card,
+.replan-diff-card,
+.resource-card,
+.safety-panel,
+.stat-card,
+.timeline-panel,
+.tour-panel,
+.traverse-card {
+  border-color: var(--alp-liquid-border-soft) !important;
+  background: var(--alp-liquid-fill-soft) !important;
+  box-shadow: var(--alp-liquid-shadow) !important;
+  backdrop-filter: blur(var(--alp-liquid-blur)) saturate(155%) contrast(1.025);
+  -webkit-backdrop-filter: blur(var(--alp-liquid-blur)) saturate(155%) contrast(1.025);
+}
+
+/* Dense algorithm canvases get lighter material to preserve text and frame rate. */
+.bt-checkpoint-card,
+.game-shell__panel,
+.game-shell__sidebar,
+.ht-freq-panel,
+.ht-summary-card,
+.ht-theory-card,
+.learn-viz-card,
+.learn-viz-panel,
+.sq-summary-card,
+.sq-theory-card,
+.trace-source-panel,
+.trace-state-panel,
+.trace-variable-card {
+  border-color: var(--alp-liquid-border-soft) !important;
+  background: var(--alp-liquid-fill-subtle) !important;
+  box-shadow: var(--alp-liquid-shadow-subtle) !important;
+  backdrop-filter: blur(10px) saturate(135%);
+  -webkit-backdrop-filter: blur(10px) saturate(135%);
+}
+
+/* Custom drawers are not always rendered with Element Plus' root class. */
+.resource-preview-drawer,
+.student-detail-drawer,
+.universe-drawer {
+  border-color: var(--alp-liquid-border-soft) !important;
+  background: var(--alp-liquid-fill-strong) !important;
+  box-shadow: var(--alp-liquid-shadow-hover) !important;
+  backdrop-filter: blur(30px) saturate(175%) contrast(1.04);
+  -webkit-backdrop-filter: blur(30px) saturate(175%) contrast(1.04);
+}
+
+.anim-toolbar,
+.ht-mini-toolbar,
+.quiz-toolbar,
+.sq-mini-toolbar,
+.workflow-toolbar {
+  border-color: var(--alp-liquid-border-soft) !important;
+  background: var(--alp-liquid-fill-strong) !important;
+  box-shadow: var(--alp-liquid-shadow-subtle) !important;
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+}
+
+:where(
+  .el-card,
+  .quick-card,
+  .type-card,
+  .module-card-compact,
+  .strength-card,
+  .fav-card,
+  .game-card,
+  .metric-card,
+  .summary-card,
+  .data-panel,
+  .pg-panel,
+  .agent-card,
+  .phase-card,
+  .step-card
+):hover {
+  border-color: var(--alp-liquid-border-hover) !important;
+  box-shadow: var(--alp-liquid-shadow-hover) !important;
+}
+
+/* Element Plus teleports these layers to body, so they need global treatment. */
+.el-dialog,
+.el-drawer,
+.el-message-box,
+.el-popper,
+.el-dropdown__popper,
+.el-select__popper,
+.el-picker-panel,
+.el-notification,
+.el-message {
+  border-color: var(--alp-liquid-border-soft) !important;
+  background: var(--alp-liquid-fill-strong) !important;
+  box-shadow: var(--alp-liquid-shadow-hover) !important;
+  backdrop-filter: blur(30px) saturate(175%) contrast(1.04);
+  -webkit-backdrop-filter: blur(30px) saturate(175%) contrast(1.04);
+}
+
+.el-overlay {
+  background: rgba(11, 18, 17, 0.38) !important;
+  backdrop-filter: blur(7px) saturate(115%);
+  -webkit-backdrop-filter: blur(7px) saturate(115%);
+}
+
+.el-loading-mask {
+  background: color-mix(in srgb, var(--alp-liquid-solid-fallback) 70%, transparent) !important;
+  backdrop-filter: blur(8px) saturate(125%);
+  -webkit-backdrop-filter: blur(8px) saturate(125%);
+}
+
+.el-input__wrapper,
+.el-select__wrapper,
+.el-textarea__inner,
+.el-date-editor,
+.el-input-number,
+.el-cascader .el-input__wrapper {
+  border: 1px solid var(--alp-liquid-border-soft) !important;
+  background: var(--alp-liquid-fill-soft) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+  backdrop-filter: blur(14px) saturate(145%);
+  -webkit-backdrop-filter: blur(14px) saturate(145%);
+}
+
+.el-input__wrapper.is-focus,
+.el-select__wrapper.is-focused,
+.el-textarea__inner:focus {
+  border-color: rgba(var(--alp-color-primary-rgb), 0.58) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 0 0 3px rgba(var(--alp-color-primary-rgb), 0.12) !important;
+}
+
+.el-button,
+.theme-liquid-button,
+.avatar-liquid-button {
+  border-color: var(--alp-liquid-border-soft) !important;
+  background: var(--alp-liquid-fill) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    0 5px 16px rgba(20, 59, 56, 0.08) !important;
+  backdrop-filter: blur(14px) saturate(155%);
+  -webkit-backdrop-filter: blur(14px) saturate(155%);
+}
+
+.el-button--primary:not(.is-plain) {
+  border-color: rgba(var(--alp-color-primary-rgb), 0.7) !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.2), transparent 48%),
+    rgba(var(--alp-color-primary-rgb), 0.88) !important;
+  color: #f7fbfa !important;
+}
+
+.el-button:not(.is-disabled):hover {
+  transform: translateY(-1px);
+  border-color: var(--alp-liquid-border-hover) !important;
+  box-shadow: var(--alp-liquid-shadow-hover) !important;
+}
+
+.el-button:not(.is-disabled):active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.el-menu-item,
+.nav-dropdown-trigger,
+.teacher-menu .el-menu-item {
+  border: 1px solid transparent;
+}
+
+.el-menu-item:hover,
+.nav-dropdown-trigger:hover,
+.teacher-menu .el-menu-item:hover,
+.el-menu-item.is-active,
+.nav-dropdown-trigger.is-active,
+.teacher-menu .el-menu-item.is-active {
+  border-color: var(--alp-liquid-border-soft) !important;
+  background: var(--alp-liquid-fill-soft) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+  backdrop-filter: blur(12px) saturate(145%);
+  -webkit-backdrop-filter: blur(12px) saturate(145%);
+}
+
+.theme-liquid-button,
+.avatar-liquid-button,
+.header-brand-liquid {
+  appearance: none;
+  font: inherit;
+}
+
+.theme-liquid-button {
+  width: 34px;
+  height: 34px;
+  color: var(--alp-color-text-secondary);
+}
+
+.avatar-liquid-button {
+  width: 38px;
+  height: 38px;
+  padding: 2px !important;
+}
+
+.header-brand-liquid {
+  flex-shrink: 0;
+  color: var(--alp-color-text);
+}
+
+.avatar-liquid-button .el-avatar {
+  background: transparent;
+  border: 0;
+}
+
+/* Keep dense technical canvases crisp and easy to scan. */
+.cm-editor,
+.cm-scroller,
+.el-table,
+.el-table__inner-wrapper,
+.code-pane,
+.result-pane,
+.trace-split-view {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .app-header,
+  .teacher-sidebar,
+  .el-card,
+  .el-dialog,
+  .el-drawer,
+  .el-popper,
+  .el-input__wrapper,
+  .el-select__wrapper,
+  .el-textarea__inner {
+    background: var(--alp-liquid-solid-fallback) !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .app-header,
+  .teacher-sidebar,
+  .el-card,
+  .el-dialog,
+  .el-drawer,
+  .el-popper,
+  .el-input__wrapper,
+  .el-select__wrapper,
+  .el-textarea__inner,
+  .el-button,
+  .alp-liquid-surface,
+  .alp-liquid-surface--strong,
+  .alp-liquid-surface--subtle,
+  .resource-preview-drawer,
+  .student-detail-drawer,
+  .universe-drawer {
+    background: var(--alp-liquid-solid-fallback) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .el-button,
+  .el-card,
+  [class$='-card'],
+  [class$='-panel'] {
+    transform: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 960px) {
+  .teacher-header {
+    width: calc(100% - 88px) !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-header {
+    top: 6px !important;
+    margin: 0 6px;
+    width: calc(100% - 12px) !important;
+    border-radius: 14px;
+  }
+
+  .teacher-header {
+    width: calc(100% - 12px) !important;
+  }
+
+  .header-brand-liquid {
+    padding-inline: 7px !important;
+  }
+}

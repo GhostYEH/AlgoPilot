@@ -83,7 +83,7 @@ if "!SKIP_BACKEND!"=="1" goto backend_skip
 
 call :write_frontend_env
 echo       starting backend on port !BACKEND_PORT! ...
-start "ALP-Backend" /D "%BACKEND%" cmd /k ""!PYEXE!" -m uvicorn main:app --reload --host 127.0.0.1 --port !BACKEND_PORT!"
+start "" /B /D "%BACKEND%" "!PYEXE!" -m uvicorn main:app --reload --host 127.0.0.1 --port !BACKEND_PORT!
 goto start_frontend
 
 :backend_skip
@@ -92,7 +92,7 @@ call :write_frontend_env
 
 :start_frontend
 echo [4/5] starting frontend ...
-start "ALP-Frontend" /D "%FRONTEND%" cmd /k "npm run dev"
+start "" /B /D "%FRONTEND%" cmd /d /c "npm run dev"
 
 set "BACKEND_URL=http://127.0.0.1:!BACKEND_PORT!"
 set "HEALTH_URL=!BACKEND_URL!/api/health"
@@ -133,15 +133,15 @@ if errorlevel 1 (
 echo       frontend OK
 
 :open_browser
-start "" "%FRONTEND_URL%"
+echo       browser auto-open disabled
 
 echo.
-echo Done. Keep these windows open:
-echo   ALP-Backend   !BACKEND_URL!
-echo   ALP-Frontend  %FRONTEND_URL%
+echo Done. Services are running in this window:
+echo   Backend   !BACKEND_URL!
+echo   Frontend  %FRONTEND_URL%
+echo Press Ctrl+C or close this window to stop both services.
 echo.
-call :sleep 4
-goto ok
+goto keep_running
 
 :pick_backend_port
 set "SKIP_BACKEND=0"
@@ -192,6 +192,10 @@ exit /b 0
 set /a "_PINGS=%~1+1"
 ping -n !_PINGS! 127.0.0.1 >nul 2>&1
 exit /b 0
+
+:keep_running
+call :sleep 60
+goto keep_running
 
 :fail
 echo.

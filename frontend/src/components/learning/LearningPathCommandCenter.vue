@@ -8,8 +8,11 @@ import {
   Check,
   Clock,
   Collection,
+  DataLine,
+  EditPen,
   Filter,
   Lock,
+  Reading,
   Refresh,
   Search,
   TrendCharts,
@@ -19,7 +22,11 @@ import {
 import AiTutorPanel from '@/components/learning/AiTutorPanel.vue'
 import ConceptKnowledgeGraph from '@/components/learning/ConceptKnowledgeGraph.vue'
 import RecommendedResourcesPanel from '@/components/learning/RecommendedResourcesPanel.vue'
-import { getConceptsForModule } from '@/constants/conceptGraph'
+import {
+  getConceptsForModule,
+  getProblemCatalog,
+  type ConceptGraphNode,
+} from '@/constants/conceptGraph'
 import { MODULE_PATH_HINTS } from '@/constants/modulePathHints'
 import {
   ALGORITHM_MODULES,
@@ -34,6 +41,16 @@ import { isLoggedIn } from '@/stores/auth'
 import { buildLearningOverview, type ModuleProgressRow } from '@/utils/learningOverview'
 
 type StatusFilter = 'all' | 'mastered' | 'progress' | 'not-started'
+type LearningTaskKind = 'concept' | 'trace' | 'practice'
+
+interface LearningTask {
+  id: string
+  kind: LearningTaskKind
+  title: string
+  description: string
+  minutes: number
+  actionLabel: string
+}
 
 const FALLBACK_MODULE_PREREQUISITES: Record<string, string[]> = {
   'linked-list': ['array'],
@@ -69,6 +86,8 @@ const phaseFilter = ref<'all' | ModulePhase>('all')
 const onlyMyPath = ref(true)
 const selectedKey = ref(props.highlightKey ?? plan.value?.next_module_key ?? overview.value.nextModule?.key ?? 'array')
 const aiVisible = ref(false)
+const completedTaskIds = ref<string[]>([])
+const selectedGraphNode = ref<ConceptGraphNode | null>(null)
 
 watch(
   () => props.highlightKey,
@@ -142,8 +161,10 @@ const selectedRow = computed(
 )
 const selectedHint = computed(() => MODULE_PATH_HINTS[selectedKey.value])
 const selectedStep = computed(() => stepMap.value.get(selectedKey.value))
-const selectedConceptIds = computed(() =>
-  getConceptsForModule(selectedKey.value).map((concept) => concept.id),
+const selectedConcepts = computed(() => getConceptsForModule(selectedKey.value))
+const selectedConceptIds = computed(() => selectedConcepts.value.map((concept) => concept.id))
+const selectedProblems = computed(() =>
+  getProblemCatalog().filter((problem) => problem.module_key === selectedKey.value),
 )
 const tutorSection = computed<LearnSection>(() => {
   const configured = getModuleLearnConfig(selectedKey.value)?.sections[0]
@@ -169,6 +190,43 @@ const selectedRank = computed(() => {
   const index = (plan.value?.ordered_keys ?? orderedRows.value.map((row) => row.key)).indexOf(selectedKey.value)
   return index >= 0 ? index + 1 : 1
 })
+
+const learningTasks = computed<LearningTask[]>(() => {
+  const configuredSections = getModuleLearnConfig(selectedKey.value)?.sections ?? []
+  const firstConcept = selectedConcepts.value[0]?.label ?? selectedRow.value?.label ?? '核心概念'
+  const secondConcept = selectedConcepts.value[1]?.label ?? selectedConcepts.value[0]?.label ?? '关键方法'
+  const firstProblem = selectedProblems.value[0]?.label ?? `${selectedRow.value?.label ?? ''}基础题`
+  return [
+    {
+      id: `${selectedKey.value}-concept`,
+      kind: 'concept',
+      title: configuredSections[0]?.title ?? `理解 ${firstConcept}`,
+      description: `先建立「${firstConcept}」的定义、操作与复杂度框架。`,
+      minutes: Math.max(10, Math.min(20, configuredSections[0]?.estMinutes ?? 12)),
+      actionLabel: '进入讲解',
+    },
+    {
+      id: `${selectedKey.value}-trace`,
+      kind: 'trace',
+      title: `Trace 演练 · ${secondConcept}`,
+      description: '逐步观察关键变量与数据结构状态，定位边界条件。',
+      minutes: 15,
+      actionLabel: '开始演练',
+    },
+    {
+      id: `${selectedKey.value}-practice`,
+      kind: 'practice',
+      title: `OJ 巩固 · ${firstProblem}`,
+      description: '独立完成编码并用测例验证时间、空间复杂度。',
+      minutes: 25,
+      actionLabel: '去做题',
+    },
+  ]
+})
+const completedTaskCount = computed(() =>
+  learningTasks.value.filter((task) => completedTaskIds.value.includes(task.id)).length,
+)
+const sessionMinutes = computed(() => learningTasks.value.reduce((sum, task) => sum + task.minutes, 0))
 
 const prerequisiteRows = computed(() =>
   (selectedStep.value?.prerequisites ?? FALLBACK_MODULE_PREREQUISITES[selectedKey.value] ?? [])
@@ -204,6 +262,24 @@ async function handleReplan() {
 
 function startPractice() {
   void router.push({ name: 'practice-list', query: { module: selectedKey.value } })
+}
+
+function toggleTask(taskId: string) {
+  completedTaskIds.value = completedTaskIds.value.includes(taskId)
+    ? completedTaskIds.value.filter((id) => id !== taskId)
+    : [...completedTaskIds.value, taskId]
+}
+
+function runTask(task: LearningTask) {
+  if (task.kind === 'practice') {
+    startPractice()
+    return
+  }
+  goModule(selectedKey.value)
+}
+
+function onGraphSelect(node: ConceptGraphNode) {
+  selectedGraphNode.value = node
 }
 </script>
 
@@ -329,19 +405,74 @@ function startPractice() {
           <el-button @click="resetFilters">清除筛选</el-button>
         </el-empty>
 
+        <section class="session-plan" aria-label="本次学习任务">
+          <header class="session-heading">
+            <div>
+              <span class="section-eyebrow">下一步行动</span>
+              <h3>本次学习任务</h3>
+              <p>按「理解 → 演练 → 巩固」完成一个约 {{ sessionMinutes }} 分钟的学习闭环。</p>
+            </div>
+            <div class="session-progress">
+              <strong>{{ completedTaskCount }}/{{ learningTasks.length }}</strong>
+              <span>已完成</span>
+              <el-progress
+                :percentage="Math.round((completedTaskCount / learningTasks.length) * 100)"
+                :show-text="false"
+                :stroke-width="5"
+              />
+            </div>
+          </header>
+          <div class="task-grid">
+            <article
+              v-for="(task, index) in learningTasks"
+              :key="task.id"
+              class="learning-task"
+              :class="{ 'is-complete': completedTaskIds.includes(task.id) }"
+            >
+              <button
+                type="button"
+                class="task-check"
+                :aria-label="completedTaskIds.includes(task.id) ? `标记${task.title}为未完成` : `标记${task.title}为完成`"
+                @click="toggleTask(task.id)"
+              >
+                <el-icon v-if="completedTaskIds.includes(task.id)"><Check /></el-icon>
+                <span v-else>{{ index + 1 }}</span>
+              </button>
+              <div class="task-copy">
+                <div class="task-meta">
+                  <span>
+                    <el-icon v-if="task.kind === 'concept'"><Reading /></el-icon>
+                    <el-icon v-else-if="task.kind === 'trace'"><DataLine /></el-icon>
+                    <el-icon v-else><EditPen /></el-icon>
+                    {{ task.kind === 'concept' ? '概念讲解' : task.kind === 'trace' ? '过程演练' : '实战练习' }}
+                  </span>
+                  <span>{{ task.minutes }} 分钟</span>
+                </div>
+                <strong>{{ task.title }}</strong>
+                <p>{{ task.description }}</p>
+                <el-button text type="primary" size="small" @click="runTask(task)">
+                  {{ task.actionLabel }}
+                  <el-icon><ArrowRight /></el-icon>
+                </el-button>
+              </div>
+            </article>
+          </div>
+        </section>
+
         <section class="dependency-section">
           <div class="subsection-heading">
             <div>
               <h3>概念依赖图谱</h3>
-              <p>查看「{{ selectedRow?.label }}」的概念、先修关系与关联题目。</p>
+              <p>从左到右阅读「{{ selectedRow?.label }}」的先修概念、核心方法与关联题目；点击节点查看解释。</p>
             </div>
-            <span>{{ selectedConceptIds.length }} 个核心概念</span>
+            <span>{{ selectedConceptIds.length }} 个概念 · {{ selectedProblems.length }} 道关联题</span>
           </div>
           <ConceptKnowledgeGraph
             :module-key="selectedKey"
             :highlight-path-ids="selectedConceptIds"
             :navigate-on-click="false"
-            height="350px"
+            height="420px"
+            @select="onGraphSelect"
           />
         </section>
       </main>
@@ -371,6 +502,16 @@ function startPractice() {
               <el-icon><Check /></el-icon><span>{{ goal }}</span>
             </li>
           </ul>
+        </section>
+
+        <section class="inspector-section">
+          <h4>核心知识点</h4>
+          <div class="concept-chip-list">
+            <span v-for="concept in selectedConcepts" :key="concept.id">{{ concept.label }}</span>
+          </div>
+          <p v-if="selectedGraphNode" class="selected-concept-note">
+            当前定位：<strong>{{ selectedGraphNode.label }}</strong> · {{ selectedGraphNode.description || '通过对应练习检验掌握情况。' }}
+          </p>
         </section>
 
         <section class="inspector-section relation-summary">
@@ -406,6 +547,14 @@ function startPractice() {
           <div class="evidence-row">
             <strong>{{ selectedRow.percent }}%</strong>
             <span>当前进度</span>
+          </div>
+          <div class="evidence-row">
+            <strong>{{ completedTaskCount }}/{{ learningTasks.length }}</strong>
+            <span>本次任务</span>
+          </div>
+          <div class="evidence-row">
+            <strong>{{ selectedProblems.length }}</strong>
+            <span>关联练习</span>
           </div>
         </section>
 
@@ -526,6 +675,56 @@ function startPractice() {
 .node-copy small { color: var(--alp-color-muted); font-size: 10px; }
 .next-badge { position: absolute; top: -9px; right: 8px; padding: 2px 6px; border-radius: 3px; color: white; background: var(--alp-color-primary); font-size: 9px; font-weight: 700; }
 
+.session-plan {
+  margin-top: 16px;
+  border: 1px solid var(--alp-color-border);
+  border-radius: var(--alp-radius-card);
+  background: var(--alp-bg-surface);
+  overflow: hidden;
+}
+.session-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 18px 14px;
+  border-bottom: 1px solid var(--alp-color-border);
+  background: color-mix(in srgb, var(--alp-color-primary) 5%, var(--alp-bg-surface));
+}
+.section-eyebrow { display: block; margin-bottom: 4px; color: var(--alp-color-primary); font-size: 10px; font-weight: 700; letter-spacing: .08em; }
+.session-heading h3 { margin: 0; font-size: 15px; }
+.session-heading p { margin: 4px 0 0; color: var(--alp-color-muted); font-size: 11px; }
+.session-progress { display: grid; grid-template-columns: auto auto; align-items: baseline; column-gap: 5px; width: 110px; flex: 0 0 auto; }
+.session-progress strong { font-size: 15px; font-variant-numeric: tabular-nums; }
+.session-progress > span { color: var(--alp-color-muted); font-size: 10px; }
+.session-progress :deep(.el-progress) { grid-column: 1 / -1; margin-top: 5px; }
+.task-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.learning-task { display: flex; gap: 10px; min-width: 0; padding: 15px 14px; transition: background .16s ease; }
+.learning-task + .learning-task { border-left: 1px solid var(--alp-color-border); }
+.learning-task:hover { background: var(--alp-bg-hover); }
+.learning-task.is-complete { background: color-mix(in srgb, var(--alp-color-success) 5%, var(--alp-bg-surface)); }
+.task-check {
+  display: grid;
+  place-items: center;
+  flex: 0 0 26px;
+  width: 26px;
+  height: 26px;
+  border: 1px solid color-mix(in srgb, var(--alp-color-primary) 55%, var(--alp-color-border));
+  border-radius: 50%;
+  color: var(--alp-color-primary);
+  background: var(--alp-bg-surface);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+}
+.is-complete .task-check { color: white; border-color: var(--alp-color-success); background: var(--alp-color-success); }
+.task-copy { min-width: 0; }
+.task-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--alp-color-muted); font-size: 9px; }
+.task-meta span { display: flex; align-items: center; gap: 4px; }
+.task-copy > strong { display: block; margin-top: 7px; overflow: hidden; color: var(--alp-color-text); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.task-copy > p { min-height: 34px; margin: 5px 0 4px; color: var(--alp-color-text-secondary); font-size: 10px; line-height: 1.6; }
+.task-copy :deep(.el-button) { height: auto; padding: 2px 0; font-size: 10px; }
+
 .dependency-section { margin-top: 16px; }
 .subsection-heading { display: flex; justify-content: space-between; align-items: end; gap: 14px; margin-bottom: 10px; }
 .subsection-heading h3 { margin: 0; font-size: 16px; }
@@ -544,6 +743,10 @@ function startPractice() {
 .inspector-section ul { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
 .inspector-section li { display: flex; align-items: flex-start; gap: 7px; color: var(--alp-color-text-secondary); font-size: 11px; line-height: 1.5; }
 .inspector-section li .el-icon { margin-top: 2px; color: var(--alp-color-success); }
+.concept-chip-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.concept-chip-list span { padding: 4px 7px; border: 1px solid var(--alp-color-border); border-radius: 5px; color: var(--alp-color-text-secondary); background: var(--alp-bg-surface-muted); font-size: 10px; }
+.inspector-section > .selected-concept-note { margin-top: 9px; padding: 8px; border-radius: var(--alp-radius-sm); background: var(--alp-color-primary-soft); color: var(--alp-color-text-secondary); font-size: 10px; }
+.selected-concept-note strong { color: var(--alp-color-primary); }
 .relation-summary > div { display: grid; gap: 5px; margin-top: 9px; }
 .relation-summary div > span { color: var(--alp-color-muted); font-size: 10px; }
 .relation-summary button { border: 0; padding: 0; color: var(--alp-color-primary); background: transparent; cursor: pointer; text-align: left; font-size: 11px; }
@@ -566,6 +769,8 @@ function startPractice() {
   .path-metrics { min-width: 0; }
   .workspace-grid { grid-template-columns: 160px minmax(0, 1fr); }
   .inspector-panel { grid-column: 1 / -1; border-top: 1px solid var(--alp-color-border); border-left: 0; }
+  .task-grid { grid-template-columns: 1fr; }
+  .learning-task + .learning-task { border-top: 1px solid var(--alp-color-border); border-left: 0; }
 }
 
 @media (max-width: 760px) {
@@ -578,5 +783,6 @@ function startPractice() {
   .filter-rail { display: none; }
   .path-workspace { padding: 10px; }
   .lane-track { align-items: stretch; }
+  .session-heading { align-items: flex-start; }
 }
 </style>

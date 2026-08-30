@@ -85,6 +85,7 @@ release/
 
 # Local audit artifacts
 .codex-audit/
+.tmp/
 
 # Local documents and presentations
 文档和ppt/

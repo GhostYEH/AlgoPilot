@@ -44,6 +44,7 @@
   --alp-layout-padding-x: clamp(16px, 1.7vw, 28px);
   --alp-layout-padding-y: 18px;
   --alp-content-max: 1600px;
+  --alp-learning-content-max: 1720px;
   --el-color-primary: #16a6a1;
   --el-bg-color: #101e25;
   --el-bg-color-overlay: #15262e;
@@ -138,6 +139,11 @@ html::before { content: none !important; }
 .page-shell, .page-container, .dashboard-page, .learning-page, .practice-page,
 .teacher-dashboard, .my-learning-page, .resource-library-page {
   max-width: var(--alp-content-max);
+  margin-inline: auto;
+}
+.home-page, .learning-page {
+  width: 100%;
+  max-width: var(--alp-learning-content-max);
   margin-inline: auto;
 }
 .section-title, .page-title, h1, h2, h3 { text-wrap: balance; letter-spacing: -0.015em; }
