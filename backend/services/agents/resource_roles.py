@@ -2421,10 +2421,9 @@ class PptAgent(ResourceRoleAgent):
 
 
 class VideoScriptAgent(ResourceRoleAgent):
-    """教学短视频脚本：输出 JSON 脚本（含分镜 + 字幕 + 配音文案）。
+    """教学短视频脚本：输出 JSON 脚本（含分镜 + 字幕 + 旁白文案）。
 
-    不做真实视频渲染；前端结合 TTS 朗读 voiceover 文案即可形成
-    "图文 + 语音" 的伪视频体验。
+    不做真实视频渲染；前端按分镜时长播放图文内容，形成无声伪视频体验。
     """
 
     agent_id = "VideoScriptAgent"
@@ -2452,7 +2451,7 @@ class VideoScriptAgent(ResourceRoleAgent):
       "scene": "分镜场景描述（画面中出现什么、镜头如何运动，30～80 字）",
       "visual_hint": "画面插图/动画提示（如：左侧数组高亮 i，右侧文本框显示 sum）",
       "subtitle": "本镜字幕（屏幕上显示的精炼文字，10～30 字）",
-      "voiceover": "本镜配音文案（口播讲解，40～120 字，须与字幕互补不重复）",
+      "voiceover": "本镜旁白文案（讲解文字，40～120 字，须与字幕互补不重复）",
       "duration_sec": 8
     }}
   ],
@@ -2463,7 +2462,7 @@ class VideoScriptAgent(ResourceRoleAgent):
 - shots 数量 6～10 个，总 duration_sec 介于 60～90
 - 每个 shot 必须含 scene/visual_hint/subtitle/voiceover 四字段，均不得为空
 - subtitle 单条 ≤ 30 字；voiceover 单条 40～120 字
-- 字幕不得与配音文案完全重复，字幕是关键词提炼、配音是讲解
+- 字幕不得与旁白文案完全重复，字幕是关键词提炼、旁白是讲解
 - 术语与知识库一致，不得编造题号、URL 或外部文献
 - 第 1 镜应为引入（场景描述现实问题或学习目标），最后 1 镜应为总结
 - 不得混入其他算法或无关主题，紧扣当前课程主题"""

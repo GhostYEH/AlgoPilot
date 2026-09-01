@@ -97,32 +97,6 @@ class Settings(BaseSettings):
     def llm_provider(self) -> str:
         return "spark"
 
-    # 科大讯飞在线语音合成（流式 WebAPI v2）
-    iflytek_tts_app_id: str = Field(
-        default="",
-        validation_alias=AliasChoices("IFLYTEK_TTS_APP_ID", "XFYUN_APP_ID"),
-    )
-    iflytek_tts_api_key: str = Field(
-        default="",
-        validation_alias=AliasChoices("IFLYTEK_TTS_API_KEY", "XFYUN_API_KEY"),
-    )
-    iflytek_tts_api_secret: str = Field(
-        default="",
-        validation_alias=AliasChoices("IFLYTEK_TTS_API_SECRET", "XFYUN_API_SECRET"),
-    )
-    tts_voice: str = Field(
-        default="x4_xiaoyan",
-        validation_alias=AliasChoices("TTS_VOICE", "TTS_VCN", "IFLYTEK_TTS_VCN"),
-    )
-    tts_timeout: int = Field(
-        default=30,
-        validation_alias="TTS_TIMEOUT",
-    )
-    tts_ssl_verify: bool = Field(
-        default=True,
-        validation_alias="TTS_SSL_VERIFY",
-    )
-
     cors_origins: str = Field(
         default="http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:8000,http://localhost:8000",
         validation_alias="CORS_ORIGINS",
@@ -143,15 +117,6 @@ class Settings(BaseSettings):
     def is_production(self) -> bool:
         """环境必须显式声明，绝不能从 CORS 配置反推安全策略。"""
         return self.app_env == "production"
-
-    @property
-    def tts_configured(self) -> bool:
-        app_id = self.iflytek_tts_app_id.strip()
-        api_key = self.iflytek_tts_api_key.strip()
-        api_secret = self.iflytek_tts_api_secret.strip()
-        if not (app_id and api_key and api_secret):
-            return False
-        return not any(_is_llm_placeholder(v) for v in (app_id, api_key, api_secret))
 
 
 settings = Settings()

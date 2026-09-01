@@ -475,7 +475,7 @@ def _structured_quality_issues(
         if len(set(all_titles)) != len(all_titles):
             issues.append("拓展阅读存在重复材料，未形成基础到挑战的梯度")
 
-    # 教学短视频脚本校验：shots 数量、字段完整性、字幕/配音长度与互补
+    # 教学短视频脚本校验：shots 数量、字段完整性、字幕/旁白长度与互补
     shots = data.get("shots")
     if isinstance(shots, list):
         if not (6 <= len(shots) <= 10):
@@ -495,9 +495,9 @@ def _structured_quality_issues(
             if len(subtitle) > 30:
                 issues.append(f"第 {index} 镜字幕超过 30 字，应精炼为关键词")
             if len(voiceover) > 200:
-                issues.append(f"第 {index} 镜配音文案过长，单镜不宜超过 200 字")
+                issues.append(f"第 {index} 镜旁白文案过长，单镜不宜超过 200 字")
             if subtitle and voiceover and subtitle == voiceover:
-                issues.append(f"第 {index} 镜字幕与配音文案完全重复，字幕应为关键词提炼")
+                issues.append(f"第 {index} 镜字幕与旁白文案完全重复，字幕应为关键词提炼")
             duration = shot.get("duration_sec")
             if duration is not None:
                 try:

@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
 import type { GeneratedResource } from '@/api/orchestrator'
-import { synthesizeTTS } from '@/api/tts'
 import DomainStructurePanels from '@/components/resources/DomainStructurePanels.vue'
 import SafetyValidationPanel from '@/components/resources/SafetyValidationPanel.vue'
 import TrustEvidenceDrawer from '@/components/resources/TrustEvidenceDrawer.vue'
@@ -402,19 +400,7 @@ const videoTotalDuration = computed(() =>
 // 当前播放分镜索引（-1 表示未开始；shots.length 表示已播完）
 const videoCurrentShot = ref(-1)
 const videoPlaying = ref(false)
-const videoTtsLoading = ref(false)
-// 每镜的 TTS URL 缓存（按 shot.index）
-const videoTtsUrls = ref<Record<number, string>>({})
-let videoAudioEl: HTMLAudioElement | null = null
 let videoPlayTimer: ReturnType<typeof setTimeout> | null = null
-
-function ensureVideoAudio(): HTMLAudioElement | null {
-  if (!videoAudioEl) {
-    videoAudioEl = new Audio()
-    videoAudioEl.preload = 'auto'
-  }
-  return videoAudioEl
-}
 
 function stopVideoPlayback() {
   videoPlaying.value = false
@@ -422,22 +408,6 @@ function stopVideoPlayback() {
     clearTimeout(videoPlayTimer)
     videoPlayTimer = null
   }
-  if (videoAudioEl) {
-    videoAudioEl.pause()
-    videoAudioEl.currentTime = 0
-  }
-}
-
-async function ensureShotTtsUrl(shot: VideoShot): Promise<string | null> {
-  const idx = shot.index ?? -1
-  if (idx < 0) return null
-  if (videoTtsUrls.value[idx]) return videoTtsUrls.value[idx]
-  const text = (shot.voiceover || '').trim()
-  if (!text) return null
-  const blob = await synthesizeTTS({ text })
-  const url = URL.createObjectURL(blob)
-  videoTtsUrls.value[idx] = url
-  return url
 }
 
 async function playVideoFromShot(startIdx: number) {
@@ -447,41 +417,14 @@ async function playVideoFromShot(startIdx: number) {
   stopVideoPlayback()
   videoCurrentShot.value = startIdx
   videoPlaying.value = true
-  await playShot(shots[startIdx])
+  playShot(shots[startIdx])
 }
 
-async function playShot(shot: VideoShot) {
+function playShot(shot: VideoShot) {
   const duration = Math.max(3, Number(shot.duration_sec) || 8)
-  const audio = ensureVideoAudio()
-  if (!audio) {
-    // 浏览器不支持 Audio：仅按 duration 计时推进
-    videoPlayTimer = setTimeout(() => {
-      advanceToNextShot()
-    }, duration * 1000)
-    return
-  }
-
-  // 尝试播放配音：若 TTS 可用，则用音频时长作为分镜时长；否则用 duration_sec
-  let audioOk = false
-  try {
-    videoTtsLoading.value = true
-    const url = await ensureShotTtsUrl(shot)
-    if (url) {
-      audio.src = url
-      await audio.play()
-      audioOk = true
-    }
-  } catch {
-    // TTS 失败：静默降级为无声分镜，不阻断播放
-    audioOk = false
-  } finally {
-    videoTtsLoading.value = false
-  }
-
-  const waitMs = audioOk ? Math.max(duration * 1000, (audio.duration || 0) * 1000) : duration * 1000
   videoPlayTimer = setTimeout(() => {
     advanceToNextShot()
-  }, waitMs)
+  }, duration * 1000)
 }
 
 function advanceToNextShot() {
@@ -491,10 +434,6 @@ function advanceToNextShot() {
     // 播放结束
     videoPlaying.value = false
     videoCurrentShot.value = shots.length // 标记为已播完
-    if (videoAudioEl) {
-      videoAudioEl.pause()
-      videoAudioEl.currentTime = 0
-    }
     return
   }
   videoCurrentShot.value = next
@@ -518,61 +457,13 @@ function jumpToShot(idx: number) {
   void playVideoFromShot(idx)
 }
 
-async function readSingleShot(shot: VideoShot) {
-  const text = (shot.voiceover || '').trim()
-  if (!text) {
-    return
-  }
-  try {
-    videoTtsLoading.value = true
-    stopVideoPlayback()
-    const audio = ensureVideoAudio()
-    if (!audio) {
-      ElMessage.warning('当前浏览器不支持音频播放')
-      return
-    }
-    // 优先用缓存 URL
-    let url = videoTtsUrls.value[shot.index ?? -1]
-    if (!url) {
-      const blob = await synthesizeTTS({ text })
-      url = URL.createObjectURL(blob)
-      if (shot.index !== undefined) videoTtsUrls.value[shot.index] = url
-    }
-    audio.src = url
-    videoCurrentShot.value = shot.index ?? -1
-    await audio.play()
-  } catch (e) {
-    const err = e as { response?: { status?: number } }
-    if (err?.response?.status === 503) {
-      ElMessage.warning('语音合成未配置：请联系管理员启用讯飞 TTS')
-    } else {
-      ElMessage.error('语音合成失败，请稍后重试')
-    }
-  } finally {
-    videoTtsLoading.value = false
-  }
-}
-
 watch(videoScriptPayload, () => {
   stopVideoPlayback()
   videoCurrentShot.value = -1
-  // 撤销旧 URL
-  for (const k of Object.keys(videoTtsUrls.value)) {
-    URL.revokeObjectURL(videoTtsUrls.value[Number(k)])
-  }
-  videoTtsUrls.value = {}
 }, { immediate: true })
 
 onBeforeUnmount(() => {
   stopVideoPlayback()
-  for (const k of Object.keys(videoTtsUrls.value)) {
-    URL.revokeObjectURL(videoTtsUrls.value[Number(k)])
-  }
-  videoTtsUrls.value = {}
-  if (videoAudioEl) {
-    videoAudioEl.pause()
-    videoAudioEl = null
-  }
 })
 
 const evidenceVisible = ref(false)
@@ -895,7 +786,7 @@ function openEvidence() {
       <article v-if="tab === 'video_script'" class="panel-card panel-card--video">
         <header class="panel-head">
           <h3>教学短视频脚本</h3>
-          <span class="panel-meta">VideoScriptAgent · 分镜 + 字幕 + 配音文案</span>
+          <span class="panel-meta">VideoScriptAgent · 分镜 + 字幕 + 旁白文案</span>
         </header>
 
         <div v-if="videoScriptPayload" class="video-info">
@@ -912,9 +803,8 @@ function openEvidence() {
         </div>
 
         <div v-if="videoScriptPayload" class="video-controls">
-          <el-button
+            <el-button
             :type="videoPlaying ? 'warning' : 'primary'"
-            :loading="videoTtsLoading"
             size="small"
             @click="toggleVideoPlayback"
           >
@@ -964,18 +854,8 @@ function openEvidence() {
             <p v-if="shot.visual_hint" class="video-shot-hint">画面提示：{{ shot.visual_hint }}</p>
             <p v-if="shot.subtitle" class="video-shot-subtitle">「{{ shot.subtitle }}」</p>
             <p v-if="shot.voiceover" class="video-shot-voiceover">
-              <span class="video-vo-tag">配音</span>{{ shot.voiceover }}
+              <span class="video-vo-tag">旁白</span>{{ shot.voiceover }}
             </p>
-            <div class="video-shot-actions">
-              <el-button
-                size="small"
-                plain
-                :loading="videoTtsLoading && videoCurrentShot === (shot.index ?? idx)"
-                @click.stop="readSingleShot(shot)"
-              >
-                🔊 朗读本镜
-              </el-button>
-            </div>
           </article>
         </div>
 
@@ -983,7 +863,7 @@ function openEvidence() {
           <span class="video-summary-tag">结尾总结</span>{{ videoScriptPayload.summary }}
         </p>
 
-        <el-empty v-else description="VideoScriptAgent 将生成 60～90 秒教学短视频脚本（含分镜 + 字幕 + 配音文案）" />
+        <el-empty v-else description="VideoScriptAgent 将生成 60～90 秒教学短视频脚本（含分镜 + 字幕 + 旁白文案）" />
       </article>
       </template>
     </div>
@@ -1822,11 +1702,6 @@ function openEvidence() {
   font-size: 12px;
   line-height: 1.6;
   color: var(--alp-color-text);
-}
-
-.video-shot-actions {
-  display: flex;
-  justify-content: flex-end;
 }
 
 .video-summary {

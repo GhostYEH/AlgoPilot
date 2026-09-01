@@ -43,7 +43,7 @@ _RESOURCE_TYPE_FEATURES: dict[str, list[str]] = {
     "trace_animation": ["Trace 动画", "执行过程可视化", "逐步跟踪"],
     "reading": ["拓展阅读", "分层深入", "学术/工程视角"],
     "ppt": ["课程讲义", "结构化大纲", "可下载 PPTX"],
-    "video_script": ["分镜脚本", "字幕+配音文案", "TTS 语音讲解"],
+    "video_script": ["分镜脚本", "字幕+旁白文案", "图文节奏设计"],
 }
 
 _DIMENSION_LABELS: dict[str, str] = {

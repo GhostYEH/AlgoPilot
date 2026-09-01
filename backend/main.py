@@ -42,7 +42,6 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 from api.ai_tutor import router as ai_tutor_router
-from api.tts import router as tts_router
 from api.oj_assistant import router as oj_assistant_router
 from api.orchestrator import router as orchestrator_router
 from api.auth import router as auth_router
@@ -137,7 +136,6 @@ app.include_router(orchestrator_router, prefix="/api/orchestrator", tags=["orche
 app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
 app.include_router(learning_router, prefix="/api/me", tags=["learning"])
 app.include_router(ai_tutor_router, prefix="/api/ai", tags=["ai"])
-app.include_router(tts_router, prefix="/api/ai/tts", tags=["ai-tts"])
 app.include_router(oj_assistant_router, prefix="/api/ai/oj", tags=["ai-oj"])
 app.include_router(oj_router, prefix="/api", tags=["oj"])
 app.include_router(oj_admin_router, prefix="/api", tags=["oj-admin"])

@@ -463,8 +463,7 @@ def generate_video_script(
 ) -> tuple[str, str, dict]:
     """模板降级：用知识库要点 + 内置 fallback 分镜组装教学短视频脚本 JSON。
 
-    不做真实视频渲染；前端结合 TTS 朗读 voiceover 文案即可形成
-    "图文 + 语音" 的伪视频体验。
+    不做真实视频渲染；前端按分镜时长播放图文内容，形成无声伪视频体验。
     """
     bullets = _bullet_lines(chunks, 6)
     topic_label = _topic_label(topic, module_key)

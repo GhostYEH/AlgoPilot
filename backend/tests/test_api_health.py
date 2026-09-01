@@ -1,6 +1,6 @@
 """API 健康检查与基础路由测试。
 
-使用 FastAPI TestClient 验证核心端点可达，不依赖外部 LLM/TTS 服务。
+使用 FastAPI TestClient 验证核心端点可达，不依赖外部 LLM 服务。
 """
 
 from __future__ import annotations
@@ -28,7 +28,6 @@ class TestHealthEndpoint:
         resp = client.get("/api/health")
         body = resp.json()
         assert "llm_configured" in body
-        assert "tts_configured" in body
         assert "trace_python" in body
         assert body["trace_python"] is True
 

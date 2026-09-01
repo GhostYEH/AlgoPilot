@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { ArrowRight, CircleCheck, MagicStick, VideoPause, VideoPlay, View, Warning } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import { plainTextForTts, synthesizeTTS } from '@/api/tts'
+import { ArrowRight, CircleCheck, MagicStick, View, Warning } from '@element-plus/icons-vue'
 import type { AiDiagnoseResponse } from '@/types/codeTrace'
 
 const props = defineProps<{
@@ -19,123 +17,11 @@ const guided = computed(() => props.diagnosis?.diagnosis ?? null)
 const hints = computed(() => guided.value?.hints ?? [])
 const nextHint = computed(() => hints.value.find((hint) => hint.level > revealedLevel.value))
 
-// --- TTS 语音讲解 ---
-const ttsLoading = ref(false)
-const ttsPlaying = ref(false)
-const ttsUrl = ref<string | null>(null)
-const ttsAudioEl = ref<HTMLAudioElement | null>(null)
-
-function buildTtsText(): string {
-  const g = guided.value
-  if (!g) return ''
-  const parts: string[] = []
-  parts.push(`最早可疑位置：Step ${g.bug_step_index + 1}${g.bug_line ? `，第 ${g.bug_line} 行` : ''}。`)
-  parts.push(g.title)
-  if (g.observation_question) parts.push(`先想一想：${g.observation_question}`)
-  if (g.actual_state) parts.push(`Trace 实际状态：${g.actual_state}`)
-  if (g.expected_state || g.invariant) {
-    parts.push(`此处应满足：${g.expected_state || g.invariant}`)
-  }
-  if (revealedLevel.value >= 2 && g.root_cause) {
-    parts.push(`为什么会错：${g.root_cause}`)
-  }
-  if (revealedLevel.value >= 3 && g.fix_direction) {
-    parts.push(`修改方向：${g.fix_direction}`)
-  }
-  if (revealedLevel.value >= 3 && g.verification) {
-    parts.push(`如何验证：${g.verification}`)
-  }
-  return parts.join('\n')
-}
-
-async function toggleReadAloud() {
-  if (ttsPlaying.value) {
-    const el = ttsAudioEl.value
-    if (el) {
-      el.pause()
-      el.currentTime = 0
-    }
-    ttsPlaying.value = false
-    return
-  }
-  if (ttsUrl.value) {
-    const el = ttsAudioEl.value
-    if (el) {
-      el.src = ttsUrl.value
-      ttsPlaying.value = true
-      try {
-        await el.play()
-      } catch {
-        ttsPlaying.value = false
-        ElMessage.warning('浏览器阻止了音频自动播放，请再次点击朗读')
-      }
-    }
-    return
-  }
-  const text = plainTextForTts(buildTtsText())
-  if (!text) {
-    ElMessage.warning('当前没有可朗读的诊断内容')
-    return
-  }
-  ttsLoading.value = true
-  try {
-    const blob = await synthesizeTTS({ text })
-    const url = URL.createObjectURL(blob)
-    ttsUrl.value = url
-    const el = ttsAudioEl.value
-    if (el) {
-      el.src = url
-      ttsPlaying.value = true
-      try {
-        await el.play()
-      } catch {
-        ttsPlaying.value = false
-        ElMessage.warning('浏览器阻止了音频自动播放，请再次点击朗读')
-      }
-    }
-  } catch (e: unknown) {
-    const err = e as { response?: { status?: number } }
-    let detail = '语音合成失败，请稍后重试'
-    if (err?.response?.status === 503) {
-      detail = '语音合成未配置：请联系管理员启用讯飞 TTS'
-    } else if (err?.response?.status === 400) {
-      detail = '文本不符合讯飞 TTS 要求（长度或编码问题）'
-    } else if (err?.response?.status === 502) {
-      detail = '讯飞 TTS 网关异常，请稍后重试'
-    }
-    ElMessage.error(detail)
-  } finally {
-    ttsLoading.value = false
-  }
-}
-
-function onAudioEnded() {
-  ttsPlaying.value = false
-}
-
-function onAudioError() {
-  ttsPlaying.value = false
-  ElMessage.error('音频播放失败，请重新点击朗读')
-}
-
 watch(
   () => props.diagnosis,
   () => {
     revealedLevel.value = 1
     detailsOpen.value = []
-    // 重置 TTS：撤销旧 URL
-    if (ttsUrl.value) {
-      URL.revokeObjectURL(ttsUrl.value)
-      ttsUrl.value = null
-    }
-    if (ttsPlaying.value) {
-      const el = ttsAudioEl.value
-      if (el) {
-        el.pause()
-        el.currentTime = 0
-      }
-      ttsPlaying.value = false
-    }
   },
 )
 
@@ -182,29 +68,8 @@ function revealNextHint() {
           {{ confidenceMeta.label }}
         </el-tag>
         <el-tag size="small" :type="sourceMeta.type" effect="plain">{{ sourceMeta.label }}</el-tag>
-        <el-button
-          v-if="guided"
-          class="ai-diagnosis__tts-btn"
-          size="small"
-          :type="ttsPlaying ? 'primary' : 'default'"
-          plain
-          :icon="ttsPlaying ? VideoPause : VideoPlay"
-          :loading="ttsLoading"
-          :title="ttsPlaying ? '暂停语音讲解' : '语音讲解诊断结论'"
-          @click="toggleReadAloud"
-        >
-          {{ ttsPlaying ? '暂停讲解' : '语音讲解' }}
-        </el-button>
       </div>
     </header>
-
-    <!-- 隐藏的 <audio> 元素，由 toggleReadAloud 控制 -->
-    <audio
-      ref="ttsAudioEl"
-      preload="auto"
-      @ended="onAudioEnded"
-      @error="onAudioError"
-    />
 
     <template v-if="diagnosis">
       <div v-if="guided" class="ai-diagnosis__focus">
@@ -441,8 +306,6 @@ function revealNextHint() {
 .ai-diagnosis__identity h3 { margin: 0; font-size: 17px; }
 .ai-diagnosis__identity p { margin: 2px 0 0; font-size: 12px; color: var(--el-text-color-secondary); }
 .ai-diagnosis__badges { gap: 6px; flex-wrap: wrap; }
-.ai-diagnosis__tts-btn { margin-left: 4px; }
-
 .ai-diagnosis__focus { padding: 16px; border-radius: 12px; border: 1px solid var(--alp-color-border); background: var(--alp-bg-surface); }
 .ai-diagnosis__focus-top { justify-content: space-between; gap: 12px; }
 .ai-diagnosis__eyebrow { color: var(--el-color-danger); font-size: 12px; font-weight: 700; letter-spacing: .04em; }

@@ -68,7 +68,7 @@ const FRIENDLY_AGENT_MSG: Record<string, string> = {
   ReadingAgent: '正在策展基础、进阶、挑战三层拓展阅读材料…',
   ExerciseAgent: '正在基于易错点偏好生成 3 选择 + 2 填空个性化题单…',
   PptAgent: '正在组装 8～12 页课程讲义胶片大纲（可下载为 .pptx）…',
-  VideoScriptAgent: '正在编排 60～90 秒教学短视频分镜脚本（含字幕+配音文案）…',
+  VideoScriptAgent: '正在编排 60～90 秒教学短视频分镜脚本（含字幕+旁白文案）…',
   KnowledgeRetriever: 'BM25 检索课程知识库，对齐防幻觉切片…',
   ContentVerifierAgent: '对照知识库执行防幻觉校验闭环…',
   ContentSafety: '内容安全过滤与脱敏…',
