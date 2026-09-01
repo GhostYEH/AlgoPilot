@@ -153,6 +153,10 @@ let linkSelection: d3.Selection<SVGLineElement, unknown, SVGGElement, unknown> |
 let focusReleaseTimer: number | undefined
 const focusedNodeId = ref<string | null>(null)
 let starsAnimId = 0
+let starsTick: (() => void) | null = null
+let starsInViewport = true
+let starsViewportObserver: IntersectionObserver | null = null
+let starsPageVisible = true
 let renderToken = 0
 const graphNodes = shallowRef<UniverseGraphNode[]>([])
 const graphLinks = shallowRef<Array<{ source: string; target: string }>>([])
@@ -421,6 +425,8 @@ function drawStars() {
   }))
 
   const tick = () => {
+    starsAnimId = 0
+    if (!starsInViewport || !starsPageVisible) return
     ctx.fillStyle = '#020617'
     ctx.fillRect(0, 0, w, h)
     const grad = ctx.createRadialGradient(w * 0.5, h * 0.35, 0, w * 0.5, h * 0.35, w * 0.65)
@@ -440,7 +446,24 @@ function drawStars() {
     starsAnimId = requestAnimationFrame(tick)
   }
   cancelAnimationFrame(starsAnimId)
+  starsTick = tick
   tick()
+}
+
+function syncStarsPlayback() {
+  cancelAnimationFrame(starsAnimId)
+  starsAnimId = 0
+  if (starsInViewport && starsPageVisible) starsTick?.()
+}
+
+function handleStarsVisibilityChange() {
+  starsPageVisible = !document.hidden
+  syncStarsPlayback()
+}
+
+function handleStarsViewportChange(entries: IntersectionObserverEntry[]) {
+  starsInViewport = entries[0]?.isIntersecting ?? true
+  syncStarsPlayback()
 }
 
 function nodeFill(n: UniverseGraphNode): string {
@@ -950,6 +973,11 @@ onMounted(async () => {
   await nextTick()
   initGraph()
   window.addEventListener('resize', onResize)
+  document.addEventListener('visibilitychange', handleStarsVisibilityChange)
+  if ('IntersectionObserver' in window && containerRef.value) {
+    starsViewportObserver = new IntersectionObserver(handleStarsViewportChange, { threshold: 0.01 })
+    starsViewportObserver.observe(containerRef.value)
+  }
 })
 
 function onResize() {
@@ -962,6 +990,9 @@ onUnmounted(() => {
   if (focusReleaseTimer) window.clearTimeout(focusReleaseTimer)
   simulation?.stop()
   cancelAnimationFrame(starsAnimId)
+  starsTick = null
+  starsViewportObserver?.disconnect()
+  document.removeEventListener('visibilitychange', handleStarsVisibilityChange)
   window.removeEventListener('resize', onResize)
   if (svgRef.value) d3.select(svgRef.value).on('.zoom', null)
 })

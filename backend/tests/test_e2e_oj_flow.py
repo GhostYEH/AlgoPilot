@@ -373,6 +373,7 @@ class TestE2EFullFlow:
         )
         diag = diag_resp.json()
 
+        assert diag["counterexample"]["source"] == "generated_verified"
         assert diag["first_divergence"] is not None, "first_divergence 字段应存在"
         if diag["first_divergence"]["detected"]:
             assert "step_index" in diag["first_divergence"]
@@ -382,8 +383,8 @@ class TestE2EFullFlow:
             assert "reason" in diag["first_divergence"]
 
     @pytest.mark.slow
-    def test_anonymous_diagnose_does_not_persist(self, e2e_env):
-        """Step 11: 未登录用户诊断不入库，bug_record_id/trace_record_id 为 None。"""
+    def test_anonymous_diagnose_is_rejected(self, e2e_env):
+        """Step 11: 未登录用户不能触发昂贵的宿主机代码诊断。"""
         client, _, _ = e2e_env
 
         diag_resp = client.post(
@@ -395,12 +396,7 @@ class TestE2EFullFlow:
                 "failed_cases": [],
             },
         )
-        assert diag_resp.status_code == 200, diag_resp.text
-        diag = diag_resp.json()
-
-        assert diag["bug_record_id"] is None, "未登录不应持久化 bug_record"
-        assert diag["trace_record_id"] is None, "未登录不应持久化 trace_record"
-        assert diag["execution_evidence"] is not None, "execution_evidence 仍应生成"
+        assert diag_resp.status_code == 401, diag_resp.text
 
 
 class TestE2EAllFourTablesPopulated:

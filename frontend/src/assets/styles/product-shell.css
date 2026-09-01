@@ -45,6 +45,7 @@
   --alp-layout-padding-y: 18px;
   --alp-content-max: 1600px;
   --alp-learning-content-max: 1720px;
+  --alp-home-content-max: 2200px;
   --el-color-primary: #16a6a1;
   --el-bg-color: #101e25;
   --el-bg-color-overlay: #15262e;
@@ -146,6 +147,7 @@ html::before { content: none !important; }
   max-width: var(--alp-learning-content-max);
   margin-inline: auto;
 }
+.home-page { max-width: var(--alp-home-content-max); }
 .section-title, .page-title, h1, h2, h3 { text-wrap: balance; letter-spacing: -0.015em; }
 p { text-wrap: pretty; }
 

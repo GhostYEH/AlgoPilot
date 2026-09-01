@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { gsap } from 'gsap'
 
 const HOVER_SELECTOR = [
   'a',
@@ -37,13 +38,15 @@ const dot = ref<HTMLElement | null>(null)
 let pointerMediaQuery: MediaQueryList | null = null
 let reducedMotionMediaQuery: MediaQueryList | null = null
 let listenersActive = false
-let animationFrame: number | null = null
+let cursorContext: gsap.Context | null = null
+let ringXTo: ((value: number) => void) | null = null
+let ringYTo: ((value: number) => void) | null = null
+let dotXTo: ((value: number) => void) | null = null
+let dotYTo: ((value: number) => void) | null = null
 let reducedMotion = false
 let hasPosition = false
 let pointerX = 0
 let pointerY = 0
-let ringX = 0
-let ringY = 0
 
 function asElement(target: EventTarget | null): Element | null {
   return target instanceof Element ? target : null
@@ -61,31 +64,27 @@ function isHoverArea(target: EventTarget | null): boolean {
   return Boolean(element.closest(HOVER_SELECTOR))
 }
 
-function writePosition(element: HTMLElement | null, x: number, y: number) {
-  if (!element) return
-  element.style.setProperty('--alp-cursor-x', `${x}px`)
-  element.style.setProperty('--alp-cursor-y', `${y}px`)
+function setupCursorMotion() {
+  if (!ring.value || !dot.value) return
+  cursorContext?.revert()
+  cursorContext = gsap.context(() => {
+    gsap.set([ring.value, dot.value], { xPercent: -50, yPercent: -50, x: 0, y: 0 })
+    ringXTo = gsap.quickTo(ring.value!, 'x', { duration: 0.18, ease: 'power3.out' })
+    ringYTo = gsap.quickTo(ring.value!, 'y', { duration: 0.18, ease: 'power3.out' })
+    dotXTo = gsap.quickTo(dot.value!, 'x', { duration: 0, ease: 'none' })
+    dotYTo = gsap.quickTo(dot.value!, 'y', { duration: 0, ease: 'none' })
+  }, ring.value)
 }
 
-function animateRing() {
-  animationFrame = null
-  if (!isVisible.value) return
-
-  const easing = reducedMotion ? 1 : 0.24
-  ringX += (pointerX - ringX) * easing
-  ringY += (pointerY - ringY) * easing
-  writePosition(ring.value, ringX, ringY)
-
-  const distance = Math.max(Math.abs(pointerX - ringX), Math.abs(pointerY - ringY))
-  if (distance > 0.1) {
-    animationFrame = window.requestAnimationFrame(animateRing)
+function writeCursorPosition() {
+  if (reducedMotion) {
+    gsap.set([ring.value, dot.value], { x: pointerX, y: pointerY, overwrite: 'auto' })
+    return
   }
-}
-
-function startRingAnimation() {
-  if (animationFrame === null) {
-    animationFrame = window.requestAnimationFrame(animateRing)
-  }
+  ringXTo?.(pointerX)
+  ringYTo?.(pointerY)
+  dotXTo?.(pointerX)
+  dotYTo?.(pointerY)
 }
 
 function setCursorVisibility(visible: boolean) {
@@ -114,15 +113,11 @@ function handlePointerMove(event: PointerEvent) {
   pointerY = event.clientY
 
   if (!hasPosition) {
-    ringX = pointerX
-    ringY = pointerY
     hasPosition = true
-    writePosition(ring.value, ringX, ringY)
   }
 
-  writePosition(dot.value, pointerX, pointerY)
+  writeCursorPosition()
   updateTargetState(event.target)
-  startRingAnimation()
 }
 
 function handlePointerOver(event: PointerEvent) {
@@ -161,6 +156,7 @@ function handleWindowBlur() {
 function addListeners() {
   if (listenersActive) return
   listenersActive = true
+  setupCursorMotion()
   document.documentElement.classList.add('alp-custom-cursor-enabled')
   document.addEventListener('pointermove', handlePointerMove, { passive: true })
   document.addEventListener('pointerover', handlePointerOver, { passive: true })
@@ -173,22 +169,25 @@ function addListeners() {
 }
 
 function removeListeners() {
-  if (!listenersActive) return
-  listenersActive = false
-  document.documentElement.classList.remove('alp-custom-cursor-enabled')
-  document.removeEventListener('pointermove', handlePointerMove)
-  document.removeEventListener('pointerover', handlePointerOver)
-  document.removeEventListener('pointerout', handlePointerOut)
-  document.removeEventListener('pointerdown', handlePointerDown)
-  document.removeEventListener('pointerup', handlePointerUp)
-  document.removeEventListener('pointercancel', handlePointerUp)
-  document.removeEventListener('pointerleave', handlePointerLeave)
-  window.removeEventListener('blur', handleWindowBlur)
-
-  if (animationFrame !== null) {
-    window.cancelAnimationFrame(animationFrame)
-    animationFrame = null
+  if (listenersActive) {
+    listenersActive = false
+    document.documentElement.classList.remove('alp-custom-cursor-enabled')
+    document.removeEventListener('pointermove', handlePointerMove)
+    document.removeEventListener('pointerover', handlePointerOver)
+    document.removeEventListener('pointerout', handlePointerOut)
+    document.removeEventListener('pointerdown', handlePointerDown)
+    document.removeEventListener('pointerup', handlePointerUp)
+    document.removeEventListener('pointercancel', handlePointerUp)
+    document.removeEventListener('pointerleave', handlePointerLeave)
+    window.removeEventListener('blur', handleWindowBlur)
   }
+
+  cursorContext?.revert()
+  cursorContext = null
+  ringXTo = null
+  ringYTo = null
+  dotXTo = null
+  dotYTo = null
   hasPosition = false
   setCursorVisibility(false)
 }
@@ -200,6 +199,7 @@ function handlePointerCapabilityChange(event: MediaQueryListEvent) {
 
 function handleReducedMotionChange(event: MediaQueryListEvent) {
   reducedMotion = event.matches
+  if (reducedMotion && hasPosition) writeCursorPosition()
 }
 
 onMounted(() => {
@@ -262,8 +262,7 @@ onBeforeUnmount(() => {
   top: 0;
   left: 0;
   pointer-events: none;
-  transform: translate3d(var(--alp-cursor-x, 0px), var(--alp-cursor-y, 0px), 0)
-    translate3d(-50%, -50%, 0);
+  transform: translate3d(0, 0, 0);
   will-change: transform;
 }
 

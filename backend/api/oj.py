@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import re
 from typing import Any
@@ -849,46 +850,50 @@ async def api_ai_diagnose(
                 "category": str(edge.get("category") or "original"),
             }
 
-            def _ce_user_runner(args_list: list[Any]) -> Any:
+            def _ce_run_output(code: str, args_list: list[Any]) -> Any:
                 ce_case = {
                     "args": args_list,
                     "stdin": None,
                     "stdout": None,
                     "expected": None,
                 }
-                verdict, _msg = _judge_single_case(
-                    user_code=body.code,
+                trace = _run_trace_for_case(
+                    slug=slug,
+                    user_code=code,
                     lang=lang,
                     problem=problem_full,
-                    slug=slug,
                     case=ce_case,
                     time_limit_ms=tl,
                 )
-                return verdict
+                if trace.verdict != "OK" or trace.result_preview is None:
+                    raise RuntimeError(f"candidate execution failed: {trace.verdict}")
+                preview = trace.result_preview
+                if len(preview) >= 300:
+                    raise RuntimeError("candidate output exceeds reliable preview limit")
+                if problem_full.get("judge_mode", "stdio") == "stdio":
+                    return preview
+                try:
+                    return json.loads(preview)
+                except json.JSONDecodeError as exc:
+                    raise RuntimeError("candidate output is not valid JSON") from exc
+
+            def _ce_user_runner(args_list: list[Any]) -> Any:
+                return _ce_run_output(body.code, args_list)
 
             def _ce_reference_runner(args_list: list[Any]) -> Any:
                 ref_code = None
                 if user is not None:
                     from services.oj.first_divergence import find_reference_solution
 
-                    ref_code = find_reference_solution(db, slug, language=lang)
+                    ref_code = find_reference_solution(
+                        db,
+                        slug,
+                        language=lang,
+                        student_code=body.code,
+                    )
                 if ref_code is None:
                     return None
-                ce_case = {
-                    "args": args_list,
-                    "stdin": None,
-                    "stdout": None,
-                    "expected": None,
-                }
-                verdict, _msg = _judge_single_case(
-                    user_code=ref_code,
-                    lang=lang,
-                    problem=problem_full,
-                    slug=slug,
-                    case=ce_case,
-                    time_limit_ms=tl,
-                )
-                return verdict
+                return _ce_run_output(ref_code, args_list)
 
             ce_result = try_counterexample(
                 slug=slug,

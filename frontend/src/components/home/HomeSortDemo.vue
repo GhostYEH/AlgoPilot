@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { usePrefersReducedMotion } from '@/composables/usePrefersReducedMotion'
 import {
   bubbleSortSteps,
   quickSortSteps,
@@ -50,6 +51,7 @@ const panels = ref<SortPanel[]>([
 ])
 
 let timer: ReturnType<typeof setInterval> | null = null
+const { prefersReducedMotion } = usePrefersReducedMotion()
 
 function applyStep(panel: SortPanel, idx: number): SortPanel {
   const list = panel.steps
@@ -68,12 +70,31 @@ function advanceAll() {
   panels.value = panels.value.map((p) => applyStep(p, p.stepIndex + 1))
 }
 
-onMounted(() => {
+function stopTimer() {
+  if (timer) clearInterval(timer)
+  timer = null
+}
+
+function syncTimer() {
+  stopTimer()
+  if (prefersReducedMotion.value || document.hidden) return
   timer = setInterval(advanceAll, TICK_MS)
+}
+
+function handleVisibilityChange() {
+  syncTimer()
+}
+
+onMounted(() => {
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+  syncTimer()
 })
 
+watch(prefersReducedMotion, syncTimer)
+
 onBeforeUnmount(() => {
-  if (timer) clearInterval(timer)
+  stopTimer()
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 </script>
 

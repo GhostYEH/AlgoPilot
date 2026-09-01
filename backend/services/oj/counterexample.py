@@ -14,9 +14,13 @@ AlgoPilot 核心创新二：当代码出现 Wrong Answer 时，
 
 from __future__ import annotations
 
+import logging
 import random
+import time
 from dataclasses import dataclass, field
 from typing import Any, Callable
+
+_logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -211,6 +215,8 @@ def verify_and_find_best(
     reference_runner: Callable[[list[Any]], Any] | None = None,
     expected_override: Callable[[list[Any]], Any] | None = None,
     early_stop: bool = False,
+    deadline: float | None = None,
+    max_execution_count: int | None = None,
 ) -> CounterexampleResult:
     """验证候选反例，找出最能暴露 Bug 的。
 
@@ -229,25 +235,45 @@ def verify_and_find_best(
     verified_count = 0
     triggered_count = 0
     best: CounterexampleCandidate | None = None
+    execution_count = 0
 
     for c in candidates:
+        if deadline is not None and time.monotonic() >= deadline:
+            break
+        expected_runner = expected_override or reference_runner
+        required_executions = 1 + int(expected_runner is not None)
+        if (
+            max_execution_count is not None
+            and execution_count + required_executions > max_execution_count
+        ):
+            break
         try:
             c.actual = user_runner(c.args)
-            if expected_override:
-                c.expected = expected_override(c.args)
-            elif reference_runner:
-                c.expected = reference_runner(c.args)
+            execution_count += 1
+            if deadline is not None and time.monotonic() >= deadline:
+                break
+            if expected_runner is None:
+                continue
+            c.expected = expected_runner(c.args)
+            execution_count += 1
+            if c.expected is None:
+                continue
             c.verified = True
             verified_count += 1
-            if c.expected is not None and c.actual != c.expected:
+            if c.actual != c.expected:
                 c.triggered = True
                 triggered_count += 1
                 if best is None:
                     best = c
                     if early_stop:
                         break
-        except Exception:
+        except Exception as exc:
             c.verified = False
+            _logger.debug(
+                "counterexample candidate rejected category=%s error_type=%s",
+                c.category,
+                type(exc).__name__,
+            )
 
     total = len(candidates)
     rate = (triggered_count / total * 100) if total else 0.0

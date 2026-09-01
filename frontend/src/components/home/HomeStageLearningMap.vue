@@ -298,6 +298,29 @@ const phaseIcons = { foundation: CollectionTag, technique: Lightning, tree: Oppo
 .learning-map__section-status { color: var(--color-brand); font-size: 9px; white-space: nowrap; }
 .learning-map__more { padding-top: 5px; color: var(--color-text-muted); font-size: 9px; border-top: 1px solid rgba(185, 222, 219, 0.72); }
 
+@media (min-width: 1800px) {
+  .learning-map { margin-top: 20px; }
+  .learning-map__head { gap: 28px; padding: 16px 30px 11px; }
+  .learning-map__head h2 { font-size: 22px; }
+  .learning-map__head p:not(.learning-map__eyebrow), .learning-map__head > button { font-size: 13px; }
+  .learning-map__phases { gap: 18px; padding: 0 30px 20px; }
+  .learning-map__phase { padding: 17px 15px 13px; }
+  .learning-map__phase > header { min-height: 54px; padding-bottom: 11px; }
+  .learning-map__phase-copy { gap: 11px; }
+  .learning-map__phase-mark { width: 32px; height: 32px; font-size: 21px; }
+  .learning-map__phase h3 { font-size: 16px; }
+  .learning-map__phase header p { font-size: 12px; }
+  .learning-map__phase > ol { gap: 4px; padding-top: 9px; }
+  .learning-map__module { grid-template-columns: 34px minmax(0,1fr) auto 16px; gap: 10px; min-height: 58px; padding: 8px 10px; }
+  .learning-map__index { width: 29px; height: 29px; font-size: 11px; }
+  .learning-map__copy strong { font-size: 13px; }
+  .learning-map__copy small, .learning-map__section-copy small, .learning-map__progress { font-size: 11px; }
+  .learning-map__sections { gap: 3px; margin: 1px 10px 10px 52px; padding: 10px 12px 9px; }
+  .learning-map__section { padding: 6px 0; }
+  .learning-map__section-copy strong { font-size: 11px; }
+  .learning-map__section-status, .learning-map__more { font-size: 10px; }
+}
+
 @media (max-width: 1120px) {
   .learning-map__phases { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .learning-map__phase:nth-child(2) { border-right: 0; }

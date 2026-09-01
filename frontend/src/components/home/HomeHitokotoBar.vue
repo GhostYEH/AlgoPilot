@@ -168,6 +168,11 @@ onBeforeUnmount(() => controller?.abort())
 .hitokoto__refresh:hover:not(:disabled) { transform: rotate(180deg); }
 .hitokoto__refresh:disabled { cursor: wait; opacity: .55; }
 
+@media (min-width: 1800px) {
+  .hitokoto { gap: 8px; font-size: 28px; }
+  .hitokoto__refresh { width: 27px; height: 27px; }
+}
+
 @media (max-width: 820px) {
   .hitokoto { width: 100%; }
 }

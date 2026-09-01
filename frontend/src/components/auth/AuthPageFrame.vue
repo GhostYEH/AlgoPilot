@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, defineAsyncComponent } from 'vue'
 import { useRouter } from 'vue-router'
-import LoginGlobe from '@/components/auth/LoginGlobe.vue'
 import BrandLogo from '@/components/common/BrandLogo.vue'
+
+const LoginGlobe = defineAsyncComponent({
+  loader: () => import('@/components/auth/LoginGlobe.vue'),
+  suspensible: false,
+})
 
 const props = withDefaults(
   defineProps<{

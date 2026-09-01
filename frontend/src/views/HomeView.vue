@@ -283,6 +283,61 @@ onMounted(async () => {
 .home-section { min-width: 0; } .recent-learning { margin-top: 18px; padding: 20px 22px 22px; }
 .home-section__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 16px; } .home-section__head h2 { margin: 0; color: #102b31; font-size: 20px; line-height: 1.4; } .home-section__head p { margin: 4px 0 0; color: var(--color-text-muted); font-size: 12px; } .home-section__head > span { overflow: hidden; max-width: 190px; color: var(--color-text-muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .home-lower { display: grid; grid-template-columns: minmax(0,1.75fr) minmax(300px,.72fr); align-items: start; gap: 16px; margin-top: 16px; } .home-training, .home-community { padding: 19px 20px 21px; }
+@media (min-width: 1800px) {
+  .home-workspace { padding-top: 8px; }
+  .home-greeting { grid-template-columns: 64px minmax(0,1fr) auto; gap: 19px; padding: 6px 10px 22px; }
+  .home-greeting__avatar { width: 60px; height: 60px; font-size: 23px; }
+  .home-greeting h1 { font-size: 28px; }
+  .home-greeting p { margin-top: 7px; font-size: 15px; }
+  .home-greeting > button, .home-section__head > button { gap: 6px; font-size: 14px; }
+  .hero-dashboard { grid-template-columns: minmax(360px,.92fr) minmax(360px,.84fr) minmax(400px,1fr); gap: 20px; min-height: 340px; }
+  .goal-card { padding: 26px 27px 23px; }
+  .goal-card > header, .recommend-card > header { gap: 18px; }
+  .section-kicker { font-size: 16px; }
+  .goal-card > header > span { font-size: 13px; }
+  .goal-card h2 { margin-top: 27px; font-size: 34px; }
+  .goal-card__progress { margin-top: 21px; }
+  .goal-card__progress > div:first-child { font-size: 13px; }
+  .goal-card__progress strong { font-size: 14px; }
+  .progress-track { height: 7px; }
+  .goal-card__facts { margin-top: 22px; padding-top: 19px; }
+  .goal-card__facts dt { font-size: 12px; }
+  .goal-card__facts dd { font-size: 19px; }
+  .goal-card__actions { gap: 11px; padding-top: 20px; }
+  .goal-card__actions :deep(.el-button) { min-height: 44px; font-size: 14px; }
+  .hero-visual img { width: min(100%,370px); height: 318px; }
+  .hero-visual__copy { top: 17px; max-width: 170px; }
+  .hero-visual__copy span, .hero-visual__copy small { font-size: 12px; }
+  .hero-visual__copy strong { font-size: 20px; }
+  .recommend-card { padding: 25px 25px 16px; }
+  .recommend-card header p { font-size: 13px; }
+  .ai-label { padding: 4px 8px; font-size: 12px; }
+  .recommend-card__list { margin-top: 14px; }
+  .recommend-card__list > button { grid-template-columns: 38px minmax(0,1fr) auto; gap: 12px; min-height: 64px; padding: 10px 0; }
+  .recommend-card__mark { width: 34px; height: 34px; font-size: 17px; }
+  .recommend-card__list strong { font-size: 14px; }
+  .recommend-card__list small, .recommend-card__action, .recommend-card__refresh { font-size: 12px; }
+  .recommend-card__action { padding: 7px 11px; }
+  .home-tools { margin-top: 20px; }
+  .home-tools button { grid-template-columns: 42px minmax(0,1fr) 18px; gap: 12px; padding: 16px 20px; }
+  .home-tools__icon { width: 40px; height: 40px; font-size: 19px; }
+  .home-tools strong { font-size: 14px; }
+  .home-tools small, .home-tools__arrow { font-size: 12px; }
+  .home-metrics { gap: 15px; margin-top: 20px; }
+  .home-metrics article { grid-template-columns: minmax(0,1fr) 46px; gap: 10px; min-height: 102px; padding: 18px; }
+  .home-metrics article span:first-child { font-size: 12px; }
+  .home-metrics article strong { font-size: 25px; }
+  .home-metrics article strong small { font-size: 12px; }
+  .home-metrics article p { margin-top: 7px; font-size: 11px; }
+  .home-metrics__icon { width: 44px; height: 44px; font-size: 22px; }
+  .recent-learning { margin-top: 22px; padding: 24px 27px 27px; }
+  .home-section__head { margin-bottom: 19px; }
+  .home-section__head h2 { font-size: 22px; }
+  .home-section__head p { font-size: 13px; }
+  .home-section__head > span { max-width: 230px; font-size: 12px; }
+  .home-lower { gap: 20px; margin-top: 20px; }
+  .home-training, .home-community { padding: 23px 25px 25px; }
+}
 @media (max-width: 1180px) { .hero-dashboard { grid-template-columns: 1fr .9fr; } .recommend-card { grid-column: 1/-1; } .recommend-card__list { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; } .recommend-card__list > button { border-bottom: 0; } .recommend-card__refresh { margin-top: 8px; } .home-metrics { grid-template-columns: repeat(3,minmax(0,1fr)); } .home-lower { grid-template-columns: 1fr; } }
 @media (max-width: 820px) { .home-greeting { grid-template-columns: 48px minmax(0,1fr); } .home-greeting__avatar { width: 46px; height: 46px; } .home-greeting > button { display: none; } .hero-dashboard { grid-template-columns: 1fr; } .hero-visual { min-height: 250px; grid-row: 1; } .hero-visual__copy { left: 18px; } .recommend-card { grid-column: auto; } .recommend-card__list { grid-template-columns: 1fr; gap: 0; } .recommend-card__list > button { border-bottom: 1px solid var(--color-border); } .home-tools { grid-template-columns: repeat(2,minmax(0,1fr)); } .home-tools button:nth-child(2) { border-right: 0; } .home-tools button:nth-child(-n+2) { border-bottom: 1px solid var(--color-border); } .home-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media (max-width: 520px) { .home-workspace { padding-bottom: 28px; } .home-greeting { padding-inline: 2px; } .home-greeting h1 { font-size: 21px; } .home-greeting p { font-size: 13px; line-height: 1.5; } .goal-card,.recommend-card { padding-inline: 17px; } .goal-card__actions { grid-template-columns: 1fr; } .home-tools { grid-template-columns: 1fr; } .home-tools button,.home-tools button:nth-child(2) { border-right: 0; border-bottom: 1px solid var(--color-border); } .home-tools button:last-child { border-bottom: 0; } .home-metrics { gap: 9px; } .home-metrics article { grid-template-columns: 1fr; min-height: 104px; padding: 13px; } .home-metrics__icon { grid-row: 1; width: 32px; height: 32px; font-size: 16px; } .recent-learning,.home-training,.home-community { padding: 17px 14px; } .home-section__head { gap: 10px; } .home-section__head > button { white-space: nowrap; } }

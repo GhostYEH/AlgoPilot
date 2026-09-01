@@ -45,6 +45,38 @@ def fetch_submissions_with_diagnosis() -> list[dict[str, Any]]:
     return records
 
 
+def fetch_diagnosis_evidence() -> list[dict[str, Any]]:
+    """Return one row per persisted diagnosis and its real trace evidence state."""
+    from models.db_models import BugRecord, ExecutionTraceRecord
+
+    records: list[dict[str, Any]] = []
+    with _get_session() as session:
+        rows = session.query(BugRecord).all()
+        submission_ids = {
+            row.submission_id for row in rows if row.submission_id is not None
+        }
+        traced_submission_ids: set[int] = set()
+        if submission_ids:
+            traced_submission_ids = {
+                submission_id
+                for (submission_id,) in (
+                    session.query(ExecutionTraceRecord.submission_id)
+                    .filter(ExecutionTraceRecord.submission_id.in_(submission_ids))
+                    .distinct()
+                    .all()
+                )
+            }
+        for row in rows:
+            records.append(
+                {
+                    "diagnosis_id": row.id,
+                    "submission_id": row.submission_id,
+                    "has_execution_evidence": row.submission_id in traced_submission_ids,
+                }
+            )
+    return records
+
+
 def fetch_event_latencies() -> list[float]:
     """从学习事件日志提取处理延迟（ms）。"""
     from models.db_models import LearningEventLog

@@ -404,6 +404,16 @@ const isMyLearningActive = computed(() => route.path.startsWith('/my-learning'))
   flex-direction: column;
 }
 
+@media (min-width: 1800px) {
+  .app-header { gap: 24px; padding-inline: 24px; }
+  .header-menu { gap: 9px; }
+  .header-menu :deep(.el-menu-item), .nav-dropdown-trigger { height: 44px; padding-inline: 12px; font-size: 15px; }
+  .header-menu :deep(.el-menu-item .el-icon), .nav-dropdown-trigger > .el-icon:first-child { font-size: 17px; }
+  .header-actions { gap: 12px; }
+  .user-name { max-width: 150px; font-size: 14px; }
+  .app-main { padding: 22px clamp(24px, 1.8vw, 38px) 34px; }
+}
+
 .header-dropdown-item {
   display: flex;
   align-items: center;

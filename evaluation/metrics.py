@@ -111,6 +111,20 @@ def compute_top_k_accuracy(
             unit="%",
             reason="尚无人工标注的 Bug 行号数据",
         )
+    if len(predictions) != len(ground_truths):
+        return MetricResult(
+            name=f"top_{k}_accuracy",
+            value=None,
+            unit="%",
+            reason="预测数量与人工标注数量不一致，指标不可计算",
+        )
+    if k <= 0:
+        return MetricResult(
+            name=f"top_{k}_accuracy",
+            value=None,
+            unit="%",
+            reason="k 必须为正整数",
+        )
     correct = 0
     for pred, gt in zip(predictions, ground_truths):
         top_k = sorted(pred)[:k]
@@ -136,6 +150,13 @@ def compute_classification_accuracy(
             value=None,
             unit="%",
             reason="尚无人工标注的 Bug 类型数据",
+        )
+    if len(predictions) != len(ground_truths):
+        return MetricResult(
+            name="classification_accuracy",
+            value=None,
+            unit="%",
+            reason="预测数量与人工标注数量不一致，指标不可计算",
         )
     correct = sum(1 for p, g in zip(predictions, ground_truths) if p == g)
     acc = correct / len(ground_truths) * 100
@@ -175,21 +196,25 @@ def compute_bug_trigger_rate(
 def compute_hallucination_rate(
     diagnosis_results: list[dict[str, Any]],
 ) -> MetricResult:
-    """AI 诊断幻觉率：被标记为 hallucination 的诊断比例。"""
-    if not diagnosis_results:
+    """AI 诊断幻觉率；只使用存在人工/独立标注的记录。"""
+    annotated = [
+        d for d in diagnosis_results
+        if isinstance(d.get("hallucination_detected"), bool)
+    ]
+    if not annotated:
         return MetricResult(
             name="hallucination_rate",
             value=None,
             unit="%",
-            reason="尚无 AI 诊断记录",
+            reason="尚无人工或独立审核的幻觉标注",
         )
-    flagged = sum(1 for d in diagnosis_results if d.get("hallucination_detected"))
-    rate = flagged / len(diagnosis_results) * 100
+    flagged = sum(1 for d in annotated if d["hallucination_detected"] is True)
+    rate = flagged / len(annotated) * 100
     return MetricResult(
         name="hallucination_rate",
         value=round(rate, 2),
         unit="%",
-        sample_size=len(diagnosis_results),
+        sample_size=len(annotated),
     )
 
 

@@ -140,6 +140,8 @@ def try_counterexample(
             user_runner=user_runner,
             reference_runner=reference_runner,
             early_stop=True,
+            deadline=start + total_timeout_ms / 1000,
+            max_execution_count=_MAX_EXECUTION_COUNT,
         )
 
         latency_ms = int((time.monotonic() - start) * 1000)

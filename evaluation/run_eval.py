@@ -15,6 +15,10 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from evaluation.metrics import EvaluationReport
 
 _EVAL_DIR = Path(__file__).resolve().parent
 if str(_EVAL_DIR) not in sys.path:
@@ -45,11 +49,9 @@ def run_evaluation() -> "EvaluationReport":
     ]
 
     # === AI 可靠性 ===
-    submissions = data_loader.fetch_submissions_with_diagnosis()
-    diagnosis_results = [
-        {"hallucination_detected": False, "has_execution_evidence": s["has_cases"]}
-        for s in submissions
-    ]
+    diagnosis_results = data_loader.fetch_diagnosis_evidence()
+    # 数据库当前没有人工/独立幻觉标注字段。不能把“未标注”构造成 False，
+    # 否则任何现有诊断都会制造一个虚假的 0% 幻觉率。
     report.ai_reliability = [
         metrics.compute_hallucination_rate(diagnosis_results),
         metrics.compute_evidence_coverage(diagnosis_results),
@@ -83,7 +85,7 @@ def main() -> None:
 
     total = len(report.all_metrics())
     available = sum(1 for m in report.all_metrics() if m.is_available)
-    print(f"\n=== 汇总 ===")
+    print("\n=== 汇总 ===")
     print(f"  总指标数：{total}")
     print(f"  已有数据：{available}")
     print(f"  待收集：{total - available}（需人工标注或更多实验数据）")

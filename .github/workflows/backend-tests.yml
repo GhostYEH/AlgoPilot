@@ -2,14 +2,16 @@ name: Backend Tests
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, algpilot-core-loop]
     paths:
       - 'backend/**'
+      - 'evaluation/**'
       - '.github/workflows/backend-tests.yml'
   pull_request:
     branches: [main, develop]
     paths:
       - 'backend/**'
+      - 'evaluation/**'
 
 jobs:
   fast-tests:

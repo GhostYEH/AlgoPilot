@@ -3,7 +3,7 @@
 覆盖场景：
 1. 学生与参考解在同一变量首次偏离 → detected=True
 2. 学生与参考解完全一致 → detected=False
-3. 步数不同但公共步一致 → detected=True (循环次数差异)
+3. 无关事件插入、变量重命名、循环步数不同 → 语义对齐
 4. 无公共变量 → detected=False
 5. 空 trace → detected=False + reason
 6. _extract_var_value / _values_equal / _format_state 辅助函数
@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from models.db_models import Base, OjSubmission, User
 from services.oj.first_divergence import (
     FirstDivergenceResult,
+    _build_source_line_context,
     _extract_var_value,
     _find_common_keys,
     _format_state,
@@ -33,6 +34,7 @@ from services.oj.first_divergence import (
     detect_first_divergence,
     find_reference_solution,
     run_first_divergence_analysis,
+    select_reference_solution,
 )
 
 
@@ -133,8 +135,8 @@ class TestDetectFirstDivergence:
         assert result.detected is False
         assert "一致" in result.reason
 
-    def test_step_count_difference_detected(self):
-        """学生多循环一次，公共步一致但步数不同。"""
+    def test_step_count_difference_with_different_final_state_detected(self):
+        """学生多循环一次且最终状态不同，仍应定位真实状态偏离。"""
         student_steps = [
             _step(1, {"i": 0}),
             _step(2, {"i": 1}),
@@ -149,7 +151,187 @@ class TestDetectFirstDivergence:
             reference_steps=reference_steps,
         )
         assert result.detected is True
-        assert "循环次数" in result.explanation
+        assert result.student_state == "i=2"
+        assert result.reference_state == "i=1"
+
+    def test_irrelevant_assignment_is_aligned_as_noise(self):
+        reference_steps = [
+            _step(1, {"left": 0, "right": 4}),
+            _step(2, {"left": 1, "right": 4}),
+            _step(3, {"left": 1, "right": 3}),
+        ]
+        student_steps = [
+            _step(10, {"left": 0, "right": 4}),
+            _step(11, {"left": 0, "right": 4, "tmp": 99}),
+            _step(12, {"left": 1, "right": 4}),
+            _step(13, {"left": 1, "right": 3}),
+        ]
+        result = detect_first_divergence(
+            student_steps=student_steps,
+            reference_steps=reference_steps,
+        )
+        assert result.detected is False
+
+    def test_variable_renaming_does_not_create_divergence(self):
+        student_steps = [
+            _step(1, {"l": 0, "r": 5}),
+            _step(2, {"l": 1, "r": 5}),
+            _step(3, {"l": 1, "r": 4}),
+        ]
+        reference_steps = [
+            _step(11, {"left": 0, "right": 5}),
+            _step(12, {"left": 1, "right": 5}),
+            _step(13, {"left": 1, "right": 4}),
+        ]
+        result = detect_first_divergence(
+            student_steps=student_steps,
+            reference_steps=reference_steps,
+        )
+        assert result.detected is False
+
+    def test_extra_loop_iteration_realigns_to_key_states(self):
+        student_steps = [
+            _step(1, {"i": 0}),
+            _step(2, {"i": 1}),
+            _step(3, {"i": 2}),
+            _step(2, {"i": 1}),
+            _step(3, {"i": 2}),
+            _step(4, {"i": 3}),
+        ]
+        reference_steps = [
+            _step(10, {"index": 0}),
+            _step(20, {"index": 1}),
+            _step(30, {"index": 2}),
+            _step(40, {"index": 3}),
+        ]
+        result = detect_first_divergence(
+            student_steps=student_steps,
+            reference_steps=reference_steps,
+        )
+        assert result.detected is False
+
+    def test_real_pointer_state_divergence_is_detected(self):
+        student_steps = [
+            _step(1, {"pointer": 0}),
+            _step(2, {"pointer": 2}),
+            _step(3, {"pointer": 3}),
+        ]
+        reference_steps = [
+            _step(10, {"pointer": 0}),
+            _step(20, {"pointer": 2}),
+            _step(30, {"pointer": 4}),
+        ]
+        result = detect_first_divergence(
+            student_steps=student_steps,
+            reference_steps=reference_steps,
+        )
+        assert result.detected is True
+        assert result.line == 3
+        assert result.reference_line == 30
+        assert result.divergent_variable == "pointer"
+
+    def test_branch_outcome_divergence_is_detected(self):
+        student_steps = [
+            {**_step(1, {"x": 2}), "event_type": "branch", "branch_outcome": False},
+        ]
+        reference_steps = [
+            {**_step(10, {"value": 2}), "event_type": "branch", "branch_outcome": True},
+        ]
+        result = detect_first_divergence(
+            student_steps=student_steps,
+            reference_steps=reference_steps,
+        )
+        assert result.detected is True
+        assert "分支结果" in result.explanation
+
+    def test_source_context_infers_branch_path_divergence(self):
+        student_code = """def solve(x):
+    if x > 0:
+        result = 1
+    else:
+        result = 2
+    return result
+"""
+        reference_code = student_code.replace("x > 0", "x < 0")
+        student_steps = [
+            _step(2, {"x": 1}),
+            _step(3, {"x": 1, "result": 1}),
+            _step(6, {"x": 1, "result": 1}),
+        ]
+        reference_steps = [
+            _step(2, {"value": 1}),
+            _step(5, {"value": 1, "answer": 2}),
+            _step(6, {"value": 1, "answer": 2}),
+        ]
+
+        result = detect_first_divergence(
+            student_steps=student_steps,
+            reference_steps=reference_steps,
+            student_code=student_code,
+            reference_code=reference_code,
+        )
+
+        assert result.detected is True
+        assert result.line == 2
+        assert result.reference_line == 2
+        assert "分支结果" in result.explanation
+
+    def test_source_condition_recovers_branch_when_body_steps_are_filtered(self):
+        student_code = """def solve(x):
+    if x > 0:
+        result = 1
+    else:
+        result = 2
+    return x
+"""
+        reference_code = student_code.replace("x > 0", "x < 0")
+        compressed_steps = [
+            _step(2, {"x": 1}),
+            _step(6, {"x": 1}),
+        ]
+
+        result = detect_first_divergence(
+            student_steps=compressed_steps,
+            reference_steps=compressed_steps,
+            student_code=student_code,
+            reference_code=reference_code,
+        )
+
+        assert result.detected is True
+        assert result.line == 2
+        assert "分支结果" in result.explanation
+
+    def test_source_context_infers_loop_exit_divergence(self):
+        student_code = """def solve(i):
+    while i < 1:
+        i += 1
+    return i
+"""
+        reference_code = """def solve(index):
+    while index < 1:
+        index += 1
+    return index
+"""
+        student_steps = [
+            _step(2, {"i": 0}),
+            _step(3, {"i": 1}),
+            _step(4, {"i": 1}),
+        ]
+        reference_steps = [
+            _step(2, {"index": 1}),
+            _step(4, {"index": 1}),
+        ]
+
+        result = detect_first_divergence(
+            student_steps=student_steps,
+            reference_steps=reference_steps,
+            student_code=student_code,
+            reference_code=reference_code,
+        )
+
+        assert result.detected is True
+        assert result.line == 2
+        assert "循环结果" in result.explanation
 
     def test_no_common_keys_skips_step(self):
         """无公共变量的步被跳过。"""
@@ -191,6 +373,40 @@ class TestDetectFirstDivergence:
         assert d["detected"] is True
         assert d["step_index"] == 3
         assert d["divergent_variable"] == "mid"
+
+
+class TestSourceLineContext:
+    def test_python_roles_and_nested_control_context_are_extracted(self):
+        code = """def solve(values):
+    total = 0
+    for value in values:
+        if value > 0:
+            total += value
+    return total
+"""
+
+        contexts = _build_source_line_context(code, "python")
+
+        assert contexts[2].role == "assignment"
+        assert contexts[3].role == "loop"
+        assert contexts[4].role == "branch"
+        assert contexts[5].role == "assignment"
+        assert contexts[5].control_path == (
+            "function",
+            "loop:body",
+            "branch:body",
+        )
+        assert contexts[6].role == "return"
+
+    def test_invalid_python_source_falls_back_to_trace_only_alignment(self):
+        steps = [_step(1, {"x": 1}), _step(2, {"x": 2})]
+        result = detect_first_divergence(
+            student_steps=steps,
+            reference_steps=steps,
+            student_code="def broken(:",
+            reference_code="def broken(:",
+        )
+        assert result.detected is False
 
 
 class TestFindReferenceSolution:
@@ -249,6 +465,224 @@ class TestFindReferenceSolution:
 
         ref = find_reference_solution(db_session, "some-problem")
         assert ref is None
+
+    def test_ignores_incomplete_ac_record(self, db_session: Session):
+        user = User(username="incomplete_ac", hashed_password="x", role="student")
+        db_session.add(user)
+        db_session.flush()
+        db_session.add(OjSubmission(
+            user_id=user.id,
+            problem_slug="unsafe-reference",
+            language="python",
+            code="def unverified(): pass",
+            verdict="AC",
+            passed=0,
+            total=0,
+        ))
+        db_session.commit()
+        assert find_reference_solution(db_session, "unsafe-reference") is None
+
+    def test_selects_structurally_compatible_strategy_not_latest(self, db_session: Session):
+        user = User(username="strategy_refs", hashed_password="x", role="student")
+        db_session.add(user)
+        db_session.flush()
+        older_two_pointer = OjSubmission(
+            user_id=user.id,
+            problem_slug="strategy-problem",
+            language="python",
+            code="def solve(nums):\n    left, right = 0, len(nums)-1\n    while left < right:\n        left += 1\n    return left",
+            verdict="AC",
+            passed=10,
+            total=10,
+            created_at=datetime(2026, 1, 1),
+        )
+        latest_hash = OjSubmission(
+            user_id=user.id,
+            problem_slug="strategy-problem",
+            language="python",
+            code="def solve(nums):\n    seen = set()\n    for value in nums:\n        if value in seen:\n            return value\n        seen.add(value)",
+            verdict="AC",
+            passed=10,
+            total=10,
+            created_at=datetime(2026, 8, 1),
+        )
+        db_session.add_all([older_two_pointer, latest_hash])
+        db_session.commit()
+        student_code = "def attempt(values):\n    l, r = 0, len(values)-1\n    while l < r:\n        l += 1\n    return l"
+        ref = find_reference_solution(
+            db_session,
+            "strategy-problem",
+            student_code=student_code,
+        )
+        assert ref == older_two_pointer.code
+
+    def test_clusters_strategies_and_returns_cluster_canonical(self, db_session: Session):
+        user = User(username="clustered_refs", hashed_password="x", role="student")
+        db_session.add(user)
+        db_session.flush()
+        newest_verbose = OjSubmission(
+            user_id=user.id,
+            problem_slug="cluster-problem",
+            language="python",
+            code=(
+                "def answer(values):\n"
+                "    lo = 0\n"
+                "    hi = len(values) - 1\n"
+                "    while lo < hi:\n"
+                "        if values[lo] == values[hi]:\n"
+                "            return lo\n"
+                "        lo = lo + 1\n"
+                "    return -1"
+            ),
+            verdict="AC",
+            passed=12,
+            total=12,
+            runtime_ms_avg=25,
+            created_at=datetime(2026, 8, 3),
+        )
+        canonical_two_pointer = OjSubmission(
+            user_id=user.id,
+            problem_slug="cluster-problem",
+            language="python",
+            code=(
+                "def solve(nums):\n"
+                "    left, right = 0, len(nums) - 1\n"
+                "    while left < right:\n"
+                "        if nums[left] == nums[right]:\n"
+                "            return left\n"
+                "        left += 1\n"
+                "    return -1"
+            ),
+            verdict="AC",
+            passed=12,
+            total=12,
+            runtime_ms_avg=10,
+            created_at=datetime(2026, 8, 2),
+        )
+        older_renamed = OjSubmission(
+            user_id=user.id,
+            problem_slug="cluster-problem",
+            language="python",
+            code=(
+                "def locate(items):\n"
+                "    l, r = 0, len(items) - 1\n"
+                "    while l < r:\n"
+                "        if items[l] == items[r]:\n"
+                "            return l\n"
+                "        l += 1\n"
+                "    return -1"
+            ),
+            verdict="AC",
+            passed=12,
+            total=12,
+            runtime_ms_avg=15,
+            created_at=datetime(2026, 8, 1),
+        )
+        hash_strategy = OjSubmission(
+            user_id=user.id,
+            problem_slug="cluster-problem",
+            language="python",
+            code=(
+                "def solve(nums):\n"
+                "    seen = {}\n"
+                "    for index, value in enumerate(nums):\n"
+                "        if value in seen:\n"
+                "            return seen[value]\n"
+                "        seen[value] = index\n"
+                "    return -1"
+            ),
+            verdict="AC",
+            passed=12,
+            total=12,
+            runtime_ms_avg=8,
+            created_at=datetime(2026, 8, 4),
+        )
+        db_session.add_all([
+            newest_verbose,
+            canonical_two_pointer,
+            older_renamed,
+            hash_strategy,
+        ])
+        db_session.commit()
+
+        selection = select_reference_solution(
+            db_session,
+            "cluster-problem",
+            student_code=(
+                "def attempt(data):\n"
+                "    i, j = 0, len(data) - 1\n"
+                "    while i < j:\n"
+                "        if data[i] == data[j]:\n"
+                "            return i\n"
+                "        i += 1\n"
+                "    return -1"
+            ),
+        )
+
+        assert selection is not None
+        assert selection.cluster_count == 2
+        assert selection.cluster_size == 3
+        assert selection.candidate_count == 4
+        assert selection.code == canonical_two_pointer.code
+        assert selection.compatibility is not None
+
+        canonical = select_reference_solution(db_session, "cluster-problem")
+        assert canonical is not None
+        assert canonical.cluster_size == 3
+        assert canonical.code == canonical_two_pointer.code
+        assert find_reference_solution(db_session, "cluster-problem") == hash_strategy.code
+
+    def test_duplicate_recent_rows_do_not_hide_older_strategy(self, db_session: Session):
+        user = User(username="dedup_refs", hashed_password="x", role="student")
+        db_session.add(user)
+        db_session.flush()
+        repeated_code = "def solve(nums):\n    return sorted(nums)"
+        for day in range(1, 31):
+            formatting = repeated_code if day % 2 else repeated_code + "  # same solution"
+            db_session.add(OjSubmission(
+                user_id=user.id,
+                problem_slug="dedup-problem",
+                language="python",
+                code=formatting,
+                verdict="AC",
+                passed=5,
+                total=5,
+                created_at=datetime(2026, 8, day),
+            ))
+        older_loop = OjSubmission(
+            user_id=user.id,
+            problem_slug="dedup-problem",
+            language="python",
+            code=(
+                "def solve(nums):\n"
+                "    total = 0\n"
+                "    for value in nums:\n"
+                "        total += value\n"
+                "    return total"
+            ),
+            verdict="AC",
+            passed=5,
+            total=5,
+            created_at=datetime(2026, 7, 1),
+        )
+        db_session.add(older_loop)
+        db_session.commit()
+
+        selection = select_reference_solution(
+            db_session,
+            "dedup-problem",
+            student_code=(
+                "def attempt(values):\n"
+                "    answer = 0\n"
+                "    for item in values:\n"
+                "        answer += item\n"
+                "    return answer"
+            ),
+        )
+
+        assert selection is not None
+        assert selection.candidate_count == 2
+        assert selection.code == older_loop.code
 
 
 class TestRunFirstDivergenceAnalysis:

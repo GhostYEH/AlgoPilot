@@ -2,7 +2,7 @@ name: Frontend Checks
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, algpilot-core-loop]
     paths:
       - 'frontend/**'
       - '.github/workflows/frontend-checks.yml'

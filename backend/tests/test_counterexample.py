@@ -130,6 +130,44 @@ class TestVerifyAndFindBest:
         assert result.total_generated == 4
         assert result.trigger_rate == 50.0
 
+    def test_execution_budget_limits_candidate_checks(self):
+        calls = 0
+
+        def runner(args):
+            nonlocal calls
+            calls += 1
+            return args[0]
+
+        candidates = [
+            CounterexampleCandidate(args=[i], category=f"c{i}", reason="")
+            for i in range(5)
+        ]
+        result = verify_and_find_best(
+            candidates,
+            user_runner=runner,
+            reference_runner=runner,
+            max_execution_count=2,
+        )
+        assert calls == 2
+        assert result.total_verified == 1
+
+    def test_expired_deadline_runs_no_candidate(self):
+        calls = 0
+
+        def runner(args):
+            nonlocal calls
+            calls += 1
+            return args[0]
+
+        result = verify_and_find_best(
+            [CounterexampleCandidate(args=[1], category="late", reason="")],
+            user_runner=runner,
+            reference_runner=runner,
+            deadline=0.0,
+        )
+        assert calls == 0
+        assert result.total_verified == 0
+
 
 class TestEarlyStopOptimization:
     """early_stop=True 时找到第一个触发候选后应立即停止。"""

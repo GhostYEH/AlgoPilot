@@ -52,7 +52,7 @@ AlgoPilot 是一个贯穿「学、练、测、诊、改、评」的算法学习�
 
 ### 2. First Divergence Detection｜首次状态偏离
 
-系统对比学生执行轨迹与合理参考轨迹，定位**第一次发生异常的步骤**，并给出代码行、关键变量、学生状态和参考状态之间的差异。没有可信参考轨迹时会返回原因，不伪造分析结果。
+系统使用 Semantic Trace Alignment v2 对比学生执行轨迹与合理参考轨迹：除变量状态与事件序列外，还结合源码行角色和静态控制流上下文完成重对齐，并从实际执行落点识别分支、循环走向。已验证 AC 会先按算法结构聚类，每个策略群选择 medoid 作为 canonical solution，再从与学生策略最接近的群中选择参考解。系统会定位**第一次发生异常的步骤**，给出代码行、关键变量、学生状态和参考状态之间的差异；没有可信参考轨迹时返回原因，不伪造分析结果。
 
 ### 3. Counterexample Generator｜反例生成器
 
@@ -413,7 +413,7 @@ npm run test:exec-evidence
 
 > 验证日期：2026-08-31。慢测试包含真实代码执行、编译和可选外部 LLM 调用，运行前请确认本机工具链与密钥配置。
 
-CI 会在 `main` / `develop` 的 push 与 pull request 中运行前后端检查；外部依赖较重的 slow suite 由定时任务或手动工作流执行。
+CI 会在 `main` / `develop` / 当前默认开发分支 `algpilot-core-loop` 的 push，以及面向 `main` / `develop` 的 pull request 中运行前后端检查；外部依赖较重的 slow suite 由定时任务或手动工作流执行。
 
 ### 系统评测框架
 

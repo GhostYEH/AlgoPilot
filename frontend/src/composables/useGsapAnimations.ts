@@ -1,12 +1,12 @@
-import { onMounted, onBeforeUnmount, ref, type Ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, type Ref } from 'vue'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
 gsap.registerPlugin(ScrollTrigger)
 
 /**
- * AlgoPilot GSAP \u52a8\u753b\u7ec4\u5408\u5f0f\u51fd\u6570
- * \u57fa\u4e8e Impeccable animate.md \u6700\u4f73\u5b9e\u8df5 + GSAP Core skills
+ * AlgoPilot 的 GSAP 动画组合式函数。
+ * 所有 DOM 动画都在 mounted 后创建，并通过 gsap.context 在卸载时回滚。
  */
 
 function prefersReducedMotion(): boolean {
@@ -14,11 +14,6 @@ function prefersReducedMotion(): boolean {
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-/**
- * 从 ref.value 中解析出真正的 DOM 元素。
- * 当 ref 绑定到 Vue 组件（如 el-row）时，ref.value 是组件实例而非 DOM 元素，
- * 此时通过 $el 取到组件的根 DOM 节点。
- */
 function resolveEl(el: HTMLElement | null): HTMLElement | null {
   if (!el) return null
   if (typeof el.querySelectorAll === 'function') return el
@@ -26,39 +21,56 @@ function resolveEl(el: HTMLElement | null): HTMLElement | null {
   return root instanceof HTMLElement ? root : null
 }
 
-/** \u6de1\u5165 + \u4e0a\u6ed1\u5165\u573a */
+function useScopedContext(
+  refEl: Ref<HTMLElement | null>,
+  setup: (scope: HTMLElement) => void,
+) {
+  let context: gsap.Context | null = null
+
+  onMounted(() => {
+    const scope = resolveEl(refEl.value)
+    if (!scope || prefersReducedMotion()) return
+    context = gsap.context(() => setup(scope), scope)
+  })
+
+  onBeforeUnmount(() => context?.revert())
+}
+
+/** 淡入 + 上滑入场 */
 export function useFadeSlideIn(
   refEl: Ref<HTMLElement | null>,
   options?: { y?: number; duration?: number; delay?: number; ease?: string },
 ) {
-  if (prefersReducedMotion()) return
   const opts = { y: 12, duration: 0.3, delay: 0, ease: 'power2.out', ...options }
-  onMounted(() => {
-    if (!refEl.value) return
-    gsap.from(refEl.value, {
-      y: opts.y, opacity: 0, duration: opts.duration, delay: opts.delay,
-      ease: opts.ease, clearProps: 'transform,opacity',
+  useScopedContext(refEl, (scope) => {
+    gsap.from(scope, {
+      y: opts.y,
+      autoAlpha: 0,
+      duration: opts.duration,
+      delay: opts.delay,
+      ease: opts.ease,
+      clearProps: 'transform,opacity,visibility',
     })
   })
 }
 
-/** \u4ea4\u9519\u5165\u573a (\u5217\u8868/\u5361\u7247\u7f51\u683c) */
+/** 交错入场（列表/卡片网格） */
 export function useStaggerIn(
   refContainer: Ref<HTMLElement | null>,
   selector: string,
   options?: { stagger?: number; from?: string; y?: number; duration?: number },
 ) {
-  if (prefersReducedMotion()) return
   const opts = { stagger: 0.04, from: 'start', y: 12, duration: 0.3, ...options }
-  onMounted(() => {
-    const container = resolveEl(refContainer.value)
-    if (!container) return
+  useScopedContext(refContainer, (container) => {
     const items = container.querySelectorAll(selector)
-    if (items.length === 0) return
+    if (!items.length) return
     gsap.from(items, {
-      y: opts.y, opacity: 0, duration: opts.duration,
+      y: opts.y,
+      autoAlpha: 0,
+      duration: opts.duration,
       stagger: { each: opts.stagger, from: opts.from as any },
-      ease: 'power2.out', clearProps: 'transform,opacity',
+      ease: 'power2.out',
+      clearProps: 'transform,opacity,visibility',
     })
   })
 }
@@ -68,59 +80,66 @@ export function useScaleIn(
   refEl: Ref<HTMLElement | null>,
   options?: { duration?: number; ease?: string },
 ) {
-  if (prefersReducedMotion()) return
   const opts = { duration: 0.4, ease: 'back.out(1.4)', ...options }
-  onMounted(() => {
-    if (!refEl.value) return
-    gsap.from(refEl.value, {
-      scale: 0.92, opacity: 0, duration: opts.duration,
-      ease: opts.ease, clearProps: 'transform,opacity',
+  useScopedContext(refEl, (scope) => {
+    gsap.from(scope, {
+      scale: 0.92,
+      autoAlpha: 0,
+      duration: opts.duration,
+      ease: opts.ease,
+      clearProps: 'transform,opacity,visibility',
     })
   })
 }
 
-/** \u6eda\u52a8\u65f6\u89e6\u53d1\u6de1\u5165\u4e0a\u6ed1 */
+/** 滚动时触发淡入上滑 */
 export function useScrollReveal(
   refEl: Ref<HTMLElement | null>,
   options?: { y?: number; duration?: number; stagger?: number; start?: string },
 ) {
-  if (prefersReducedMotion()) return
   const opts = { y: 16, duration: 0.3, stagger: 0, start: 'top 88%', ...options }
-  let st: ScrollTrigger | null = null
-  onMounted(() => {
-    const el = resolveEl(refEl.value)
-    if (!el) return
-    st = ScrollTrigger.create({
-      trigger: el,
+  let trigger: ScrollTrigger | null = null
+
+  useScopedContext(refEl, (scope) => {
+    trigger = ScrollTrigger.create({
+      trigger: scope,
       start: opts.start,
       toggleActions: 'play none none none',
       onEnter: () => {
-        const target = resolveEl(refEl.value)
-        if (!target) return
-        gsap.from(target, {
-          y: opts.y, opacity: 0, duration: opts.duration,
+        gsap.from(scope, {
+          y: opts.y,
+          autoAlpha: 0,
+          duration: opts.duration,
           stagger: opts.stagger > 0 ? opts.stagger : undefined,
-          ease: 'power2.out', clearProps: 'transform,opacity',
+          ease: 'power2.out',
+          clearProps: 'transform,opacity,visibility',
         })
       },
     })
   })
-  onBeforeUnmount(() => st?.kill())
+
+  onBeforeUnmount(() => trigger?.kill())
 }
 
-/** \u5fae\u4ea4\u4e92: \u6309\u94ae\u5f39\u8d77 */
+/** 微交互：按钮弹起 */
 export function useBtnBounce(refEl: Ref<HTMLElement | null>) {
+  let timeline: gsap.core.Timeline | null = null
+
   function bounce() {
-    if (!refEl.value || prefersReducedMotion()) return
-    gsap.timeline()
-      .to(refEl.value, { scale: 0.95, duration: 0.08, ease: 'power2.in' })
-      .to(refEl.value, { scale: 1.03, duration: 0.12, ease: 'power2.out' })
-      .to(refEl.value, { scale: 1, duration: 0.06 })
+    const target = resolveEl(refEl.value)
+    if (!target || prefersReducedMotion()) return
+    timeline?.kill()
+    timeline = gsap.timeline({ defaults: { overwrite: 'auto' } })
+      .to(target, { scale: 0.95, duration: 0.08, ease: 'power2.in' })
+      .to(target, { scale: 1.03, duration: 0.12, ease: 'power2.out' })
+      .to(target, { scale: 1, duration: 0.06 })
   }
+
+  onBeforeUnmount(() => timeline?.kill())
   return { bounce }
 }
 
-/** \u6570\u5b57\u9012\u589e\u52a8\u753b */
+/** 数字递增动画 */
 export function useCountUp(
   _refEl: Ref<HTMLElement | null>,
   target: number,
@@ -128,66 +147,70 @@ export function useCountUp(
 ) {
   const opts = { duration: 1.2, ...options }
   const displayed = ref(0)
+  let tween: gsap.core.Tween | null = null
+
   onMounted(() => {
-    if (prefersReducedMotion()) { displayed.value = target; return }
+    if (prefersReducedMotion()) {
+      displayed.value = target
+      return
+    }
     const obj = { val: 0 }
-    gsap.to(obj, {
-      val: target, duration: opts.duration, ease: 'power2.out',
+    tween = gsap.to(obj, {
+      val: target,
+      duration: opts.duration,
+      ease: 'power2.out',
       onUpdate: () => { displayed.value = Math.round(obj.val) },
     })
   })
+
+  onBeforeUnmount(() => tween?.kill())
   return { displayed }
 }
 
-/** \u521d\u59cb\u5316 GSAP \u5168\u5c40\u9ed8\u8ba4\u503c */
+/** 初始化 GSAP 全局默认值 */
 export function initGsapDefaults() {
   gsap.defaults({ duration: 0.25, ease: 'power2.out' })
 }
 
-/** Dramatic hero entrance timeline — stagger children for visible effect */
+/** Hero 入场：交错展示直接子元素 */
 export function useHeroEntrance(
   refContainer: Ref<HTMLElement | null>,
   options?: { delay?: number; duration?: number },
 ) {
-  if (prefersReducedMotion()) return
   const opts = { delay: 0.2, duration: 0.7, ...options }
-  onMounted(() => {
-    if (!refContainer.value) return
-    const children = refContainer.value.children
+  useScopedContext(refContainer, (container) => {
+    const children = container.children
     if (!children.length) return
     gsap.from(children, {
       y: 40,
-      opacity: 0,
+      autoAlpha: 0,
       duration: opts.duration,
       stagger: 0.12,
       ease: 'power3.out',
       delay: opts.delay,
-      clearProps: 'transform,opacity',
+      clearProps: 'transform,opacity,visibility',
     })
   })
 }
 
-/** Visible card stagger — cards fly in from below with bounce */
+/** 卡片交错入场 */
 export function useCardStagger(
   refContainer: Ref<HTMLElement | null>,
   selector: string,
   options?: { stagger?: number; y?: number; duration?: number; ease?: string },
 ) {
-  if (prefersReducedMotion()) return
   const opts = { stagger: 0.08, y: 30, duration: 0.6, ease: 'back.out(1.4)', ...options }
-  onMounted(() => {
-    const container = resolveEl(refContainer.value)
-    if (!container) return
+  useScopedContext(refContainer, (container) => {
     const items = container.querySelectorAll(selector)
     if (!items.length) return
     gsap.from(items, {
       y: opts.y,
-      opacity: 0,
+      autoAlpha: 0,
       scale: 0.95,
       duration: opts.duration,
       stagger: opts.stagger,
       ease: opts.ease,
-      clearProps: 'transform,opacity',
+      clearProps: 'transform,opacity,visibility',
     })
   })
 }
